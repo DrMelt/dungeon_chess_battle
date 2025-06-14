@@ -1,0 +1,97 @@
+[gd_resource type="VisualShader" load_steps=8 format=3 uid="uid://ysmxctd3lyfi"]
+
+[sub_resource type="VisualShaderNodeColorParameter" id="VisualShaderNodeColorParameter_32f1y"]
+parameter_name = "dHightLight_Coler"
+default_value_enabled = true
+default_value = Color(0.849088, 0.696341, 0.482699, 1)
+
+[sub_resource type="VisualShaderNodeLinearSceneDepth" id="VisualShaderNodeLinearSceneDepth_p8eor"]
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_p8eor"]
+constant = 1.0
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_p8eor"]
+input_name = "normal"
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_32f1y"]
+input_name = "vertex"
+
+[sub_resource type="VisualShaderNodeMultiplyAdd" id="VisualShaderNodeMultiplyAdd_5inn2"]
+default_input_values = [0, Vector3(0, 0, 0), 1, Vector3(1, 1, 1), 2, Vector3(0, 0, 0)]
+op_type = 2
+
+[sub_resource type="VisualShaderNodeFloatParameter" id="VisualShaderNodeFloatParameter_p8eor"]
+parameter_name = "FloatParameter"
+default_value_enabled = true
+default_value = 0.02
+
+[resource]
+code = "shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_front, diffuse_lambert, specular_disabled, unshaded, shadows_disabled;
+
+uniform float FloatParameter = 0.01999999955297;
+uniform vec4 dHightLight_Coler : source_color = vec4(0.849088, 0.696341, 0.482699, 1.000000);
+
+
+
+void vertex() {
+// Input:2
+	vec3 n_out2p0 = NORMAL;
+
+
+// FloatParameter:5
+	float n_out5p0 = FloatParameter;
+
+
+// Input:3
+	vec3 n_out3p0 = VERTEX;
+
+
+// MultiplyAdd:4
+	vec3 n_out4p0 = fma(n_out2p0, vec3(n_out5p0), n_out3p0);
+
+
+// Output:0
+	VERTEX = n_out4p0;
+
+
+}
+
+void fragment() {
+// ColorParameter:3
+	vec4 n_out3p0 = dHightLight_Coler;
+
+
+// FloatConstant:5
+	float n_out5p0 = 1.000000;
+
+
+// Output:0
+	ALBEDO = vec3(n_out3p0.xyz);
+	DEPTH = n_out5p0;
+
+
+}
+"
+modes/cull = 1
+modes/specular = 2
+flags/unshaded = true
+flags/shadows_disabled = true
+nodes/vertex/0/position = Vector2(680, 140)
+nodes/vertex/2/node = SubResource("VisualShaderNodeInput_p8eor")
+nodes/vertex/2/position = Vector2(-120, 240)
+nodes/vertex/3/node = SubResource("VisualShaderNodeInput_32f1y")
+nodes/vertex/3/position = Vector2(-140, 400)
+nodes/vertex/4/node = SubResource("VisualShaderNodeMultiplyAdd_5inn2")
+nodes/vertex/4/position = Vector2(380, 180)
+nodes/vertex/5/node = SubResource("VisualShaderNodeFloatParameter_p8eor")
+nodes/vertex/5/position = Vector2(-120, 540)
+nodes/vertex/connections = PackedInt32Array(3, 0, 4, 2, 2, 0, 4, 0, 4, 0, 0, 0, 5, 0, 4, 1)
+nodes/fragment/0/position = Vector2(680, 140)
+nodes/fragment/3/node = SubResource("VisualShaderNodeColorParameter_32f1y")
+nodes/fragment/3/position = Vector2(-220, 220)
+nodes/fragment/4/node = SubResource("VisualShaderNodeLinearSceneDepth_p8eor")
+nodes/fragment/4/position = Vector2(-140, 840)
+nodes/fragment/5/node = SubResource("VisualShaderNodeFloatConstant_p8eor")
+nodes/fragment/5/position = Vector2(420, 940)
+nodes/fragment/connections = PackedInt32Array(3, 0, 0, 0, 5, 0, 0, 23)

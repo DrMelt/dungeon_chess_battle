@@ -1,0 +1,75 @@
+[gd_scene load_steps=9 format=3 uid="uid://ma08wtu5ucj3"]
+
+[ext_resource type="Script" uid="uid://btoahv8y6sl0e" path="res://ui_units/state_bar/state_bar_3d/scripts/StateBar.cs" id="1_rnafx"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_7ycqe"]
+[ext_resource type="Shader" uid="uid://nhheeomnpg4e" path="res://ui_units/state_bar/state_bar_3d/shaders/state_bar_base.tres" id="2_283q0"]
+[ext_resource type="Shader" uid="uid://bi2kh6kc2nwyl" path="res://ui_units/state_bar/state_bar_3d/shaders/shader_state_bar.tres" id="2_rnafx"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vu0gt"]
+resource_local_to_scene = true
+render_priority = -1
+shader = ExtResource("2_283q0")
+shader_parameter/ColorParameter = Color(0.804743, 0.804743, 0.804742, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_ksx24"]
+size = Vector2(0.882, 0.05)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_283q0"]
+resource_local_to_scene = true
+render_priority = 1
+shader = ExtResource("2_rnafx")
+shader_parameter/ParPin_02_Color = Color(0.537011, 0.537011, 0.537011, 1)
+shader_parameter/ParPin_01_Color = Color(0.0832, 0.52, 0.09048, 1)
+shader_parameter/ParPin_01 = 1.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_wb8gd"]
+size = Vector2(0.87, 0.04)
+
+[node name="State_Bar" type="Node3D" node_paths=PackedStringArray("stateBarRef", "label3D_PercentRef", "label3D_CurrentValueRef", "label3D_NameRef")]
+script = ExtResource("1_rnafx")
+scaleBase = 0.2
+scaleCamera = 0.15
+userUISettingsRef = ExtResource("2_7ycqe")
+stateBarRef = NodePath("MeshInstance3D_State_Bar")
+label3D_PercentRef = NodePath("Label3D_Percent")
+label3D_CurrentValueRef = NodePath("Label3D_CurrentValue")
+label3D_NameRef = NodePath("Label3D_Name")
+
+[node name="MeshInstance3D_Base_Box" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -0.00424, 0, 0.0008)
+layers = 1024
+material_override = SubResource("ShaderMaterial_vu0gt")
+mesh = SubResource("QuadMesh_ksx24")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D_State_Bar" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -0.00424, 0, -0.0012)
+layers = 1024
+material_override = SubResource("ShaderMaterial_283q0")
+mesh = SubResource("QuadMesh_wb8gd")
+skeleton = NodePath("../..")
+
+[node name="Label3D_Percent" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0.433265, 0.0741139, 0.000799962)
+visible = false
+layers = 1024
+pixel_size = 0.002
+text = "100.0%"
+font_size = 40
+horizontal_alignment = 0
+
+[node name="Label3D_CurrentValue" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -0.431145, 0.0736612, 0.000800038)
+visible = false
+layers = 1024
+pixel_size = 0.002
+text = "1.0"
+font_size = 40
+horizontal_alignment = 2
+
+[node name="Label3D_Name" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -0.00424, 0.114874, 0.0008)
+layers = 1024
+pixel_size = 0.002
+text = "Label3D_Name"
+font_size = 40

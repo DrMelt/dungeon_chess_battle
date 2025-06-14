@@ -1,0 +1,72 @@
+using GameLogic;
+using Godot;
+using System;
+using System.Collections.Generic;
+
+public partial class SkillsList : Control
+{
+    [Export]
+    UserOperationInterfaceInfo userOperationInterfaceInfoRef;
+    public UserOperationInterfaceInfo UserOperationInterfaceInfoRef => userOperationInterfaceInfoRef;
+
+    [Export]
+    UnitsInGame unitsInGameRef;
+    public UnitsInGame UnitsInGameRef => unitsInGameRef;
+    
+    [ExportGroup("Internal Parameters")]
+    [Export]
+    PackedScene skillButtonPackedScene;
+
+    [Export]
+    HBoxContainer hBoxContainerRef;
+
+    [Export]
+    PanelSkillInfo panelSkillInfoRef;
+    public PanelSkillInfo PanelSkillInfoRef => panelSkillInfoRef;
+
+
+
+
+    List<ButtonSkillBase> skillButtonList = new List<ButtonSkillBase>();
+    internal void UpdateSkillsList(UnitGameShow unitShow)
+    {
+
+        var children = hBoxContainerRef.GetChildren();
+        foreach (var child in children)
+        {
+            child.QueueFree();
+        }
+        skillButtonList.Clear();
+
+        if (unitShow == null)
+        {
+            return;
+        }
+        if (unitShow.SkillsList == null)
+        {
+            return;
+        }
+
+        foreach (UnitSkillBase skill in unitShow.SkillsList)
+            {
+                ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
+                buttonSkill.Init(skill, unitShow.UnitStateRec, this);
+                hBoxContainerRef.AddChild(buttonSkill);
+
+                skillButtonList.Add(buttonSkill);
+            }
+
+    }
+
+    internal bool IsWaitTarget()
+    {
+        foreach (ButtonSkillBase buttonSkill in skillButtonList)
+        {
+            if (buttonSkill.WaitTarget)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}

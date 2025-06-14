@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Buff_DOT_Physcial" load_steps=2 format=3 uid="uid://btx4sae0q273i"]
+
+[ext_resource type="Script" uid="uid://bvdp7xqw4wspe" path="res://game_scripts/Buffs/scripts/Buff_DOT_Physcial.cs" id="1_51lf4"]
+
+[resource]
+script = ExtResource("1_51lf4")
+damagePerSec = 100.0
+buffType = 1
+duration = 15.0
+superpositions = 1
+isActive = true
+metadata/_custom_type_script = "uid://bvdp7xqw4wspe"

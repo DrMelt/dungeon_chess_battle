@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://cvckw4m5s75t"]
+
+[ext_resource type="Shader" uid="uid://cyc28jqvii3bm" path="res://effects/skill_range/circular_region.tres" id="1_uf2uh"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dowf7"]
+render_priority = -1
+shader = ExtResource("1_uf2uh")
+shader_parameter/ColorParameter = Color(1, 1, 1, 1)
+shader_parameter/Near = 0.205
+shader_parameter/Skill_Progress = 1.88
+shader_parameter/Skill_Radian_To = 1.0
+shader_parameter/Skill_Radian_From = -1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_0gsne"]
+
+[node name="Skill_Range_Box" type="MeshInstance3D"]
+layers = 2
+material_override = SubResource("ShaderMaterial_dowf7")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_0gsne")
