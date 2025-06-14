@@ -1,0 +1,35 @@
+[gd_resource type="VisualShader" load_steps=2 format=3 uid="uid://nhheeomnpg4e"]
+
+[sub_resource type="VisualShaderNodeColorParameter" id="VisualShaderNodeColorParameter_3nrnl"]
+parameter_name = "ColorParameter"
+default_value_enabled = true
+default_value = Color(0.804743, 0.804743, 0.804742, 1)
+
+[resource]
+code = "shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_back, diffuse_lambert, specular_disabled, unshaded, shadows_disabled;
+
+uniform vec4 ColorParameter : source_color = vec4(0.804743, 0.804743, 0.804742, 1.000000);
+
+
+
+void fragment() {
+// ColorParameter:3
+	vec4 n_out3p0 = ColorParameter;
+
+
+// Output:0
+	ALBEDO = vec3(n_out3p0.xyz);
+
+
+}
+"
+modes/depth_draw = 2
+modes/specular = 2
+flags/unshaded = true
+flags/shadows_disabled = true
+preview_params/ColorParameter = "Color(0.266575, 0.266575, 0.266575, 1)"
+nodes/fragment/0/position = Vector2(760, 120)
+nodes/fragment/3/node = SubResource("VisualShaderNodeColorParameter_3nrnl")
+nodes/fragment/3/position = Vector2(20, 300)
+nodes/fragment/connections = PackedInt32Array(3, 0, 0, 0)

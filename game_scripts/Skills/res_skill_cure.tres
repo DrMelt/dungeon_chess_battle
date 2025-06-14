@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Skill_Cure" load_steps=3 format=3 uid="uid://dep8x70a71ltj"]
+
+[ext_resource type="Script" uid="uid://vpibuyw7n6k8" path="res://game_scripts/Skills/scripts/Skill_Cure.cs" id="1_e8tc3"]
+[ext_resource type="Texture2D" uid="uid://jambdnamek1i" path="res://icons/Cure/000405_hr1.png" id="1_u7puq"]
+
+[resource]
+script = ExtResource("1_e8tc3")
+curePotency = 500.0
+skillName = "治疗"
+skillDescription = "回复目标体力
+恢复力：500"
+skillRange = 10.0
+skillSpringTime = 0.5
+skillCooldownTime = 0.5
+icon = ExtResource("1_u7puq")
+needUnitTarget = true
+needPosTarget = false
+metadata/_custom_type_script = "uid://vpibuyw7n6k8"

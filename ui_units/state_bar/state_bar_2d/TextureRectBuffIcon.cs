@@ -1,0 +1,34 @@
+using GameLogic;
+using Godot;
+using System;
+
+public partial class TextureRectBuffIcon : TextureRect
+{
+    [Export]
+    Color fromFocusUnit = new Color(0.3f, 0.9f, 0.3f, 1);
+    [Export]
+    Color fromOther = new Color(0.8f, 0.8f, 0.8f, 1);
+
+    [ExportGroup("Internal Parameters")]
+    [Export]
+    Label superpositionsLabelRef;
+    [Export]
+    Label durationLabelRef;
+
+
+    public void SetBuffIcon(BuffBase buffBase, UnitState focusUnit)
+    {
+        Color fontColor = fromOther;
+        if (buffBase.fromUnit == focusUnit)
+        {
+            fontColor = fromFocusUnit;
+        }
+
+        durationLabelRef.Text = buffBase.duration.ToString("F0");
+        superpositionsLabelRef.Text = buffBase.superpositions.ToString();
+
+        durationLabelRef.LabelSettings.FontColor = fontColor;
+
+        Texture = buffBase.icon;
+    }
+}

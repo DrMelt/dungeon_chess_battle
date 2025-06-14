@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3 uid="uid://c1dh80p12ey8c"]
+
+[ext_resource type="Texture2D" uid="uid://ntae6w4tmir7" path="res://effects/flare_AoE/Flare AoE .png" id="1_crgl3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t27v8"]
+transparency = 2
+alpha_scissor_threshold = 0.734
+alpha_antialiasing_mode = 0
+cull_mode = 2
+shading_mode = 0
+albedo_texture = ExtResource("1_crgl3")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_wo8li"]
+
+[node name="EffectFlareAoE" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.48813, 0, 0, 0, 1, 0, 0, 0, 1.34632, 0, 0, 0.382876)
+layers = 2
+material_override = SubResource("StandardMaterial3D_t27v8")
+mesh = SubResource("PlaneMesh_wo8li")

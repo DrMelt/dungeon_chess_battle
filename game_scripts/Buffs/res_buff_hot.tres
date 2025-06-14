@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Buff_HOT" load_steps=3 format=3 uid="uid://ctf8oxsujmq7w"]
+
+[ext_resource type="Script" uid="uid://l1y3n5djli2w" path="res://game_scripts/Buffs/scripts/Buff_HOT.cs" id="1_wp656"]
+[ext_resource type="Texture2D" uid="uid://dn2qchgpo7po1" path="res://icons/Regen/212626_hr1.png" id="1_yhkhu"]
+
+[resource]
+script = ExtResource("1_wp656")
+healthPerSec = 100.0
+buffName = "持续治疗"
+buffDescription = ""
+icon = ExtResource("1_yhkhu")
+duration = 15.0
+superpositions = 1
+maxSuperpositions = 1
+isActive = true
+metadata/_custom_type_script = "uid://l1y3n5djli2w"

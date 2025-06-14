@@ -1,0 +1,327 @@
+[gd_scene load_steps=43 format=3 uid="uid://bhhi7c0r5hisg"]
+
+[ext_resource type="Script" uid="uid://72jmsu2erdvo" path="res://pre_demo/scenes/scripts/Camera3dUserCamera.cs" id="1_s243o"]
+[ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://pre_demo/scenes/shader/outline.gdshader" id="2_uq67j"]
+[ext_resource type="Script" uid="uid://cemq48f6igjuw" path="res://pre_demo/scenes/scripts/UnitsInGame.cs" id="3_4e7mo"]
+[ext_resource type="Script" uid="uid://cf63l72ki40bk" path="res://pre_demo/scenes/scripts/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
+[ext_resource type="Script" uid="uid://cqecoh5w2vwiy" path="res://pre_demo/scenes/DungeonInfo.cs" id="4_s243o"]
+[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://ui_units/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
+[ext_resource type="PackedScene" uid="uid://d1rr6kvqu3yv1" path="res://pre_demo/UnitObject/unit_show.tscn" id="5_d8uwn"]
+[ext_resource type="Resource" uid="uid://ds5coc6n2poc4" path="res://pre_demo/UnitObject/res_state_white_mage.tres" id="6_4e7mo"]
+[ext_resource type="Resource" uid="uid://ce85dbebhv73r" path="res://game_scripts/Skills/res_skill_add_hot.tres" id="6_sfuu4"]
+[ext_resource type="Resource" uid="uid://vwf7lsob4qxl" path="res://game_scripts/Skills/res_skill_add_dot_magic.tres" id="7_117wx"]
+[ext_resource type="Resource" uid="uid://dep8x70a71ltj" path="res://game_scripts/Skills/res_skill_cure.tres" id="9_k83qp"]
+[ext_resource type="FontFile" uid="uid://m3wiseb8garp" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Medium.ttf" id="10_d8uwn"]
+[ext_resource type="Resource" uid="uid://ki4rvmooffx3" path="res://game_scripts/Skills/res_skill_magic_damage.tres" id="10_i4iy5"]
+[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
+[ext_resource type="Script" uid="uid://byoc2mg3gg4u4" path="res://pre_demo/scenes/scripts/Node2d_UserUI.cs" id="11_4e7mo"]
+[ext_resource type="Script" uid="uid://dmr7mxe7wbyc" path="res://pre_demo/scenes/NavigationAgent3d_Test.cs" id="11_u3fd7"]
+[ext_resource type="Script" uid="uid://bwroov12ay0pv" path="res://game_scripts/UnitState.cs" id="12_u3fd7"]
+[ext_resource type="Script" uid="uid://c8o2rtyvqktdg" path="res://pre_demo/scenes/TestInit.cs" id="13_eaknj"]
+[ext_resource type="Script" uid="uid://df7q4ovcrbmh1" path="res://game_scripts/TimeTable/MotionTimeTable.cs" id="13_uvuxq"]
+[ext_resource type="PackedScene" uid="uid://b4otb14bf2txn" path="res://pre_demo/scenes/start_point_area.tscn" id="14_cact4"]
+[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
+render_priority = 0
+shader = ExtResource("2_uq67j")
+shader_parameter/outline_color = Color(0.967479, 0.827743, 0.569836, 1)
+shader_parameter/outline_width = 0.005
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4e7mo"]
+
+[sub_resource type="Resource" id="Resource_qxep0"]
+script = ExtResource("13_uvuxq")
+
+[sub_resource type="Resource" id="Resource_eaknj"]
+script = ExtResource("12_u3fd7")
+_UnitStateName = "这是BOSS吗"
+_position = Vector3(0, 0, 0)
+_lookAt_Dir = Vector3(0, 0, -1)
+radius = 0.0
+_camp = 4
+_maxHealth = 1000.0
+_health = 1000.0
+_cureIntensity = 1.0
+_physicalAttackBase = 1.0
+_physicalDefencePercent = 0.0
+_magicAttackBase = 1.0
+_magicDefencePercent = 0.0
+_baseSpeed = 1.0
+motionTimeTable = SubResource("Resource_qxep0")
+spellTime = 0.0
+_hates = Dictionary[String, float]({})
+metadata/_custom_type_script = "uid://bwroov12ay0pv"
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
+
+[sub_resource type="Sky" id="Sky_uq67j"]
+sky_material = SubResource("ProceduralSkyMaterial_r6hb3")
+process_mode = 1
+
+[sub_resource type="Environment" id="Environment_r6hb3"]
+background_mode = 2
+background_color = Color(0.758192, 0.758192, 0.758192, 1)
+sky = SubResource("Sky_uq67j")
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_i4iy5"]
+vertices = PackedVector3Array(-19.8, 0.188675, -0.4, -10.2, 0.188675, -0.4, -10.1, 0.188675, -1.3, -5.4, 0.188675, -1.3, -5.3, 0.188675, -1.1, -5.2, 0.188675, -19.8, -19.8, 0.188675, -19.8, -5.3, 0.188675, -0.6, 19.8, 0.188675, -0.699999, 19.8, 0.188675, -19.8, -9.8, 2.28867, -0.9, -9.8, 2.28867, 0.9, -5.7, 2.28867, 0.9, -5.7, 2.28867, -0.9, -9.7, 0.188675, -0.799999, -9.7, 0.188675, 0.800001, -5.8, 0.188675, 0.800001, -5.8, 0.188675, -0.799999, -5.3, 0.188675, 0.6, 19.8, 0.188675, 0.700001, -19.8, 0.188675, 0.4, -10.2, 0.188675, 0.4, -10.1, 0.188675, 1.3, -5.2, 0.188675, 19.8, -5.3, 0.188675, 1.1, -5.4, 0.188675, 1.3, -19.8, 0.188675, 19.8, 19.8, 0.188675, 19.8)
+polygons = [PackedInt32Array(0, 2, 1), PackedInt32Array(5, 4, 3), PackedInt32Array(5, 3, 2), PackedInt32Array(0, 6, 2), PackedInt32Array(2, 6, 5), PackedInt32Array(4, 5, 7), PackedInt32Array(7, 5, 8), PackedInt32Array(8, 5, 9), PackedInt32Array(13, 12, 10), PackedInt32Array(10, 12, 11), PackedInt32Array(17, 16, 14), PackedInt32Array(14, 16, 15), PackedInt32Array(7, 8, 18), PackedInt32Array(18, 8, 19), PackedInt32Array(0, 1, 20), PackedInt32Array(20, 1, 21), PackedInt32Array(20, 21, 22), PackedInt32Array(23, 25, 24), PackedInt32Array(22, 25, 23), PackedInt32Array(20, 22, 26), PackedInt32Array(26, 22, 23), PackedInt32Array(24, 18, 23), PackedInt32Array(23, 18, 19), PackedInt32Array(23, 19, 27)]
+geometry_collision_mask = 2049
+cell_size = 0.1
+cell_height = 0.1
+agent_radius = 0.2
+agent_max_climb = 0.3
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
+albedo_color = Color(0.329158, 0.329158, 0.329158, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_uq67j"]
+size = Vector3(2, 0.2, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_i4iy5"]
+size = Vector3(4.385, 2.495, 2.025)
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_i4iy5"]
+data = PackedVector3Array(-2.1925, 0.88, 1.0125, 2.1925, 0.88, 1.0125, -2.1925, -0.88, 1.0125, 2.1925, 0.88, 1.0125, 2.1925, -0.88, 1.0125, -2.1925, -0.88, 1.0125, 2.1925, 0.88, -1.0125, -2.1925, 0.88, -1.0125, 2.1925, -0.88, -1.0125, -2.1925, 0.88, -1.0125, -2.1925, -0.88, -1.0125, 2.1925, -0.88, -1.0125, 2.1925, 0.88, 1.0125, 2.1925, 0.88, -1.0125, 2.1925, -0.88, 1.0125, 2.1925, 0.88, -1.0125, 2.1925, -0.88, -1.0125, 2.1925, -0.88, 1.0125, -2.1925, 0.88, -1.0125, -2.1925, 0.88, 1.0125, -2.1925, -0.88, -1.0125, -2.1925, 0.88, 1.0125, -2.1925, -0.88, 1.0125, -2.1925, -0.88, -1.0125, 2.1925, 0.88, 1.0125, -2.1925, 0.88, 1.0125, 2.1925, 0.88, -1.0125, -2.1925, 0.88, 1.0125, -2.1925, 0.88, -1.0125, 2.1925, 0.88, -1.0125, -2.1925, -0.88, 1.0125, 2.1925, -0.88, 1.0125, -2.1925, -0.88, -1.0125, 2.1925, -0.88, 1.0125, 2.1925, -0.88, -1.0125, -2.1925, -0.88, -1.0125)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d8uwn"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.3)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k83qp"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(1, 1, 1, 0.776471)
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i4iy5"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.94, 0.94, 0.94, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4e7mo"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u3fd7"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(1, 0.9375, 0.75, 0.878431)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eaknj"]
+
+[sub_resource type="Theme" id="Theme_117wx"]
+default_font = ExtResource("10_d8uwn")
+BoxContainer/constants/separation = 4
+Button/colors/font_color = Color(0.875, 0.875, 0.875, 1)
+Button/colors/font_disabled_color = Color(0.875, 0.875, 0.875, 0.5)
+Button/colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
+Button/colors/font_hover_color = Color(0.95, 0.95, 0.95, 1)
+Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_outline_color = Color(0, 0, 0, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/colors/icon_disabled_color = Color(1, 1, 1, 0.4)
+Button/colors/icon_focus_color = Color(1, 1, 1, 1)
+Button/colors/icon_hover_color = Color(1, 1, 1, 1)
+Button/colors/icon_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/icon_normal_color = Color(1, 1, 1, 1)
+Button/colors/icon_pressed_color = Color(1, 1, 1, 1)
+Button/constants/align_to_largest_stylebox = 0
+Button/constants/h_separation = 4
+Button/constants/icon_max_width = 0
+Button/constants/outline_size = 0
+Button/font_sizes/font_size = 16
+Button/styles/disabled = SubResource("StyleBoxFlat_d8uwn")
+Button/styles/focus = SubResource("StyleBoxFlat_k83qp")
+Button/styles/hover = SubResource("StyleBoxFlat_i4iy5")
+Button/styles/normal = SubResource("StyleBoxFlat_4e7mo")
+Button/styles/pressed = SubResource("StyleBoxFlat_u3fd7")
+ProgressBar/styles/fill = SubResource("StyleBoxFlat_eaknj")
+
+[sub_resource type="LabelSettings" id="LabelSettings_uvuxq"]
+font_size = 24
+
+[node name="MainScene" type="Node"]
+
+[node name="Camera3D_UserCamera" type="Camera3D" parent="." node_paths=PackedStringArray("userOperationInterfaceInfoRef")]
+transform = Transform3D(1, 0, 0, 0, 0.928583, 0.371124, 0, -0.371124, 0.928583, -3.37032, 4.81776, 9.32199)
+cull_mask = 1059
+current = true
+fov = 44.3
+script = ExtResource("1_s243o")
+_zoomSpeedScale = 20.0
+_rotateSpeedScale = 0.045
+_moveSpeedScale = 4.0
+userOperationInterfaceInfoRef = NodePath("../UserOperationInterface_Info")
+
+[node name="UserOperationInterface_Info" type="Node" parent="." node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "rayCast3DRef", "outLineMeshInstance")]
+script = ExtResource("3_n8f6c")
+camera3DRef = NodePath("../Camera3D_UserCamera")
+node2dUiRef = NodePath("../Node2d_UserUI")
+rayCast3DRef = NodePath("RayCast3D")
+outLineMeshInstance = NodePath("MeshInstance3D_Outline")
+
+[node name="RayCast3D" type="RayCast3D" parent="UserOperationInterface_Info"]
+collision_mask = 1025
+collide_with_areas = true
+collide_with_bodies = false
+
+[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="UserOperationInterface_Info"]
+material_override = SubResource("ShaderMaterial_3um0x")
+
+[node name="DungeonInfo" type="Node" parent="."]
+script = ExtResource("4_s243o")
+
+[node name="UnitsInGame" type="Node" parent="."]
+script = ExtResource("3_4e7mo")
+
+[node name="Node3D_NAV_Test" type="Node3D" parent="UnitsInGame" node_paths=PackedStringArray("movementTargetRef", "navigationAgent")]
+script = ExtResource("11_u3fd7")
+movementTargetRef = NodePath("../Marker3D")
+navigationAgent = NodePath("NavigationAgent3D")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="UnitsInGame/Node3D_NAV_Test"]
+debug_enabled = true
+debug_use_custom = true
+debug_path_custom_color = Color(0.273686, 0.725163, 0.591279, 1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="UnitsInGame/Node3D_NAV_Test"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CylinderMesh_4e7mo")
+
+[node name="Marker3D" type="Marker3D" parent="UnitsInGame"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.0443, 0, 0.129431)
+gizmo_extents = 1.4
+
+[node name="UnitShow" parent="UnitsInGame" instance=ExtResource("5_d8uwn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+unitStateRec = ExtResource("6_4e7mo")
+skillsList = Array[Object]([ExtResource("6_sfuu4"), ExtResource("9_k83qp"), ExtResource("7_117wx"), ExtResource("10_i4iy5")])
+
+[node name="UnitShow2" parent="UnitsInGame" instance=ExtResource("5_d8uwn")]
+transform = Transform3D(0.0169289, 0, -0.999857, 0, 1, 0, 0.999857, 0, 0.0169289, -3, 0, -1)
+unitStateRec = SubResource("Resource_eaknj")
+
+[node name="Test_Init" type="Node" parent="." node_paths=PackedStringArray("unitsInGameRef")]
+script = ExtResource("13_eaknj")
+unitsInGameRef = NodePath("../UnitsInGame")
+
+[node name="Env" type="Node" parent="."]
+
+[node name="StartPointArea" parent="Env" instance=ExtResource("14_cact4")]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env"]
+transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
+light_cull_mask = 4293919745
+shadow_enabled = true
+shadow_caster_mask = 4293919745
+sky_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Env"]
+environment = SubResource("Environment_r6hb3")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Env"]
+navigation_mesh = SubResource("NavigationMesh_i4iy5")
+
+[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/NavigationRegion3D"]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
+mesh = SubResource("PlaneMesh_kkwdv")
+skeleton = NodePath("../../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
+
+[node name="StaticBody3D_Ground" type="StaticBody3D" parent="Env/NavigationRegion3D/MeshInstance3D_Plan"]
+collision_layer = 32
+collision_mask = 1024
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Env/NavigationRegion3D/MeshInstance3D_Plan/StaticBody3D_Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_uq67j")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Env/NavigationRegion3D"]
+transform = Transform3D(0.998673, 0, 0, 0, 0.998673, 0, 0, 0, 0.998673, -7.78301, 0.93452, 0)
+mesh = SubResource("BoxMesh_i4iy5")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Env/NavigationRegion3D/MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Env/NavigationRegion3D/MeshInstance3D/StaticBody3D"]
+transform = Transform3D(1.00133, 0, 0, 0, 1.00133, 0, 0, 0, 1.00133, 0, 0, 0)
+shape = SubResource("ConcavePolygonShape3D_i4iy5")
+
+[node name="Node2d_UserUI" type="Control" parent="." node_paths=PackedStringArray("userOperationInterfaceInfoRef", "unitsInGameRef", "skillsListRef")]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+theme = SubResource("Theme_117wx")
+script = ExtResource("11_4e7mo")
+userOperationInterfaceInfoRef = NodePath("../UserOperationInterface_Info")
+unitsInGameRef = NodePath("../UnitsInGame")
+skillsListRef = NodePath("Skills_List")
+
+[node name="Label_DungeonTime" type="Label" parent="Node2d_UserUI" node_paths=PackedStringArray("DungeonInfoRef")]
+layout_mode = 0
+offset_left = 818.0
+offset_top = -2.0
+offset_right = 1151.0
+offset_bottom = 57.0
+text = "Label_DungeonTime"
+label_settings = SubResource("LabelSettings_uvuxq")
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("18_ctxme")
+DungeonInfoRef = NodePath("../../DungeonInfo")
+
+[node name="State_Bar_2D_Health" parent="Node2d_UserUI" node_paths=PackedStringArray("userOperationInterfaceInfoRef") instance=ExtResource("5_0fpm5")]
+mouse_filter = 1
+userOperationInterfaceInfoRef = NodePath("../../UserOperationInterface_Info")
+
+[node name="Skills_List" parent="Node2d_UserUI" node_paths=PackedStringArray("userOperationInterfaceInfoRef", "unitsInGameRef") instance=ExtResource("10_sfuu4")]
+userOperationInterfaceInfoRef = NodePath("../../UserOperationInterface_Info")
+unitsInGameRef = NodePath("../../UnitsInGame")

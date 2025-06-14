@@ -1,0 +1,70 @@
+[gd_scene load_steps=6 format=3 uid="uid://bxw2fxx6n6hp8"]
+
+[ext_resource type="Script" uid="uid://qd3t3f6ut6kb" path="res://ui_units/skill_list/SkillsList.cs" id="1_g7j42"]
+[ext_resource type="PackedScene" uid="uid://djuu70u5pdyyo" path="res://ui_units/skill_list/skill_button/button_skill_base.tscn" id="2_cw1qh"]
+[ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://ui_units/skill_list/skill_info/PanelSkillInfo.cs" id="3_m1w11"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_u3fd7"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_4e7mo"]
+font_size = 13
+
+[node name="Skills_List" type="Control" node_paths=PackedStringArray("hBoxContainerRef", "panelSkillInfoRef")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 1
+script = ExtResource("1_g7j42")
+skillButtonPackedScene = ExtResource("2_cw1qh")
+hBoxContainerRef = NodePath("HBoxContainer_Skills")
+panelSkillInfoRef = NodePath("Panel_Skill_Info")
+
+[node name="HBoxContainer_Skills" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 27.0
+offset_top = 551.0
+offset_right = 115.0
+offset_bottom = 639.0
+scale = Vector2(0.75, 0.75)
+
+[node name="Button_SkillBase" parent="HBoxContainer_Skills" instance=ExtResource("2_cw1qh")]
+layout_mode = 2
+
+[node name="Panel_Skill_Info" type="Panel" parent="." node_paths=PackedStringArray("skillNameLabel", "skillDescriptionLabel")]
+layout_mode = 0
+offset_left = 29.0
+offset_top = 423.0
+offset_right = 336.0
+offset_bottom = 547.0
+script = ExtResource("3_m1w11")
+skillNameLabel = NodePath("Label_Skill_Name")
+skillDescriptionLabel = NodePath("Label_Skill_Description")
+
+[node name="Label_Skill_Name" type="Label" parent="Panel_Skill_Info"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -145.5
+offset_right = 141.5
+offset_bottom = 26.0
+grow_horizontal = 2
+text = "Label_Skill_Name"
+label_settings = SubResource("LabelSettings_u3fd7")
+vertical_alignment = 1
+
+[node name="Label_Skill_Description" type="Label" parent="Panel_Skill_Info"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -145.5
+offset_top = -94.0
+offset_right = 140.5
+grow_horizontal = 2
+grow_vertical = 0
+text = "Label_Skill_Description"
+label_settings = SubResource("LabelSettings_4e7mo")

@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3 uid="uid://b12ds1vg5bxh4"]
+
+[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://icons/015000_hr1.png" id="1_otcmx"]
+[ext_resource type="Script" uid="uid://e46mpgrwp1p8" path="res://ui_units/state_bar/state_bar_2d/TextureRectBuffIcon.cs" id="2_1t7jj"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_otcmx"]
+font_size = 28
+outline_size = 6
+outline_color = Color(0.133196, 0.133196, 0.133196, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_vqvhd"]
+font_size = 28
+outline_size = 6
+outline_color = Color(0.133196, 0.133196, 0.133196, 1)
+
+[node name="TextureRect_Buff_Icon" type="TextureRect" node_paths=PackedStringArray("superpositionsLabelRef", "durationLabelRef")]
+texture = ExtResource("1_otcmx")
+script = ExtResource("2_1t7jj")
+superpositionsLabelRef = NodePath("Label_Superposition")
+durationLabelRef = NodePath("Label_Duration")
+
+[node name="Label_Superposition" type="Label" parent="."]
+layout_mode = 1
+offset_left = 16.0494
+offset_top = -7.40741
+offset_right = 56.0494
+offset_bottom = 26.5926
+text = "1"
+label_settings = SubResource("LabelSettings_otcmx")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label_Duration" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -23.2593
+offset_bottom = 10.7407
+grow_horizontal = 2
+grow_vertical = 0
+text = "0"
+label_settings = SubResource("LabelSettings_vqvhd")
+horizontal_alignment = 1
+vertical_alignment = 1

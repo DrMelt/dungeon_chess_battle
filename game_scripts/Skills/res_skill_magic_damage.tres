@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Skill_Damage" load_steps=3 format=3 uid="uid://ki4rvmooffx3"]
+
+[ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://icons/Stone/000403_hr1.png" id="1_fqghg"]
+[ext_resource type="Script" uid="uid://5jswv8456nig" path="res://game_scripts/Skills/scripts/Skill_Damage.cs" id="2_fqghg"]
+
+[resource]
+script = ExtResource("2_fqghg")
+damage = 140.0
+enum_DamageType = 1
+skillName = "魔法攻击"
+skillDescription = "对目标发动魔法攻击
+威力：140"
+skillRange = 10.0
+skillSpringTime = 0.5
+skillCooldownTime = 0.5
+icon = ExtResource("1_fqghg")
+needUnitTarget = true
+needPosTarget = false
+metadata/_custom_type_script = "uid://5jswv8456nig"

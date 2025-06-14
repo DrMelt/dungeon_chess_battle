@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://djuu70u5pdyyo"]
+
+[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://ui_units/000400_hr1.png" id="1_xjo8s"]
+[ext_resource type="Script" uid="uid://0uvgvvb764ni" path="res://ui_units/skill_list/skill_button/ButtonSkillBase.cs" id="2_rvfo7"]
+
+[node name="Button_SkillBase" type="Button"]
+mouse_filter = 1
+toggle_mode = true
+icon = ExtResource("1_xjo8s")
+script = ExtResource("2_rvfo7")

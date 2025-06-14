@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Skill_Add_BUFF" load_steps=4 format=3 uid="uid://vwf7lsob4qxl"]
+
+[ext_resource type="Script" uid="uid://578gt4jn0qjw" path="res://game_scripts/Skills/scripts/Skill_Add_BUFF.cs" id="1_tgrrg"]
+[ext_resource type="Resource" uid="uid://d2uqaxajtlili" path="res://game_scripts/Buffs/res_buff_dot_magic.tres" id="1_wut5r"]
+[ext_resource type="Texture2D" uid="uid://he37ji5url52" path="res://icons/Aero/000401_hr1.png" id="2_rswio"]
+
+[resource]
+script = ExtResource("1_tgrrg")
+buff = ExtResource("1_wut5r")
+skillName = "持续魔法伤害"
+skillDescription = "对目标添加持续魔法伤害buff
+威力：10
+持续时间：30秒"
+skillRange = 10.0
+skillSpringTime = 0.5
+skillCooldownTime = 0.5
+icon = ExtResource("2_rswio")
+needUnitTarget = true
+needPosTarget = false

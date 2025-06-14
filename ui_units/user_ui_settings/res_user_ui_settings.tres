@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UserUISettings" load_steps=2 format=3 uid="uid://b0iwa5usgilno"]
+
+[ext_resource type="Script" uid="uid://t1kvwvibg8vi" path="res://ui_units/user_ui_settings/UserUISettings.cs" id="1_ff8ny"]
+
+[resource]
+script = ExtResource("1_ff8ny")
+campColorDict = Dictionary[int, Color]({
+0: Color(0.678431, 0.607843, 0.141176, 1),
+1: Color(0.0823529, 0.521569, 0.0901961, 1),
+4: Color(0.6, 0.1128, 0.096, 1)
+})
+metadata/_custom_type_script = "uid://t1kvwvibg8vi"
