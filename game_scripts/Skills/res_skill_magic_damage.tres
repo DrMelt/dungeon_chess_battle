@@ -4,16 +4,22 @@
 [ext_resource type="Script" uid="uid://5jswv8456nig" path="res://game_scripts/Skills/scripts/Skill_Damage.cs" id="2_fqghg"]
 
 [resource]
+resource_local_to_scene = true
 script = ExtResource("2_fqghg")
 damage = 140.0
 enum_DamageType = 1
 skillName = "魔法攻击"
 skillDescription = "对目标发动魔法攻击
 威力：140"
-skillRange = 10.0
-skillSpringTime = 0.5
-skillCooldownTime = 0.5
+skillNeedSpellTime = 2.0
+skillCooldownTime = 3.0
+gcdTime = 3.0
 icon = ExtResource("1_fqghg")
+skillCanAdd = 2
 needUnitTarget = true
 needPosTarget = false
+skillSpelledTime = 0.0
+skillCoolingTime = 0.0
+targetPos = Vector3(0, 0, 0)
+testObjects = null
 metadata/_custom_type_script = "uid://5jswv8456nig"

@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3 uid="uid://dy3y0pqqsp3sd"]
+
+[ext_resource type="Script" uid="uid://duod8exoqjbqv" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBar.cs" id="1_ytur1"]
+
+[node name="Skill_ProgressBar" type="PanelContainer" node_paths=PackedStringArray("progressBarRef", "label_SkillNameRef", "label_RemainingTimeRef")]
+custom_minimum_size = Vector2(166, 32)
+offset_right = 134.0
+offset_bottom = 23.0
+script = ExtResource("1_ytur1")
+progressBarRef = NodePath("ProgressBar")
+label_SkillNameRef = NodePath("Label_Skill_Name")
+label_RemainingTimeRef = NodePath("Label_RemainingTime")
+
+[node name="Label_Skill_Name" type="Label" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Label_Skill_Name"
+
+[node name="Label_RemainingTime" type="Label" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+text = "1.0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 1.0
+value = 0.2
+show_percentage = false

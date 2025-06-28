@@ -9,9 +9,10 @@ namespace GameLogic {
         [Export]
         BuffBase buff;
 
-        public override void CallSkill(UnitState callObject, UnitState targetObject, Vector3? targetPos, List<UnitState> skillObjects) {
+
+        protected override void CallSpelledSkill() {
             BuffBase addBuff = buff.Duplicate() as BuffBase;
-            addBuff.fromUnit = callObject;
+            addBuff.fromUnit = callSkillObject;
             targetObject.AddBuff(addBuff);
         }
     }

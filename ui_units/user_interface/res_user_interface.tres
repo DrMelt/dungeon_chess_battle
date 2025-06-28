@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="UserInterfaceRes" load_steps=2 format=3 uid="uid://dxc2d4ehwh4ij"]
+
+[ext_resource type="Script" uid="uid://blax04vjwdavk" path="res://ui_units/user_interface/UserInterfaceRes.cs" id="1_57ctc"]
+
+[resource]
+script = ExtResource("1_57ctc")
+metadata/_custom_type_script = "uid://blax04vjwdavk"

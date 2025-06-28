@@ -3,16 +3,11 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-public partial class SkillsList : Control
-{
+public partial class SkillsList : Control {
     [Export]
-    UserOperationInterfaceInfo userOperationInterfaceInfoRef;
-    public UserOperationInterfaceInfo UserOperationInterfaceInfoRef => userOperationInterfaceInfoRef;
+    UnitsInScene_Show unitsInGameRef;
+    public UnitsInScene_Show UnitsInGameRef => unitsInGameRef;
 
-    [Export]
-    UnitsInGame unitsInGameRef;
-    public UnitsInGame UnitsInGameRef => unitsInGameRef;
-    
     [ExportGroup("Internal Parameters")]
     [Export]
     PackedScene skillButtonPackedScene;
@@ -20,53 +15,52 @@ public partial class SkillsList : Control
     [Export]
     HBoxContainer hBoxContainerRef;
 
-    [Export]
-    PanelSkillInfo panelSkillInfoRef;
-    public PanelSkillInfo PanelSkillInfoRef => panelSkillInfoRef;
 
 
 
 
     List<ButtonSkillBase> skillButtonList = new List<ButtonSkillBase>();
-    internal void UpdateSkillsList(UnitGameShow unitShow)
-    {
+    internal void UpdateSkillsList(UnitGameShow unitShow) {
 
         var children = hBoxContainerRef.GetChildren();
-        foreach (var child in children)
-        {
+        foreach (var child in children) {
             child.QueueFree();
         }
         skillButtonList.Clear();
 
-        if (unitShow == null)
-        {
+        if (unitShow == null) {
             return;
         }
-        if (unitShow.SkillsList == null)
-        {
+        if (unitShow.SkillsList == null) {
             return;
         }
 
-        foreach (UnitSkillBase skill in unitShow.SkillsList)
-            {
-                ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
-                buttonSkill.Init(skill, unitShow.UnitStateRec, this);
-                hBoxContainerRef.AddChild(buttonSkill);
+        foreach (UnitSkillBase skill in unitShow.SkillsList) {
+            ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
+            buttonSkill.Init(skill, unitShow.UnitStateRec, this);
+            hBoxContainerRef.AddChild(buttonSkill);
 
-                skillButtonList.Add(buttonSkill);
-            }
+            skillButtonList.Add(buttonSkill);
+        }
 
     }
 
-    internal bool IsWaitTarget()
-    {
-        foreach (ButtonSkillBase buttonSkill in skillButtonList)
-        {
-            if (buttonSkill.WaitTarget)
-            {
+    internal bool IsWaitTarget() {
+        foreach (ButtonSkillBase buttonSkill in skillButtonList) {
+            if (buttonSkill.WaitTarget) {
                 return true;
             }
         }
         return false;
+    }
+
+    public List<ButtonSkillBase> WaitingTargetSkillList() {
+        List<ButtonSkillBase> waitingTargetSkillList = new List<ButtonSkillBase>();
+        foreach (ButtonSkillBase buttonSkill in skillButtonList) {
+            if (buttonSkill.WaitTarget) {
+                waitingTargetSkillList.Add(buttonSkill);
+            }
+        }
+        return waitingTargetSkillList;
     }
 }

@@ -1,48 +1,57 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
-public partial class Node2d_UserUI : Control
-{
+public partial class Node2d_UserUI : Control {
     [Export]
-    UserOperationInterfaceInfo userOperationInterfaceInfoRef;
+    UserInterfaceRes userInterfaceRes;
 
     [Export]
-    UnitsInGame unitsInGameRef;
+    UnitsInScene_Show unitsInGameRef;
 
+    [ExportGroup("Internal")]
     [Export]
     SkillsList skillsListRef;
-
+    [Export]
+    StateChangeInfo stateChangeInfoRef;
+    [Export]
+    StateBarList stateBarListRef;
 
     bool isMouseOn = false;
     public bool IsMouseOn => isMouseOn;
-    public override void _Ready()
-    {
-        userOperationInterfaceInfoRef.FocusOnUnitChangedEvent += UpdateSkillList;
-        UpdateSkillList(userOperationInterfaceInfoRef.FocusOnUnit);
 
-        MouseEntered += () =>
-        {
+    public override void _Ready() {
+        MouseEntered += () => {
             isMouseOn = true;
         };
-        MouseExited += () =>
-        {
+        MouseExited += () => {
             isMouseOn = false;
         };
+
+        userInterfaceRes.FocusOnUnitChangedEvent += UpdateSkillList;
+        UpdateSkillList(userInterfaceRes.FocusOnUnit);
+
+        UpdateBinding();
     }
 
-    public bool IsWaitSkillTarget()
-    {
-        return skillsListRef.IsWaitTarget();
+    public void UpdateBinding() {
+        stateChangeInfoRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+        stateBarListRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
     }
 
-    public bool IsWaitMoveTarget()
-    {
-        return false;
-    }
-
-    public void UpdateSkillList(UnitGameShow unitShow)
-    {
+    public void UpdateSkillList(UnitGameShow unitShow) {
         skillsListRef.UpdateSkillsList(unitShow);
     }
 
+
+    public bool IsWaitSkillTarget() {
+        return skillsListRef.IsWaitTarget();
+    }
+    public List<ButtonSkillBase> WaitingTargetSkillList() {
+        return skillsListRef.WaitingTargetSkillList();
+    }
+
+    public bool IsWaitMoveTarget() {
+        return false;
+    }
 }

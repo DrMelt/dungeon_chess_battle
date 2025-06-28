@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3 uid="uid://dwhgs4ttwo2s0"]
+
+[ext_resource type="Script" uid="uid://cuk20lgw2mm3e" path="res://ui_units/state_info/BuffChangeInfo.cs" id="1_s8gib"]
+[ext_resource type="Curve" uid="uid://dv8q0bcq2sbx0" path="res://ui_units/state_info/fade_curve.tres" id="2_3vdwg"]
+[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://icons/015000_hr1.png" id="3_qbiga"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_s8gib"]
+font_size = 42
+font_color = Color(0.851769, 0.851769, 0.851769, 1)
+outline_size = 12
+outline_color = Color(0.151276, 0.151276, 0.151276, 1)
+
+[node name="BuffChange_Info" type="Control" node_paths=PackedStringArray("label_ChangeRef", "textureRectRef")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_s8gib")
+label_ChangeRef = NodePath("Label")
+textureRectRef = NodePath("TextureRect")
+fadeCurve = ExtResource("2_3vdwg")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = -2.0
+offset_right = 54.0
+offset_bottom = 64.0
+text = "+"
+label_settings = SubResource("LabelSettings_s8gib")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 39.0
+offset_right = 87.0
+offset_bottom = 64.0
+texture = ExtResource("3_qbiga")
