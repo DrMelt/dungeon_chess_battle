@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="Skill_Range_Damage" load_steps=4 format=3 uid="uid://dkyowavmc04rk"]
+
+[ext_resource type="Script" uid="uid://bqqt3y3s4xm54" path="res://game_scripts/Skills/scripts/Skill_Range_Damage.cs" id="1_2yr0k"]
+[ext_resource type="Script" uid="uid://dysdhxm78eglv" path="res://game_scripts/Utility/RectRange_Res.cs" id="1_21wx3"]
+
+[sub_resource type="Resource" id="Resource_6cgyo"]
+script = ExtResource("1_21wx3")
+nearClamp = 0.0
+farClamp = 10.0
+fromL = -1.0
+toR = 1.0
+metadata/_custom_type_script = "uid://dysdhxm78eglv"
+
+[resource]
+script = ExtResource("1_2yr0k")
+damage = 200.0
+enum_DamageType = 1
+range_Res_Base = SubResource("Resource_6cgyo")
+skillName = "范围伤害"
+skillDescription = "UnitSkillBaseDescription"
+skillNeedSpellTime = 2.0
+skillCooldownTime = 3.0
+gcdTime = 2.0
+skillCanAdd = 2
+needUnitTarget = false
+needPosTarget = true
+skillSpelledTime = 0.0
+skillCoolingTime = 0.0
+targetPos = Vector3(0, 0, 0)
+testObjects = null
+metadata/_custom_type_script = "uid://bqqt3y3s4xm54"

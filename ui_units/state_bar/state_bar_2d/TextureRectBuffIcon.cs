@@ -2,8 +2,7 @@ using GameLogic;
 using Godot;
 using System;
 
-public partial class TextureRectBuffIcon : TextureRect
-{
+public partial class TextureRectBuffIcon : TextureRect {
     [Export]
     Color fromFocusUnit = new Color(0.3f, 0.9f, 0.3f, 1);
     [Export]
@@ -16,11 +15,13 @@ public partial class TextureRectBuffIcon : TextureRect
     Label durationLabelRef;
 
 
-    public void SetBuffIcon(BuffBase buffBase, UnitState focusUnit)
-    {
+    BuffBase bindingBuff;
+    public BuffBase BindingBuff => bindingBuff;
+
+    public void SetBuffIcon(BuffBase buffBase, UnitState focusUnit) {
+        bindingBuff = buffBase;
         Color fontColor = fromOther;
-        if (buffBase.fromUnit == focusUnit)
-        {
+        if (buffBase.fromUnit == focusUnit) {
             fontColor = fromFocusUnit;
         }
 

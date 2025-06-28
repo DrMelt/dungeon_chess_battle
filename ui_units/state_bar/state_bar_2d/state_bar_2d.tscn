@@ -1,87 +1,34 @@
-[gd_scene load_steps=8 format=3 uid="uid://bnyra1mkp6yn2"]
+[gd_scene load_steps=6 format=3 uid="uid://bnyra1mkp6yn2"]
 
-[ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://ui_units/state_bar/state_bar_2d/StateBar2d.cs" id="1_yhj07"]
+[ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://ui_units/state_bar/state_bar_2d/StateBar2d_Focus.cs" id="1_yhj07"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_nayus"]
-[ext_resource type="Shader" uid="uid://btbknd88cpw6h" path="res://ui_units/state_bar/state_bar_2d/shader_state_bar_2d.tres" id="2_vqvhd"]
-[ext_resource type="PackedScene" uid="uid://b12ds1vg5bxh4" path="res://ui_units/buff_bar_2d/texture_rect_buff_icon.tscn" id="3_nayus"]
-[ext_resource type="Script" uid="uid://dyrf14c74kw7q" path="res://ui_units/state_bar/state_bar_2d/PanelFocusState.cs" id="3_odry5"]
-[ext_resource type="Script" uid="uid://yshioyvqvum2" path="res://ui_units/state_bar/state_bar_2d/HBoxContainerBuffs.cs" id="5_8vcj7"]
+[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://ui_units/state_bar/hp_state/hp_state_bar.tscn" id="3_odry5"]
+[ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://ui_units/state_bar/buff_state/buffs_state.tscn" id="4_bln5c"]
+[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://ui_units/state_bar/skill_progressBar/skill_progress_bar.tscn" id="7_8vcj7"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_uq67j"]
-shader = ExtResource("2_vqvhd")
-shader_parameter/ParPin_02_Color = Color(0.537011, 0.537011, 0.537011, 1)
-shader_parameter/ParPin_01_Color = Color(0.0832, 0.52, 0.09048, 1)
-shader_parameter/ParPin_01 = 1.0
-
-[node name="State_Bar_2D" type="Control" node_paths=PackedStringArray("hboxContainerBuffsRef", "panelFocusStateRef")]
+[node name="State_Bar_2D" type="Control" node_paths=PackedStringArray("hboxContainerBuffsRef", "panelFocusStateRef", "panelSkillProgressBarRef")]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_yhj07")
 userUISettingsRef = ExtResource("2_nayus")
 hboxContainerBuffsRef = NodePath("HBoxContainer_Buffs")
-panelFocusStateRef = NodePath("Panel_Focus_State")
+panelFocusStateRef = NodePath("HP_StateBar")
+panelSkillProgressBarRef = NodePath("Panel_Skill_ProgressBar")
 
-[node name="Panel_Focus_State" type="Panel" parent="." node_paths=PackedStringArray("stateBarRef", "label_PercentRef", "label_CurrentValueRef", "label_ObjectNameRef")]
-light_mask = 0
+[node name="HP_StateBar" parent="." instance=ExtResource("3_odry5")]
+layout_mode = 1
+offset_right = 411.0
+offset_bottom = 36.0
+
+[node name="HBoxContainer_Buffs" parent="." instance=ExtResource("4_bln5c")]
 layout_mode = 0
-offset_right = 504.0
-offset_bottom = 25.0
-mouse_filter = 1
-script = ExtResource("3_odry5")
-userUISettingsRef = ExtResource("2_nayus")
-stateBarRef = NodePath("ColorRect_State_Bar")
-label_PercentRef = NodePath("Label_Percent")
-label_CurrentValueRef = NodePath("Label_CurrentValue")
-label_ObjectNameRef = NodePath("Label_ObjectName")
+offset_top = 36.0
+offset_bottom = 81.0
+scale = Vector2(1, 1)
 
-[node name="ColorRect_State_Bar" type="ColorRect" parent="Panel_Focus_State"]
-material = SubResource("ShaderMaterial_uq67j")
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_bottom = 15.27
-grow_horizontal = 2
-grow_vertical = 0
-mouse_filter = 1
-
-[node name="Label_Percent" type="Label" parent="Panel_Focus_State"]
-layout_mode = 1
-offset_right = 104.0
-offset_bottom = 23.0
-text = "100.0%"
-
-[node name="Label_CurrentValue" type="Label" parent="Panel_Focus_State"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -127.0
-offset_bottom = 23.0
-grow_horizontal = 0
-text = "1.0"
-horizontal_alignment = 2
-
-[node name="Label_ObjectName" type="Label" parent="Panel_Focus_State"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -103.5
-offset_right = 103.5
-offset_bottom = 23.0
-grow_horizontal = 2
-text = "ObjectName"
-horizontal_alignment = 1
-clip_text = true
-
-[node name="HBoxContainer_Buffs" type="HBoxContainer" parent="."]
+[node name="Panel_Skill_ProgressBar" parent="." instance=ExtResource("7_8vcj7")]
 layout_mode = 0
-offset_left = 2.0
-offset_top = 42.0
-offset_right = 58.0
-offset_bottom = 106.0
-scale = Vector2(0.81, 0.81)
-script = ExtResource("5_8vcj7")
-buffIconPackedScene = ExtResource("3_nayus")
+offset_left = 411.0
+offset_top = -1.0
+offset_right = 591.0
+offset_bottom = 35.0

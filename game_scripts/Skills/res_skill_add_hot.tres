@@ -5,15 +5,21 @@
 [ext_resource type="Texture2D" uid="uid://cli735me34nmu" path="res://icons/Regen/002628_hr1.png" id="2_gwecg"]
 
 [resource]
+resource_local_to_scene = true
 script = ExtResource("1_v1cei")
 buff = ExtResource("1_gwecg")
 skillName = "持续治疗"
 skillDescription = "对目标添加持续治疗buff
 恢复力：100
 持续时间：15秒"
-skillRange = 10.0
-skillSpringTime = 0.5
-skillCooldownTime = 0.5
+skillNeedSpellTime = 0.0
+skillCooldownTime = 1.5
+gcdTime = 2.0
 icon = ExtResource("2_gwecg")
+skillCanAdd = 1
 needUnitTarget = true
 needPosTarget = false
+skillSpelledTime = 0.0
+skillCoolingTime = 0.0
+targetPos = Vector3(0, 0, 0)
+testObjects = null

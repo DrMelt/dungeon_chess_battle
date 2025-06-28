@@ -5,15 +5,21 @@
 [ext_resource type="Texture2D" uid="uid://he37ji5url52" path="res://icons/Aero/000401_hr1.png" id="2_rswio"]
 
 [resource]
+resource_local_to_scene = true
 script = ExtResource("1_tgrrg")
 buff = ExtResource("1_wut5r")
 skillName = "持续魔法伤害"
 skillDescription = "对目标添加持续魔法伤害buff
 威力：10
 持续时间：30秒"
-skillRange = 10.0
-skillSpringTime = 0.5
-skillCooldownTime = 0.5
+skillNeedSpellTime = 0.0
+skillCooldownTime = 3.0
+gcdTime = 3.0
 icon = ExtResource("2_rswio")
+skillCanAdd = 2
 needUnitTarget = true
 needPosTarget = false
+skillSpelledTime = 0.0
+skillCoolingTime = 0.0
+targetPos = Vector3(0, 0, 0)
+testObjects = null

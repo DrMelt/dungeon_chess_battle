@@ -4,15 +4,21 @@
 [ext_resource type="Texture2D" uid="uid://jambdnamek1i" path="res://icons/Cure/000405_hr1.png" id="1_u7puq"]
 
 [resource]
+resource_local_to_scene = true
 script = ExtResource("1_e8tc3")
 curePotency = 500.0
 skillName = "治疗"
 skillDescription = "回复目标体力
 恢复力：500"
-skillRange = 10.0
-skillSpringTime = 0.5
+skillNeedSpellTime = 0.5
 skillCooldownTime = 0.5
+gcdTime = 2.0
 icon = ExtResource("1_u7puq")
+skillCanAdd = 1
 needUnitTarget = true
 needPosTarget = false
+skillSpelledTime = 0.0
+skillCoolingTime = 0.0
+targetPos = Vector3(0, 0, 0)
+testObjects = null
 metadata/_custom_type_script = "uid://vpibuyw7n6k8"

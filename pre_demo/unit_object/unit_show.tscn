@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://d1rr6kvqu3yv1"]
+
+[ext_resource type="Script" uid="uid://del85tdymkiw4" path="res://pre_demo/scenes/scripts/UnitGameShow.cs" id="1_pqpxp"]
+[ext_resource type="Script" uid="uid://dlp1twym78cw" path="res://pre_demo/unit_object/NavigationAgent3dMoveTo.cs" id="2_klhpx"]
+[ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="3_5d4ea"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="4_st1xp"]
+
+[node name="UnitShow" type="Node3D" node_paths=PackedStringArray("navigationAgentRef", "targetDecalRef")]
+script = ExtResource("1_pqpxp")
+navigationAgentRef = NodePath("NavigationAgent3D_MoveTo")
+targetDecalRef = NodePath("Node3D_Target_Mark")
+
+[node name="NavigationAgent3D_MoveTo" type="NavigationAgent3D" parent="." node_paths=PackedStringArray("unitShowRef")]
+path_desired_distance = 0.1
+target_desired_distance = 0.1
+path_height_offset = 0.1
+debug_enabled = true
+debug_use_custom = true
+debug_path_custom_color = Color(0.609189, 0.405698, 0.254527, 1)
+script = ExtResource("2_klhpx")
+unitShowRef = NodePath("..")
+
+[node name="Node3D_Target_Mark" parent="." instance=ExtResource("3_5d4ea")]
+userInterfaceRes = ExtResource("4_st1xp")

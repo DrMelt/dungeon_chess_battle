@@ -23,7 +23,7 @@ namespace GameLogic {
         [Export]
         public int maxSuperpositions = 1;
         [Export]
-        public bool isActive = true;
+        public bool isAlive = true;
 
         [ExportGroup("Runtime Parameters")]
         [Export]
@@ -31,7 +31,7 @@ namespace GameLogic {
 
 
         public void Update(double deltaTime, UnitState unitState) {
-            if (!isActive) {
+            if (!isAlive) {
                 return;
             }
 
@@ -40,7 +40,7 @@ namespace GameLogic {
             duration -= deltaTime;
             if (duration < 0 || superpositions <= 0) {
                 ActionEnd(unitState);
-                isActive = false;
+                isAlive = false;
             }
         }
 

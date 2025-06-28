@@ -1,8 +1,8 @@
+using GameLogic;
 using Godot;
 using System;
 
-public partial class StateBar : Node3D, I_UI_Update
-{
+public partial class StateBar : Node3D, I_UI_Update {
     [Export]
     float scaleBase = 0.5f;
     [Export]
@@ -23,21 +23,17 @@ public partial class StateBar : Node3D, I_UI_Update
     Label3D label3D_CurrentValueRef;
     [Export]
     Label3D label3D_NameRef;
-    public override void _Ready()
-    {
+    public override void _Ready() {
         stateBarRef_Mat = stateBarRef.MaterialOverride as ShaderMaterial;
     }
 
-    public override void _Process(double delta)
-    {
+    public override void _Process(double delta) {
         LookAtCamera();
     }
 
-    private void LookAtCamera()
-    {
+    private void LookAtCamera() {
         Camera3D camera3D = GetViewport().GetCamera3D();
-        if (camera3D != null)
-        {
+        if (camera3D != null) {
             Vector3 cameraPos = camera3D.GlobalPosition;
             LookAt(cameraPos, camera3D.Basis.Y);
 
@@ -48,23 +44,20 @@ public partial class StateBar : Node3D, I_UI_Update
     }
 
 
-    public void UpdateUI_WithUnit(UnitGameShow unitShow)
-    {
-        if (unitShow == null)
-        {
+    public void UpdateUI_WithUnit(UnitState unitState) {
+        if (unitState == null) {
             return;
         }
 
-        Color? campColor = userUISettingsRef.GetCampColor(unitShow.UnitStateRec.Camp);
-        if (campColor != null)
-        {
+        Color? campColor = userUISettingsRef.GetCampColor(unitState.Camp);
+        if (campColor != null) {
             stateBarRef_Mat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
         }
 
-        stateBarRef_Mat.SetShaderParameter("ParPin_01", unitShow.UnitStateRec.Health_Percent);
-        label3D_PercentRef.Text = unitShow.UnitStateRec.Health_Shield_Percent.ToString("P1");
-        label3D_CurrentValueRef.Text = unitShow.UnitStateRec.Health_Shield.ToString("F1");
-        label3D_NameRef.Text = unitShow.UnitStateRec.UnitStateName;
+        stateBarRef_Mat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
+        label3D_PercentRef.Text = unitState.Health_Shield_Percent.ToString("P1");
+        label3D_CurrentValueRef.Text = unitState.Health_Shield.ToString("F1");
+        label3D_NameRef.Text = unitState.UnitStateName;
     }
 
 }

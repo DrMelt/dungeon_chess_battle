@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="Buff_DOT_Magic" load_steps=3 format=3 uid="uid://d2uqaxajtlili"]
+[gd_resource type="Resource" script_class="Buff_DOT" load_steps=3 format=3 uid="uid://d2uqaxajtlili"]
 
-[ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://game_scripts/Buffs/scripts/Buff_DOT_Magic.cs" id="1_033ac"]
 [ext_resource type="Texture2D" uid="uid://bclgcqsi0ihrl" path="res://icons/Aero/210403_hr1.png" id="1_j8fmd"]
+[ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://game_scripts/Buffs/scripts/Buff_DOT.cs" id="2_j8fmd"]
 
 [resource]
-script = ExtResource("1_033ac")
+script = ExtResource("2_j8fmd")
+damageType = 2
 damagePerSec = 10.0
 buffName = "持续魔法伤害"
 buffDescription = ""
@@ -12,5 +13,5 @@ icon = ExtResource("1_j8fmd")
 duration = 30.0
 superpositions = 1
 maxSuperpositions = 1
-isActive = true
+isAlive = true
 metadata/_custom_type_script = "uid://cb8wkicsguayw"

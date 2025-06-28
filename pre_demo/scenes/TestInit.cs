@@ -2,20 +2,28 @@ using Godot;
 using Godot.Collections;
 using System;
 
-public partial class TestInit : Node
-{
+public partial class TestInit : Node {
     [Export]
-    UnitsInGame unitsInGameRef;
+    UnitsInScene_Show unitsInScene_Show;
+    [Export]
+    StartPointArea startPointAreaRef;
 
     Random random = new Random();
-    public override void _Ready()
-    {
-        var unitsStateList = unitsInGameRef.GetUnitsStateList();
-        foreach (var unitState in unitsStateList)
-        {
-            unitState.SetGlobalPosition(
-                new Vector3(random.Next(-10, 10), 0, random.Next(-10, 10)));
+    public override void _Ready() {
+        DevelopmentInit();
+
+        var unitsStateList = unitsInScene_Show.UnitsArr;
+        foreach (var unitState in unitsStateList) {
+            unitState.SetGlobalPosition(startPointAreaRef.SamplePosition());
+        }
+
+    }
+    void DevelopmentInit() {
+        var children = unitsInScene_Show.GetChildren();
+        foreach (Node child in children) {
+            if (child is UnitGameShow unitGameShow) {
+                unitsInScene_Show.UnitsInSceneRes.AddUnit(unitGameShow.UnitStateRec);
+            }
         }
     }
-
 }

@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://ba80u8ig7xf1k"]
+
+[ext_resource type="Script" uid="uid://dxuyt7ns5aeqs" path="res://ui_units/state_bar/state_bar_list/StateBarList.cs" id="1_eyf7q"]
+[ext_resource type="PackedScene" uid="uid://dy0rydxvg8qji" path="res://ui_units/state_bar/state_bar_mini/state_bar_mini.tscn" id="2_uuyu1"]
+
+[node name="StateBar_List" type="Control" node_paths=PackedStringArray("vBoxContainerRef")]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_eyf7q")
+listOfCamp = 1
+vBoxContainerRef = NodePath("VBoxContainer")
+stateBarMini_PKS = ExtResource("2_uuyu1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.7, 0.7)

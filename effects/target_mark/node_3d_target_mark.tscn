@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://cqa42iddtybum"]
+
+[ext_resource type="Texture2D" uid="uid://bqsyuvsy3u8fd" path="res://effects/target_mark/target_mark_white.png" id="1_ehvke"]
+[ext_resource type="Script" uid="uid://jhy8a4dd3ple" path="res://effects/target_mark/Node3dTargetMark.cs" id="1_mdwx6"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
+
+[node name="Node3D_Target_Mark" type="Node3D" node_paths=PackedStringArray("targetDecalRef")]
+script = ExtResource("1_mdwx6")
+targetDecalRef = NodePath("Decal_Target_Mark")
+userUISettingsRes = ExtResource("3_savtm")
+
+[node name="Decal_Target_Mark" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.108015)
+layers = 2
+size = Vector3(2.33, 2, 2.55)
+texture_emission = ExtResource("1_ehvke")
+emission_energy = 2.25
+cull_mask = 1

@@ -4,9 +4,12 @@
 
 [resource]
 script = ExtResource("1_ff8ny")
+healthInfoColor = Color(0.0912, 0.76, 0.45904, 1)
+physicalInfoColor = Color(1, 0.827667, 0.53, 1)
+magicInfoColor = Color(0.63, 0.839667, 1, 1)
 campColorDict = Dictionary[int, Color]({
 0: Color(0.678431, 0.607843, 0.141176, 1),
 1: Color(0.0823529, 0.521569, 0.0901961, 1),
-4: Color(0.6, 0.1128, 0.096, 1)
+2: Color(0.6, 0.113725, 0.0941176, 1)
 })
 metadata/_custom_type_script = "uid://t1kvwvibg8vi"

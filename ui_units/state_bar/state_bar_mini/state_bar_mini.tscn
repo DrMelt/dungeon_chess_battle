@@ -1,0 +1,58 @@
+[gd_scene load_steps=6 format=3 uid="uid://dy0rydxvg8qji"]
+
+[ext_resource type="Script" uid="uid://cf2nf2qebdoth" path="res://ui_units/state_bar/state_bar_mini/StateBarMini.cs" id="1_hd56u"]
+[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://ui_units/state_bar/hp_state/hp_state_bar.tscn" id="1_oeal0"]
+[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://ui_units/state_bar/skill_progressBar/skill_progress_bar.tscn" id="2_hd56u"]
+[ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://ui_units/state_bar/buff_state/buffs_state.tscn" id="3_ifvqs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hd56u"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.601223, 0.601223, 0.601223, 1)
+
+[node name="StateBarMini" type="PanelContainer" node_paths=PackedStringArray("containerBuffsRef", "outlineRef", "hp_StateBarRef", "skillProgressBarRef")]
+offset_right = 390.0
+offset_bottom = 81.0
+script = ExtResource("1_hd56u")
+containerBuffsRef = NodePath("MarginContainer/VBoxContainer/Control/HBoxContainer_Buffs")
+outlineRef = NodePath("Outline")
+hp_StateBarRef = NodePath("MarginContainer/VBoxContainer/HBoxContainer/Panel_HP_State")
+skillProgressBarRef = NodePath("MarginContainer/VBoxContainer/HBoxContainer/Skill_ProgressBar")
+
+[node name="Outline" type="Panel" parent="."]
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hd56u")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(400, 85)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Panel_HP_State" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_oeal0")]
+layout_mode = 2
+
+[node name="Skill_ProgressBar" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("2_hd56u")]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+mouse_filter = 1
+
+[node name="HBoxContainer_Buffs" parent="MarginContainer/VBoxContainer/Control" instance=ExtResource("3_ifvqs")]
+layout_mode = 0
+offset_right = 531.0
+scale = Vector2(0.735, 0.735)

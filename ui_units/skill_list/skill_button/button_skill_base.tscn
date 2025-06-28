@@ -1,10 +1,34 @@
-[gd_scene load_steps=3 format=3 uid="uid://djuu70u5pdyyo"]
+[gd_scene load_steps=5 format=3 uid="uid://djuu70u5pdyyo"]
 
-[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://ui_units/000400_hr1.png" id="1_xjo8s"]
+[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://icons/000400_hr1.png" id="1_xjo8s"]
 [ext_resource type="Script" uid="uid://0uvgvvb764ni" path="res://ui_units/skill_list/skill_button/ButtonSkillBase.cs" id="2_rvfo7"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="3_m5lm5"]
 
-[node name="Button_SkillBase" type="Button"]
+[sub_resource type="LabelSettings" id="LabelSettings_byone"]
+font_size = 28
+outline_size = 6
+outline_color = Color(0.133196, 0.133196, 0.133196, 1)
+
+[node name="Button_SkillBase" type="Button" node_paths=PackedStringArray("label_CooldownTime_Ref")]
 mouse_filter = 1
 toggle_mode = true
 icon = ExtResource("1_xjo8s")
 script = ExtResource("2_rvfo7")
+userInterfaceRes = ExtResource("3_m5lm5")
+label_CooldownTime_Ref = NodePath("Label_CooldownTime")
+
+[node name="Label_CooldownTime" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -23.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "0.0"
+label_settings = SubResource("LabelSettings_byone")
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3 uid="uid://k4ex0wiw2tif"]
+
+[ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://ui_units/skill_list/skill_info/Panel_UI_Info.cs" id="1_n541s"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_u3fd7"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_4e7mo"]
+font_size = 13
+
+[node name="Panel_UI_Info" type="Panel" node_paths=PackedStringArray("skillNameLabel", "skillDescriptionLabel")]
+offset_left = 29.0
+offset_top = 423.0
+offset_right = 336.0
+offset_bottom = 547.0
+script = ExtResource("1_n541s")
+skillNameLabel = NodePath("Label_Skill_Name")
+skillDescriptionLabel = NodePath("Label_Skill_Description")
+
+[node name="Label_Skill_Name" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -145.5
+offset_right = 141.5
+offset_bottom = 26.0
+grow_horizontal = 2
+text = "Label_Skill_Name"
+label_settings = SubResource("LabelSettings_u3fd7")
+vertical_alignment = 1
+
+[node name="Label_Skill_Description" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -145.5
+offset_top = -94.0
+offset_right = 140.5
+grow_horizontal = 2
+grow_vertical = 0
+text = "Label_Skill_Description"
+label_settings = SubResource("LabelSettings_4e7mo")

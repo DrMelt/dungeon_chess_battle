@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://bgluhhynft6kx"]
+
+[ext_resource type="Script" uid="uid://grdyef3kwvyp" path="res://effects/skill_range/rect/SkillRangeRect_Hint.cs" id="1_8gxhc"]
+[ext_resource type="Shader" uid="uid://b24gnqkooile2" path="res://effects/skill_range/rect/rect_region.tres" id="2_abarw"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ctxme"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_abarw")
+shader_parameter/ColorParameter = Color(1, 1, 1, 1)
+shader_parameter/Near = 0.0
+shader_parameter/Skill_Progress = 0.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_cact4"]
+
+[node name="Skill_Range_Rect" type="Node3D" node_paths=PackedStringArray("decalRef")]
+script = ExtResource("1_8gxhc")
+decalRef = NodePath("Skill_Range_Decal_Rect")
+
+[node name="Skill_Range_Decal_Rect" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -0.5)
+material_override = SubResource("ShaderMaterial_ctxme")
+mesh = SubResource("BoxMesh_cact4")
