@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://k4ex0wiw2tif"]
+[gd_scene load_steps=5 format=3 uid="uid://k4ex0wiw2tif"]
 
 [ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://ui_units/skill_list/skill_info/Panel_UI_Info.cs" id="1_n541s"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="2_ixeth"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_u3fd7"]
 
@@ -13,6 +14,7 @@ offset_top = 423.0
 offset_right = 336.0
 offset_bottom = 547.0
 script = ExtResource("1_n541s")
+userInterfaceRes = ExtResource("2_ixeth")
 skillNameLabel = NodePath("Label_Skill_Name")
 skillDescriptionLabel = NodePath("Label_Skill_Description")
 
