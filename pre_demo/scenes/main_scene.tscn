@@ -386,7 +386,6 @@ offset_left = 841.0
 offset_top = 514.0
 offset_right = 1148.0
 offset_bottom = 638.0
-userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Test_Init" type="Node" parent="." node_paths=PackedStringArray("unitsInScene_Show", "startPointAreaRef")]
 script = ExtResource("13_eaknj")
