@@ -1,22 +1,25 @@
 using Godot;
-using System;
 
-public partial class FocusOnOutline : Node {
-    [Export]
-    UserInterfaceRes userInterfaceRes;
+namespace DungeonChessBattle {
 
-    [Export]
-    MeshInstance3D outLineMeshInstance;
+    public partial class FocusOnOutline : Node {
+        [Export]
+        UserInterfaceRes userInterfaceRes;
 
-    public override void _Process(double delta) {
-        // Update OutLine
-        if (userInterfaceRes.MouseOnUnit != null) {
-            outLineMeshInstance.GlobalTransform = userInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.GlobalTransform;
-            outLineMeshInstance.Mesh = userInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.Mesh;
+        [Export]
+        MeshInstance3D outLineMeshInstance;
+
+        public override void _Process(double delta) {
+            // Update OutLine
+            if (userInterfaceRes.MouseOnUnit != null) {
+                outLineMeshInstance.GlobalTransform = userInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.GlobalTransform;
+                outLineMeshInstance.Mesh = userInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.Mesh;
+            }
+            else {
+                outLineMeshInstance.Mesh = null;
+            }
         }
-        else {
-            outLineMeshInstance.Mesh = null;
-        }
+
     }
 
 }

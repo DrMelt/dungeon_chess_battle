@@ -54,7 +54,7 @@ namespace GameLogic {
         }
         public Action<float> OnHealthChangedEnvent;
 
-        public float Shield {
+        public static float Shield {
             get => 0.0f;
         }
         public Action<float> OnShieldChangedEnvent;
@@ -188,7 +188,7 @@ namespace GameLogic {
 
         #region BUFF
 
-        List<BuffBase> buffList = new List<BuffBase>();
+        List<BuffBase> buffList = [];
         public Action<UnitState, BuffBase> OnBuffAddedEvent;
         public Action<UnitState, BuffBase> OnBuffRemovedEvent;
         public List<BuffBase> BuffList {
@@ -196,7 +196,7 @@ namespace GameLogic {
         }
 
         public void AddBuff(BuffBase buff) {
-            BuffBase find = buffList.Find((BuffBase b) => b.buffName == buff.buffName);
+            BuffBase find = buffList.Find(b => b.buffName == buff.buffName);
             if (find != null) {
                 find.AddSuperpositions(buff);
             }
@@ -207,12 +207,12 @@ namespace GameLogic {
         }
 
         public void RemoveBuff(BuffBase buff) {
-            buffList.RemoveAll((BuffBase b) => b.buffName == buff.buffName);
+            buffList.RemoveAll(b => b.buffName == buff.buffName);
             OnBuffRemovedEvent?.Invoke(this, buff);
         }
 
         void UpdateBuffList(double deltaTime) {
-            List<BuffBase> tempList = new List<BuffBase>();
+            List<BuffBase> tempList = [];
             foreach (BuffBase buffBase in buffList) {
                 buffBase.Update(deltaTime, this);
                 if (buffBase.isAlive) {

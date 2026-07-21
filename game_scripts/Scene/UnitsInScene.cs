@@ -7,7 +7,7 @@ namespace GameLogic {
     [GlobalClass]
     public partial class UnitsInScene : Resource {
         public UnitsInScene() {
-            unitsArr = new Array<UnitState>();
+            unitsArr = [];
         }
 
         [Export]

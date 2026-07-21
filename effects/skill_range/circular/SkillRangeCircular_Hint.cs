@@ -1,6 +1,6 @@
-using GameLogic;
 using Godot;
-using System;
+
+namespace DungeonChessBattle;
 
 public partial class SkillRangeCircular_Hint : Node3D {
     [Export]

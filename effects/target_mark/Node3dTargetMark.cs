@@ -1,52 +1,53 @@
 using GameLogic;
 using Godot;
-using System;
 
-public partial class Node3dTargetMark : Node3D, I_UI_Update {
-    [Export]
-    UserInterfaceRes userInterfaceRes;
+namespace DungeonChessBattle {
 
-    [Export]
-    Decal targetDecalRef;
-    public Decal TargetDecalRef => targetDecalRef;
+    public partial class Node3dTargetMark : Node3D, IUI_Update {
+        [Export]
+        UserInterfaceRes userInterfaceRes;
 
-    [Export]
-    Color defultColor = new Color("ad9b24");
+        [Export]
+        Decal targetDecalRef;
+        public Decal TargetDecalRef => targetDecalRef;
 
-    [Export]
-    UserUISettings userUISettingsRes;
+        [Export]
+        Color defultColor = new("ad9b24");
+
+        [Export]
+        UserUISettings userUISettingsRes;
 
 
-    public override void _Ready() {
-        SetCampColor(EnumCamp.None);
-    }
-
-    public void SetCampColor(EnumCamp camp) {
-        Color? resColor = userUISettingsRes.GetCampColor(camp);
-
-        if (resColor == null) {
-            resColor = defultColor;
-        }
-
-        targetDecalRef.Modulate = (Color)resColor;
-    }
-    public void UpdateUI_WithUnit(UnitState unitState) {
-        if (userInterfaceRes.FocusOnUnit != null && unitState == userInterfaceRes.FocusOnUnit.UnitStateRec) {
-            SetCampColor(unitState.Camp);
-        }
-        else {
+        public override void _Ready() {
             SetCampColor(EnumCamp.None);
         }
 
-        Scale = new Vector3(unitState.BodyRadius, 1, unitState.BodyRadius);
-    }
+        public void SetCampColor(EnumCamp camp) {
+            Color? resColor = userUISettingsRes.GetCampColor(camp);
 
-    public void SetMark_Normal() {
-        SetCampColor(EnumCamp.None);
-    }
+            resColor ??= defultColor;
 
-    internal void SetMark_Focus(UnitGameShow unitShow) {
-        SetCampColor(unitShow.UnitStateRec.Camp);
+            targetDecalRef.Modulate = (Color)resColor;
+        }
+        public void UpdateUI_WithUnit(UnitState unitState) {
+            if (userInterfaceRes.FocusOnUnit != null && unitState == userInterfaceRes.FocusOnUnit.UnitStateRec) {
+                SetCampColor(unitState.Camp);
+            }
+            else {
+                SetCampColor(EnumCamp.None);
+            }
+
+            Scale = new Vector3(unitState.BodyRadius, 1, unitState.BodyRadius);
+        }
+
+        public void SetMark_Normal() {
+            SetCampColor(EnumCamp.None);
+        }
+
+        internal void SetMark_Focus(UnitGameShow unitShow) {
+            SetCampColor(unitShow.UnitStateRec.Camp);
+        }
+
     }
 
 }

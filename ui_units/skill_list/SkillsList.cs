@@ -1,66 +1,69 @@
 using GameLogic;
 using Godot;
-using System;
 using System.Collections.Generic;
 
-public partial class SkillsList : Control {
-    [Export]
-    UnitsInScene_Show unitsInGameRef;
-    public UnitsInScene_Show UnitsInGameRef => unitsInGameRef;
+namespace DungeonChessBattle {
 
-    [ExportGroup("Internal Parameters")]
-    [Export]
-    PackedScene skillButtonPackedScene;
+    public partial class SkillsList : Control {
+        [Export]
+        UnitsInScene_Show unitsInGameRef;
+        public UnitsInScene_Show UnitsInGameRef => unitsInGameRef;
 
-    [Export]
-    HBoxContainer hBoxContainerRef;
+        [ExportGroup("Internal Parameters")]
+        [Export]
+        PackedScene skillButtonPackedScene;
+
+        [Export]
+        HBoxContainer hBoxContainerRef;
 
 
 
 
 
-    List<ButtonSkillBase> skillButtonList = new List<ButtonSkillBase>();
-    internal void UpdateSkillsList(UnitGameShow unitShow) {
+        readonly List<ButtonSkillBase> skillButtonList = [];
+        internal void UpdateSkillsList(UnitGameShow unitShow) {
 
-        var children = hBoxContainerRef.GetChildren();
-        foreach (var child in children) {
-            child.QueueFree();
-        }
-        skillButtonList.Clear();
-
-        if (unitShow == null) {
-            return;
-        }
-        if (unitShow.SkillsList == null) {
-            return;
-        }
-
-        foreach (UnitSkillBase skill in unitShow.SkillsList) {
-            ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
-            buttonSkill.Init(skill, unitShow.UnitStateRec, this);
-            hBoxContainerRef.AddChild(buttonSkill);
-
-            skillButtonList.Add(buttonSkill);
-        }
-
-    }
-
-    internal bool IsWaitTarget() {
-        foreach (ButtonSkillBase buttonSkill in skillButtonList) {
-            if (buttonSkill.WaitTarget) {
-                return true;
+            var children = hBoxContainerRef.GetChildren();
+            foreach (var child in children) {
+                child.QueueFree();
             }
+            skillButtonList.Clear();
+
+            if (unitShow == null) {
+                return;
+            }
+            if (unitShow.SkillsList == null) {
+                return;
+            }
+
+            foreach (UnitSkillBase skill in unitShow.SkillsList) {
+                ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
+                buttonSkill.Init(skill, unitShow.UnitStateRec, this);
+                hBoxContainerRef.AddChild(buttonSkill);
+
+                skillButtonList.Add(buttonSkill);
+            }
+
         }
-        return false;
+
+        internal bool IsWaitTarget() {
+            foreach (ButtonSkillBase buttonSkill in skillButtonList) {
+                if (buttonSkill.WaitTarget) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public List<ButtonSkillBase> WaitingTargetSkillList() {
+            List<ButtonSkillBase> waitingTargetSkillList = [];
+            foreach (ButtonSkillBase buttonSkill in skillButtonList) {
+                if (buttonSkill.WaitTarget) {
+                    waitingTargetSkillList.Add(buttonSkill);
+                }
+            }
+            return waitingTargetSkillList;
+        }
     }
 
-    public List<ButtonSkillBase> WaitingTargetSkillList() {
-        List<ButtonSkillBase> waitingTargetSkillList = new List<ButtonSkillBase>();
-        foreach (ButtonSkillBase buttonSkill in skillButtonList) {
-            if (buttonSkill.WaitTarget) {
-                waitingTargetSkillList.Add(buttonSkill);
-            }
-        }
-        return waitingTargetSkillList;
-    }
 }

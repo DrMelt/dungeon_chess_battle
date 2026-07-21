@@ -1,16 +1,18 @@
 using GameLogic;
 using Godot;
-using System;
 
-public partial class StateBarMark2d : Control, I_UI_Update {
-    [Export]
-    HP_StateBar panelUnitStateBarRef;
+namespace DungeonChessBattle {
 
-    public void UpdateUI_WithUnit(UnitState unitState) {
-        var camera3D = GetViewport().GetCamera3D();
-        var screenPos = camera3D.UnprojectPosition(unitState.Position + Vector3.Up * 2.2f);
-        GlobalPosition = screenPos;
+    public partial class StateBarMark2d : Control, IUI_Update {
+        [Export]
+        HP_StateBar panelUnitStateBarRef;
 
-        panelUnitStateBarRef.UpdateUI_WithUnit(unitState);
+        public void UpdateUI_WithUnit(UnitState unitState) {
+            var camera3D = GetViewport().GetCamera3D();
+            var screenPos = camera3D.UnprojectPosition(unitState.Position + Vector3.Up * 2.2f);
+            GlobalPosition = screenPos;
+
+            panelUnitStateBarRef.UpdateUI_WithUnit(unitState);
+        }
     }
 }

@@ -1,49 +1,52 @@
 using GameLogic;
 using Godot;
-using System;
 
-public partial class StateBarMini : Control {
+namespace DungeonChessBattle {
 
-    [ExportGroup("Internal Parameters")]
-    [ExportSubgroup("Buffs")]
-    [Export]
-    ContainerBuffs containerBuffsRef;
+    public partial class StateBarMini : Control {
 
-    [ExportSubgroup("State Bar")]
-    [Export]
-    Panel outlineRef;
+        [ExportGroup("Internal Parameters")]
+        [ExportSubgroup("Buffs")]
+        [Export]
+        ContainerBuffs containerBuffsRef;
 
-    [Export]
-    HP_StateBar hp_StateBarRef;
+        [ExportSubgroup("State Bar")]
+        [Export]
+        Panel outlineRef;
 
-    [Export]
-    SkillProgressBar skillProgressBarRef;
+        [Export]
+        HP_StateBar hp_StateBarRef;
+
+        [Export]
+        SkillProgressBar skillProgressBarRef;
 
 
-    bool mouseOn = false;
+        bool mouseOn = false;
 
-    UnitState bindingUnitStateRes;
+        UnitState bindingUnitStateRes;
 
-    public override void _Ready() {
-        MouseEntered += () => {
-            mouseOn = true;
-            outlineRef.Visible = true;
-        };
-        MouseExited += () => {
-            mouseOn = false;
-            outlineRef.Visible = false;
-        };
+        public override void _Ready() {
+            MouseEntered += () => {
+                mouseOn = true;
+                outlineRef.Visible = true;
+            };
+            MouseExited += () => {
+                mouseOn = false;
+                outlineRef.Visible = false;
+            };
+        }
+
+        public void BindUnitState(UnitState unitState) {
+            bindingUnitStateRes = unitState;
+        }
+
+        public override void _Process(double delta) {
+            containerBuffsRef.UpdateUI_WithUnit(bindingUnitStateRes);
+            hp_StateBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
+            skillProgressBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
+        }
+
+
     }
-
-    public void BindUnitState(UnitState unitState) {
-        bindingUnitStateRes = unitState;
-    }
-
-    public override void _Process(double delta) {
-        containerBuffsRef.UpdateUI_WithUnit(bindingUnitStateRes);
-        hp_StateBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
-        skillProgressBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
-    }
-
 
 }
