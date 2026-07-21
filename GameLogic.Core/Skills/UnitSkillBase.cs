@@ -2,20 +2,12 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 
+#nullable disable
 
 namespace GameLogic {
-    [Flags]
-    public enum EnumSkillCanAdd {
-        None = 0,
-        Same = 1,
-        Different = 2,
-    }
     [GlobalClass]
     public partial class UnitSkillBase : Resource {
-
-
         [Export]
         string skillName = "UnitSkillBaseName";
         public string SkillName => skillName;
@@ -27,14 +19,18 @@ namespace GameLogic {
         [Export]
         float skillNeedSpellTime = 2.0f;
         public float SkillSpellTime => skillNeedSpellTime;
+
         [Export]
         float skillCooldownTime = 3.0f;
+
         [Export]
         float gcdTime = 3.0f;
         public float GCDTime => gcdTime;
 
+#pragma warning disable CS0649
         [Export]
         Texture2D icon;
+#pragma warning restore CS0649
         public Texture2D Icon => icon;
 
         [Export]
@@ -48,33 +44,31 @@ namespace GameLogic {
         bool needPosTarget = false;
         public bool NeedPosTarget => needPosTarget;
 
-
         [ExportGroup("Runtime Parameters")]
         [Export]
-        float skillSpelledTime = 0;  // 0 To skillNeedSpellTime
+        float skillSpelledTime = 0;
         public float SkillSpelledTime => skillSpelledTime;
 
         public float SkillSpellProgress => skillSpelledTime / skillNeedSpellTime;
 
+        [Export]
+        float skillCoolingTime = 0;
+        public float SkillCoolingTime => skillCoolingTime;
+
+        protected IUnitState callSkillObject;
+        protected IUnitState targetObject;
+        public IUnitState CallSkillObject => callSkillObject;
 
         [Export]
-        float skillCoolingTime = 0; // skillCooldownTime To 0
-        public float SkillCoolingTime => skillCoolingTime;
+        protected Vector3 targetPos;
+        public Vector3 TargetPos => targetPos;
+
+        protected Array<IUnitState> testObjects;
+
         protected void Reset_SpelledSkill() {
             skillCoolingTime = skillCooldownTime;
             skillSpelledTime = 0;
         }
-
-        [Export]
-        protected UnitState callSkillObject;
-        [Export]
-        protected UnitState targetObject;
-        public UnitState CallSkillObject => callSkillObject;
-        [Export]
-        protected Vector3 targetPos;
-        public Vector3 TargetPos => targetPos;
-        [Export]
-        protected Array<UnitState> testObjects;
 
         public void UpdateSkill(double delta) {
             skillCoolingTime -= (float)delta;
@@ -85,8 +79,7 @@ namespace GameLogic {
             return skillCoolingTime > 0;
         }
 
-
-        EnumSkillCanAdd SkillAddEnum(UnitState callSkillObject, UnitState testObject) {
+        EnumSkillCanAdd SkillAddEnum(IUnitState callSkillObject, IUnitState testObject) {
             EnumSkillCanAdd addEnum = EnumSkillCanAdd.None;
             if (callSkillObject.Camp == testObject.Camp) {
                 addEnum |= EnumSkillCanAdd.Same;
@@ -98,7 +91,7 @@ namespace GameLogic {
             return addEnum;
         }
 
-        public void SetSkill(UnitState callSkillObject, UnitState targetObject, Vector3? targetPos, Array<UnitState> testObjects) {
+        public void SetSkill(IUnitState callSkillObject, IUnitState targetObject, Vector3? targetPos, System.Collections.Generic.IEnumerable<IUnitState> testObjects) {
             if (needUnitTarget) {
                 if (targetObject == null) {
                     GD.Print($"{skillName} need a target");
@@ -110,7 +103,6 @@ namespace GameLogic {
                 }
             }
 
-
             skillSpelledTime = 0;
 
             this.callSkillObject = callSkillObject;
@@ -118,7 +110,10 @@ namespace GameLogic {
             if (targetPos.HasValue) {
                 this.targetPos = targetPos.Value;
             }
-            this.testObjects = testObjects;
+            this.testObjects = new Array<IUnitState>();
+            foreach (var obj in testObjects) {
+                this.testObjects.Add(obj);
+            }
 
             callSkillObject.SpellNewSkill(this);
         }
@@ -129,7 +124,7 @@ namespace GameLogic {
 
         public bool CallSkillSpelling() {
             if (!IsCoolingdown() &&
-            skillSpelledTime >= skillNeedSpellTime) {
+                skillSpelledTime >= skillNeedSpellTime) {
                 CallSpelledSkill();
                 Reset_SpelledSkill();
                 return true;
@@ -141,7 +136,5 @@ namespace GameLogic {
             GD.Print($"{skillName} is called to {targetObject}");
             Reset_SpelledSkill();
         }
-
-
     }
 }

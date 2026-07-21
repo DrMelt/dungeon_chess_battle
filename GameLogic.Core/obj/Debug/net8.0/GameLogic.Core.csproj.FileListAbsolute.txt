@@ -1,0 +1,13 @@
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\bin\Debug\net8.0\GameLogic.Core.deps.json
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\bin\Debug\net8.0\GameLogic.Core.dll
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\bin\Debug\net8.0\GameLogic.Core.pdb
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.csproj.AssemblyReference.cache
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.GeneratedMSBuildEditorConfig.editorconfig
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.AssemblyInfoInputs.cache
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.AssemblyInfo.cs
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.csproj.CoreCompileInputs.cache
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.sourcelink.json
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.dll
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\refint\GameLogic.Core.dll
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\GameLogic.Core.pdb
+d:\note\Games\Dungeon_Chess_Battle\dungeon_chess_battle\GameLogic.Core\obj\Debug\net8.0\ref\GameLogic.Core.dll

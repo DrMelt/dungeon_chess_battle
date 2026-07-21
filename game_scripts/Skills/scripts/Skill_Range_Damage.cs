@@ -20,7 +20,7 @@ namespace GameLogic {
             float physicalDamage = callSkillObject.PhysicalDamageAmount(damage);
             float magicDamage = callSkillObject.MagicDamageAmount(damage);
 
-            foreach (UnitState testObject in testObjects) {
+            foreach (IUnitState testObject in testObjects) {
                 if (testObject.Camp == callSkillObject.Camp) {
                     continue;
                 }

@@ -3,32 +3,33 @@ using System;
 
 namespace GameLogic {
     [GlobalClass]
-    public partial class RectRange_Res : Range_Res_Base {
+    public partial class CircularRange_Res : Range_Res_Base {
         [Export]
         float nearClamp = 0.0f;
         public float NearClamp => nearClamp;
+
         [Export]
         float farClamp = 1.0f;
         public float FarClamp => farClamp;
 
         [Export]
-        float fromL = -1.0f;
-        public float FromL => fromL;
-        [Export]
-        float toR = 1.0f;
-        public float ToR => toR;
+        float radianFrom = -1.0f;
+        public float RadianFrom => radianFrom;
 
-        public override bool IsInRange(UnitState callSkillObject, UnitState testObject, Vector3 targetPos) {
-            return Utility.IsInRange_Rect(
+        [Export]
+        float radianTo = 1.0f;
+        public float RadianTo => radianTo;
+
+        public override bool IsInRange(IUnitState callSkillObject, IUnitState testObject, Vector3 targetPos) {
+            return Utility.IsInRange_Circular(
                 testObject.Position,
                 callSkillObject.Position,
                 targetPos - callSkillObject.Position,
                 nearClamp,
                 farClamp,
-                fromL,
-                toR
+                radianFrom,
+                radianTo
             );
         }
-
     }
 }

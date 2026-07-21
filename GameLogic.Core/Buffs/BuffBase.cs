@@ -1,10 +1,10 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Data;
+
+#nullable disable
 
 namespace GameLogic {
-
     [GlobalClass]
     public partial class BuffBase : Resource {
         [Export]
@@ -18,19 +18,20 @@ namespace GameLogic {
 
         [Export]
         public double duration = 60;
+
         [Export]
         public int superpositions = 1;
+
         [Export]
         public int maxSuperpositions = 1;
+
         [Export]
         public bool isAlive = true;
 
         [ExportGroup("Runtime Parameters")]
-        [Export]
-        public UnitState fromUnit;
+        public IUnitState fromUnit;
 
-
-        public void Update(double deltaTime, UnitState unitState) {
+        public void Update(double deltaTime, IUnitState unitState) {
             if (!isAlive) {
                 return;
             }
@@ -44,19 +45,16 @@ namespace GameLogic {
             }
         }
 
-        protected virtual void ActionDuration(double deltaTime, UnitState unitState) {
-
+        protected virtual void ActionDuration(double deltaTime, IUnitState unitState) {
         }
 
-        protected virtual void ActionEnd(UnitState unitState) {
-
+        protected virtual void ActionEnd(IUnitState unitState) {
         }
 
-        internal void AddSuperpositions(BuffBase buffBase) {
+        public void AddSuperpositions(BuffBase buffBase) {
             superpositions += 1;
             superpositions = Mathf.Min(superpositions, buffBase.maxSuperpositions);
             duration = Mathf.Max(duration, buffBase.duration);
         }
-
     }
 }
