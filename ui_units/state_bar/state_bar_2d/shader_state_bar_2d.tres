@@ -1,4 +1,4 @@
-[gd_resource type="VisualShader" load_steps=8 format=3 uid="uid://btbknd88cpw6h"]
+[gd_resource type="VisualShader" format=3 uid="uid://btbknd88cpw6h"]
 
 [sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_1ooo7"]
 input_name = "uv"
@@ -32,51 +32,6 @@ default_value_enabled = true
 default_value = Color(0.537011, 0.537011, 0.537011, 1)
 
 [resource]
-code = "shader_type canvas_item;
-render_mode blend_mix;
-
-uniform vec4 ParPin_02_Color : source_color = vec4(0.537011, 0.537011, 0.537011, 1.000000);
-uniform vec4 ParPin_01_Color : source_color = vec4(0.083200, 0.520000, 0.090480, 1.000000);
-uniform float ParPin_01 : hint_range(0.0, 1.0) = 0.62699997425079;
-
-
-
-void fragment() {
-// ColorParameter:9
-	vec4 n_out9p0 = ParPin_02_Color;
-
-
-// ColorParameter:6
-	vec4 n_out6p0 = ParPin_01_Color;
-
-
-// Input:10
-	vec2 n_out10p0 = UV;
-
-
-// VectorDecompose:3
-	float n_out3p0 = n_out10p0.x;
-	float n_out3p1 = n_out10p0.y;
-
-
-// FloatParameter:4
-	float n_out4p0 = ParPin_01;
-
-
-// Compare:7
-	bool n_out7p0 = n_out3p0 <= n_out4p0;
-
-
-// Mix:8
-	vec3 n_out8p0 = mix(vec3(n_out9p0.xyz), vec3(n_out6p0.xyz), (n_out7p0 ? 1.0 : 0.0));
-
-
-// Output:0
-	COLOR.rgb = n_out8p0;
-
-
-}
-"
 mode = 1
 flags/light_only = false
 nodes/fragment/0/position = Vector2(1220, 580)

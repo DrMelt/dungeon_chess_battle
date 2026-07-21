@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitState" load_steps=7 format=3 uid="uid://ds5coc6n2poc4"]
+[gd_resource type="Resource" script_class="UnitState" format=3 uid="uid://ds5coc6n2poc4"]
 
 [ext_resource type="Resource" uid="uid://ce85dbebhv73r" path="res://game_scripts/Skills/res_skill_add_hot.tres" id="1_87afb"]
 [ext_resource type="Script" uid="uid://bwroov12ay0pv" path="res://game_scripts/Unit/UnitState.cs" id="2_itss4"]
@@ -9,20 +9,8 @@
 
 [resource]
 script = ExtResource("2_itss4")
-_UnitStateName = "这是白魔吗"
+_UnitStateName = "白魔法师"
 _skillsList = Array[Object]([ExtResource("1_87afb"), ExtResource("2_t2qu4"), ExtResource("3_lhexl"), ExtResource("4_ixd6g"), ExtResource("5_t2qu4")])
-bodyRadius = 1.0
 _camp = 1
-_maxHealth = 1000.0
-_health = 1000.0
-_cureIntensity = 1.0
-_physicalAttackBase = 1.0
-_physicalTakePercent = 1.0
-_magicAttackBase = 1.0
-_magicTakePercent = 1.0
-_baseSpeed = 2.0
-_position = Vector3(0, 0, 0)
-_lookAt_Dir = Vector3(0, 0, -1)
-gcdTime = 0.0
 _hates = Dictionary[String, float]({})
 metadata/_custom_type_script = "uid://bwroov12ay0pv"
