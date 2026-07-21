@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3 uid="uid://bhhi7c0r5hisg"]
+[gd_scene format=3 uid="uid://bhhi7c0r5hisg"]
 
 [ext_resource type="Script" uid="uid://72jmsu2erdvo" path="res://pre_demo/scenes/scripts/Camera3dUserCamera.cs" id="1_s243o"]
 [ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://pre_demo/scenes/shader/outline.gdshader" id="2_uq67j"]
@@ -40,6 +40,7 @@ process_mode = 1
 [sub_resource type="Environment" id="Environment_r6hb3"]
 background_mode = 2
 background_color = Color(0.758192, 0.758192, 0.758192, 1)
+background_energy_multiplier = 1.61
 sky = SubResource("Sky_uq67j")
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_i4iy5"]
@@ -63,7 +64,7 @@ size = Vector3(2, 0.2, 2)
 specular_mode = 2
 albedo_color = Color(0.136826, 0.136826, 0.136826, 1)
 emission_enabled = true
-emission = Color(0.2542, 0.62, 0.394423, 1)
+emission = Color(0.30099648, 0.7181901, 0.4623322, 1)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_0gsne"]
 
@@ -74,22 +75,10 @@ script = ExtResource("13_uvuxq")
 
 [sub_resource type="Resource" id="Resource_eaknj"]
 script = ExtResource("12_u3fd7")
-_UnitStateName = "这是BOSS吗"
+_UnitStateName = "胶囊形怪物"
 _skillsList = null
-bodyRadius = 1.0
 _camp = 2
-_maxHealth = 1000.0
-_health = 1000.0
-_cureIntensity = 1.0
-_physicalAttackBase = 1.0
-_physicalTakePercent = 1.0
-_magicAttackBase = 1.0
-_magicTakePercent = 1.0
-_baseSpeed = 2.0
-_position = Vector3(0, 0, 0)
-_lookAt_Dir = Vector3(0, 0, -1)
 motionTimeTable = SubResource("Resource_qxep0")
-gcdTime = 0.0
 _hates = Dictionary[String, float]({})
 metadata/_custom_type_script = "uid://bwroov12ay0pv"
 
@@ -201,89 +190,89 @@ ProgressBar/styles/fill = SubResource("StyleBoxFlat_eaknj")
 [sub_resource type="LabelSettings" id="LabelSettings_uvuxq"]
 font_size = 24
 
-[node name="MainScene" type="Node"]
+[node name="MainScene" type="Node" unique_id=46433431]
 
-[node name="Env" type="Node" parent="."]
+[node name="Env" type="Node" parent="." unique_id=2065306466]
 
-[node name="DungeonEnv" type="Node3D" parent="Env"]
+[node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005]
 script = ExtResource("7_dowf7")
 
-[node name="StartPointArea" parent="Env/DungeonEnv" instance=ExtResource("14_cact4")]
+[node name="StartPointArea" parent="Env/DungeonEnv" unique_id=1333730891 instance=ExtResource("14_cact4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13)
 startPointRadius = 4.0
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env/DungeonEnv"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env/DungeonEnv" unique_id=2066106198]
 transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
 light_cull_mask = 4293919745
 shadow_enabled = true
 shadow_caster_mask = 4293919745
 sky_mode = 1
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="Env/DungeonEnv"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Env/DungeonEnv" unique_id=1770447821]
 environment = SubResource("Environment_r6hb3")
 
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Env/DungeonEnv"]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Env/DungeonEnv" unique_id=1991647563]
 navigation_mesh = SubResource("NavigationMesh_i4iy5")
 
-[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv/NavigationRegion3D"]
+[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv/NavigationRegion3D" unique_id=1498989808]
 transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
 mesh = SubResource("PlaneMesh_kkwdv")
 skeleton = NodePath("../../../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
 
-[node name="StaticBody3D_Ground" type="StaticBody3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan"]
+[node name="StaticBody3D_Ground" type="StaticBody3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan" unique_id=797280013]
 collision_layer = 32
 collision_mask = 1024
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan/StaticBody3D_Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan/StaticBody3D_Ground" unique_id=1314000615]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("BoxShape3D_uq67j")
 
-[node name="UnitsInScene_Show" type="Node" parent="."]
+[node name="UnitsInScene_Show" type="Node" parent="." unique_id=1868664178]
 script = ExtResource("3_4e7mo")
 
-[node name="UnitShow" parent="UnitsInScene_Show" node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
+[node name="WhiteMage" parent="UnitsInScene_Show" unique_id=361641365 node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
 unitStateRec = ExtResource("6_4e7mo")
 unitMeshInstanceRef = NodePath("MeshInstance3D_Mesh")
 
-[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/UnitShow"]
+[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/WhiteMage" unique_id=411386797]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 layers = 1024
 material_override = SubResource("StandardMaterial3D_qxep0")
 gi_mode = 2
 mesh = SubResource("CapsuleMesh_0gsne")
 
-[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/UnitShow/MeshInstance3D_Mesh" node_paths=PackedStringArray("unitShowRef")]
+[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/WhiteMage/MeshInstance3D_Mesh" unique_id=405233089 node_paths=PackedStringArray("unitShowRef")]
 collision_layer = 1024
 collision_mask = 0
 script = ExtResource("4_dowf7")
 unitShowRef = NodePath("../..")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/UnitShow/MeshInstance3D_Mesh/Area3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/WhiteMage/MeshInstance3D_Mesh/Area3D" unique_id=859431125]
 shape = SubResource("CapsuleShape3D_roldv")
 
-[node name="UnitShow2" parent="UnitsInScene_Show" node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
+[node name="Monster" parent="UnitsInScene_Show" unique_id=853076788 node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
 transform = Transform3D(0.0169289, 0, -0.999857, 0, 1, 0, 0.999857, 0, 0.0169289, -3, 0, -1)
 unitStateRec = SubResource("Resource_eaknj")
 unitMeshInstanceRef = NodePath("MeshInstance3D_Mesh")
 
-[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/UnitShow2"]
+[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/Monster" unique_id=132553483]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 layers = 1024
 gi_mode = 2
 mesh = SubResource("CapsuleMesh_0gsne")
 
-[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/UnitShow2/MeshInstance3D_Mesh" node_paths=PackedStringArray("unitShowRef")]
+[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/Monster/MeshInstance3D_Mesh" unique_id=477523017 node_paths=PackedStringArray("unitShowRef")]
 collision_layer = 1024
 collision_mask = 0
 script = ExtResource("4_dowf7")
 unitShowRef = NodePath("../..")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/UnitShow2/MeshInstance3D_Mesh/Area3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/Monster/MeshInstance3D_Mesh/Area3D" unique_id=341407173]
 shape = SubResource("CapsuleShape3D_roldv")
 
-[node name="Camera3D_UserCamera" type="Camera3D" parent="."]
+[node name="Camera3D_UserCamera" type="Camera3D" parent="." unique_id=1696345154]
 transform = Transform3D(1, 0, 0, 0, 0.928583, 0.371124, 0, -0.371124, 0.928583, -3.37032, 4.81776, 9.32199)
 cull_mask = 1059
 current = true
@@ -294,9 +283,9 @@ _rotateSpeedScale = 0.3
 _moveSpeedScale = 10.0
 userInterfaceRes = ExtResource("11_34gv2")
 
-[node name="Interface" type="Node" parent="."]
+[node name="Interface" type="Node" parent="." unique_id=1240739248]
 
-[node name="UserOperationInterface_Info" type="Node" parent="Interface" node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef", "rayCast3DRef")]
+[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef", "rayCast3DRef")]
 script = ExtResource("3_n8f6c")
 camera3DRef = NodePath("../../Camera3D_UserCamera")
 node2dUiRef = NodePath("../Node2d_UserUI")
@@ -304,7 +293,7 @@ userInterfaceRes = ExtResource("11_34gv2")
 effectHintsRef = NodePath("EffectHints")
 rayCast3DRef = NodePath("RayCast3D")
 
-[node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" node_paths=PackedStringArray("unitsInScene_Show_Ref", "userUI_Ref")]
+[node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841 node_paths=PackedStringArray("unitsInScene_Show_Ref", "userUI_Ref")]
 script = ExtResource("3_eaknj")
 userInterfaceRes = ExtResource("11_34gv2")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
@@ -312,20 +301,20 @@ userUI_Ref = NodePath("../../Node2d_UserUI")
 _effectCircleRange_PKS = ExtResource("12_sph05")
 _effectRectRange_PKS = ExtResource("13_0by77")
 
-[node name="FocusOn_Outline" type="Node" parent="Interface/UserOperationInterface_Info" node_paths=PackedStringArray("outLineMeshInstance")]
+[node name="FocusOn_Outline" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
 script = ExtResource("4_qxep0")
 userInterfaceRes = ExtResource("11_34gv2")
 outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 
-[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="Interface/UserOperationInterface_Info/FocusOn_Outline"]
+[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="Interface/UserOperationInterface_Info/FocusOn_Outline" unique_id=317289446]
 material_override = SubResource("ShaderMaterial_3um0x")
 skeleton = NodePath("../..")
 
-[node name="RayCast3D" type="RayCast3D" parent="Interface/UserOperationInterface_Info"]
+[node name="RayCast3D" type="RayCast3D" parent="Interface/UserOperationInterface_Info" unique_id=659851569]
 collision_mask = 1057
 collide_with_areas = true
 
-[node name="Node2d_UserUI" type="Control" parent="Interface" node_paths=PackedStringArray("unitsInGameRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
+[node name="Node2d_UserUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInGameRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
@@ -337,7 +326,7 @@ skillsListRef = NodePath("Skills_List")
 stateChangeInfoRef = NodePath("StateChange_Info")
 stateBarListRef = NodePath("StateBar_List")
 
-[node name="Label_DungeonTime" type="Label" parent="Interface/Node2d_UserUI" node_paths=PackedStringArray("unitsInScene_Show_Ref")]
+[node name="Label_DungeonTime" type="Label" parent="Interface/Node2d_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 0
 offset_left = 818.0
 offset_top = -2.0
@@ -350,44 +339,45 @@ vertical_alignment = 1
 script = ExtResource("18_ctxme")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 
-[node name="StateBar2d_Focus" parent="Interface/Node2d_UserUI" instance=ExtResource("5_0fpm5")]
+[node name="StateBar2d_Focus" parent="Interface/Node2d_UserUI" unique_id=716113945 instance=ExtResource("5_0fpm5")]
 layout_mode = 1
 mouse_filter = 1
 userInterfaceRes = ExtResource("11_34gv2")
 
-[node name="StateBar_Simple" type="Control" parent="Interface/Node2d_UserUI" node_paths=PackedStringArray("unitsInScene_Show_Ref")]
+[node name="StateBar_Simple" type="Control" parent="Interface/Node2d_UserUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 1
 anchors_preset = 0
 script = ExtResource("19_ctxme")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 stateBarSimple2d_PKD = ExtResource("20_uvuxq")
 
-[node name="StateBar_List" parent="Interface/Node2d_UserUI" instance=ExtResource("22_j0gmm")]
+[node name="StateBar_List" parent="Interface/Node2d_UserUI" unique_id=318767437 instance=ExtResource("22_j0gmm")]
 layout_mode = 0
 offset_left = 858.0
 offset_top = 62.0
 offset_right = 1137.0
 offset_bottom = 494.0
 
-[node name="Skills_List" parent="Interface/Node2d_UserUI" node_paths=PackedStringArray("unitsInGameRef") instance=ExtResource("10_sfuu4")]
+[node name="Skills_List" parent="Interface/Node2d_UserUI" unique_id=839039226 node_paths=PackedStringArray("unitsInGameRef") instance=ExtResource("10_sfuu4")]
+layout_mode = 0
 offset_right = 0.0
 offset_bottom = 0.0
 unitsInGameRef = NodePath("../../../UnitsInScene_Show")
 
-[node name="StateChange_Info" type="Node" parent="Interface/Node2d_UserUI"]
+[node name="StateChange_Info" type="Node" parent="Interface/Node2d_UserUI" unique_id=820233417]
 script = ExtResource("23_0gsne")
 userUISettingsRes = ExtResource("22_roldv")
 _tookDamageInfo_PKS = ExtResource("14_roldv")
 _buffChangeInfo_PKS = ExtResource("23_roldv")
 
-[node name="Panel_UI_Info" parent="Interface/Node2d_UserUI" instance=ExtResource("29_h3qe1")]
+[node name="Panel_UI_Info" parent="Interface/Node2d_UserUI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
 layout_mode = 0
 offset_left = 841.0
 offset_top = 514.0
 offset_right = 1148.0
 offset_bottom = 638.0
 
-[node name="Test_Init" type="Node" parent="." node_paths=PackedStringArray("unitsInScene_Show", "startPointAreaRef")]
+[node name="Test_Init" type="Node" parent="." unique_id=1410018374 node_paths=PackedStringArray("unitsInScene_Show", "startPointAreaRef")]
 script = ExtResource("13_eaknj")
 unitsInScene_Show = NodePath("../UnitsInScene_Show")
 startPointAreaRef = NodePath("../Env/DungeonEnv/StartPointArea")
