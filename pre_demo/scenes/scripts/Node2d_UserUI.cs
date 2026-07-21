@@ -1,57 +1,60 @@
 using Godot;
-using System;
 using System.Collections.Generic;
 
-public partial class Node2d_UserUI : Control {
-    [Export]
-    UserInterfaceRes userInterfaceRes;
+namespace DungeonChessBattle {
 
-    [Export]
-    UnitsInScene_Show unitsInGameRef;
+    public partial class Node2d_UserUI : Control {
+        [Export]
+        UserInterfaceRes userInterfaceRes;
 
-    [ExportGroup("Internal")]
-    [Export]
-    SkillsList skillsListRef;
-    [Export]
-    StateChangeInfo stateChangeInfoRef;
-    [Export]
-    StateBarList stateBarListRef;
+        [Export]
+        UnitsInScene_Show unitsInGameRef;
 
-    bool isMouseOn = false;
-    public bool IsMouseOn => isMouseOn;
+        [ExportGroup("Internal")]
+        [Export]
+        SkillsList skillsListRef;
+        [Export]
+        StateChangeInfo stateChangeInfoRef;
+        [Export]
+        StateBarList stateBarListRef;
 
-    public override void _Ready() {
-        MouseEntered += () => {
-            isMouseOn = true;
-        };
-        MouseExited += () => {
-            isMouseOn = false;
-        };
+        bool isMouseOn = false;
+        public bool IsMouseOn => isMouseOn;
 
-        userInterfaceRes.FocusOnUnitChangedEvent += UpdateSkillList;
-        UpdateSkillList(userInterfaceRes.FocusOnUnit);
+        public override void _Ready() {
+            MouseEntered += () => {
+                isMouseOn = true;
+            };
+            MouseExited += () => {
+                isMouseOn = false;
+            };
 
-        UpdateBinding();
+            userInterfaceRes.FocusOnUnitChangedEvent += UpdateSkillList;
+            UpdateSkillList(userInterfaceRes.FocusOnUnit);
+
+            UpdateBinding();
+        }
+
+        public void UpdateBinding() {
+            stateChangeInfoRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+            stateBarListRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+        }
+
+        public void UpdateSkillList(UnitGameShow unitShow) {
+            skillsListRef.UpdateSkillsList(unitShow);
+        }
+
+
+        public bool IsWaitSkillTarget() {
+            return skillsListRef.IsWaitTarget();
+        }
+        public List<ButtonSkillBase> WaitingTargetSkillList() {
+            return skillsListRef.WaitingTargetSkillList();
+        }
+
+        public static bool IsWaitMoveTarget() {
+            return false;
+        }
     }
 
-    public void UpdateBinding() {
-        stateChangeInfoRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
-        stateBarListRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
-    }
-
-    public void UpdateSkillList(UnitGameShow unitShow) {
-        skillsListRef.UpdateSkillsList(unitShow);
-    }
-
-
-    public bool IsWaitSkillTarget() {
-        return skillsListRef.IsWaitTarget();
-    }
-    public List<ButtonSkillBase> WaitingTargetSkillList() {
-        return skillsListRef.WaitingTargetSkillList();
-    }
-
-    public bool IsWaitMoveTarget() {
-        return false;
-    }
 }

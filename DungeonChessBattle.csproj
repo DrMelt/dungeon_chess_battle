@@ -8,4 +8,11 @@
     <ProjectReference Include="GameLogic.Core\GameLogic.Core.csproj" />
     <Compile Remove="GameLogic.Core\**\*.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Using Include="GameLogic.Skills" />
+    <Using Include="GameLogic.Buffs" />
+    <Using Include="GameLogic.Interfaces" />
+    <Using Include="GameLogic.Range" />
+    <Using Include="DungeonChessBattle" />
+  </ItemGroup>
 </Project>

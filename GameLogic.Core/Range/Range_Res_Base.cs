@@ -1,10 +1,10 @@
 using Godot;
 using System;
 
-namespace GameLogic {
+namespace GameLogic.Range {
     [GlobalClass]
     public partial class Range_Res_Base : Resource {
-        public virtual bool IsInRange(IUnitState callSkillObject, IUnitState testObject, Vector3 targetPos) {
+        public virtual bool IsInRange(GameLogic.Interfaces.IUnitState callSkillObject, GameLogic.Interfaces.IUnitState testObject, Vector3 targetPos) {
             return false;
         }
     }

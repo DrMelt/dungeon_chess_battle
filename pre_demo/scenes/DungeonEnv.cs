@@ -1,5 +1,6 @@
 using Godot;
-using System;
+
+namespace DungeonChessBattle;
 
 public partial class DungeonEnv : Node3D {
 

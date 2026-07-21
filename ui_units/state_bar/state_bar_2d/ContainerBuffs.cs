@@ -1,26 +1,30 @@
 using Godot;
-using System;
 
 using GameLogic;
-public partial class ContainerBuffs : Control, I_UI_Update {
-    [Export]
-    PackedScene buffIconPackedScene;
 
-    public void UpdateUI_WithUnit(UnitState unitState) {
-        var chilren = GetChildren();
-        foreach (var child in chilren) {
-            child.QueueFree();
-        }
+namespace DungeonChessBattle {
+
+    public partial class ContainerBuffs : Control, IUI_Update {
+        [Export]
+        PackedScene buffIconPackedScene;
+
+        public void UpdateUI_WithUnit(UnitState unitState) {
+            var chilren = GetChildren();
+            foreach (var child in chilren) {
+                child.QueueFree();
+            }
 
 
-        if (unitState == null) {
-            return;
-        }
+            if (unitState == null) {
+                return;
+            }
 
-        foreach (BuffBase buff in unitState.BuffList) {
-            TextureRectBuffIcon buffIcon = buffIconPackedScene.Instantiate<TextureRectBuffIcon>();
-            buffIcon.SetBuffIcon(buff, unitState);
-            AddChild(buffIcon);
+            foreach (BuffBase buff in unitState.BuffList) {
+                TextureRectBuffIcon buffIcon = buffIconPackedScene.Instantiate<TextureRectBuffIcon>();
+                buffIcon.SetBuffIcon(buff, unitState);
+                AddChild(buffIcon);
+            }
         }
     }
+
 }

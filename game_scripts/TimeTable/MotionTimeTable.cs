@@ -1,6 +1,6 @@
 using Godot;
-using System;
 
-public partial class MotionTimeTable : Resource
-{
+namespace DungeonChessBattle;
+
+public partial class MotionTimeTable : Resource {
 }

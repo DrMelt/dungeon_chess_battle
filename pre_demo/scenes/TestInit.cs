@@ -1,29 +1,32 @@
 using Godot;
-using Godot.Collections;
 using System;
 
-public partial class TestInit : Node {
-    [Export]
-    UnitsInScene_Show unitsInScene_Show;
-    [Export]
-    StartPointArea startPointAreaRef;
+namespace DungeonChessBattle {
 
-    Random random = new Random();
-    public override void _Ready() {
-        DevelopmentInit();
+    public partial class TestInit : Node {
+        [Export]
+        UnitsInScene_Show unitsInScene_Show;
+        [Export]
+        StartPointArea startPointAreaRef;
 
-        var unitsStateList = unitsInScene_Show.UnitsArr;
-        foreach (var unitState in unitsStateList) {
-            unitState.SetGlobalPosition(startPointAreaRef.SamplePosition());
+        readonly Random random = new();
+        public override void _Ready() {
+            DevelopmentInit();
+
+            var unitsStateList = unitsInScene_Show.UnitsArr;
+            foreach (var unitState in unitsStateList) {
+                unitState.SetGlobalPosition(startPointAreaRef.SamplePosition());
+            }
+
         }
-
-    }
-    void DevelopmentInit() {
-        var children = unitsInScene_Show.GetChildren();
-        foreach (Node child in children) {
-            if (child is UnitGameShow unitGameShow) {
-                unitsInScene_Show.UnitsInSceneRes.AddUnit(unitGameShow.UnitStateRec);
+        void DevelopmentInit() {
+            var children = unitsInScene_Show.GetChildren();
+            foreach (Node child in children) {
+                if (child is UnitGameShow unitGameShow) {
+                    unitsInScene_Show.UnitsInSceneRes.AddUnit(unitGameShow.UnitStateRec);
+                }
             }
         }
     }
+
 }

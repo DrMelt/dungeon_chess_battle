@@ -1,48 +1,48 @@
 using GameLogic;
 using Godot;
-using System;
 
-public partial class StateBarList : Control {
-    [Export]
-    EnumCamp listOfCamp;
+namespace DungeonChessBattle {
 
-    [ExportGroup("Internal")]
-    [Export]
-    VBoxContainer vBoxContainerRef;
+    public partial class StateBarList : Control {
+        [Export]
+        EnumCamp listOfCamp;
 
-    [Export]
-    PackedScene stateBarMini_PKS;
-    StateBarMini NewStateBarMini => stateBarMini_PKS.Instantiate<StateBarMini>();
+        [ExportGroup("Internal")]
+        [Export]
+        VBoxContainer vBoxContainerRef;
 
-
-    UnitsInScene bindingUnitsInScene;
+        [Export]
+        PackedScene stateBarMini_PKS;
+        StateBarMini NewStateBarMini => stateBarMini_PKS.Instantiate<StateBarMini>();
 
 
-    public void BindUnitsInScene(UnitsInScene unitsInScene) {
-        if (bindingUnitsInScene != null) {
-            bindingUnitsInScene.OnUnitsChangedEvent -= OnUnitsChanged;
-        }
-        bindingUnitsInScene = unitsInScene;
+        UnitsInScene bindingUnitsInScene;
 
-        bindingUnitsInScene.OnUnitsChangedEvent += OnUnitsChanged;
-        OnUnitsChanged(bindingUnitsInScene);
-    }
 
-    void OnUnitsChanged(UnitsInScene scene) {
-        var children = vBoxContainerRef.GetChildren();
-        foreach (var child in children) {
-            child.QueueFree();
+        public void BindUnitsInScene(UnitsInScene unitsInScene) {
+            bindingUnitsInScene?.OnUnitsChangedEvent -= OnUnitsChanged;
+            bindingUnitsInScene = unitsInScene;
+
+            bindingUnitsInScene.OnUnitsChangedEvent += OnUnitsChanged;
+            OnUnitsChanged(bindingUnitsInScene);
         }
 
-        var units = scene.UnitsArr;
-        foreach (var unit in units) {
-            if (unit.Camp == listOfCamp) {
-                StateBarMini stateBarMini = NewStateBarMini;
+        void OnUnitsChanged(UnitsInScene scene) {
+            var children = vBoxContainerRef.GetChildren();
+            foreach (var child in children) {
+                child.QueueFree();
+            }
 
-                vBoxContainerRef.AddChild(stateBarMini);
-                stateBarMini.BindUnitState(unit);
+            var units = scene.UnitsArr;
+            foreach (var unit in units) {
+                if (unit.Camp == listOfCamp) {
+                    StateBarMini stateBarMini = NewStateBarMini;
+
+                    vBoxContainerRef.AddChild(stateBarMini);
+                    stateBarMini.BindUnitState(unit);
+                }
             }
         }
-    }
 
+    }
 }

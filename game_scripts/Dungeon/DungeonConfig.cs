@@ -1,6 +1,6 @@
 using Godot;
-using System;
 
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class DungeonConfig : Resource {

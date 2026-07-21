@@ -1,5 +1,6 @@
 using Godot;
-using System;
+
+namespace DungeonChessBattle;
 
 public partial class SkillRangeRect_Hint : Node3D {
     [Export]
@@ -23,9 +24,7 @@ public partial class SkillRangeRect_Hint : Node3D {
 
 
     public void SetSkillProgress(float progress) {
-        if (shaderMaterial != null) {
-            shaderMaterial.SetShaderParameter("Skill_Progress", progress);
-        }
+        shaderMaterial?.SetShaderParameter("Skill_Progress", progress);
     }
 
 
