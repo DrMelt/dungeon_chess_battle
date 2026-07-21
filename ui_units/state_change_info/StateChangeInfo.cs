@@ -3,6 +3,12 @@ using Godot;
 using System;
 
 public partial class StateChangeInfo : Node {
+    static Vector2 WorldToScreenPos(Node node, Vector3 wordPos) {
+        var camera3D = node.GetViewport().GetCamera3D();
+        var screenPos = camera3D.UnprojectPosition(wordPos);
+        return screenPos;
+    }
+
     [Export]
     UserUISettings userUISettingsRes;
     [Export]
@@ -74,7 +80,7 @@ public partial class StateChangeInfo : Node {
 
 
     T SpawnInfoNode<T>(T newInfoNode, UnitState unitState, Vector3 positionOffset, Action<T> initAction) where T : Control {
-        Vector2 screenPos = Utility.WorldToScreenPos(this, unitState.Position + positionOffset);
+        Vector2 screenPos = WorldToScreenPos(this, unitState.Position + positionOffset);
         AddChild(newInfoNode);
         newInfoNode.GlobalPosition = screenPos;
         initAction?.Invoke(newInfoNode);

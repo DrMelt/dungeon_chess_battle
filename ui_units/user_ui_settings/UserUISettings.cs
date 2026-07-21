@@ -20,7 +20,7 @@ public partial class UserUISettings : Resource {
 
     [ExportGroup("Camp Info")]
     [Export]
-    Dictionary<EnumCamp, Color> campColorDict = new Dictionary<EnumCamp, Color>();
+    Godot.Collections.Dictionary<EnumCamp, Color> campColorDict = new Godot.Collections.Dictionary<EnumCamp, Color>();
     public Color? GetCampColor(EnumCamp camp) {
         bool tryRes = campColorDict.TryGetValue(camp, out Color campColor);
         return tryRes ? campColor : null;

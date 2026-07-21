@@ -21,7 +21,7 @@ namespace GameLogic {
 
 
         protected override void CallSpelledSkill() {
-            foreach (UnitState skillObject in testObjects) {
+            foreach (IUnitState skillObject in testObjects) {
                 Utility.IsInRange_Circular(
                     skillObject.Position,
                     callSkillObject.Position,

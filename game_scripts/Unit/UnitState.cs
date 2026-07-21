@@ -4,20 +4,8 @@ using Godot;
 using Godot.Collections;
 
 namespace GameLogic {
-    public enum EnumCamp {
-        None = 0,
-        Camp_A,
-        Camp_BOSS,
-        EnumCampLength,
-    }
-    public enum Enum_DamageType {
-        None = 0,
-        Physcial,
-        Magic,
-    }
-
     [GlobalClass]
-    public partial class UnitState : Resource {
+    public partial class UnitState : Resource, IUnitState {
 
 
 
