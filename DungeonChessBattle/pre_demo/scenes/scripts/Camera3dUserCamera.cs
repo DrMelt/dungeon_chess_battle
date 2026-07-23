@@ -7,7 +7,7 @@ public partial class Camera3dUserCamera : Camera3D {
     float _cameraMoveSpeed = 1;
 
     [Export]
-    float _zoomSpeedScale = 15.0f;
+    float _zoomSpeedScale = 50.0f;
     float ZoomSpeed => _zoomSpeedScale * _cameraMoveSpeed;
     [Export]
     float _rotateSpeedScale = 0.01f;
@@ -26,7 +26,7 @@ public partial class Camera3dUserCamera : Camera3D {
 
         Vector2 currentMouse = GetViewport().GetMousePosition() * GetViewport().GetVisibleRect().Size;
         if (Input.IsActionPressed("Camera_Rotate")) {
-            Vector2 deltaMouse = (currentMouse - mousePos) * 0.001f * (float)delta * RotateSpeed;
+            Vector2 deltaMouse = (currentMouse - mousePos) * 0.001f * RotateSpeed;
 
             Vector3 cameraPreDir = -GlobalTransform.Basis.Z;
             Basis preBais = GlobalTransform.Basis;
@@ -38,9 +38,22 @@ public partial class Camera3dUserCamera : Camera3D {
                 centerPos = focusOn.GlobalPosition;
             }
 
+            // 1. 绕世界 Y 轴旋转（偏航/Yaw），不受当前俯仰角影响，避免万向节锁定
+            Basis yawBasis = new(Vector3.Up, -deltaMouse.X);
+            GlobalTransform = new Transform3D(
+                (yawBasis * GlobalTransform.Basis).Orthonormalized(),
+                GlobalPosition
+            );
 
-            Rotation += new Vector3(-deltaMouse.Y, -deltaMouse.X, 0);
+            // 2. 绕本地 X 轴旋转（俯仰/Pitch），不限制角度，可到达并跨越 90°
+            float pitchDelta = -deltaMouse.Y;
+            Basis pitchBasis = new(GlobalTransform.Basis.X, pitchDelta);
+            GlobalTransform = new Transform3D(
+                (pitchBasis * GlobalTransform.Basis).Orthonormalized(),
+                GlobalPosition
+            );
 
+            // 3. 调整位置，保持相机围绕中心点旋转
             Vector3 vecTo = centerPos - GlobalPosition;
             Basis rotation = GlobalTransform.Basis * preBais.Inverse();
             Vector3 newVec = rotation * vecTo;
@@ -51,7 +64,7 @@ public partial class Camera3dUserCamera : Camera3D {
         if (Input.IsActionPressed("Camera_Move")) {
             Vector3 global_X = GlobalTransform.Basis.X;
             Vector3 global_Y = GlobalTransform.Basis.Y;
-            Vector2 deltaMouse = (currentMouse - mousePos) * 0.0001f * (float)delta * MoveSpeed;
+            Vector2 deltaMouse = (currentMouse - mousePos) * 0.0001f * MoveSpeed;
 
             GlobalPosition += -global_X * deltaMouse.X + global_Y * deltaMouse.Y;
         }
