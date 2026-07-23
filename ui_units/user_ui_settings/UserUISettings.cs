@@ -1,5 +1,4 @@
 using Godot;
-using Godot.Collections;
 
 using DungeonChessBattle.Core;
 
@@ -20,7 +19,7 @@ public partial class UserUISettings : Resource {
 
     [ExportGroup("Camp Info")]
     [Export]
-    Dictionary<EnumCamp, Color> campColorDict = [];
+    Godot.Collections.Dictionary<EnumCamp, Color> campColorDict = [];
     public Color? GetCampColor(EnumCamp camp) {
         bool tryRes = campColorDict.TryGetValue(camp, out Color campColor);
         return tryRes ? campColor : null;
