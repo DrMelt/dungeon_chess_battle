@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Skill_Range_Damage" format=3 uid="uid://dkyowavmc04rk"]
+
+[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://icons/000400_hr1.png" id="1_yiyny"]
+[ext_resource type="Script" uid="uid://cnjso65i6fdfd" path="res://game_scripts/Range/RectRangeResGodot.cs" id="2_a7ykk"]
+[ext_resource type="Script" uid="uid://bqqt3y3s4xm54" path="res://game_scripts/Skills/scripts/Skill_Range_Damage.cs" id="3_ivhtw"]
+
+[sub_resource type="Resource" id="Resource_yiyny"]
+script = ExtResource("2_a7ykk")
+farClamp = 5.0
+metadata/_custom_type_script = "uid://cnjso65i6fdfd"
+
+[resource]
+script = ExtResource("3_ivhtw")
+damage = 200.0
+enum_DamageType = 1
+range_Res_Base = SubResource("Resource_yiyny")
+skillName = "RectRangeDamage"
+icon = ExtResource("1_yiyny")
+skillDescription = "RectRangeDamage"
+metadata/_custom_type_script = "uid://bqqt3y3s4xm54"

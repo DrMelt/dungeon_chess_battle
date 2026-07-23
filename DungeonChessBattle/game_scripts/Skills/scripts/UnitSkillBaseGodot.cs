@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Interfaces;
 using Godot;
 using System.Collections.Generic;
 

@@ -1,5 +1,5 @@
+using DungeonChessBattle.Core.Interfaces;
 using Godot;
-
 
 namespace DungeonChessBattle.Core;
 

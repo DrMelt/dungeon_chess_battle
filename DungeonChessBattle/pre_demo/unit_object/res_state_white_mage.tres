@@ -5,12 +5,12 @@
 [ext_resource type="Resource" uid="uid://dep8x70a71ltj" path="res://game_scripts/Skills/res_skill_cure.tres" id="2_t2qu4"]
 [ext_resource type="Resource" uid="uid://vwf7lsob4qxl" path="res://game_scripts/Skills/res_skill_add_dot_magic.tres" id="3_lhexl"]
 [ext_resource type="Resource" uid="uid://ki4rvmooffx3" path="res://game_scripts/Skills/res_skill_magic_damage.tres" id="4_ixd6g"]
-[ext_resource type="Resource" uid="uid://dkyowavmc04rk" path="res://game_scripts/Skills/res_skill_rect_range_damage.tres" id="5_t2qu4"]
+[ext_resource type="Resource" uid="uid://dkyowavmc04rk" path="res://game_scripts/Skills/rect_range_damage/res_skill_rect_range_damage.tres" id="5_eqosd"]
 
 [resource]
 script = ExtResource("2_itss4")
 _UnitStateName = "白魔法师"
-_skillsList = Array[Object]([ExtResource("1_87afb"), ExtResource("2_t2qu4"), ExtResource("3_lhexl"), ExtResource("4_ixd6g"), ExtResource("5_t2qu4")])
+_skillsList = Array[Object]([ExtResource("1_87afb"), ExtResource("2_t2qu4"), ExtResource("3_lhexl"), ExtResource("4_ixd6g"), ExtResource("5_eqosd")])
 _camp = 1
 _hates = Dictionary[String, float]({})
 metadata/_custom_type_script = "uid://bwroov12ay0pv"
