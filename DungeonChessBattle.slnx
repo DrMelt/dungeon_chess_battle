@@ -4,5 +4,6 @@
     <BuildType Name="ExportDebug" />
     <BuildType Name="ExportRelease" />
   </Configurations>
-  <Project Path="DungeonChessBattle.csproj" />
+  <Project Path="DungeonChessBattle\DungeonChessBattle.csproj" />
+  <Project Path="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
 </Solution>

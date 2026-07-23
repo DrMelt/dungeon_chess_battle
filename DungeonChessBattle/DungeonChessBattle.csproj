@@ -5,8 +5,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
-    <Compile Remove="DungeonChessBattle.Core\**\*.cs" />
+    <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="DungeonChessBattle.Core.Interfaces" />

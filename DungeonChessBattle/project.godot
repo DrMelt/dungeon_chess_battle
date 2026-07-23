@@ -26,6 +26,7 @@ window/stretch/mode="canvas_items"
 [dotnet]
 
 project/assembly_name="DungeonChessBattle"
+project/solution_directory="../"
 
 [input]
 
