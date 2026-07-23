@@ -1,16 +1,15 @@
 using Godot;
-using DungeonChessBattle.Core.Skills;
 
 
-namespace DungeonChessBattle.Core {
-    [GlobalClass]
-    public partial class Skill_Cure : UnitSkillBase {
-        [Export]
-        float curePotency = 0;
+namespace DungeonChessBattle.Core;
 
-        protected override void CallSpelledSkill() {
-            float health = callSkillObject.CureAmount(curePotency);
-            targetObject.RestoreHealth(health);
-        }
+[GlobalClass]
+public partial class Skill_Cure : UnitSkillBaseGodot {
+    [Export]
+    float curePotency = 0;
+
+    protected override void CallSpelledSkill() {
+        float health = CallSkillObject.CureAmount(curePotency);
+        TargetObject.RestoreHealth(health);
     }
 }

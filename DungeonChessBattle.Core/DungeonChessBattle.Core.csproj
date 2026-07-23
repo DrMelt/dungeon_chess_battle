@@ -8,8 +8,4 @@
         <RootNamespace>DungeonChessBattle.Core</RootNamespace>
     </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="GodotSharp" Version="4.7.1" />
-    </ItemGroup>
-
 </Project>

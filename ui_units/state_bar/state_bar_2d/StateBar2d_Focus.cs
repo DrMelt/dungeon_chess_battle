@@ -1,59 +1,57 @@
 using Godot;
 
-namespace DungeonChessBattle {
+namespace DungeonChessBattle;
 
-    public partial class StateBar2d_Focus : Control {
+public partial class StateBar2d_Focus : Control {
 
-        [Export]
-        UserInterfaceRes userInterfaceRes;
-
-
-        [ExportGroup("Internal Parameters")]
-        [Export]
-        UserUISettings userUISettingsRef;
+    [Export]
+    UserInterfaceRes userInterfaceRes;
 
 
-        [ExportSubgroup("Buffs")]
-        [Export]
-        ContainerBuffs hboxContainerBuffsRef;
-
-        [ExportSubgroup("State Bar")]
-        [Export]
-        HP_StateBar panelFocusStateRef;
-
-        [Export]
-        SkillProgressBar panelSkillProgressBarRef;
+    [ExportGroup("Internal Parameters")]
+    [Export]
+    UserUISettings userUISettingsRef;
 
 
-        public override void _Process(double delta) {
-            if (!Engine.IsEditorHint()) {
-                Visible = false;
-                UnitGameShow showUnit = GetUnitShow();
+    [ExportSubgroup("Buffs")]
+    [Export]
+    ContainerBuffs hboxContainerBuffsRef;
 
-                if (showUnit != null) {
-                    Visible = true;
+    [ExportSubgroup("State Bar")]
+    [Export]
+    HP_StateBar panelFocusStateRef;
 
-                    hboxContainerBuffsRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                    panelFocusStateRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                    panelSkillProgressBarRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                }
+    [Export]
+    SkillProgressBar panelSkillProgressBarRef;
 
+
+    public override void _Process(double delta) {
+        if (!Engine.IsEditorHint()) {
+            Visible = false;
+            UnitGameShow showUnit = GetUnitShow();
+
+            if (showUnit != null) {
+                Visible = true;
+
+                hboxContainerBuffsRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                panelFocusStateRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                panelSkillProgressBarRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
             }
-        }
 
-
-        UnitGameShow GetUnitShow() {
-            UnitGameShow showUnit = null;
-            UnitGameShow mouseOnUnit = userInterfaceRes.MouseOnUnit;
-            UnitGameShow focusOnUnit = userInterfaceRes.FocusOnUnit;
-            if (mouseOnUnit != null) {
-                showUnit = mouseOnUnit;
-            }
-            else if (focusOnUnit != null) {
-                showUnit = focusOnUnit;
-            }
-            return showUnit;
         }
     }
 
+
+    UnitGameShow GetUnitShow() {
+        UnitGameShow showUnit = null;
+        UnitGameShow mouseOnUnit = userInterfaceRes.MouseOnUnit;
+        UnitGameShow focusOnUnit = userInterfaceRes.FocusOnUnit;
+        if (mouseOnUnit != null) {
+            showUnit = mouseOnUnit;
+        }
+        else if (focusOnUnit != null) {
+            showUnit = focusOnUnit;
+        }
+        return showUnit;
+    }
 }
