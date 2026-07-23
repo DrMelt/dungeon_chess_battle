@@ -1,4 +1,4 @@
-using Godot;
+using System.Numerics;
 
 namespace DungeonChessBattle.Core.Interfaces {
     public interface IUnitState {
@@ -21,12 +21,12 @@ namespace DungeonChessBattle.Core.Interfaces {
             get;
         }
 
-        void SpellNewSkill(DungeonChessBattle.Core.Skills.UnitSkillBase skill);
+        void SpellNewSkill(IUnitSkill skill);
         float TakeDamage(float damageAmount, Enum_DamageType damageType);
         float PhysicalDamageAmount(float physicalDamage);
         float MagicDamageAmount(float magicDamage);
         float CureAmount(float curePotency);
         float RestoreHealth(float health);
-        void AddBuff(DungeonChessBattle.Core.Buffs.BuffBase buff);
+        void AddBuff(IBuff buff);
     }
 }

@@ -9,8 +9,6 @@
     <Compile Remove="DungeonChessBattle.Core\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Using Include="DungeonChessBattle.Core.Skills" />
-    <Using Include="DungeonChessBattle.Core.Buffs" />
     <Using Include="DungeonChessBattle.Core.Interfaces" />
     <Using Include="DungeonChessBattle.Core.Range" />
     <Using Include="DungeonChessBattle" />

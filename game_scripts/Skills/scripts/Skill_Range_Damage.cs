@@ -1,44 +1,41 @@
 using Godot;
-using DungeonChessBattle.Core.Interfaces;
-using DungeonChessBattle.Core.Range;
-using DungeonChessBattle.Core.Skills;
 
-namespace DungeonChessBattle.Core {
-    [GlobalClass]
-    public partial class Skill_Range_Damage : UnitSkillBase {
+namespace DungeonChessBattle.Core;
 
-        [Export]
-        float damage = 0;
+[GlobalClass]
+public partial class Skill_Range_Damage : UnitSkillBaseGodot {
 
-        [Export]
-        Enum_DamageType enum_DamageType;
+    [Export]
+    float damage = 0;
 
-        [Export]
-        Range_Res_Base range_Res_Base;
-        public Range_Res_Base Skill_Range_Res_Base => range_Res_Base;
+    [Export]
+    Enum_DamageType enum_DamageType;
 
-        protected override void CallSpelledSkill() {
-            float physicalDamage = callSkillObject.PhysicalDamageAmount(damage);
-            float magicDamage = callSkillObject.MagicDamageAmount(damage);
+    [Export]
+    RangeResBaseGodot range_Res_Base;
+    public RangeResBaseGodot Skill_Range_Res_Base => range_Res_Base;
 
-            foreach (IUnitState testObject in testObjects) {
-                if (testObject.Camp == callSkillObject.Camp) {
-                    continue;
-                }
+    protected override void CallSpelledSkill() {
+        float physicalDamage = CallSkillObject.PhysicalDamageAmount(damage);
+        float magicDamage = CallSkillObject.MagicDamageAmount(damage);
 
-                bool isInRange = range_Res_Base.IsInRange(callSkillObject, testObject, targetPos);
-
-                if (isInRange) {
-                    if (enum_DamageType == Enum_DamageType.Physcial) {
-                        testObject.TakeDamage(physicalDamage, Enum_DamageType.Physcial);
-                    }
-                    else if (enum_DamageType == Enum_DamageType.Magic) {
-                        testObject.TakeDamage(magicDamage, Enum_DamageType.Magic);
-                    }
-                }
-
+        foreach (IUnitState testObject in TestObjects) {
+            if (testObject.Camp == CallSkillObject.Camp) {
+                continue;
             }
-        }
 
+            bool isInRange = range_Res_Base.IsInRange(CallSkillObject, testObject, TargetPos);
+
+            if (isInRange) {
+                if (enum_DamageType == Enum_DamageType.Physcial) {
+                    testObject.TakeDamage(physicalDamage, Enum_DamageType.Physcial);
+                }
+                else if (enum_DamageType == Enum_DamageType.Magic) {
+                    testObject.TakeDamage(magicDamage, Enum_DamageType.Magic);
+                }
+            }
+
+        }
     }
+
 }
