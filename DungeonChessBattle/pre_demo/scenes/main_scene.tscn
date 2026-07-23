@@ -278,9 +278,6 @@ cull_mask = 1059
 current = true
 fov = 44.3
 script = ExtResource("1_s243o")
-_zoomSpeedScale = 40.0
-_rotateSpeedScale = 0.3
-_moveSpeedScale = 10.0
 userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Interface" type="Node" parent="." unique_id=1240739248]
