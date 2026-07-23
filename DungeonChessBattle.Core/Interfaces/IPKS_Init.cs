@@ -1,6 +1,6 @@
 using System;
 
-namespace GameLogic.Interfaces {
+namespace DungeonChessBattle.Core.Interfaces {
     public interface IPKS_Init {
         void Init();
     }

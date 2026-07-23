@@ -1,6 +1,6 @@
 using Godot;
 
-using GameLogic;
+using DungeonChessBattle.Core;
 
 namespace DungeonChessBattle {
 

@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using Godot.Collections;
+using DungeonChessBattle.Core.Buffs;
+using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Skills;
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     [GlobalClass]
     public partial class UnitState : Resource, IUnitState {
 

@@ -3,7 +3,7 @@ using Godot.Collections;
 using System;
 
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     [GlobalClass]
     public partial class UnitsInScene : Resource {
         public UnitsInScene() {

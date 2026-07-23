@@ -1,6 +1,6 @@
 using System;
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     public enum EnumCamp {
         None = 0,
         Camp_A,

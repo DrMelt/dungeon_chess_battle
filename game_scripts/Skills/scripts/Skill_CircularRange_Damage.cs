@@ -1,7 +1,9 @@
 using Godot;
+using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Skills;
 
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     public partial class Skill_CircularRange_Damage : UnitSkillBase {
 
         [Export]

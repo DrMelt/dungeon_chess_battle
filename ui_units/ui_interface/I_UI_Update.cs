@@ -1,4 +1,4 @@
-using GameLogic;
+using DungeonChessBattle.Core;
 
 namespace DungeonChessBattle;
 

@@ -1,7 +1,9 @@
 using Godot;
+using DungeonChessBattle.Core.Buffs;
+using DungeonChessBattle.Core.Interfaces;
 
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     [GlobalClass]
     public partial class Buff_DOT : BuffBase {
         [Export]
