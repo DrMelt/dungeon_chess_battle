@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     public class Utility {
         #region IsInRange_Circular
 

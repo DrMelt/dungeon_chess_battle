@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 #nullable disable
 
-namespace GameLogic.Skills {
+namespace DungeonChessBattle.Core.Skills {
     [GlobalClass]
     public partial class UnitSkillBase : Resource {
         [Export]
@@ -55,15 +55,15 @@ namespace GameLogic.Skills {
         float skillCoolingTime = 0;
         public float SkillCoolingTime => skillCoolingTime;
 
-        protected GameLogic.Interfaces.IUnitState callSkillObject;
-        protected GameLogic.Interfaces.IUnitState targetObject;
-        public GameLogic.Interfaces.IUnitState CallSkillObject => callSkillObject;
+        protected DungeonChessBattle.Core.Interfaces.IUnitState callSkillObject;
+        protected DungeonChessBattle.Core.Interfaces.IUnitState targetObject;
+        public DungeonChessBattle.Core.Interfaces.IUnitState CallSkillObject => callSkillObject;
 
         [Export]
         protected Vector3 targetPos;
         public Vector3 TargetPos => targetPos;
 
-        protected Array<GameLogic.Interfaces.IUnitState> testObjects;
+        protected Array<DungeonChessBattle.Core.Interfaces.IUnitState> testObjects;
 
         protected void Reset_SpelledSkill() {
             skillCoolingTime = skillCooldownTime;
@@ -79,7 +79,7 @@ namespace GameLogic.Skills {
             return skillCoolingTime > 0;
         }
 
-        static EnumSkillCanAdd SkillAddEnum(GameLogic.Interfaces.IUnitState callSkillObject, GameLogic.Interfaces.IUnitState testObject) {
+        static EnumSkillCanAdd SkillAddEnum(DungeonChessBattle.Core.Interfaces.IUnitState callSkillObject, DungeonChessBattle.Core.Interfaces.IUnitState testObject) {
             EnumSkillCanAdd addEnum = EnumSkillCanAdd.None;
             if (callSkillObject.Camp == testObject.Camp) {
                 addEnum |= EnumSkillCanAdd.Same;
@@ -91,7 +91,7 @@ namespace GameLogic.Skills {
             return addEnum;
         }
 
-        public void SetSkill(GameLogic.Interfaces.IUnitState callSkillObject, GameLogic.Interfaces.IUnitState targetObject, Vector3? targetPos, System.Collections.Generic.IEnumerable<GameLogic.Interfaces.IUnitState> testObjects) {
+        public void SetSkill(DungeonChessBattle.Core.Interfaces.IUnitState callSkillObject, DungeonChessBattle.Core.Interfaces.IUnitState targetObject, Vector3? targetPos, System.Collections.Generic.IEnumerable<DungeonChessBattle.Core.Interfaces.IUnitState> testObjects) {
             if (needUnitTarget) {
                 if (targetObject == null) {
                     GD.Print($"{skillName} need a target");

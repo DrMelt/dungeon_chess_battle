@@ -1,7 +1,7 @@
 using Godot;
 using Godot.Collections;
 
-using GameLogic;
+using DungeonChessBattle.Core;
 
 namespace DungeonChessBattle {
 

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace GameLogic.Range {
+namespace DungeonChessBattle.Core.Range {
     [GlobalClass]
     public partial class RectRange_Res : Range_Res_Base {
         [Export]
@@ -20,7 +20,7 @@ namespace GameLogic.Range {
         readonly float toR = 1.0f;
         public float ToR => toR;
 
-        public override bool IsInRange(GameLogic.Interfaces.IUnitState callSkillObject, GameLogic.Interfaces.IUnitState testObject, Vector3 targetPos) {
+        public override bool IsInRange(DungeonChessBattle.Core.Interfaces.IUnitState callSkillObject, DungeonChessBattle.Core.Interfaces.IUnitState testObject, Vector3 targetPos) {
             return Utility.IsInRange_Rect(
                 testObject.Position,
                 callSkillObject.Position,

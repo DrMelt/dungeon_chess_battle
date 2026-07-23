@@ -1,7 +1,9 @@
 using Godot;
+using DungeonChessBattle.Core.Buffs;
+using DungeonChessBattle.Core.Skills;
 
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     [GlobalClass]
     public partial class Skill_Add_BUFF : UnitSkillBase {
         [Export]

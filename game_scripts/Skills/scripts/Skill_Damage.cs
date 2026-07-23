@@ -1,7 +1,8 @@
 using Godot;
+using DungeonChessBattle.Core.Skills;
 
 
-namespace GameLogic {
+namespace DungeonChessBattle.Core {
     [GlobalClass]
     public partial class Skill_Damage : UnitSkillBase {
 

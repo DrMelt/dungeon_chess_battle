@@ -5,14 +5,14 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="GameLogic.Core\GameLogic.Core.csproj" />
-    <Compile Remove="GameLogic.Core\**\*.cs" />
+    <ProjectReference Include="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
+    <Compile Remove="DungeonChessBattle.Core\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Using Include="GameLogic.Skills" />
-    <Using Include="GameLogic.Buffs" />
-    <Using Include="GameLogic.Interfaces" />
-    <Using Include="GameLogic.Range" />
+    <Using Include="DungeonChessBattle.Core.Skills" />
+    <Using Include="DungeonChessBattle.Core.Buffs" />
+    <Using Include="DungeonChessBattle.Core.Interfaces" />
+    <Using Include="DungeonChessBattle.Core.Range" />
     <Using Include="DungeonChessBattle" />
   </ItemGroup>
 </Project>

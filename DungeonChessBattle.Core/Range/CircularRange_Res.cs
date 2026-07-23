@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace GameLogic.Range {
+namespace DungeonChessBattle.Core.Range {
     [GlobalClass]
     public partial class CircularRange_Res : Range_Res_Base {
         [Export]
@@ -20,7 +20,7 @@ namespace GameLogic.Range {
         readonly float radianTo = 1.0f;
         public float RadianTo => radianTo;
 
-        public override bool IsInRange(GameLogic.Interfaces.IUnitState callSkillObject, GameLogic.Interfaces.IUnitState testObject, Vector3 targetPos) {
+        public override bool IsInRange(DungeonChessBattle.Core.Interfaces.IUnitState callSkillObject, DungeonChessBattle.Core.Interfaces.IUnitState testObject, Vector3 targetPos) {
             return Utility.IsInRange_Circular(
                 testObject.Position,
                 callSkillObject.Position,

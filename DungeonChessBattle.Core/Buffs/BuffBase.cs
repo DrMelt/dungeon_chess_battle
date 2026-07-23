@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 #nullable disable
 
-namespace GameLogic.Buffs {
+namespace DungeonChessBattle.Core.Buffs {
     [GlobalClass]
     public partial class BuffBase : Resource {
         [Export]
@@ -29,9 +29,9 @@ namespace GameLogic.Buffs {
         public bool isAlive = true;
 
         [ExportGroup("Runtime Parameters")]
-        public GameLogic.Interfaces.IUnitState fromUnit;
+        public DungeonChessBattle.Core.Interfaces.IUnitState fromUnit;
 
-        public void Update(double deltaTime, GameLogic.Interfaces.IUnitState unitState) {
+        public void Update(double deltaTime, DungeonChessBattle.Core.Interfaces.IUnitState unitState) {
             if (!isAlive) {
                 return;
             }
@@ -45,10 +45,10 @@ namespace GameLogic.Buffs {
             }
         }
 
-        protected virtual void ActionDuration(double deltaTime, GameLogic.Interfaces.IUnitState unitState) {
+        protected virtual void ActionDuration(double deltaTime, DungeonChessBattle.Core.Interfaces.IUnitState unitState) {
         }
 
-        protected virtual void ActionEnd(GameLogic.Interfaces.IUnitState unitState) {
+        protected virtual void ActionEnd(DungeonChessBattle.Core.Interfaces.IUnitState unitState) {
         }
 
         public void AddSuperpositions(BuffBase buffBase) {
