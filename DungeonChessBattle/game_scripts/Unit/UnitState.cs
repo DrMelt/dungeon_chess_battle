@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Core.Interfaces;
 using Godot;
 using Godot.Collections;
 

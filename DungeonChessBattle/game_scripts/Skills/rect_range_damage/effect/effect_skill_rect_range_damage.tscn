@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://by8ljj417lj6b"]
+
+[ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="1_en5dr"]
+[ext_resource type="Shader" uid="uid://b24gnqkooile2" path="res://effects/skill_range/rect/rect_region.tres" id="2_yg53u"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kb74x"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_yg53u")
+shader_parameter/ColorParameter = Color(1, 1, 1, 1)
+shader_parameter/Near = 0.0
+shader_parameter/Skill_Progress = 0.0
+
+[node name="Skill_Range_Rect" unique_id=335612382 instance=ExtResource("1_en5dr")]
+
+[node name="Skill_Range_Decal_Rect" parent="." index="0" unique_id=187491970]
+material_override = SubResource("ShaderMaterial_kb74x")

@@ -15,9 +15,9 @@
 [ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
 [ext_resource type="Script" uid="uid://byoc2mg3gg4u4" path="res://pre_demo/scenes/scripts/Node2d_UserUI.cs" id="11_4e7mo"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="11_34gv2"]
-[ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/skill_range_circular.tscn" id="12_sph05"]
+[ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="Script" uid="uid://bwroov12ay0pv" path="res://game_scripts/Unit/UnitState.cs" id="12_u3fd7"]
-[ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/skill_range_rect.tscn" id="13_0by77"]
+[ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
 [ext_resource type="Script" uid="uid://c8o2rtyvqktdg" path="res://pre_demo/scenes/TestInit.cs" id="13_eaknj"]
 [ext_resource type="Script" uid="uid://df7q4ovcrbmh1" path="res://game_scripts/TimeTable/MotionTimeTable.cs" id="13_uvuxq"]
 [ext_resource type="PackedScene" uid="uid://b4otb14bf2txn" path="res://pre_demo/scenes/start_point_area.tscn" id="14_cact4"]
@@ -273,10 +273,13 @@ unitShowRef = NodePath("../..")
 shape = SubResource("CapsuleShape3D_roldv")
 
 [node name="Camera3D_UserCamera" type="Camera3D" parent="." unique_id=1696345154]
-transform = Transform3D(1, 0, 0, 0, 0.928583, 0.371124, 0, -0.371124, 0.928583, -3.37032, 4.81776, 9.32199)
+transform = Transform3D(1.0000001, 0, 0, 0, -4.3711385e-08, 1, 0, -0.99999994, -4.371139e-08, 0, 10, 0)
+rotation_edit_mode = 1
 cull_mask = 1059
+projection = 1
 current = true
 fov = 44.3
+size = 11.425
 script = ExtResource("1_s243o")
 userInterfaceRes = ExtResource("11_34gv2")
 
