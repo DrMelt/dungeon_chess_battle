@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Enums;
 using Godot;
 using Godot.Collections;
 
@@ -27,7 +28,7 @@ public partial class UnitGameShow : Node3D {
 
 
     public void SetMoveTarget(Vector3 targetPos) {
-        if (unitStateRec.Camp == Core.EnumCamp.Camp_A) {
+        if (unitStateRec.Camp == EnumCamp.Camp_A) {
             navigationAgentRef.TargetPos = targetPos;
         }
     }

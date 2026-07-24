@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="LiteNetLib" Version="2.1.4" />
+    <PackageVersion Include="LiteEntitySystem" Version="1.2.2" />
+  </ItemGroup>
+</Project>

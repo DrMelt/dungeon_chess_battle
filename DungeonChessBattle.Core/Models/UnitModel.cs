@@ -14,7 +14,7 @@ public class UnitModel : IUnitState {
     public float MaxHealth {
         get;
         set {
-            if (Math.Abs(value - field) > 0.0001f) {
+            if (System.MathF.Abs(value - field) > 0.0001f) {
                 field = value;
                 MaxHealthChanged?.Invoke(field);
             }
@@ -25,7 +25,7 @@ public class UnitModel : IUnitState {
     public float Health {
         get => _health;
         set {
-            if (Math.Abs(value - _health) > 0.0001f) {
+            if (System.MathF.Abs(value - _health) > 0.0001f) {
                 _health = value;
                 HealthChanged?.Invoke(_health);
             }
@@ -36,7 +36,7 @@ public class UnitModel : IUnitState {
 
     public float HealthShield => Health + Shield;
 
-    public float HealthPercent => Health / Math.Max(MaxHealth, HealthShield);
+    public float HealthPercent => Health / System.MathF.Max(MaxHealth, HealthShield);
 
     public float HealthShieldPercent => HealthShield / MaxHealth;
 
@@ -160,7 +160,7 @@ public class UnitModel : IUnitState {
         };
 
         _health -= damageFixed;
-        _health = Math.Clamp(_health, 0, MaxHealth);
+        _health = System.Math.Clamp(_health, 0f, MaxHealth);
 
         TookDamage?.Invoke(this, damageFixed, damageType);
         return damageFixed;
@@ -179,7 +179,7 @@ public class UnitModel : IUnitState {
     }
 
     public float RestoreHealth(float health) {
-        float healthFixed = Math.Clamp(_health + health, 0, MaxHealth) - _health;
+        float healthFixed = System.Math.Clamp(_health + health, 0f, MaxHealth) - _health;
         _health += healthFixed;
 
         return healthFixed;
