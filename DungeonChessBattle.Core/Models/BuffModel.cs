@@ -35,7 +35,7 @@ public class BuffModel : IBuff {
 
     public void AddSuperpositions(IBuff other) {
         Superpositions += 1;
-        Superpositions = Math.Min(Superpositions, other.MaxSuperpositions);
-        Duration = Math.Max(Duration, other.Duration);
+        Superpositions = System.Math.Min(Superpositions, other.MaxSuperpositions);
+        Duration = System.Math.Max(Duration, other.Duration);
     }
 }
