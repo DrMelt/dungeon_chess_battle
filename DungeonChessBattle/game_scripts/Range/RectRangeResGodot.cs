@@ -1,4 +1,5 @@
 using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Range;
 using Godot;
 
 namespace DungeonChessBattle.Core.Range;
@@ -21,15 +22,12 @@ public partial class RectRangeResGodot : RangeResBaseGodot {
     float toR = 1.0f;
     public float ToR => toR;
 
-    public override bool IsInRange(IUnitState callSkillObject, IUnitState testObject, System.Numerics.Vector3 targetPos) {
-        return Utility.IsInRange_Rect(
-            testObject.Position,
-            callSkillObject.Position,
-            targetPos - callSkillObject.Position,
-            nearClamp,
-            farClamp,
-            fromL,
-            toR
-        );
+    protected override IRangeRes CreateModel() {
+        return new RectRangeRes {
+            NearClamp = nearClamp,
+            FarClamp = farClamp,
+            FromL = fromL,
+            ToR = toR,
+        };
     }
 }

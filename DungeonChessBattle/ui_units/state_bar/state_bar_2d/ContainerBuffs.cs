@@ -20,7 +20,7 @@ public partial class ContainerBuffs : Control, IUI_Update {
             return;
         }
 
-        foreach (DungeonChessBattle.Core.BuffBaseGodot buff in unitState.BuffList) {
+        foreach (BuffBaseGodot buff in unitState.BuffList) {
             TextureRectBuffIcon buffIcon = buffIconPackedScene.Instantiate<TextureRectBuffIcon>();
             buffIcon.SetBuffIcon(buff, unitState);
             AddChild(buffIcon);

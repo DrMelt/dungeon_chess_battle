@@ -5,10 +5,10 @@ namespace DungeonChessBattle;
 
 public partial class UnitGameShow : Node3D {
     [Export]
-    DungeonChessBattle.Core.UnitState unitStateRec;
-    public DungeonChessBattle.Core.UnitState UnitStateRec => unitStateRec;
+    Core.UnitState unitStateRec;
+    public Core.UnitState UnitStateRec => unitStateRec;
 
-    public Array<DungeonChessBattle.Core.UnitSkillBaseGodot> SkillsList => unitStateRec.SkillsList;
+    public Array<Core.UnitSkillBaseGodot> SkillsList => unitStateRec.SkillsList;
 
     [Export]
     MeshInstance3D unitMeshInstanceRef;

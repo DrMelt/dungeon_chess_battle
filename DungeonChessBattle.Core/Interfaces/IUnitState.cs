@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle.Core.Interfaces {
     public interface IUnitState {

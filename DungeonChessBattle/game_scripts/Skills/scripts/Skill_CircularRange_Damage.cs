@@ -1,11 +1,12 @@
-using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Core.Range;
 using Godot;
-
 
 namespace DungeonChessBattle.Core;
 
+[GlobalClass]
 public partial class Skill_CircularRange_Damage : UnitSkillBaseGodot {
-
     [Export]
     float damage = 0;
     [Export]
@@ -20,20 +21,16 @@ public partial class Skill_CircularRange_Damage : UnitSkillBaseGodot {
     [Export]
     float radianTo = 1.0f;
 
-
-    protected override void CallSpelledSkill() {
-        foreach (IUnitState skillObject in TestObjects) {
-            Utility.IsInRange_Circular(
-                skillObject.Position,
-                CallSkillObject.Position,
-                TargetPos - skillObject.Position,
-                nearClamp,
-                farClamp,
-                radianFrom,
-                radianTo);
-
-
-        }
+    protected override SkillModel CreateModel() {
+        return new SkillRangeDamageModel {
+            Damage = damage,
+            DamageType = enum_DamageType,
+            RangeRes = new CircularRangeRes {
+                NearClamp = nearClamp,
+                FarClamp = farClamp,
+                RadianFrom = radianFrom,
+                RadianTo = radianTo,
+            },
+        };
     }
-
 }

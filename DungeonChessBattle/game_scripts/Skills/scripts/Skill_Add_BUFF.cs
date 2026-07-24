@@ -1,5 +1,5 @@
+using DungeonChessBattle.Core.Models;
 using Godot;
-
 
 namespace DungeonChessBattle.Core;
 
@@ -8,10 +8,9 @@ public partial class Skill_Add_BUFF : UnitSkillBaseGodot {
     [Export]
     BuffBaseGodot buff;
 
-
-    protected override void CallSpelledSkill() {
-        BuffBaseGodot addBuff = buff.Duplicate() as BuffBaseGodot;
-        addBuff.fromUnit = CallSkillObject;
-        TargetObject.AddBuff(addBuff);
+    protected override SkillModel CreateModel() {
+        return new SkillAddBuffModel {
+            Buff = buff,
+        };
     }
 }

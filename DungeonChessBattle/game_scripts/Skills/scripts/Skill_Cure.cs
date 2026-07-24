@@ -1,5 +1,5 @@
+using DungeonChessBattle.Core.Models;
 using Godot;
-
 
 namespace DungeonChessBattle.Core;
 
@@ -8,8 +8,9 @@ public partial class Skill_Cure : UnitSkillBaseGodot {
     [Export]
     float curePotency = 0;
 
-    protected override void CallSpelledSkill() {
-        float health = CallSkillObject.CureAmount(curePotency);
-        TargetObject.RestoreHealth(health);
+    protected override SkillModel CreateModel() {
+        return new SkillCureModel {
+            CurePotency = curePotency,
+        };
     }
 }

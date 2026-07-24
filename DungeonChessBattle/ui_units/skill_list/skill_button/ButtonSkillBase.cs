@@ -10,15 +10,15 @@ public partial class ButtonSkillBase : Button {
     [Export]
     Label label_CooldownTime_Ref;
 
-    DungeonChessBattle.Core.UnitSkillBaseGodot bindingSkill;
-    public DungeonChessBattle.Core.UnitSkillBaseGodot BindSkill => bindingSkill;
-    DungeonChessBattle.Core.UnitState bindUnitState;
-    public DungeonChessBattle.Core.UnitState BindUnitState => bindUnitState;
+    Core.UnitSkillBaseGodot bindingSkill;
+    public Core.UnitSkillBaseGodot BindSkill => bindingSkill;
+    Core.UnitState bindUnitState;
+    public Core.UnitState BindUnitState => bindUnitState;
 
     SkillsList skillsListRef;
 
 
-    public void Init(DungeonChessBattle.Core.UnitSkillBaseGodot bindSkill, DungeonChessBattle.Core.UnitState bindUnitState, SkillsList skillsListRef) {
+    public void Init(Core.UnitSkillBaseGodot bindSkill, Core.UnitState bindUnitState, SkillsList skillsListRef) {
         this.bindingSkill = bindSkill;
         this.bindUnitState = bindUnitState;
         this.skillsListRef = skillsListRef;
@@ -74,7 +74,7 @@ public partial class ButtonSkillBase : Button {
                     }
                 }
                 else if (bindingSkill.NeedPosTarget) {
-                    Godot.Vector3? mouseGoundPos = userInterfaceRes.MouseGoundPosition;
+                    Vector3? mouseGoundPos = userInterfaceRes.MouseGoundPosition;
                     if (mouseGoundPos != null) {
                         var v = mouseGoundPos.Value;
                         bindingSkill.SetSkill(bindUnitState, null, new System.Numerics.Vector3(v.X, v.Y, v.Z), skillsListRef.UnitsInGameRef.UnitsArr);

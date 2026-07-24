@@ -1,6 +1,7 @@
 using Godot;
 
 using DungeonChessBattle.Core;
+using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle;
 

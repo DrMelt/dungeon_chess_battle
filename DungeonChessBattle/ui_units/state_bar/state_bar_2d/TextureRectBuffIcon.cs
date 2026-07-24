@@ -15,13 +15,13 @@ public partial class TextureRectBuffIcon : TextureRect {
     Label durationLabelRef;
 
 
-    DungeonChessBattle.Core.BuffBaseGodot bindingBuff;
-    public DungeonChessBattle.Core.BuffBaseGodot BindingBuff => bindingBuff;
+    Core.BuffBaseGodot bindingBuff;
+    public Core.BuffBaseGodot BindingBuff => bindingBuff;
 
-    public void SetBuffIcon(DungeonChessBattle.Core.BuffBaseGodot buffBase, DungeonChessBattle.Core.UnitState focusUnit) {
+    public void SetBuffIcon(Core.BuffBaseGodot buffBase, Core.UnitState focusUnit) {
         bindingBuff = buffBase;
         Color fontColor = fromOther;
-        if (buffBase.fromUnit == focusUnit) {
+        if (buffBase.FromUnit == focusUnit) {
             fontColor = fromFocusUnit;
         }
 
