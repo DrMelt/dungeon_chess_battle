@@ -15,10 +15,10 @@ public partial class TextureRectBuffIcon : TextureRect {
     Label durationLabelRef = null!;
 
 
-    Core.BuffBaseGodot bindingBuff = null!;
-    public Core.BuffBaseGodot BindingBuff => bindingBuff;
+    BuffBaseGodot bindingBuff = null!;
+    public BuffBaseGodot BindingBuff => bindingBuff;
 
-    public void SetBuffIcon(Core.BuffBaseGodot buffBase, Core.UnitState focusUnit) {
+    public void SetBuffIcon(BuffBaseGodot buffBase, UnitState focusUnit) {
         bindingBuff = buffBase;
         Color fontColor = fromOther;
         if (buffBase.FromUnit == focusUnit) {

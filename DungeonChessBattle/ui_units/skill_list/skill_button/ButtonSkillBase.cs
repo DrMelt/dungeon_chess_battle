@@ -10,15 +10,15 @@ public partial class ButtonSkillBase : Button {
     [Export]
     Label label_CooldownTime_Ref = null!;
 
-    Core.UnitSkillBaseGodot bindingSkill = null!;
-    public Core.UnitSkillBaseGodot BindSkill => bindingSkill;
-    Core.UnitState bindUnitState = null!;
-    public Core.UnitState BindUnitState => bindUnitState;
+    UnitSkillBaseGodot bindingSkill = null!;
+    public UnitSkillBaseGodot BindSkill => bindingSkill;
+    UnitState bindUnitState = null!;
+    public UnitState BindUnitState => bindUnitState;
 
     SkillsList skillsListRef = null!;
 
 
-    public void Init(Core.UnitSkillBaseGodot bindSkill, Core.UnitState bindUnitState, SkillsList skillsListRef) {
+    public void Init(UnitSkillBaseGodot bindSkill, UnitState bindUnitState, SkillsList skillsListRef) {
         this.bindingSkill = bindSkill;
         this.bindUnitState = bindUnitState;
         this.skillsListRef = skillsListRef;

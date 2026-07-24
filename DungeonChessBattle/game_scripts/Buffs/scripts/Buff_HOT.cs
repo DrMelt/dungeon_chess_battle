@@ -1,7 +1,7 @@
 using DungeonChessBattle.Core.Models;
 using Godot;
 
-namespace DungeonChessBattle.Core;
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class Buff_HOT : BuffBaseGodot {

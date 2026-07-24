@@ -6,7 +6,7 @@ using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Client;
 using Godot;
 
-namespace DungeonChessBattle.Core;
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class UnitState : Resource, IUnitState {

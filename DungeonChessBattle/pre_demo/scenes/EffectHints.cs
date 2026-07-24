@@ -1,7 +1,5 @@
 using Godot;
 
-using DungeonChessBattle.Core;
-
 namespace DungeonChessBattle;
 
 public partial class EffectHints : Node {
@@ -29,14 +27,14 @@ public partial class EffectHints : Node {
 
     void ShowSkill_Range(Skill_Range_Damage skill_Range_Damage, Vector3 fromPos, Vector3 toPos) {
         // The range hint of skills
-        if (skill_Range_Damage.Skill_Range_Res_Base is Core.Range.CircularRangeResGodot circularRange_Res) {
+        if (skill_Range_Damage.Skill_Range_Res_Base is CircularRangeResGodot circularRange_Res) {
             SkillRangeCircular_Hint effectCircleRange = NewEffectCircularRange;
 
             AddChild(effectCircleRange);
             effectCircleRange.Init(fromPos, toPos, circularRange_Res.NearClamp, circularRange_Res.FarClamp, circularRange_Res.RadianFrom, circularRange_Res.RadianTo);
             effectCircleRange.SetSkillProgress(skill_Range_Damage.SkillSpellProgress);
         }
-        else if (skill_Range_Damage.Skill_Range_Res_Base is Core.Range.RectRangeResGodot rectRange_Res) {
+        else if (skill_Range_Damage.Skill_Range_Res_Base is RectRangeResGodot rectRange_Res) {
             SkillRangeRect_Hint effectRectRange = NewEffectRectRange;
 
             AddChild(effectRectRange);

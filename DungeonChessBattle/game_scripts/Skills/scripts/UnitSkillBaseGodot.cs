@@ -4,11 +4,11 @@ using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using Godot;
 
-namespace DungeonChessBattle.Core;
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
-    protected SkillModel _model = null!;
+    protected SkillModel? _model = null;
 
     [Export]
     string skillName = "UnitSkillBaseName";
@@ -69,6 +69,8 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
             return;
 
         _model = CreateModel();
+        if (_model == null)
+            return;
 
         _model.SkillName = skillName;
         _model.SkillDescription = skillDescription;
@@ -83,22 +85,25 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
         _model.SkillCoolingTime = skillCoolingTime;
     }
 
-    protected virtual SkillModel CreateModel() {
+    protected virtual SkillModel? CreateModel() {
         return new SkillDummyModel();
     }
 
     public void UpdateSkill(double delta) {
         EnsureModelCreated();
-        _model.UpdateSkill(delta);
+        _model?.UpdateSkill(delta);
     }
 
     public bool IsCoolingdown() {
         EnsureModelCreated();
-        return _model.IsCoolingdown();
+        return _model?.IsCoolingdown() ?? true;
     }
 
     public void SetSkill(IUnitState callSkillObject, IUnitState targetObject, System.Numerics.Vector3? targetPos, IEnumerable<IUnitState> testObjects) {
         EnsureModelCreated();
+        if (_model == null)
+            return;
+
         _model.SetSkill(callSkillObject, targetObject, targetPos, testObjects);
 
         if (targetPos.HasValue) {
@@ -109,12 +114,12 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
 
     public void SpellBroked() {
         EnsureModelCreated();
-        _model.SpellBroked();
+        _model?.SpellBroked();
     }
 
     public bool CallSkillSpelling() {
         EnsureModelCreated();
-        return _model.CallSkillSpelling();
+        return _model?.CallSkillSpelling() ?? false;
     }
 
     protected virtual void CallSpelledSkill() {

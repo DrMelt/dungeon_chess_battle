@@ -3,7 +3,7 @@ using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Core.Range;
 using Godot;
 
-namespace DungeonChessBattle.Core;
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class Skill_CircularRange_Damage : UnitSkillBaseGodot {

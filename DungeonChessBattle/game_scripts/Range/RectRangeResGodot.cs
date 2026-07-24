@@ -1,7 +1,8 @@
 using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Range;
 using Godot;
 
-namespace DungeonChessBattle.Core.Range;
+namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class RectRangeResGodot : RangeResBaseGodot {
