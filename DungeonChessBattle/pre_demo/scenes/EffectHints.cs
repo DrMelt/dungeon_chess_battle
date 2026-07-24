@@ -29,14 +29,14 @@ public partial class EffectHints : Node {
 
     void ShowSkill_Range(Skill_Range_Damage skill_Range_Damage, Vector3 fromPos, Vector3 toPos) {
         // The range hint of skills
-        if (skill_Range_Damage.Skill_Range_Res_Base is DungeonChessBattle.Core.Range.CircularRangeResGodot circularRange_Res) {
+        if (skill_Range_Damage.Skill_Range_Res_Base is Core.Range.CircularRangeResGodot circularRange_Res) {
             SkillRangeCircular_Hint effectCircleRange = NewEffectCircularRange;
 
             AddChild(effectCircleRange);
             effectCircleRange.Init(fromPos, toPos, circularRange_Res.NearClamp, circularRange_Res.FarClamp, circularRange_Res.RadianFrom, circularRange_Res.RadianTo);
             effectCircleRange.SetSkillProgress(skill_Range_Damage.SkillSpellProgress);
         }
-        else if (skill_Range_Damage.Skill_Range_Res_Base is DungeonChessBattle.Core.Range.RectRangeResGodot rectRange_Res) {
+        else if (skill_Range_Damage.Skill_Range_Res_Base is Core.Range.RectRangeResGodot rectRange_Res) {
             SkillRangeRect_Hint effectRectRange = NewEffectRectRange;
 
             AddChild(effectRectRange);
@@ -66,7 +66,7 @@ public partial class EffectHints : Node {
         foreach (UnitState unitState in units) {
             if (unitState.SpellingSkill != null) {
                 if (unitState.SpellingSkill is Skill_Range_Damage skill_Range_Damage) {
-                    ShowSkill_Range(skill_Range_Damage, unitState.Position, new Godot.Vector3(skill_Range_Damage.TargetPos.X, skill_Range_Damage.TargetPos.Y, skill_Range_Damage.TargetPos.Z));
+                    ShowSkill_Range(skill_Range_Damage, unitState.Position, new Vector3(skill_Range_Damage.TargetPos.X, skill_Range_Damage.TargetPos.Y, skill_Range_Damage.TargetPos.Z));
                 }
             }
         }

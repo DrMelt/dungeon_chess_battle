@@ -35,7 +35,7 @@ public partial class SkillsList : Control {
             return;
         }
 
-        foreach (DungeonChessBattle.Core.UnitSkillBaseGodot skill in unitShow.SkillsList) {
+        foreach (Core.UnitSkillBaseGodot skill in unitShow.SkillsList) {
             ButtonSkillBase buttonSkill = skillButtonPackedScene.Instantiate<ButtonSkillBase>();
             buttonSkill.Init(skill, unitShow.UnitStateRec, this);
             hBoxContainerRef.AddChild(buttonSkill);

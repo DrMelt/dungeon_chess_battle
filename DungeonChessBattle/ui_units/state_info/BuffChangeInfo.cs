@@ -14,7 +14,7 @@ public partial class BuffChangeInfo : FadeInfo {
     Label label_ChangeRef;
     [Export]
     TextureRect textureRectRef;
-    public void Init(DungeonChessBattle.Core.BuffBaseGodot buffBase, Enum_BuffChangeType changeType) {
+    public void Init(Core.BuffBaseGodot buffBase, Enum_BuffChangeType changeType) {
         label_ChangeRef.Text = changeType switch {
             Enum_BuffChangeType.Added => "+",
             Enum_BuffChangeType.Removed => "-",

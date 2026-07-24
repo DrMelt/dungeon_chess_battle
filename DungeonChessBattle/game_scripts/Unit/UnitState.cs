@@ -1,98 +1,106 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Models;
 using Godot;
-using Godot.Collections;
 
 namespace DungeonChessBattle.Core;
 
 [GlobalClass]
 public partial class UnitState : Resource, IUnitState {
-
-
+    private readonly UnitModel _model = new();
+    private bool _modelSynced;
 
     #region Export
 
     [Export]
     string _UnitStateName = "UnitStateName";
-    public string UnitStateName => _UnitStateName;
+    public string UnitStateName {
+        get => EnsureSynced().UnitStateName;
+        set => _model.UnitStateName = value;
+    }
 
     [Export]
-    Array<UnitSkillBaseGodot> _skillsList;
-    public Array<UnitSkillBaseGodot> SkillsList => _skillsList;
-
+    Godot.Collections.Array<UnitSkillBaseGodot> _skillsList;
+    public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList;
 
     [Export]
     float bodyRadius = 1.0f;
-    public float BodyRadius => bodyRadius;
+    public float BodyRadius {
+        get => EnsureSynced().BodyRadius;
+        set => _model.BodyRadius = value;
+    }
 
     [Export]
     EnumCamp _camp = EnumCamp.None;
-    public EnumCamp Camp => _camp;
+    public EnumCamp Camp {
+        get => EnsureSynced().Camp;
+        set => _model.Camp = value;
+    }
 
     [Export]
     float _maxHealth = 1000;
     public float MaxHealth {
-        get => _maxHealth;
-        private set {
-            if (value != _maxHealth) {
-                _maxHealth = value;
-                OnMaxHealthChangedEnvent?.Invoke(_maxHealth);
-            }
-        }
+        get => EnsureSynced().MaxHealth;
+        private set => _model.MaxHealth = value;
     }
-    public Action<float> OnMaxHealthChangedEnvent;
 
     [Export]
     float _health = 1000;
     public float Health {
-        get => _health;
-        private set {
-            if (value != _health) {
-                _health = value;
-                OnHealthChangedEnvent?.Invoke(_health);
-            }
-        }
+        get => EnsureSynced().Health;
+        private set => _model.Health = value;
     }
-    public Action<float> OnHealthChangedEnvent;
 
-    public static float Shield {
-        get => 0.0f;
-    }
-    public Action<float> OnShieldChangedEnvent;
+    public static float Shield => 0.0f;
 
-    public float Health_Shield => _health + Shield;
-    public float Health_Percent => _health / Mathf.Max(MaxHealth, Health_Shield);
-    public float Health_Shield_Percent => Health_Shield / MaxHealth;
+    public float Health_Shield => _model.HealthShield;
+    public float Health_Percent => _model.HealthPercent;
+    public float Health_Shield_Percent => _model.HealthShieldPercent;
 
     [Export]
     float _cureIntensity = 1.0f;
-    public float CureIntensity => _cureIntensity;
+    public float CureIntensity {
+        get => EnsureSynced().CureIntensity;
+        set => _model.CureIntensity = value;
+    }
 
     [Export]
     float _physicalAttackBase = 1.0f;
-    public float PhysicalAttackBase => _physicalAttackBase;
+    public float PhysicalAttackBase {
+        get => EnsureSynced().PhysicalAttackBase;
+        set => _model.PhysicalAttackBase = value;
+    }
 
     [Export]
     float _physicalTakePercent = 1.0f;
-    public float PhysicalTakePercent => _physicalTakePercent;
+    public float PhysicalTakePercent {
+        get => EnsureSynced().PhysicalTakePercent;
+        set => _model.PhysicalTakePercent = value;
+    }
 
     [Export]
     float _magicAttackBase = 1.0f;
-    public float MagicAttackBase => _magicAttackBase;
+    public float MagicAttackBase {
+        get => EnsureSynced().MagicAttackBase;
+        set => _model.MagicAttackBase = value;
+    }
 
     [Export]
     float _magicTakePercent = 1.0f;
-    public float MagicTakePercent => _magicTakePercent;
+    public float MagicTakePercent {
+        get => EnsureSynced().MagicTakePercent;
+        set => _model.MagicTakePercent = value;
+    }
 
     [Export]
     float _baseSpeed = 2.0f;
     public float BaseSpeed {
-        get => _baseSpeed;
+        get => EnsureSynced().BaseSpeed;
+        set => _model.BaseSpeed = value;
     }
-    public float MoveSpeed => BaseSpeed;
-
-
+    public float MoveSpeed => _model.MoveSpeed;
 
     [ExportGroup("Runtime Parameters")]
     [Export]
@@ -102,6 +110,7 @@ public partial class UnitState : Resource, IUnitState {
     public void SetGlobalPosition(Vector3 position) {
         if (_position != position) {
             _position = position;
+            _model.SetPosition(new System.Numerics.Vector3(position.X, position.Y, position.Z));
             UnitMoved();
         }
     }
@@ -126,8 +135,76 @@ public partial class UnitState : Resource, IUnitState {
 
     [ExportSubgroup("Spell")]
     [Export]
-    UnitSkillBaseGodot spellingSkill = null;
+    UnitSkillBaseGodot spellingSkill;
     public UnitSkillBaseGodot SpellingSkill => spellingSkill;
+
+    [Export]
+    float gcdTime;
+
+    [ExportSubgroup("Hate")]
+    [Export]
+    Godot.Collections.Dictionary<string, float> _hates;
+    #endregion
+
+    #region Events
+
+    public Action<float> OnHealthChangedEnvent;
+    public Action<float> OnMaxHealthChangedEnvent;
+    public Action<float> OnShieldChangedEnvent;
+    public Action<UnitState, float, Enum_DamageType> OnTookDamageEvent;
+    public Action<UnitState, BuffBaseGodot> OnBuffAddedEvent;
+    public Action<UnitState, BuffBaseGodot> OnBuffRemovedEvent;
+
+    #endregion
+
+    private UnitModel EnsureSynced() {
+        if (!_modelSynced) {
+            _model.UnitStateName = _UnitStateName;
+            _model.BodyRadius = bodyRadius;
+            _model.Camp = _camp;
+            _model.MaxHealth = _maxHealth;
+            _model.Health = _health;
+            _model.CureIntensity = _cureIntensity;
+            _model.PhysicalAttackBase = _physicalAttackBase;
+            _model.PhysicalTakePercent = _physicalTakePercent;
+            _model.MagicAttackBase = _magicAttackBase;
+            _model.MagicTakePercent = _magicTakePercent;
+            _model.BaseSpeed = _baseSpeed;
+            _model.Hates = new Dictionary<string, float>(_hates ?? []);
+            _model.HealthChanged += OnModelHealthChanged;
+            _model.MaxHealthChanged += OnModelMaxHealthChanged;
+            _model.ShieldChanged += OnModelShieldChanged;
+            _model.TookDamage += OnModelTookDamage;
+            _modelSynced = true;
+        }
+
+        return _model;
+    }
+
+    private void OnModelHealthChanged(float health) => OnHealthChangedEnvent?.Invoke(health);
+    private void OnModelMaxHealthChanged(float maxHealth) => OnMaxHealthChangedEnvent?.Invoke(maxHealth);
+    private void OnModelShieldChanged(float shield) => OnShieldChangedEnvent?.Invoke(shield);
+    private void OnModelTookDamage(UnitModel model, float damage, Enum_DamageType type) => OnTookDamageEvent?.Invoke(this, damage, type);
+
+    public void InvokeEnvents() {
+        OnHealthChangedEnvent?.Invoke(Health);
+        OnMaxHealthChangedEnvent?.Invoke(MaxHealth);
+        OnShieldChangedEnvent?.Invoke(Shield);
+        // TODO: invoke other events
+    }
+
+    #region Skill
+
+    void UpdateSkillState(double deltaTime) {
+        gcdTime -= (float)deltaTime;
+        EnsureSynced();
+
+        foreach (var skill in SkillsList) {
+            skill.UpdateSkill(deltaTime);
+        }
+
+        CallSpellingSkill();
+    }
 
     public void SpellNewSkill(IUnitSkill unitSkillBase) {
         spellingSkill?.SpellBroked();
@@ -137,26 +214,6 @@ public partial class UnitState : Resource, IUnitState {
     }
     void IUnitState.SpellNewSkill(IUnitSkill unitSkillBase) {
         SpellNewSkill(unitSkillBase);
-    }
-
-    [Export]
-    float gcdTime = 0.0f;
-
-    [ExportSubgroup("Hate")]
-    [Export]
-    Godot.Collections.Dictionary<string, float> _hates;
-    #endregion
-
-
-    #region Skill
-    void UpdateSkillState(double deltaTime) {
-        gcdTime -= (float)deltaTime;
-
-        foreach (var skill in SkillsList) {
-            skill.UpdateSkill(deltaTime);
-        }
-
-        CallSpellingSkill();
     }
 
     void CallSpellingSkill() {
@@ -171,40 +228,23 @@ public partial class UnitState : Resource, IUnitState {
     #endregion
 
     #region Hate
+
     public string GetMaxHateUnitName() {
-        float maxHate = 0;
-        string maxHateUnitName = null;
-        foreach (KeyValuePair<string, float> item in _hates) {
-            if (item.Value > maxHate) {
-                maxHate = item.Value;
-                maxHateUnitName = item.Key;
-            }
-        }
-        return maxHateUnitName;
+        return _model.GetMaxHateUnitName() ?? "";
     }
     #endregion
-
-
-    public void InvokeEnvents() {
-        OnHealthChangedEnvent?.Invoke(Health);
-        OnMaxHealthChangedEnvent?.Invoke(MaxHealth);
-        OnShieldChangedEnvent?.Invoke(Shield);
-        // TODO: invoke other events
-    }
 
     #region BUFF
 
     List<BuffBaseGodot> buffList = [];
-    public Action<UnitState, BuffBaseGodot> OnBuffAddedEvent;
-    public Action<UnitState, BuffBaseGodot> OnBuffRemovedEvent;
-    public List<BuffBaseGodot> BuffList {
-        get => buffList;
-    }
+    public List<BuffBaseGodot> BuffList => buffList;
 
     public void AddBuff(IBuff buff) {
-        if (buff is not BuffBaseGodot godotBuff) {
+        if (buff is not BuffBaseGodot godotBuff)
             return;
-        }
+
+        _model.AddBuff(godotBuff);
+
         BuffBaseGodot find = buffList.Find(b => b.buffName == godotBuff.buffName);
         if (find != null) {
             find.AddSuperpositions(godotBuff);
@@ -216,18 +256,20 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     public void RemoveBuff(IBuff buff) {
-        if (buff is not BuffBaseGodot godotBuff) {
+        if (buff is not BuffBaseGodot godotBuff)
             return;
-        }
+
+        _model.RemoveBuff(godotBuff);
         buffList.RemoveAll(b => b.buffName == godotBuff.buffName);
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 
     void UpdateBuffList(double deltaTime) {
+        _model.UpdateBuffList(deltaTime);
+
         List<BuffBaseGodot> tempList = [];
         foreach (BuffBaseGodot buffBase in buffList) {
-            buffBase.Update(deltaTime, this);
-            if (buffBase.isAlive) {
+            if (buffBase.IsAlive) {
                 tempList.Add(buffBase);
             }
             else {
@@ -239,51 +281,32 @@ public partial class UnitState : Resource, IUnitState {
     }
     #endregion
 
-
     #region DAMAGE
-    public Action<UnitState, float, Enum_DamageType> OnTookDamageEvent;
+
     public float TakeDamage(float damageAmount, Enum_DamageType damageType) {
-        float damageFixed = 0;
-        if (damageType == Enum_DamageType.Physcial) {
-            damageFixed = damageAmount * PhysicalTakePercent;
-        }
-        else if (damageType == Enum_DamageType.Magic) {
-            damageFixed = damageAmount * MagicTakePercent;
-        }
-
-        // TODO: take into account buffs
-
-
-        _health -= damageFixed;
-        _health = Mathf.Clamp(_health, 0, MaxHealth);
-
-        OnTookDamageEvent?.Invoke(this, damageFixed, damageType);
-        return damageFixed;
+        return EnsureSynced().TakeDamage(damageAmount, damageType);
     }
 
     public float PhysicalDamageAmount(float physicalDamage) {
-        return physicalDamage * PhysicalAttackBase;
+        return EnsureSynced().PhysicalDamageAmount(physicalDamage);
     }
 
     public float MagicDamageAmount(float magicDamage) {
-        return magicDamage * MagicAttackBase;
+        return EnsureSynced().MagicDamageAmount(magicDamage);
     }
 
     #endregion
 
     public float CureAmount(float curePotency) {
-        return CureIntensity * curePotency;
+        return EnsureSynced().CureAmount(curePotency);
     }
 
     public float RestoreHealth(float health) {
-        float healthFixed = Mathf.Clamp(_health + health, 0, MaxHealth) - _health;
-        _health += healthFixed;
-
-        return healthFixed;
+        return EnsureSynced().RestoreHealth(health);
     }
 
-
     #region Update
+
     internal void UpdateState(double delta) {
         UpdateSkillState(delta);
     }

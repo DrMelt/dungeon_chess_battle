@@ -1,4 +1,5 @@
 using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Range;
 using Godot;
 
 namespace DungeonChessBattle.Core.Range;
@@ -21,15 +22,12 @@ public partial class CircularRangeResGodot : RangeResBaseGodot {
     float radianTo = 1.0f;
     public float RadianTo => radianTo;
 
-    public override bool IsInRange(IUnitState callSkillObject, IUnitState testObject, System.Numerics.Vector3 targetPos) {
-        return Utility.IsInRange_Circular(
-            testObject.Position,
-            callSkillObject.Position,
-            targetPos - callSkillObject.Position,
-            nearClamp,
-            farClamp,
-            radianFrom,
-            radianTo
-        );
+    protected override IRangeRes CreateModel() {
+        return new CircularRangeRes {
+            NearClamp = nearClamp,
+            FarClamp = farClamp,
+            RadianFrom = radianFrom,
+            RadianTo = radianTo,
+        };
     }
 }
