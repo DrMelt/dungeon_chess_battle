@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Core;
 [GlobalClass]
 public partial class Skill_Add_BUFF : UnitSkillBaseGodot {
     [Export]
-    BuffBaseGodot buff;
+    BuffBaseGodot buff = null!;
 
     protected override SkillModel CreateModel() {
         return new SkillAddBuffModel {

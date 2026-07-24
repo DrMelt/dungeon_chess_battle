@@ -4,7 +4,7 @@ namespace DungeonChessBattle;
 
 public partial class FadeInfo : Control {
     [Export]
-    Curve fadeCurve;
+    Curve fadeCurve = null!;
     [Export]
     float fadeTimeScale = 1.0f;
     float fadeTime = 0.0f;

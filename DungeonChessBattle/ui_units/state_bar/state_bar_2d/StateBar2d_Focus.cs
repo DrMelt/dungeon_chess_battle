@@ -5,30 +5,30 @@ namespace DungeonChessBattle;
 public partial class StateBar2d_Focus : Control {
 
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
 
     [ExportGroup("Internal Parameters")]
     [Export]
-    UserUISettings userUISettingsRef;
+    UserUISettings userUISettingsRef = null!;
 
 
     [ExportSubgroup("Buffs")]
     [Export]
-    ContainerBuffs hboxContainerBuffsRef;
+    ContainerBuffs hboxContainerBuffsRef = null!;
 
     [ExportSubgroup("State Bar")]
     [Export]
-    HP_StateBar panelFocusStateRef;
+    HP_StateBar panelFocusStateRef = null!;
 
     [Export]
-    SkillProgressBar panelSkillProgressBarRef;
+    SkillProgressBar panelSkillProgressBarRef = null!;
 
 
     public override void _Process(double delta) {
         if (!Engine.IsEditorHint()) {
             Visible = false;
-            UnitGameShow showUnit = GetUnitShow();
+            UnitGameShow? showUnit = GetUnitShow();
 
             if (showUnit != null) {
                 Visible = true;
@@ -42,10 +42,10 @@ public partial class StateBar2d_Focus : Control {
     }
 
 
-    UnitGameShow GetUnitShow() {
-        UnitGameShow showUnit = null;
-        UnitGameShow mouseOnUnit = userInterfaceRes.MouseOnUnit;
-        UnitGameShow focusOnUnit = userInterfaceRes.FocusOnUnit;
+    UnitGameShow? GetUnitShow() {
+        UnitGameShow? showUnit = null;
+        UnitGameShow? mouseOnUnit = userInterfaceRes.MouseOnUnit;
+        UnitGameShow? focusOnUnit = userInterfaceRes.FocusOnUnit;
         if (mouseOnUnit != null) {
             showUnit = mouseOnUnit;
         }

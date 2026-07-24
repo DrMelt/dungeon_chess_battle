@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Client;
 using Godot;
 
 namespace DungeonChessBattle.Core;
@@ -11,6 +12,11 @@ namespace DungeonChessBattle.Core;
 public partial class UnitState : Resource, IUnitState {
     private readonly UnitModel _model = new();
     private bool _modelSynced;
+
+    /// <summary>
+    /// 暴露内部 UnitModel，供 BattleService 调用。
+    /// </summary>
+    public UnitModel Model => EnsureSynced();
 
     #region Export
 
@@ -22,7 +28,7 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     [Export]
-    Godot.Collections.Array<UnitSkillBaseGodot> _skillsList;
+    Godot.Collections.Array<UnitSkillBaseGodot> _skillsList = null!;
     public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList;
 
     [Export]
@@ -129,31 +135,30 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     [Export]
-    UnitsInScene unitsInSceneRes;
+    UnitsInScene unitsInSceneRes = null!;
     [Export]
-    MotionTimeTable motionTimeTable;
+    MotionTimeTable motionTimeTable = null!;
 
     [ExportSubgroup("Spell")]
     [Export]
-    UnitSkillBaseGodot spellingSkill;
-    public UnitSkillBaseGodot SpellingSkill => spellingSkill;
+    UnitSkillBaseGodot? spellingSkill;
+    public UnitSkillBaseGodot? SpellingSkill => spellingSkill;
 
     [Export]
     float gcdTime;
 
     [ExportSubgroup("Hate")]
     [Export]
-    Godot.Collections.Dictionary<string, float> _hates;
+    Godot.Collections.Dictionary<string, float> _hates = null!;
     #endregion
 
     #region Events
 
-    public Action<float> OnHealthChangedEnvent;
-    public Action<float> OnMaxHealthChangedEnvent;
-    public Action<float> OnShieldChangedEnvent;
-    public Action<UnitState, float, Enum_DamageType> OnTookDamageEvent;
-    public Action<UnitState, BuffBaseGodot> OnBuffAddedEvent;
-    public Action<UnitState, BuffBaseGodot> OnBuffRemovedEvent;
+    public Action<float>? OnHealthChangedEnvent;
+    public Action<float>? OnMaxHealthChangedEnvent;
+    public Action<UnitState, float, Enum_DamageType>? OnTookDamageEvent;
+    public Action<UnitState, BuffBaseGodot>? OnBuffAddedEvent;
+    public Action<UnitState, BuffBaseGodot>? OnBuffRemovedEvent;
 
     #endregion
 
@@ -173,7 +178,6 @@ public partial class UnitState : Resource, IUnitState {
             _model.Hates = new Dictionary<string, float>(_hates ?? []);
             _model.HealthChanged += OnModelHealthChanged;
             _model.MaxHealthChanged += OnModelMaxHealthChanged;
-            _model.ShieldChanged += OnModelShieldChanged;
             _model.TookDamage += OnModelTookDamage;
             _modelSynced = true;
         }
@@ -183,13 +187,11 @@ public partial class UnitState : Resource, IUnitState {
 
     private void OnModelHealthChanged(float health) => OnHealthChangedEnvent?.Invoke(health);
     private void OnModelMaxHealthChanged(float maxHealth) => OnMaxHealthChangedEnvent?.Invoke(maxHealth);
-    private void OnModelShieldChanged(float shield) => OnShieldChangedEnvent?.Invoke(shield);
     private void OnModelTookDamage(UnitModel model, float damage, Enum_DamageType type) => OnTookDamageEvent?.Invoke(this, damage, type);
 
     public void InvokeEnvents() {
         OnHealthChangedEnvent?.Invoke(Health);
         OnMaxHealthChangedEnvent?.Invoke(MaxHealth);
-        OnShieldChangedEnvent?.Invoke(Shield);
         // TODO: invoke other events
     }
 
@@ -206,7 +208,7 @@ public partial class UnitState : Resource, IUnitState {
         CallSpellingSkill();
     }
 
-    public void SpellNewSkill(IUnitSkill unitSkillBase) {
+    public void SpellNewSkill(IUnitSkill? unitSkillBase) {
         spellingSkill?.SpellBroked();
 
         spellingSkill = unitSkillBase as UnitSkillBaseGodot;
@@ -245,7 +247,7 @@ public partial class UnitState : Resource, IUnitState {
 
         _model.AddBuff(godotBuff);
 
-        BuffBaseGodot find = buffList.Find(b => b.buffName == godotBuff.buffName);
+        BuffBaseGodot? find = buffList.Find(b => b.buffName == godotBuff.buffName);
         if (find != null) {
             find.AddSuperpositions(godotBuff);
         }
@@ -265,7 +267,13 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     void UpdateBuffList(double deltaTime) {
-        _model.UpdateBuffList(deltaTime);
+        // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
+        if (BattleServiceProvider.IsInitialized) {
+            BattleServiceProvider.Service.UpdateBuffs(null!, new[] { _model }, deltaTime);
+        }
+        else {
+            _model.UpdateBuffList(deltaTime);
+        }
 
         List<BuffBaseGodot> tempList = [];
         foreach (BuffBaseGodot buffBase in buffList) {

@@ -15,7 +15,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     public string SkillName => _model?.SkillName ?? skillName;
 
     [Export]
-    Texture2D icon;
+    Texture2D icon = null!;
     public Texture2D Icon => icon;
     string IUnitSkill.IconPath => icon?.ResourcePath ?? "";
 

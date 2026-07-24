@@ -17,7 +17,7 @@ public partial class UnitsInScene : Resource {
     [Export]
     Array<UnitState> unitsArr;
     public Array<UnitState> UnitsArr => [.. unitsArr];
-    public Action<UnitsInScene> OnUnitsChangedEvent;
+    public Action<UnitsInScene>? OnUnitsChangedEvent;
 
     [Export]
     double sceneTime = 0.0;

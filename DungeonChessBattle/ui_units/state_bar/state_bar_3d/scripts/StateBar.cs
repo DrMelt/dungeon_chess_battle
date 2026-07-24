@@ -13,20 +13,20 @@ public partial class StateBar : Node3D, IUI_Update {
 
     [ExportGroup("Internal Parameters")]
     [Export]
-    UserUISettings userUISettingsRef;
+    UserUISettings userUISettingsRef = null!;
 
     [Export]
-    MeshInstance3D stateBarRef;
-    ShaderMaterial stateBarRef_Mat;
+    MeshInstance3D stateBarRef = null!;
+    ShaderMaterial stateBarRef_Mat = null!;
 
     [Export]
-    Label3D label3D_PercentRef;
+    Label3D label3D_PercentRef = null!;
     [Export]
-    Label3D label3D_CurrentValueRef;
+    Label3D label3D_CurrentValueRef = null!;
     [Export]
-    Label3D label3D_NameRef;
+    Label3D label3D_NameRef = null!;
     public override void _Ready() {
-        stateBarRef_Mat = stateBarRef.MaterialOverride as ShaderMaterial;
+        stateBarRef_Mat = (stateBarRef.MaterialOverride as ShaderMaterial)!;
     }
 
     public override void _Process(double delta) {

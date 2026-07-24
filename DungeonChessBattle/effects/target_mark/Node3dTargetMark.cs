@@ -7,17 +7,17 @@ namespace DungeonChessBattle;
 
 public partial class Node3dTargetMark : Node3D, IUI_Update {
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
     [Export]
-    Decal targetDecalRef;
+    Decal targetDecalRef = null!;
     public Decal TargetDecalRef => targetDecalRef;
 
     [Export]
     Color defultColor = new("ad9b24");
 
     [Export]
-    UserUISettings userUISettingsRes;
+    UserUISettings userUISettingsRes = null!;
 
 
     public override void _Ready() {

@@ -1,7 +1,6 @@
 namespace DungeonChessBattle.Logic.Battle;
 
-public enum BattlePhase
-{
+public enum BattlePhase {
     Waiting,
     PlayerTurn,
     SkillCasting,
@@ -9,21 +8,19 @@ public enum BattlePhase
     Finished,
 }
 
-public class BattleManager
-{
+public class BattleManager {
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
-    public int RoundNumber { get; private set; }
+    public int RoundNumber {
+        get; private set;
+    }
 
-    public void StartBattle()
-    {
+    public void StartBattle() {
         RoundNumber = 1;
         CurrentPhase = BattlePhase.PlayerTurn;
     }
 
-    public void AdvancePhase()
-    {
-        CurrentPhase = CurrentPhase switch
-        {
+    public void AdvancePhase() {
+        CurrentPhase = CurrentPhase switch {
             BattlePhase.PlayerTurn => BattlePhase.SkillCasting,
             BattlePhase.SkillCasting => BattlePhase.Settlement,
             BattlePhase.Settlement => BattlePhase.PlayerTurn,
@@ -31,14 +28,12 @@ public class BattleManager
         };
     }
 
-    public void NextRound()
-    {
+    public void NextRound() {
         RoundNumber++;
         CurrentPhase = BattlePhase.PlayerTurn;
     }
 
-    public void EndBattle()
-    {
+    public void EndBattle() {
         CurrentPhase = BattlePhase.Finished;
     }
 }

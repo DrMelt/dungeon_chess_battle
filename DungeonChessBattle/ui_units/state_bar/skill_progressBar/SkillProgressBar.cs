@@ -7,11 +7,11 @@ namespace DungeonChessBattle;
 public partial class SkillProgressBar : Control, IUI_Update {
     [ExportGroup("References")]
     [Export]
-    ProgressBar progressBarRef;
+    ProgressBar progressBarRef = null!;
     [Export]
-    Label label_SkillNameRef;
+    Label label_SkillNameRef = null!;
     [Export]
-    Label label_RemainingTimeRef;
+    Label label_RemainingTimeRef = null!;
 
     public void UpdateUI_WithUnit(UnitState unitShow) {
         var spellingSkill = unitShow.SpellingSkill;

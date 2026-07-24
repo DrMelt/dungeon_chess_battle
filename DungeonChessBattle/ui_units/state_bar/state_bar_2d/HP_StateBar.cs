@@ -7,22 +7,22 @@ namespace DungeonChessBattle;
 public partial class HP_StateBar : Control, IUI_Update {
     [ExportGroup("References")]
     [Export]
-    UserUISettings userUISettingsRef;
+    UserUISettings userUISettingsRef = null!;
 
     [Export]
-    CanvasItem stateBarRef;
-    ShaderMaterial stateBarRef_Mat;
+    CanvasItem stateBarRef = null!;
+    ShaderMaterial stateBarRef_Mat = null!;
 
 
     [Export]
-    Label label_PercentRef;
+    Label label_PercentRef = null!;
     [Export]
-    Label label_CurrentValueRef;
+    Label label_CurrentValueRef = null!;
     [Export]
-    Label label_ObjectNameRef;
+    Label label_ObjectNameRef = null!;
 
     public override void _Ready() {
-        stateBarRef_Mat = stateBarRef.Material as ShaderMaterial;
+        stateBarRef_Mat = (stateBarRef.Material as ShaderMaterial)!;
     }
 
     public void UpdateUI_WithUnit(UnitState unitState) {

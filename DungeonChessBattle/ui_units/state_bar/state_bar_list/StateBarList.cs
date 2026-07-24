@@ -10,14 +10,14 @@ public partial class StateBarList : Control {
 
     [ExportGroup("Internal")]
     [Export]
-    VBoxContainer vBoxContainerRef;
+    VBoxContainer vBoxContainerRef = null!;
 
     [Export]
-    PackedScene stateBarMini_PKS;
+    PackedScene stateBarMini_PKS = null!;
     StateBarMini NewStateBarMini => stateBarMini_PKS.Instantiate<StateBarMini>();
 
 
-    UnitsInScene bindingUnitsInScene;
+    UnitsInScene bindingUnitsInScene = null!;
 
 
     public void BindUnitsInScene(UnitsInScene unitsInScene) {

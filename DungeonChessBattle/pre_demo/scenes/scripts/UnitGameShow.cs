@@ -6,22 +6,22 @@ namespace DungeonChessBattle;
 
 public partial class UnitGameShow : Node3D {
     [Export]
-    Core.UnitState unitStateRec;
+    Core.UnitState unitStateRec = null!;
     public Core.UnitState UnitStateRec => unitStateRec;
 
     public Array<Core.UnitSkillBaseGodot> SkillsList => unitStateRec.SkillsList;
 
     [Export]
-    MeshInstance3D unitMeshInstanceRef;
+    MeshInstance3D unitMeshInstanceRef = null!;
     public MeshInstance3D UnitMeshInstanceRef => unitMeshInstanceRef;
 
 
     [ExportGroup("References")]
     [Export]
-    NavigationAgent3dMoveTo navigationAgentRef;
+    NavigationAgent3dMoveTo navigationAgentRef = null!;
 
     [Export]
-    Node3dTargetMark targetDecalRef;
+    Node3dTargetMark targetDecalRef = null!;
 
 
 

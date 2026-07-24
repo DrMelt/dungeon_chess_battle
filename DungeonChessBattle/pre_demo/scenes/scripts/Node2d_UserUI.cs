@@ -5,18 +5,18 @@ namespace DungeonChessBattle;
 
 public partial class Node2d_UserUI : Control {
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
     [Export]
-    UnitsInScene_Show unitsInGameRef;
+    UnitsInScene_Show unitsInGameRef = null!;
 
     [ExportGroup("Internal")]
     [Export]
-    SkillsList skillsListRef;
+    SkillsList skillsListRef = null!;
     [Export]
-    StateChangeInfo stateChangeInfoRef;
+    StateChangeInfo stateChangeInfoRef = null!;
     [Export]
-    StateBarList stateBarListRef;
+    StateBarList stateBarListRef = null!;
 
     bool isMouseOn = false;
     public bool IsMouseOn => isMouseOn;
@@ -30,7 +30,7 @@ public partial class Node2d_UserUI : Control {
         };
 
         userInterfaceRes.FocusOnUnitChangedEvent += UpdateSkillList;
-        UpdateSkillList(userInterfaceRes.FocusOnUnit);
+        UpdateSkillList(userInterfaceRes.FocusOnUnit!);
 
         UpdateBinding();
     }

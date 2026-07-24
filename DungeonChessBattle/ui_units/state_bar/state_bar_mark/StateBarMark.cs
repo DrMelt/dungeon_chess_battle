@@ -5,9 +5,9 @@ namespace DungeonChessBattle;
 
 public partial class StateBarMark : Control {
     [Export]
-    UnitsInScene_Show unitsInScene_Show_Ref;
+    UnitsInScene_Show unitsInScene_Show_Ref = null!;
     [Export]
-    PackedScene stateBarSimple2d_PKD;
+    PackedScene stateBarSimple2d_PKD = null!;
     public override void _Process(double delta) {
         var children = GetChildren();
         foreach (var child in children) {

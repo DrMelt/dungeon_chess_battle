@@ -7,7 +7,7 @@ namespace DungeonChessBattle;
 
 public partial class ContainerBuffs : Control, IUI_Update {
     [Export]
-    PackedScene buffIconPackedScene;
+    PackedScene buffIconPackedScene = null!;
 
     public void UpdateUI_WithUnit(UnitState unitState) {
         var chilren = GetChildren();

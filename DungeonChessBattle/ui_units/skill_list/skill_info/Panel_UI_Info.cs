@@ -4,17 +4,17 @@ namespace DungeonChessBattle;
 
 public partial class Panel_UI_Info : Control {
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
     [ExportGroup("Internal")]
     [Export]
-    Label skillNameLabel;
+    Label skillNameLabel = null!;
     [Export]
-    Label skillDescriptionLabel;
+    Label skillDescriptionLabel = null!;
 
     public override void _Ready() {
         userInterfaceRes.MouseOnUIControlChangedEvent += UpdateInfo;
-        UpdateInfo(null);
+        UpdateInfo(null!);
     }
     public override void _ExitTree() {
         userInterfaceRes.MouseOnUIControlChangedEvent -= UpdateInfo;

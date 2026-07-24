@@ -6,7 +6,7 @@ namespace DungeonChessBattle;
 [GlobalClass]
 public partial class UserInterfaceRes : Resource {
 
-    Control _mouseOnUIControl;
+    Control _mouseOnUIControl = null!;
     public Control MouseOnUIControl {
         get => _mouseOnUIControl;
         set {
@@ -16,11 +16,11 @@ public partial class UserInterfaceRes : Resource {
             }
         }
     }
-    public event Action<Control> MouseOnUIControlChangedEvent;
+    public event Action<Control>? MouseOnUIControlChangedEvent;
 
 
-    UnitGameShow _mouseOnUnit;
-    public UnitGameShow MouseOnUnit {
+    UnitGameShow? _mouseOnUnit;
+    public UnitGameShow? MouseOnUnit {
         get => _mouseOnUnit;
         set {
             if (_mouseOnUnit != value) {
@@ -29,17 +29,17 @@ public partial class UserInterfaceRes : Resource {
         }
     }
 
-    UnitGameShow _focusOnUnit;
-    public UnitGameShow FocusOnUnit {
+    UnitGameShow? _focusOnUnit;
+    public UnitGameShow? FocusOnUnit {
         get => _focusOnUnit;
         set {
             if (_focusOnUnit != value) {
                 _focusOnUnit = value;
-                FocusOnUnitChangedEvent.Invoke(_focusOnUnit);
+                FocusOnUnitChangedEvent?.Invoke(_focusOnUnit!);
             }
         }
     }
-    public event Action<UnitGameShow> FocusOnUnitChangedEvent;
+    public event Action<UnitGameShow>? FocusOnUnitChangedEvent;
 
     Vector3? _mouseGoundPosition = null;
     public Vector3? MouseGoundPosition {

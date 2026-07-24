@@ -4,13 +4,13 @@ namespace DungeonChessBattle;
 
 public partial class SkillRangeCircular_Hint : Node3D {
     [Export]
-    MeshInstance3D decalRef;
+    MeshInstance3D decalRef = null!;
 
-    ShaderMaterial shaderMaterial;
+    ShaderMaterial shaderMaterial = null!;
 
 
     public void Init(Vector3 fromPos, Vector3 toPos, float near, float far, float radianFrom, float radianTo) {
-        shaderMaterial = decalRef.MaterialOverride as ShaderMaterial;
+        shaderMaterial = (decalRef.MaterialOverride as ShaderMaterial)!;
 
         GlobalPosition = fromPos;
         toPos.Y = GlobalPosition.Y;

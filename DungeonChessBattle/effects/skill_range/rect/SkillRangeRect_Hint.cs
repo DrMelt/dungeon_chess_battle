@@ -4,12 +4,12 @@ namespace DungeonChessBattle;
 
 public partial class SkillRangeRect_Hint : Node3D {
     [Export]
-    MeshInstance3D decalRef;
+    MeshInstance3D decalRef = null!;
 
-    ShaderMaterial shaderMaterial;
+    ShaderMaterial shaderMaterial = null!;
 
     public void Init(Vector3 fromPos, Vector3 toPos, float near, float far, float fromL, float toR) {
-        shaderMaterial = decalRef.MaterialOverride as ShaderMaterial;
+        shaderMaterial = (decalRef.MaterialOverride as ShaderMaterial)!;
         GlobalPosition = fromPos;
         toPos.Y = fromPos.Y;
         LookAt(toPos, up: Vector3.Up);

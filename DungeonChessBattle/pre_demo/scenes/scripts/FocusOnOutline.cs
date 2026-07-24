@@ -4,10 +4,10 @@ namespace DungeonChessBattle;
 
 public partial class FocusOnOutline : Node {
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
     [Export]
-    MeshInstance3D outLineMeshInstance;
+    MeshInstance3D outLineMeshInstance = null!;
 
     public override void _Process(double delta) {
         // Update OutLine

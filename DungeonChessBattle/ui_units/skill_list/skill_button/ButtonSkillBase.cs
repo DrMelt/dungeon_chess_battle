@@ -4,18 +4,18 @@ namespace DungeonChessBattle;
 
 public partial class ButtonSkillBase : Button {
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
     [Export]
     Color coolingColor = new(0.5f, 0.5f, 0.5f, 1.0f);
     [Export]
-    Label label_CooldownTime_Ref;
+    Label label_CooldownTime_Ref = null!;
 
-    Core.UnitSkillBaseGodot bindingSkill;
+    Core.UnitSkillBaseGodot bindingSkill = null!;
     public Core.UnitSkillBaseGodot BindSkill => bindingSkill;
-    Core.UnitState bindUnitState;
+    Core.UnitState bindUnitState = null!;
     public Core.UnitState BindUnitState => bindUnitState;
 
-    SkillsList skillsListRef;
+    SkillsList skillsListRef = null!;
 
 
     public void Init(Core.UnitSkillBaseGodot bindSkill, Core.UnitState bindUnitState, SkillsList skillsListRef) {
@@ -33,7 +33,7 @@ public partial class ButtonSkillBase : Button {
 
         MouseExited += () => {
             if (userInterfaceRes.MouseOnUIControl == this) {
-                userInterfaceRes.MouseOnUIControl = null;
+                userInterfaceRes.MouseOnUIControl = null!;
             }
         };
     }
@@ -44,7 +44,7 @@ public partial class ButtonSkillBase : Button {
 
         }
         else if (bindingSkill.NeedUnitTarget == false) {
-            bindingSkill.SetSkill(bindUnitState, null, null, skillsListRef.UnitsInGameRef.UnitsArr);
+            bindingSkill.SetSkill(bindUnitState, null!, null, skillsListRef.UnitsInGameRef.UnitsArr);
             ButtonPressed = false;
         }
     }
@@ -68,16 +68,16 @@ public partial class ButtonSkillBase : Button {
         if (WaitTarget) {
             if (Input.IsActionJustPressed("Skill_SelectTarget")) {
                 if (bindingSkill.NeedUnitTarget) {
-                    UnitGameShow mouseOnUnit = userInterfaceRes.MouseOnUnit;
+                    UnitGameShow? mouseOnUnit = userInterfaceRes.MouseOnUnit;
                     if (mouseOnUnit != null) {
-                        bindingSkill.SetSkill(bindUnitState, mouseOnUnit.UnitStateRec, null, [.. skillsListRef.UnitsInGameRef.UnitsArr ?? []]);
+                        bindingSkill.SetSkill(bindUnitState, mouseOnUnit.UnitStateRec, null!, [.. skillsListRef.UnitsInGameRef.UnitsArr ?? []]);
                     }
                 }
                 else if (bindingSkill.NeedPosTarget) {
                     Vector3? mouseGoundPos = userInterfaceRes.MouseGoundPosition;
                     if (mouseGoundPos != null) {
                         var v = mouseGoundPos.Value;
-                        bindingSkill.SetSkill(bindUnitState, null, new System.Numerics.Vector3(v.X, v.Y, v.Z), skillsListRef.UnitsInGameRef.UnitsArr);
+                        bindingSkill.SetSkill(bindUnitState, null!, new System.Numerics.Vector3(v.X, v.Y, v.Z), skillsListRef.UnitsInGameRef.UnitsArr);
                     }
 
                 }

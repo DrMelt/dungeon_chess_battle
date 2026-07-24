@@ -8,22 +8,22 @@ public partial class StateBarMini : Control {
     [ExportGroup("Internal Parameters")]
     [ExportSubgroup("Buffs")]
     [Export]
-    ContainerBuffs containerBuffsRef;
+    ContainerBuffs containerBuffsRef = null!;
 
     [ExportSubgroup("State Bar")]
     [Export]
-    Panel outlineRef;
+    Panel outlineRef = null!;
 
     [Export]
-    HP_StateBar hp_StateBarRef;
+    HP_StateBar hp_StateBarRef = null!;
 
     [Export]
-    SkillProgressBar skillProgressBarRef;
+    SkillProgressBar skillProgressBarRef = null!;
 
 
     bool mouseOn = false;
 
-    UnitState bindingUnitStateRes;
+    UnitState? bindingUnitStateRes;
 
     public override void _Ready() {
         MouseEntered += () => {
@@ -41,9 +41,9 @@ public partial class StateBarMini : Control {
     }
 
     public override void _Process(double delta) {
-        containerBuffsRef.UpdateUI_WithUnit(bindingUnitStateRes);
-        hp_StateBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
-        skillProgressBarRef.UpdateUI_WithUnit(bindingUnitStateRes);
+        containerBuffsRef.UpdateUI_WithUnit(bindingUnitStateRes!);
+        hp_StateBarRef.UpdateUI_WithUnit(bindingUnitStateRes!);
+        skillProgressBarRef.UpdateUI_WithUnit(bindingUnitStateRes!);
     }
 
 

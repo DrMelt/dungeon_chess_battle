@@ -5,11 +5,16 @@
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>DungeonChessBattle.Logic</RootNamespace>
+        <RootNamespace>DungeonChessBattle.Client</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="LiteNetLib" />
     </ItemGroup>
 
 </Project>

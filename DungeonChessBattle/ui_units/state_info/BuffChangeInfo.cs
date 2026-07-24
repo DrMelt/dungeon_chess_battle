@@ -11,9 +11,9 @@ public partial class BuffChangeInfo : FadeInfo {
 
     [ExportGroup("Internal")]
     [Export]
-    Label label_ChangeRef;
+    Label label_ChangeRef = null!;
     [Export]
-    TextureRect textureRectRef;
+    TextureRect textureRectRef = null!;
     public void Init(Core.BuffBaseGodot buffBase, Enum_BuffChangeType changeType) {
         label_ChangeRef.Text = changeType switch {
             Enum_BuffChangeType.Added => "+",

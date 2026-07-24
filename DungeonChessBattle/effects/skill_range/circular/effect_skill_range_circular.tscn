@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://j7tawrug3ngu"]
+[gd_scene format=3 uid="uid://j7tawrug3ngu"]
 
 [ext_resource type="Script" uid="uid://82y4rbnu1uyx" path="res://effects/skill_range/circular/SkillRangeCircular_Hint.cs" id="1_tx0d2"]
 [ext_resource type="Shader" uid="uid://cyc28jqvii3bm" path="res://effects/skill_range/circular/circular_region.tres" id="2_8013p"]
@@ -15,11 +15,11 @@ shader_parameter/Skill_Radian_From = -1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_0gsne"]
 
-[node name="Skill_Range_Circular" type="Node3D" node_paths=PackedStringArray("decalRef")]
+[node name="Skill_Range_Circular" type="Node3D" unique_id=244294658 node_paths=PackedStringArray("decalRef")]
 script = ExtResource("1_tx0d2")
 decalRef = NodePath("Skill_Range_Decal_Circular")
 
-[node name="Skill_Range_Decal_Circular" type="MeshInstance3D" parent="."]
+[node name="Skill_Range_Decal_Circular" type="MeshInstance3D" parent="." unique_id=564033646]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
 layers = 2
 material_override = SubResource("ShaderMaterial_dowf7")

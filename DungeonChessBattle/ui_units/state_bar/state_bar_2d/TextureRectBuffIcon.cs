@@ -10,12 +10,12 @@ public partial class TextureRectBuffIcon : TextureRect {
 
     [ExportGroup("Internal Parameters")]
     [Export]
-    Label superpositionsLabelRef;
+    Label superpositionsLabelRef = null!;
     [Export]
-    Label durationLabelRef;
+    Label durationLabelRef = null!;
 
 
-    Core.BuffBaseGodot bindingBuff;
+    Core.BuffBaseGodot bindingBuff = null!;
     public Core.BuffBaseGodot BindingBuff => bindingBuff;
 
     public void SetBuffIcon(Core.BuffBaseGodot buffBase, Core.UnitState focusUnit) {

@@ -4,7 +4,7 @@ namespace DungeonChessBattle;
 
 public partial class NavigationAgent3dMoveTo : NavigationAgent3D {
     [Export]
-    UnitGameShow unitShowRef;
+    UnitGameShow unitShowRef = null!;
 
     Vector3? targetPos = null;
     public Vector3? TargetPos {
@@ -21,7 +21,7 @@ public partial class NavigationAgent3dMoveTo : NavigationAgent3D {
     }
 
     private void OnTargetReached() {
-        unitShowRef.SetUnitGlobalPosition((Vector3)targetPos);
+        unitShowRef.SetUnitGlobalPosition((Vector3)targetPos!);
         targetPos = null;
     }
 

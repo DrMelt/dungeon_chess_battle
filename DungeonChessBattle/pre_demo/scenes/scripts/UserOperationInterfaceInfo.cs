@@ -4,20 +4,20 @@ namespace DungeonChessBattle;
 
 public partial class UserOperationInterfaceInfo : Node {
     [Export]
-    Camera3D camera3DRef;
+    Camera3D camera3DRef = null!;
     [Export]
-    Node2d_UserUI node2dUiRef;
+    Node2d_UserUI node2dUiRef = null!;
 
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
 
     [ExportGroup("Intrinsic Parameter")]
     [Export]
-    EffectHints effectHintsRef;
+    EffectHints effectHintsRef = null!;
 
     [Export]
-    RayCast3D rayCast3DRef;
+    RayCast3D rayCast3DRef = null!;
 
 
 
@@ -36,7 +36,7 @@ public partial class UserOperationInterfaceInfo : Node {
         }
 
         if (!isSetted) {
-            userInterfaceRes.MouseOnUnit = null;
+            userInterfaceRes.MouseOnUnit = null!;
         }
 
         if (rayCast3DRef.GetCollider() is StaticBody3D staticBody3D) {

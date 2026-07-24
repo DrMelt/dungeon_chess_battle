@@ -5,9 +5,9 @@ namespace DungeonChessBattle;
 
 public partial class TestInit : Node {
     [Export]
-    UnitsInScene_Show unitsInScene_Show;
+    UnitsInScene_Show unitsInScene_Show = null!;
     [Export]
-    StartPointArea startPointAreaRef;
+    StartPointArea startPointAreaRef = null!;
 
     readonly Random random = new();
     public override void _Ready() {

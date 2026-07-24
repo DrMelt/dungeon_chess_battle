@@ -5,15 +5,15 @@ namespace DungeonChessBattle;
 
 public partial class SkillsList : Control {
     [Export]
-    UnitsInScene_Show unitsInGameRef;
+    UnitsInScene_Show unitsInGameRef = null!;
     public UnitsInScene_Show UnitsInGameRef => unitsInGameRef;
 
     [ExportGroup("Internal Parameters")]
     [Export]
-    PackedScene skillButtonPackedScene;
+    PackedScene skillButtonPackedScene = null!;
 
     [Export]
-    HBoxContainer hBoxContainerRef;
+    HBoxContainer hBoxContainerRef = null!;
 
 
 

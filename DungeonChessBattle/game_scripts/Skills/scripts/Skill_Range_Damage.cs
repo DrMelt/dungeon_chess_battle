@@ -1,3 +1,4 @@
+using System;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 using Godot;
@@ -13,8 +14,8 @@ public partial class Skill_Range_Damage : UnitSkillBaseGodot {
     Enum_DamageType enum_DamageType;
 
     [Export]
-    RangeResBaseGodot range_Res_Base;
-    public RangeResBaseGodot Skill_Range_Res_Base => range_Res_Base;
+    RangeResBaseGodot? range_Res_Base = null;
+    public RangeResBaseGodot? Skill_Range_Res_Base => range_Res_Base;
 
     protected override SkillModel CreateModel() {
         return new SkillRangeDamageModel {

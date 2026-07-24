@@ -9,15 +9,15 @@ public partial class BuffBaseGodot : Resource, IBuff {
     protected BuffModel _model = null!;
 
     [Export]
-    public string buffName;
+    public string buffName = null!;
     public string BuffName => _model?.BuffName ?? buffName;
 
     [Export(PropertyHint.MultilineText)]
-    public string buffDescription;
+    public string buffDescription = null!;
     public string BuffDescription => _model?.BuffDescription ?? buffDescription;
 
     [Export]
-    public Texture2D icon;
+    public Texture2D icon = null!;
     public string IconPath => _model?.IconPath ?? icon?.ResourcePath ?? "";
 
     [Export]

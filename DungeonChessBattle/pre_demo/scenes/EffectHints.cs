@@ -7,22 +7,22 @@ namespace DungeonChessBattle;
 public partial class EffectHints : Node {
 
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
 
     [Export]
-    UnitsInScene_Show unitsInScene_Show_Ref;
+    UnitsInScene_Show unitsInScene_Show_Ref = null!;
     [Export]
-    Node2d_UserUI userUI_Ref;
+    Node2d_UserUI userUI_Ref = null!;
 
     [ExportGroup("Effect Range Hints")]
     [Export]
-    PackedScene _effectCircleRange_PKS;
+    PackedScene _effectCircleRange_PKS = null!;
     SkillRangeCircular_Hint NewEffectCircularRange {
         get => _effectCircleRange_PKS.Instantiate<SkillRangeCircular_Hint>();
     }
     [Export]
-    PackedScene _effectRectRange_PKS;
+    PackedScene _effectRectRange_PKS = null!;
     SkillRangeRect_Hint NewEffectRectRange {
         get => _effectRectRange_PKS.Instantiate<SkillRangeRect_Hint>();
     }

@@ -10,7 +10,7 @@ public partial class TookDamageInfo : FadeInfo {
 
     [ExportGroup("Internal")]
     [Export]
-    Label damageLabel;
+    Label damageLabel = null!;
 
     public void Init(float damage, Enum_DamageType type, UserUISettings userUISettings) {
         if (type == Enum_DamageType.Magic) {

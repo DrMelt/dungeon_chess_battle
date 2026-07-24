@@ -4,12 +4,12 @@ namespace DungeonChessBattle;
 
 public partial class NavigationAgent3d_Test : Node3D {
     [Export]
-    Node3D movementTargetRef;
+    Node3D movementTargetRef = null!;
 
     [Export]
     public float MovementSpeed { get; set; } = 4.0f;
     [Export]
-    NavigationAgent3D navigationAgent;
+    NavigationAgent3D navigationAgent = null!;
     private float _movementDelta;
 
     public override void _Ready() {

@@ -12,19 +12,19 @@ public partial class StateChangeInfo : Node {
     }
 
     [Export]
-    UserUISettings userUISettingsRes;
+    UserUISettings userUISettingsRes = null!;
     [Export]
-    PackedScene _tookDamageInfo_PKS;
+    PackedScene _tookDamageInfo_PKS = null!;
     TookDamageInfo NewTookDamageInfo {
         get => _tookDamageInfo_PKS.Instantiate<TookDamageInfo>();
     }
     [Export]
-    PackedScene _buffChangeInfo_PKS;
+    PackedScene _buffChangeInfo_PKS = null!;
     BuffChangeInfo NewBuffChangeInfo {
         get => _buffChangeInfo_PKS.Instantiate<BuffChangeInfo>();
     }
 
-    Godot.Collections.Array<UnitState> preUnits;
+    Godot.Collections.Array<UnitState> preUnits = null!;
 
     public void BindUnitsInScene(UnitsInScene unitsInSceneRes) {
         unitsInSceneRes.OnUnitsChangedEvent += OnUnitsInSceneChanged;

@@ -77,7 +77,6 @@ public class UnitModel : IUnitState {
     // Events
     public event Action<float>? HealthChanged;
     public event Action<float>? MaxHealthChanged;
-    public event Action<float>? ShieldChanged;
     public event Action<UnitModel, float, Enum_DamageType>? TookDamage;
     public event Action<UnitModel, IBuff>? BuffAdded;
     public event Action<UnitModel, IBuff>? BuffRemoved;

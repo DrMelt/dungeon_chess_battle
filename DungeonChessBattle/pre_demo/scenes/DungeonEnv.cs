@@ -6,7 +6,7 @@ public partial class DungeonEnv : Node3D {
 
     [ExportGroup("References")]
     [Export]
-    StartPointArea startPointAreaRef;
+    StartPointArea startPointAreaRef = null!;
     public StartPointArea StartPointAreaRef => startPointAreaRef;
 
 }

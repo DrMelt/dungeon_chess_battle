@@ -24,7 +24,7 @@ public partial class Camera3dUserCamera : Camera3D {
     bool _rotationEnabled = true;
 
     [Export]
-    UserInterfaceRes userInterfaceRes;
+    UserInterfaceRes userInterfaceRes = null!;
 
 
     Vector2 mousePos;
@@ -40,7 +40,7 @@ public partial class Camera3dUserCamera : Camera3D {
 
             Vector3 centerPos = GlobalPosition + cameraPreDir * (GlobalPosition.Y / -cameraPreDir.Y);
 
-            UnitGameShow focusOn = userInterfaceRes.FocusOnUnit;
+            UnitGameShow? focusOn = userInterfaceRes.FocusOnUnit;
             if (focusOn != null) {
                 centerPos = focusOn.GlobalPosition;
             }
@@ -84,7 +84,7 @@ public partial class Camera3dUserCamera : Camera3D {
         Vector3 cameraDir = -GlobalTransform.Basis.Z;
 
         if (Input.IsActionJustPressed("Camera_MoveToFocus")) {
-            UnitGameShow focusOn = userInterfaceRes.FocusOnUnit;
+            UnitGameShow? focusOn = userInterfaceRes.FocusOnUnit;
             if (focusOn != null) {
                 Vector3 vecToFocus = focusOn.GlobalPosition - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));
