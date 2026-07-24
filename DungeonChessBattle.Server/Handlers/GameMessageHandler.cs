@@ -1,5 +1,4 @@
 using System.Text.Json;
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
@@ -10,19 +9,15 @@ namespace DungeonChessBattle.Server.Handlers;
 /// 网络消息处理器，解析客户端 JSON 消息并路由到 Logic 层。
 /// 维护 peerId → roomId 映射，支持多房间多客户端并发。
 /// </summary>
-public class GameMessageHandler {
+public class GameMessageHandler(ServerNetworkManager networkManager) {
     private readonly GameLogicService _logicService = new();
-    private readonly ServerNetworkManager _networkManager;
+    private readonly ServerNetworkManager _networkManager = networkManager;
     private readonly Dictionary<int, string> _peerRooms = [];  // peerId → roomId
-
-    public GameMessageHandler(ServerNetworkManager networkManager) {
-        _networkManager = networkManager;
-    }
 
     /// <summary>
     /// 处理客户端连接的清理工作。
     /// </summary>
-    public void OnClientConnected(int peerId) {
+    public static void OnClientConnected(int peerId) {
         Console.WriteLine($"[Game] Client {peerId} connected.");
     }
 
@@ -80,13 +75,17 @@ public class GameMessageHandler {
             ?? throw new InvalidOperationException("RoomId required.");
         var room = _logicService.CreateRoom(roomId);
         _peerRooms[peerId] = roomId;
-        return JsonSerializer.Serialize(new { RoomId = room.RoomId, IsActive = room.IsActive });
+        return JsonSerializer.Serialize(new {
+            room.RoomId, room.IsActive
+        });
     }
 
     private string HandleGetRoom(JsonElement root) {
         var roomId = GetArg<string>(root, 0);
         var room = _logicService.GetRoom(roomId!);
-        return room == null ? "null" : JsonSerializer.Serialize(new { RoomId = room.RoomId, IsActive = room.IsActive });
+        return room == null ? "null" : JsonSerializer.Serialize(new {
+            room.RoomId, room.IsActive
+        });
     }
 
     private string HandleRemoveRoom(int peerId, JsonElement root) {
@@ -100,13 +99,17 @@ public class GameMessageHandler {
     private string HandleStartBattle(int peerId, JsonElement root) {
         var roomId = GetRoomId(peerId, root);
         var battle = _logicService.StartBattleInRoom(roomId);
-        return JsonSerializer.Serialize(new { Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString() });
+        return JsonSerializer.Serialize(new {
+            Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString()
+        });
     }
 
     private string HandleGetBattle(JsonElement root) {
         var roomId = GetArg<string>(root, 0);
         var battle = _logicService.GetBattle(roomId!);
-        return battle == null ? "null" : JsonSerializer.Serialize(new { Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString() });
+        return battle == null ? "null" : JsonSerializer.Serialize(new {
+            Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString()
+        });
     }
 
     private string HandleAdvancePhase(JsonElement root) {
@@ -120,7 +123,9 @@ public class GameMessageHandler {
         var roomId = GetArg<string>(root, 0);
         var battle = GetBattleForRoom(roomId!);
         _logicService.NextRound(battle);
-        return JsonSerializer.Serialize(new { Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString() });
+        return JsonSerializer.Serialize(new {
+            Round = battle.RoundNumber, Phase = battle.CurrentPhase.ToString()
+        });
     }
 
     private string HandleEndBattle(JsonElement root) {
@@ -132,7 +137,8 @@ public class GameMessageHandler {
 
     private string HandleCastSkill(int peerId, JsonElement root) {
         var roomId = GetRoomId(peerId, root);
-        var battle = GetBattleForRoom(roomId);
+
+        _ = GetBattleForRoom(roomId);
 
         // 从 Payload 中解析技能数据（简化处理：直接序列化结果）
         if (root.TryGetProperty("Payload", out var payload)) {
@@ -141,12 +147,18 @@ public class GameMessageHandler {
             // 当前先记录日志并返回确认
         }
 
-        return JsonSerializer.Serialize(new { Handled = true, RoomId = roomId });
+        return JsonSerializer.Serialize(new {
+            Handled = true, RoomId = roomId
+        });
     }
 
-    private string HandleUpdateBuffs(int peerId, JsonElement root) {
+    private static string HandleUpdateBuffs(int peerId, JsonElement root) {
+        _ = peerId;
+        _ = root;
         // Buff 更新由服务端 Tick 主导，客户端请求仅作确认
-        return JsonSerializer.Serialize(new { Handled = true });
+        return JsonSerializer.Serialize(new {
+            Handled = true
+        });
     }
 
     private string HandleCheckBattleEnded(JsonElement root) {
@@ -172,7 +184,7 @@ public class GameMessageHandler {
             ?? throw new InvalidOperationException($"No active battle in room {roomId}. Start battle first.");
     }
 
-    private T? GetArg<T>(JsonElement root, int index) {
+    private static T? GetArg<T>(JsonElement root, int index) {
         if (!root.TryGetProperty("Args", out var argsProp))
             return default;
         var args = argsProp.EnumerateArray().ToList();

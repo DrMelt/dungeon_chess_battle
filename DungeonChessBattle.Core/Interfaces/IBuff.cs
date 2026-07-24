@@ -1,5 +1,3 @@
-using System;
-
 namespace DungeonChessBattle.Core.Interfaces {
     public interface IBuff {
         string BuffName {

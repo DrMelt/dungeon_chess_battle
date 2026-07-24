@@ -1,4 +1,3 @@
-using System;
 namespace DungeonChessBattle.Core.Enums;
 
 public enum EnumCamp {

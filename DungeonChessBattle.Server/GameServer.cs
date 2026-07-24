@@ -33,7 +33,7 @@ public class GameServer {
         _networkManager = new ServerNetworkManager();
         _messageHandler = new GameMessageHandler(_networkManager);
 
-        _networkManager.OnClientConnected += _messageHandler.OnClientConnected;
+        _networkManager.OnClientConnected += GameMessageHandler.OnClientConnected;
         _networkManager.OnClientDisconnected += _messageHandler.OnClientDisconnected;
         _networkManager.OnMessageReceived += _messageHandler.HandleMessage;
     }
@@ -115,7 +115,8 @@ public class GameServer {
         }
     }
 
-    private void Tick(double deltaTime) {
+    private static void Tick(double deltaTime) {
+        _ = deltaTime;
         // 遍历所有房间，更新战斗状态
     }
 

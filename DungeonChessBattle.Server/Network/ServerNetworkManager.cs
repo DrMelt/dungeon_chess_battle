@@ -68,7 +68,9 @@ public class ServerNetworkManager {
     /// 向指定客户端发送带 RequestId 的 JSON 响应。
     /// </summary>
     public void SendResponse(int peerId, int requestId, object result) {
-        var json = JsonSerializer.Serialize(new { RequestId = requestId, Result = result });
+        var json = JsonSerializer.Serialize(new {
+            RequestId = requestId, Result = result
+        });
         SendToClient(peerId, json);
     }
 

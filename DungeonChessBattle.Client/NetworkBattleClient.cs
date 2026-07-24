@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
@@ -78,7 +73,9 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
 
     public void UpdateBuffs(BattleManager battle, IEnumerable<UnitModel> units, double deltaTime) {
         var unitIds = units.Select(u => u.GetHashCode()).ToArray();
-        var payload = JsonSerializer.Serialize(new { UnitIds = unitIds, DeltaTime = deltaTime });
+        var payload = JsonSerializer.Serialize(new {
+            UnitIds = unitIds, DeltaTime = deltaTime
+        });
         SendCommand("UpdateBuffs", payload);
     }
 
@@ -90,7 +87,9 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
 
     private void SendCommand(string method, object payload) {
         var writer = new NetDataWriter();
-        var json = JsonSerializer.Serialize(new { Method = method, Payload = payload });
+        var json = JsonSerializer.Serialize(new {
+            Method = method, Payload = payload
+        });
         writer.Put(json);
         _serverPeer?.Send(writer, DeliveryMethod.ReliableOrdered);
     }
@@ -106,7 +105,9 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         }
 
         var writer = new NetDataWriter();
-        var json = JsonSerializer.Serialize(new { RequestId = id, Method = method, Args = args });
+        var json = JsonSerializer.Serialize(new {
+            RequestId = id, Method = method, Args = args
+        });
         writer.Put(json);
         _serverPeer.Send(writer, DeliveryMethod.ReliableOrdered);
 
