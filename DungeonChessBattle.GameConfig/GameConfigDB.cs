@@ -146,7 +146,9 @@ public static class GameConfigDB {
                 DamageType = Enum.Parse<Enum_DamageType>(rangeDmg.DamageType),
                 RangeRes = ToRangeRes(rangeDmg.Range),
             },
-            _ => new InternalSkillPlaceholder(),
+            _ => throw new InvalidOperationException(
+                $"Unknown SkillConfig type: {config.GetType().Name} (Id={config.Id}). " +
+                "Please add the corresponding case in GameConfigDB.ToSkillModel()."),
         };
 
         model.SkillName = config.SkillName;
@@ -170,7 +172,9 @@ public static class GameConfigDB {
             BuffHOTConfig hot => new BuffHOTModel {
                 HealthPerSec = hot.HealthPerSec,
             },
-            _ => new BuffModel(),
+            _ => throw new InvalidOperationException(
+                $"Unknown BuffConfig type: {config.GetType().Name} (Id={config.Id}). " +
+                "Please add the corresponding case in GameConfigDB.ToBuffModel()."),
         };
 
         model.BuffName = config.BuffName;
@@ -195,7 +199,9 @@ public static class GameConfigDB {
                 FromL = r.FromL,
                 ToR = r.ToR,
             },
-            _ => new CircularRangeRes(),
+            _ => throw new InvalidOperationException(
+                $"Unknown RangeConfig type: {config.GetType().Name}. " +
+                "Please add the corresponding case in GameConfigDB.ToRangeRes()."),
         };
     }
 

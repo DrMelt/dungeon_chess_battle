@@ -29,6 +29,10 @@ public class SkillRangeDamageModel : SkillModel {
                 else if (DamageType == Enum_DamageType.Magic) {
                     testObject.TakeDamage(magicDamage, Enum_DamageType.Magic);
                 }
+                else {
+                    throw new InvalidOperationException(
+                        $"Unknown damage type: {DamageType}. SkillId={SkillName}, Damage={Damage}.");
+                }
             }
         }
     }

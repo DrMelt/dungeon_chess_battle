@@ -155,7 +155,9 @@ public class UnitModel : IUnitState {
         float damageFixed = damageType switch {
             Enum_DamageType.Physcial => damageAmount * PhysicalTakePercent,
             Enum_DamageType.Magic => damageAmount * MagicTakePercent,
-            _ => 0
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(damageType), damageType,
+                $"Unknown damage type: {damageType}. UnitId={UnitStateName}, rawDamage={damageAmount}.")
         };
 
         _health -= damageFixed;

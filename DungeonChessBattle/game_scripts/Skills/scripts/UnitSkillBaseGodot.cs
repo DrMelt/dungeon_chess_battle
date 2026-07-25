@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
@@ -50,8 +51,11 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
         if (_model != null)
             return;
 
-        var config = Config;
-        _model = config != null ? GameConfigDB.ToSkillModel(config) : new InternalSkillPlaceholder();
+        var config = Config ?? throw new InvalidOperationException(
+                $"Skill '{GetType().Name}' must override the Config property to provide a valid SkillConfig. " +
+                "Config returned null, which means this skill has no configuration.");
+
+        _model = GameConfigDB.ToSkillModel(config);
         _model.IconPath = icon?.ResourcePath ?? "";
     }
 

@@ -19,5 +19,9 @@ public class SkillDamageModel : SkillModel {
             float damageAmount = CallSkillObject.MagicDamageAmount(Damage);
             TargetObject.TakeDamage(damageAmount, Enum_DamageType.Magic);
         }
+        else {
+            throw new InvalidOperationException(
+                $"Unknown damage type: {DamageType}. SkillId={SkillName}, Damage={Damage}.");
+        }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.GameConfig;
@@ -31,8 +32,11 @@ public partial class BuffBaseGodot : Resource, IBuff {
         if (_model != null)
             return;
 
-        var config = Config;
-        _model = config != null ? GameConfigDB.ToBuffModel(config) : new BuffModel();
+        var config = Config ?? throw new InvalidOperationException(
+                $"Buff '{GetType().Name}' must override the Config property to provide a valid BuffConfig. " +
+                "Config returned null, which means this buff has no configuration.");
+
+        _model = GameConfigDB.ToBuffModel(config);
         _model.IconPath = icon?.ResourcePath ?? "";
     }
 
