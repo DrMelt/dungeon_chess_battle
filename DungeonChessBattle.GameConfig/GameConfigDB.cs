@@ -57,6 +57,7 @@ public static class GameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Different",
         BuffId = "buff_dot_magic",
+        BuffConfig = BuffDotMagic!,
     };
 
     public static SkillAddBuffConfig SkillAddHot {
@@ -72,6 +73,7 @@ public static class GameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Same",
         BuffId = "buff_hot",
+        BuffConfig = BuffHot!,
     };
 
     public static SkillRangeDamageConfig SkillRectRangeDamage {
@@ -125,62 +127,6 @@ public static class GameConfigDB {
         HealthPerSec = 100.0f,
     };
 
-    // ── 查找索引（懒加载，首次访问时构建）──
-
-    private static Dictionary<string, SkillConfig>? _skills;
-    private static Dictionary<string, BuffConfig>? _buffs;
-    private static Dictionary<string, UnitConfig>? _units;
-
-    private static void EnsureIndices() {
-        if (_skills != null)
-            return;
-
-        _skills = new() {
-            [SkillMagicDamage.Id] = SkillMagicDamage,
-            [SkillCure.Id] = SkillCure,
-            [SkillAddDotMagic.Id] = SkillAddDotMagic,
-            [SkillAddHot.Id] = SkillAddHot,
-            [SkillRectRangeDamage.Id] = SkillRectRangeDamage,
-        };
-
-        _buffs = new() {
-            [BuffDotMagic.Id] = BuffDotMagic,
-            [BuffDotPhyscial.Id] = BuffDotPhyscial,
-            [BuffHot.Id] = BuffHot,
-        };
-
-        _units = [];
-    }
-
-    public static SkillConfig? GetSkill(string id) {
-        EnsureIndices();
-        return _skills!.TryGetValue(id, out var s) ? s : null;
-    }
-
-    public static BuffConfig? GetBuff(string id) {
-        EnsureIndices();
-        return _buffs!.TryGetValue(id, out var b) ? b : null;
-    }
-
-    public static UnitConfig? GetUnit(string id) {
-        EnsureIndices();
-        return _units!.TryGetValue(id, out var u) ? u : null;
-    }
-
-    public static IReadOnlyDictionary<string, SkillConfig> AllSkills {
-        get {
-            EnsureIndices();
-            return _skills!;
-        }
-    }
-
-    public static IReadOnlyDictionary<string, BuffConfig> AllBuffs {
-        get {
-            EnsureIndices();
-            return _buffs!;
-        }
-    }
-
     // ── 配置 → 运行时 Model 转换 ──
 
     public static SkillModel ToSkillModel(SkillConfig config) {
@@ -193,7 +139,7 @@ public static class GameConfigDB {
                 CurePotency = cure.CurePotency,
             },
             SkillAddBuffConfig addBuff => new SkillAddBuffModel {
-                Buff = ToBuffModel(addBuff.BuffId),
+                Buff = ToBuffModel(addBuff.BuffConfig),
             },
             SkillRangeDamageConfig rangeDmg => new SkillRangeDamageModel {
                 Damage = rangeDmg.Damage,
@@ -233,11 +179,6 @@ public static class GameConfigDB {
         model.MaxSuperpositions = config.MaxSuperpositions;
 
         return model;
-    }
-
-    private static BuffModel ToBuffModel(string buffId) {
-        var config = GetBuff(buffId);
-        return config != null ? ToBuffModel(config) : new BuffModel { BuffName = buffId };
     }
 
     private static IRangeRes ToRangeRes(RangeConfig config) {

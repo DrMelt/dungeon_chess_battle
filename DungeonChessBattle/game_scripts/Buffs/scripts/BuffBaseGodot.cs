@@ -1,6 +1,7 @@
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -10,10 +11,9 @@ public partial class BuffBaseGodot : Resource, IBuff {
     protected BuffModel? _model = null;
 
     /// <summary>
-    /// 指向 GameConfigDB 的配置 ID，数值全部从 C# 配置读取
+    /// 子类重写此属性，直接返回 GameConfigDB 中的 BuffConfig（类型安全，编译期检查）
     /// </summary>
-    [Export]
-    public string buffConfigId = "";
+    protected virtual BuffConfig? Config => null;
 
     [Export]
     public Texture2D icon = null!;
@@ -31,7 +31,7 @@ public partial class BuffBaseGodot : Resource, IBuff {
         if (_model != null)
             return;
 
-        var config = !string.IsNullOrEmpty(buffConfigId) ? GameConfigDB.GetBuff(buffConfigId) : null;
+        var config = Config;
         _model = config != null ? GameConfigDB.ToBuffModel(config) : new BuffModel();
         _model.IconPath = icon?.ResourcePath ?? "";
     }
