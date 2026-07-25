@@ -11,6 +11,41 @@ namespace DungeonChessBattle.GameConfig;
 /// Server 和 Client 直接引用，零反射，编译期类型安全。
 /// </summary>
 public static class GameConfigDB {
+    // ── Buffs ──
+    // Buffs 放在 Skills 前面，让 Skills 初始化时编译器流分析能确认 BuffConfig 非 null
+
+    public static BuffDOTConfig BuffDotMagic {
+        get;
+    } = new() {
+        Id = "buff_dot_magic",
+        BuffName = "持续魔法伤害",
+        Duration = 30.0,
+        MaxSuperpositions = 1,
+        DamageType = "Magic",
+        DamagePerSec = 10.0f,
+    };
+
+    public static BuffDOTConfig BuffDotPhyscial {
+        get;
+    } = new() {
+        Id = "buff_dot_physcial",
+        BuffName = "",
+        Duration = 15.0,
+        MaxSuperpositions = 1,
+        DamageType = "Physcial",
+        DamagePerSec = 100.0f,
+    };
+
+    public static BuffHOTConfig BuffHot {
+        get;
+    } = new() {
+        Id = "buff_hot",
+        BuffName = "持续治疗",
+        Duration = 15.0,
+        MaxSuperpositions = 1,
+        HealthPerSec = 100.0f,
+    };
+
     // ── Skills ──
 
     public static SkillDamageConfig SkillMagicDamage {
@@ -57,7 +92,7 @@ public static class GameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Different",
         BuffId = "buff_dot_magic",
-        BuffConfig = BuffDotMagic!,
+        BuffConfig = BuffDotMagic,
     };
 
     public static SkillAddBuffConfig SkillAddHot {
@@ -73,7 +108,7 @@ public static class GameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Same",
         BuffId = "buff_hot",
-        BuffConfig = BuffHot!,
+        BuffConfig = BuffHot,
     };
 
     public static SkillRangeDamageConfig SkillRectRangeDamage {
@@ -93,43 +128,11 @@ public static class GameConfigDB {
         },
     };
 
-    // ── Buffs ──
-
-    public static BuffDOTConfig BuffDotMagic {
-        get;
-    } = new() {
-        Id = "buff_dot_magic",
-        BuffName = "持续魔法伤害",
-        Duration = 30.0,
-        MaxSuperpositions = 1,
-        DamageType = "Magic",
-        DamagePerSec = 10.0f,
-    };
-
-    public static BuffDOTConfig BuffDotPhyscial {
-        get;
-    } = new() {
-        Id = "buff_dot_physcial",
-        BuffName = "",
-        Duration = 15.0,
-        MaxSuperpositions = 1,
-        DamageType = "Physcial",
-        DamagePerSec = 100.0f,
-    };
-
-    public static BuffHOTConfig BuffHot {
-        get;
-    } = new() {
-        Id = "buff_hot",
-        BuffName = "持续治疗",
-        Duration = 15.0,
-        MaxSuperpositions = 1,
-        HealthPerSec = 100.0f,
-    };
-
     // ── 配置 → 运行时 Model 转换 ──
 
     public static SkillModel ToSkillModel(SkillConfig config) {
+        ArgumentNullException.ThrowIfNull(config);
+
         var model = config switch {
             SkillDamageConfig dmg => (SkillModel)new SkillDamageModel {
                 Damage = dmg.Damage,
@@ -164,6 +167,8 @@ public static class GameConfigDB {
     }
 
     public static BuffModel ToBuffModel(BuffConfig config) {
+        ArgumentNullException.ThrowIfNull(config);
+
         var model = config switch {
             BuffDOTConfig dot => (BuffModel)new BuffDOTModel {
                 DamageType = Enum.Parse<Enum_DamageType>(dot.DamageType),
@@ -186,6 +191,8 @@ public static class GameConfigDB {
     }
 
     private static IRangeRes ToRangeRes(RangeConfig config) {
+        ArgumentNullException.ThrowIfNull(config);
+
         return config switch {
             CircularRangeConfig c => new CircularRangeRes {
                 NearClamp = c.NearClamp,
@@ -203,10 +210,5 @@ public static class GameConfigDB {
                 $"Unknown RangeConfig type: {config.GetType().Name}. " +
                 "Please add the corresponding case in GameConfigDB.ToRangeRes()."),
         };
-    }
-
-    private class InternalSkillPlaceholder : SkillModel {
-        protected override void CallSpelledSkill() {
-        }
     }
 }
