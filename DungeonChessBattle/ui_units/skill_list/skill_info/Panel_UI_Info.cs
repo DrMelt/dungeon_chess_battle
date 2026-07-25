@@ -30,8 +30,8 @@ public partial class Panel_UI_Info : Control {
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon buffIcon) {
-                skillNameLabel.Text = buffIcon.BindingBuff.buffName;
-                skillDescriptionLabel.Text = buffIcon.BindingBuff.buffDescription;
+                skillNameLabel.Text = buffIcon.BindingBuff.BuffName;
+                skillDescriptionLabel.Text = buffIcon.BindingBuff.BuffDescription;
                 isShow = true;
             }
         }

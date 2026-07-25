@@ -7,6 +7,7 @@
   <Project Path="DungeonChessBattle\DungeonChessBattle.csproj" />
   <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
   <Project Path="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
+  <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Server\DungeonChessBattle.Server.csproj" />
 </Solution>

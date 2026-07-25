@@ -4,11 +4,4 @@
 
 [resource]
 script = ExtResource("1_51lf4")
-damageType = 1
-damagePerSec = 100.0
-buffName = ""
-buffDescription = ""
-duration = 15.0
-superpositions = 1
-maxSuperpositions = 1
-isAlive = true
+buffConfigId = "buff_dot_physcial"

@@ -247,7 +247,7 @@ public partial class UnitState : Resource, IUnitState {
 
         _model.AddBuff(godotBuff);
 
-        BuffBaseGodot? find = buffList.Find(b => b.buffName == godotBuff.buffName);
+        BuffBaseGodot? find = buffList.Find(b => b.BuffName == godotBuff.BuffName);
         if (find != null) {
             find.AddSuperpositions(godotBuff);
         }
@@ -262,7 +262,7 @@ public partial class UnitState : Resource, IUnitState {
             return;
 
         _model.RemoveBuff(godotBuff);
-        buffList.RemoveAll(b => b.buffName == godotBuff.buffName);
+        buffList.RemoveAll(b => b.BuffName == godotBuff.BuffName);
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 

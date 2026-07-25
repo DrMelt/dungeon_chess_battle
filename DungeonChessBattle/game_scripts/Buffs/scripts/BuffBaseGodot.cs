@@ -1,66 +1,48 @@
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class BuffBaseGodot : Resource, IBuff {
-    protected BuffModel _model = null!;
+    protected BuffModel? _model = null;
 
+    /// <summary>
+    /// 指向 GameConfigDB 的配置 ID，数值全部从 C# 配置读取
+    /// </summary>
     [Export]
-    public string buffName = null!;
-    public string BuffName => _model?.BuffName ?? buffName;
-
-    [Export(PropertyHint.MultilineText)]
-    public string buffDescription = null!;
-    public string BuffDescription => _model?.BuffDescription ?? buffDescription;
+    public string buffConfigId = "";
 
     [Export]
     public Texture2D icon = null!;
+
+    public string BuffName => _model?.BuffName ?? "";
+    public string BuffDescription => _model?.BuffDescription ?? "";
     public string IconPath => _model?.IconPath ?? icon?.ResourcePath ?? "";
-
-    [Export]
-    public double duration = 60;
-    public double Duration => _model?.Duration ?? duration;
-
-    [Export]
-    public int superpositions = 1;
-    public int Superpositions => _model?.Superpositions ?? superpositions;
-
-    [Export]
-    public int maxSuperpositions = 1;
-    public int MaxSuperpositions => _model?.MaxSuperpositions ?? maxSuperpositions;
-
+    public double Duration => _model?.Duration ?? 0;
+    public int Superpositions => _model?.Superpositions ?? 1;
+    public int MaxSuperpositions => _model?.MaxSuperpositions ?? 1;
     public bool IsAlive => _model?.IsAlive ?? true;
-
     public IUnitState FromUnit => _model?.FromUnit!;
 
     private void EnsureModelCreated() {
         if (_model != null)
             return;
 
-        _model = CreateModel();
-
-        _model.BuffName = buffName;
-        _model.BuffDescription = buffDescription;
+        var config = !string.IsNullOrEmpty(buffConfigId) ? GameConfigDB.GetBuff(buffConfigId) : null;
+        _model = config != null ? GameConfigDB.ToBuffModel(config) : new BuffModel();
         _model.IconPath = icon?.ResourcePath ?? "";
-        _model.Duration = duration;
-        _model.Superpositions = superpositions;
-        _model.MaxSuperpositions = maxSuperpositions;
-    }
-
-    protected virtual BuffModel CreateModel() {
-        return new BuffModel();
     }
 
     public void Update(double deltaTime, IUnitState unitState) {
         EnsureModelCreated();
-        _model.Update(deltaTime, unitState);
+        _model?.Update(deltaTime, unitState);
     }
 
     public void AddSuperpositions(IBuff other) {
         EnsureModelCreated();
-        _model.AddSuperpositions(other);
+        _model?.AddSuperpositions(other);
     }
 }

@@ -25,8 +25,8 @@ public partial class TextureRectBuffIcon : TextureRect {
             fontColor = fromFocusUnit;
         }
 
-        durationLabelRef.Text = buffBase.duration.ToString("F0");
-        superpositionsLabelRef.Text = buffBase.superpositions.ToString();
+        durationLabelRef.Text = buffBase.Duration.ToString("F0");
+        superpositionsLabelRef.Text = buffBase.Superpositions.ToString();
 
         durationLabelRef.LabelSettings.FontColor = fontColor;
 

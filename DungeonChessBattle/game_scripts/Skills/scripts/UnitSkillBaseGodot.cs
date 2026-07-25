@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -10,41 +11,16 @@ namespace DungeonChessBattle;
 public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     protected SkillModel? _model = null;
 
+    /// <summary>
+    /// 指向 GameConfigDB 的配置 ID，数值全部从 C# 配置读取
+    /// </summary>
     [Export]
-    string skillName = "UnitSkillBaseName";
-    public string SkillName => _model?.SkillName ?? skillName;
+    string skillConfigId = "";
 
     [Export]
     Texture2D icon = null!;
     public Texture2D Icon => icon;
     string IUnitSkill.IconPath => icon?.ResourcePath ?? "";
-
-    [Export(PropertyHint.MultilineText)]
-    string skillDescription = "UnitSkillBaseDescription";
-    public string SkillDescription => _model?.SkillDescription ?? skillDescription;
-
-    [Export]
-    float skillNeedSpellTime = 2.0f;
-    public float SkillSpellTime => _model?.SkillSpellTime ?? skillNeedSpellTime;
-
-    [Export]
-    float skillCooldownTime = 3.0f;
-
-    [Export]
-    float gcdTime = 3.0f;
-    public float GCDTime => _model?.GCDTime ?? gcdTime;
-
-    [Export]
-    bool needUnitTarget = false;
-    public bool NeedUnitTarget => _model?.NeedUnitTarget ?? needUnitTarget;
-
-    [Export]
-    bool needPosTarget = false;
-    public bool NeedPosTarget => _model?.NeedPosTarget ?? needPosTarget;
-
-    [Export]
-    EnumSkillCanAdd skillCanAdd = EnumSkillCanAdd.None;
-    public EnumSkillCanAdd SkillCanAdd => _model?.SkillCanAdd ?? skillCanAdd;
 
     [ExportGroup("Runtime Parameters")]
     [Export]
@@ -55,38 +31,28 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     float skillCoolingTime = 0;
     public float SkillCoolingTime => _model?.SkillCoolingTime ?? skillCoolingTime;
 
-    public float SkillSpellProgress => _model?.SkillSpellProgress ?? 0;
-
-    public IUnitState CallSkillObject => _model?.CallSkillObject!;
-
     [Export]
     Vector3 _targetPos;
     System.Numerics.Vector3 IUnitSkill.TargetPos => new(_targetPos.X, _targetPos.Y, _targetPos.Z);
     public System.Numerics.Vector3 TargetPos => new(_targetPos.X, _targetPos.Y, _targetPos.Z);
 
+    public string SkillName => _model?.SkillName ?? "";
+    public string SkillDescription => _model?.SkillDescription ?? "";
+    public float SkillSpellTime => _model?.SkillSpellTime ?? 0;
+    public float GCDTime => _model?.GCDTime ?? 0;
+    public bool NeedUnitTarget => _model?.NeedUnitTarget ?? false;
+    public bool NeedPosTarget => _model?.NeedPosTarget ?? false;
+    public EnumSkillCanAdd SkillCanAdd => _model?.SkillCanAdd ?? EnumSkillCanAdd.None;
+    public float SkillSpellProgress => _model?.SkillSpellProgress ?? 0;
+    public IUnitState CallSkillObject => _model?.CallSkillObject!;
+
     private void EnsureModelCreated() {
         if (_model != null)
             return;
 
-        _model = CreateModel();
-        if (_model == null)
-            return;
-
-        _model.SkillName = skillName;
-        _model.SkillDescription = skillDescription;
+        var config = !string.IsNullOrEmpty(skillConfigId) ? GameConfigDB.GetSkill(skillConfigId) : null;
+        _model = config != null ? GameConfigDB.ToSkillModel(config) : new InternalSkillPlaceholder();
         _model.IconPath = icon?.ResourcePath ?? "";
-        _model.SkillSpellTime = skillNeedSpellTime;
-        _model.SkillCooldownTime = skillCooldownTime;
-        _model.GCDTime = gcdTime;
-        _model.NeedUnitTarget = needUnitTarget;
-        _model.NeedPosTarget = needPosTarget;
-        _model.SkillCanAdd = skillCanAdd;
-        _model.SkillSpelledTime = skillSpelledTime;
-        _model.SkillCoolingTime = skillCoolingTime;
-    }
-
-    protected virtual SkillModel? CreateModel() {
-        return new SkillDummyModel();
     }
 
     public void UpdateSkill(double delta) {
@@ -122,15 +88,20 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
         return _model?.CallSkillSpelling() ?? false;
     }
 
+    public IRangeRes? GetRangeRes() {
+        EnsureModelCreated();
+        return (_model as SkillRangeDamageModel)?.RangeRes;
+    }
+
     protected virtual void CallSpelledSkill() {
-        GD.Print($"{skillName} is called");
+        GD.Print($"{SkillName} is called");
     }
 }
 
 /// <summary>
-/// 无实际操作技能的占位 Model，供不需要实际逻辑的技能使用。
+/// 占位 Model，当 skillConfigId 为空时使用（编辑器未配置的默认行为）。
 /// </summary>
-internal class SkillDummyModel : SkillModel {
+internal class InternalSkillPlaceholder : SkillModel {
     protected override void CallSpelledSkill() {
     }
 }
