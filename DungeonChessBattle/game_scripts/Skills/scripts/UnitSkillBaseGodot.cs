@@ -3,6 +3,7 @@ using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -12,10 +13,9 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     protected SkillModel? _model = null;
 
     /// <summary>
-    /// 指向 GameConfigDB 的配置 ID，数值全部从 C# 配置读取
+    /// 子类重写此属性，直接返回 GameConfigDB 中的 SkillConfig（类型安全，编译期检查）
     /// </summary>
-    [Export]
-    string skillConfigId = "";
+    protected virtual SkillConfig? Config => null;
 
     [Export]
     Texture2D icon = null!;
@@ -50,7 +50,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
         if (_model != null)
             return;
 
-        var config = !string.IsNullOrEmpty(skillConfigId) ? GameConfigDB.GetSkill(skillConfigId) : null;
+        var config = Config;
         _model = config != null ? GameConfigDB.ToSkillModel(config) : new InternalSkillPlaceholder();
         _model.IconPath = icon?.ResourcePath ?? "";
     }
@@ -99,7 +99,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
 }
 
 /// <summary>
-/// 占位 Model，当 skillConfigId 为空时使用（编辑器未配置的默认行为）。
+/// 占位 Model，当 Config 为 null 时使用（子类未重写配置）。
 /// </summary>
 internal class InternalSkillPlaceholder : SkillModel {
     protected override void CallSpelledSkill() {
