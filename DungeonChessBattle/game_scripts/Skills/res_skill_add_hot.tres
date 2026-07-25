@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Skill_Add_BUFF" load_steps=3 format=3 uid="uid://ce85dbebhv73r"]
+[gd_resource type="Resource" script_class="Skill_Add_BUFF" format=3 uid="uid://ce85dbebhv73r"]
 
 [ext_resource type="Script" uid="uid://578gt4jn0qjw" path="res://game_scripts/Skills/scripts/Skill_Add_BUFF.cs" id="1_v1cei"]
 [ext_resource type="Texture2D" uid="uid://cli735me34nmu" path="res://icons/Regen/002628_hr1.png" id="2_gwecg"]
@@ -6,5 +6,4 @@
 [resource]
 resource_local_to_scene = true
 script = ExtResource("1_v1cei")
-skillConfigId = "skill_add_hot"
 icon = ExtResource("2_gwecg")
