@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="Skill_Damage" format=3 uid="uid://ki4rvmooffx3"]
 
 [ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://icons/Stone/000403_hr1.png" id="1_fqghg"]
-[ext_resource type="Script" uid="uid://5jswv8456nig" path="res://game_scripts/Skills/scripts/Skill_Damage.cs" id="2_fqghg"]
+[ext_resource type="Script" uid="uid://5jswv8456nig" path="res://game_assets/Skills/scripts/Skill_Damage.cs" id="2_fqghg"]
 
 [resource]
 resource_local_to_scene = true

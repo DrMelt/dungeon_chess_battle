@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="Buff_DOT" format=3 uid="uid://btx4sae0q273i"]
+
+[ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://game_assets/Buffs/scripts/Buff_DOT.cs" id="1_51lf4"]
+
+[resource]
+script = ExtResource("1_51lf4")
+buffConfigId = "buff_dot_physcial"

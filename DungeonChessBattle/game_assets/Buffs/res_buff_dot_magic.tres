@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="Buff_DOT" load_steps=2 format=3 uid="uid://d2uqaxajtlili"]
+[gd_resource type="Resource" script_class="Buff_DOT" format=3 uid="uid://d2uqaxajtlili"]
 
 [ext_resource type="Texture2D" uid="uid://bclgcqsi0ihrl" path="res://icons/Aero/210403_hr1.png" id="1_j8fmd"]
-[ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://game_scripts/Buffs/scripts/Buff_DOT.cs" id="2_j8fmd"]
+[ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://game_assets/Buffs/scripts/Buff_DOT.cs" id="2_j8fmd"]
 
 [resource]
 script = ExtResource("2_j8fmd")
