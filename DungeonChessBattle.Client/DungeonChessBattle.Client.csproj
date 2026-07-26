@@ -12,10 +12,12 @@
         <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="LiteNetLib" />
+        <PackageReference Include="LiteEntitySystem" />
     </ItemGroup>
 
 </Project>

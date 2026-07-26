@@ -1,23 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>DungeonChessBattle.Server</RootNamespace>
+        <RootNamespace>DungeonChessBattle.Entities</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="LiteNetLib" />
         <PackageReference Include="LiteEntitySystem" />
     </ItemGroup>
 
