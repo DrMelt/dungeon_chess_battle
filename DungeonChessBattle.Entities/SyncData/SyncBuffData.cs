@@ -6,8 +6,7 @@ namespace DungeonChessBattle.Entities.SyncData;
 /// <summary>
 /// Buff 的扁平化同步数据，实现 ISpanSerializable 以便在 SyncList 中传输。
 /// </summary>
-public struct SyncBuffData : ISpanSerializable
-{
+public struct SyncBuffData : ISpanSerializable {
     /// <summary>Buff 类型 ID，对应配置表中的 Buff 名称哈希</summary>
     public ushort BuffTypeId;
 
@@ -32,10 +31,9 @@ public struct SyncBuffData : ISpanSerializable
     /// <summary>伤害类型（仅 DOT 有效，HOT 和纯 Buff 忽略）</summary>
     public byte DamageType;
 
-    public int MaxSize => 2 + 4 + 4 + 4 + 2 + 2 + 2 + 1; // 21 bytes
+    public readonly int MaxSize => 2 + 4 + 4 + 4 + 2 + 2 + 2 + 1; // 21 bytes
 
-    public void Serialize(ref SpanWriter writer)
-    {
+    public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(BuffTypeId);
         writer.Put(RemainingDuration);
         writer.Put(TickInterval);
@@ -46,8 +44,7 @@ public struct SyncBuffData : ISpanSerializable
         writer.Put(DamageType);
     }
 
-    public void Deserialize(ref SpanReader reader)
-    {
+    public void Deserialize(ref SpanReader reader) {
         BuffTypeId = reader.GetUShort();
         RemainingDuration = reader.GetFloat();
         TickInterval = reader.GetFloat();
@@ -61,15 +58,15 @@ public struct SyncBuffData : ISpanSerializable
     /// <summary>
     /// 判断此 Buff 是否为 DOT（持续伤害）
     /// </summary>
-    public bool IsDOT => TickInterval > 0 && TickValue > 0;
+    public readonly bool IsDOT => TickInterval > 0 && TickValue > 0;
 
     /// <summary>
     /// 判断此 Buff 是否为 HOT（持续治疗）
     /// </summary>
-    public bool IsHOT => TickInterval > 0 && TickValue < 0;
+    public readonly bool IsHOT => TickInterval > 0 && TickValue < 0;
 
     /// <summary>
     /// 判断此 Buff 是否可叠加
     /// </summary>
-    public bool IsStackable => MaxStackCount > 1;
+    public readonly bool IsStackable => MaxStackCount > 1;
 }

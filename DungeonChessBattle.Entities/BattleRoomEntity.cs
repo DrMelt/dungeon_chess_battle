@@ -7,8 +7,7 @@ namespace DungeonChessBattle.Entities;
 /// <summary>
 /// 战斗房间的网络同步 Entity。纯数据载体。
 /// </summary>
-public class BattleRoomEntity : EntityLogic
-{
+public class BattleRoomEntity : EntityLogic {
     public readonly SyncString RoomId = new();
     public SyncVar<byte> BattlePhase;
     public SyncVar<ushort> CurrentRound;
@@ -18,8 +17,7 @@ public class BattleRoomEntity : EntityLogic
 
     public BattleRoomEntity(EntityParams entityParams) : base(entityParams) { }
 
-    protected override void OnConstructed()
-    {
+    protected override void OnConstructed() {
         BattlePhase.Value = 0;
         CurrentRound.Value = 1;
         ActiveCamp.Value = 1;

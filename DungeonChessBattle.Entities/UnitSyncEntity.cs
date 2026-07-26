@@ -8,8 +8,7 @@ namespace DungeonChessBattle.Entities;
 /// <summary>
 /// 单位的网络同步 Entity。纯数据载体，由服务端直接操作 SyncVar/SyncList。
 /// </summary>
-public class UnitSyncEntity : EntityLogic
-{
+public class UnitSyncEntity : EntityLogic {
     public readonly SyncString UnitName = new();
     public SyncVar<float> Health;
     public SyncVar<float> MaxHealth;
@@ -22,9 +21,9 @@ public class UnitSyncEntity : EntityLogic
     public SyncVar<float> MagicTakePercent;
     public SyncVar<float> CureIntensity;
     public SyncVar<float> BaseSpeed;
-    public readonly SyncList<SyncBuffData> BuffsList = new();
-    public readonly SyncList<ushort> SkillIds = new();
-    public readonly SyncList<SyncHateData> HatesList = new();
+    public readonly SyncList<SyncBuffData> BuffsList = [];
+    public readonly SyncList<ushort> SkillIds = [];
+    public readonly SyncList<SyncHateData> HatesList = [];
 
     public event Action<UnitSyncEntity, float, float>? HealthChanged;
     public event Action<UnitSyncEntity>? UnitDied;
@@ -33,8 +32,7 @@ public class UnitSyncEntity : EntityLogic
 
     public UnitSyncEntity(EntityParams entityParams) : base(entityParams) { }
 
-    protected override void OnConstructed()
-    {
+    protected override void OnConstructed() {
         Health.Value = 1000f;
         MaxHealth.Value = 1000f;
         Camp.Value = 0;
@@ -47,32 +45,27 @@ public class UnitSyncEntity : EntityLogic
         BaseSpeed.Value = 2.0f;
     }
 
-    public void ServerSetHealth(float newHealth)
-    {
-        if (!IsServer) return;
+    public void ServerSetHealth(float newHealth) {
+        if (!IsServer)
+            return;
         float oldHealth = Health.Value;
         Health.Value = Math.Clamp(newHealth, 0f, MaxHealth.Value);
-        if (MathF.Abs(Health.Value - oldHealth) > 0.0001f)
-        {
+        if (MathF.Abs(Health.Value - oldHealth) > 0.0001f) {
             HealthChanged?.Invoke(this, Health.Value, oldHealth);
-            if (Health.Value <= 0)
-            {
+            if (Health.Value <= 0) {
                 UnitState.Value = 1;
                 UnitDied?.Invoke(this);
             }
         }
     }
 
-    public void ServerAddBuff(SyncBuffData buffData)
-    {
-        if (!IsServer) return;
-        if (buffData.IsStackable)
-        {
-            for (int i = 0; i < BuffsList.Count; i++)
-            {
+    public void ServerAddBuff(SyncBuffData buffData) {
+        if (!IsServer)
+            return;
+        if (buffData.IsStackable) {
+            for (int i = 0; i < BuffsList.Count; i++) {
                 var existing = BuffsList[i];
-                if (existing.BuffTypeId == buffData.BuffTypeId)
-                {
+                if (existing.BuffTypeId == buffData.BuffTypeId) {
                     existing.StackCount = (ushort)Math.Min(existing.StackCount + 1, existing.MaxStackCount);
                     existing.RemainingDuration = Math.Max(existing.RemainingDuration, buffData.RemainingDuration);
                     BuffsList[i] = existing;
@@ -84,32 +77,32 @@ public class UnitSyncEntity : EntityLogic
         BuffAdded?.Invoke(this, buffData);
     }
 
-    public void ServerRemoveBuffAt(int index)
-    {
-        if (!IsServer) return;
-        if (index < 0 || index >= BuffsList.Count) return;
+    public void ServerRemoveBuffAt(int index) {
+        if (!IsServer)
+            return;
+        if (index < 0 || index >= BuffsList.Count)
+            return;
         var removed = BuffsList[index];
         BuffsList.RemoveAt(index);
         BuffRemoved?.Invoke(this, removed);
     }
 
-    public void ServerUpdateBuffDuration(int index, float newRemaining)
-    {
-        if (!IsServer) return;
-        if (index < 0 || index >= BuffsList.Count) return;
+    public void ServerUpdateBuffDuration(int index, float newRemaining) {
+        if (!IsServer)
+            return;
+        if (index < 0 || index >= BuffsList.Count)
+            return;
         var buff = BuffsList[index];
         buff.RemainingDuration = newRemaining;
         BuffsList[index] = buff;
     }
 
-    public void ServerAddHate(ushort targetUnitNetId, float hateValue)
-    {
-        if (!IsServer) return;
-        for (int i = 0; i < HatesList.Count; i++)
-        {
+    public void ServerAddHate(ushort targetUnitNetId, float hateValue) {
+        if (!IsServer)
+            return;
+        for (int i = 0; i < HatesList.Count; i++) {
             var existing = HatesList[i];
-            if (existing.TargetUnitNetId == targetUnitNetId)
-            {
+            if (existing.TargetUnitNetId == targetUnitNetId) {
                 existing.HateValue += hateValue;
                 HatesList[i] = existing;
                 return;
