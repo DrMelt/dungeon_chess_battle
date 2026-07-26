@@ -5,6 +5,7 @@
 
 [resource]
 script = ExtResource("1_wp656")
-buffConfigId = "buff_hot"
 icon = ExtResource("1_yhkhu")
+_buffName = "持续治疗"
+_buffDescription = ""
 metadata/_custom_type_script = "uid://l1y3n5djli2w"

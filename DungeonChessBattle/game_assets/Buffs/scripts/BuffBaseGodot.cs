@@ -19,9 +19,14 @@ public partial class BuffBaseGodot : Resource, IBuff {
     [Export]
     public Texture2D icon = null!;
 
-    public string BuffName => _model?.BuffName ?? "";
-    public string BuffDescription => _model?.BuffDescription ?? "";
-    public string IconPath => _model?.IconPath ?? icon?.ResourcePath ?? "";
+    [Export]
+    string _buffName = "";
+    [Export]
+    string _buffDescription = "";
+
+    public string BuffName => _buffName;
+    public string BuffDescription => _buffDescription;
+    public string IconPath => icon?.ResourcePath ?? "";
     public double Duration => _model?.Duration ?? 0;
     public int Superpositions => _model?.Superpositions ?? 1;
     public int MaxSuperpositions => _model?.MaxSuperpositions ?? 1;
@@ -37,7 +42,7 @@ public partial class BuffBaseGodot : Resource, IBuff {
                 "Config returned null, which means this buff has no configuration.");
 
         _model = GameConfigDB.ToBuffModel(config);
-        _model.IconPath = icon?.ResourcePath ?? "";
+        _model.BuffName = _buffName;
     }
 
     public void Update(double deltaTime, IUnitState unitState) {

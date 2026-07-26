@@ -3,13 +3,6 @@ using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle.Core.Interfaces {
     public interface IUnitSkill {
-        string SkillName {
-            get;
-        }
-        string SkillDescription {
-            get;
-        }
-
         float SkillSpellTime {
             get;
         }

@@ -7,4 +7,6 @@
 resource_local_to_scene = true
 script = ExtResource("2_fqghg")
 icon = ExtResource("1_fqghg")
+_skillName = "魔法攻击"
+_skillDescription = "对目标发动魔法攻击\n威力：140"
 metadata/_custom_type_script = "uid://5jswv8456nig"

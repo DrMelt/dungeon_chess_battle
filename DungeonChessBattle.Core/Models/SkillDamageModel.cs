@@ -21,7 +21,7 @@ public class SkillDamageModel : SkillModel {
         }
         else {
             throw new InvalidOperationException(
-                $"Unknown damage type: {DamageType}. SkillId={SkillName}, Damage={Damage}.");
+                $"Unknown damage type: {DamageType}. Skill={GetType().Name}, Damage={Damage}.");
         }
     }
 }

@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="Skill_Range_Damage" format=3 uid="uid://dkyowavmc04rk"]
 
 [ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://icons/000400_hr1.png" id="1_yiyny"]
-[ext_resource type="Script" uid="uid://bqqt3y3s4xm54" path="res://game_assets/Skills/scripts/Skill_Range_Damage.cs" id="3_ivhtw"]
+[ext_resource type="Script" uid="uid://bqqt3y3s4xm54" path="res://game_assets/Skills/rect_range_damage/Skill_Range_Damage.cs" id="3_ivhtw"]
 
 [resource]
 script = ExtResource("3_ivhtw")
 icon = ExtResource("1_yiyny")
+_skillName = "矩形范围伤害"
+_skillDescription = "对矩形范围内的敌人造成伤害\n威力：200"
 metadata/_custom_type_script = "uid://bqqt3y3s4xm54"

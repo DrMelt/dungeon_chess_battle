@@ -22,6 +22,11 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     Texture2D? icon = null;
     public Texture2D? Icon => icon;
 
+    [Export]
+    string _skillName = "";
+    [Export(PropertyHint.MultilineText)]
+    string _skillDescription = "";
+
     [ExportGroup("Runtime Parameters")]
     [Export]
     float skillSpelledTime = 0;
@@ -36,8 +41,8 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     System.Numerics.Vector3 IUnitSkill.TargetPos => new(_targetPos.X, _targetPos.Y, _targetPos.Z);
     public System.Numerics.Vector3 TargetPos => new(_targetPos.X, _targetPos.Y, _targetPos.Z);
 
-    public string SkillName => _model?.SkillName ?? "";
-    public string SkillDescription => _model?.SkillDescription ?? "";
+    public string SkillName => _skillName;
+    public string SkillDescription => _skillDescription;
     public float SkillSpellTime => _model?.SkillSpellTime ?? 0;
     public float GCDTime => _model?.GCDTime ?? 0;
     public bool NeedUnitTarget => _model?.NeedUnitTarget ?? false;
@@ -55,7 +60,6 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
                 "Config returned null, which means this skill has no configuration.");
 
         _model = GameConfigDB.ToSkillModel(config);
-        _model.IconPath = icon?.ResourcePath ?? "";
     }
 
     public void UpdateSkill(double delta) {

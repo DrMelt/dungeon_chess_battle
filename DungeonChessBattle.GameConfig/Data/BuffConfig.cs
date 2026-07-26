@@ -1,16 +1,14 @@
+using DungeonChessBattle.Core.Enums;
+
 namespace DungeonChessBattle.GameConfig.Data;
 
 public class BuffConfig {
-    public string Id { get; set; } = "";
-    public string BuffName { get; set; } = "";
-    public string BuffDescription { get; set; } = "";
-    public string IconPath { get; set; } = "";
     public double Duration { get; set; } = 60;
     public int MaxSuperpositions { get; set; } = 1;
 }
 
 public class BuffDOTConfig : BuffConfig {
-    public string DamageType { get; set; } = "Magic";
+    public Enum_DamageType DamageType { get; set; } = Enum_DamageType.Magic;
     public float DamagePerSec { get; set; } = 10.0f;
 }
 

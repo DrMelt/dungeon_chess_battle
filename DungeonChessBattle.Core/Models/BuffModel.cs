@@ -3,10 +3,7 @@ using DungeonChessBattle.Core.Interfaces;
 namespace DungeonChessBattle.Core.Models;
 
 public class BuffModel : IBuff {
-    public string BuffName { get; set; } = "BuffName";
-    public string BuffDescription { get; set; } = "BuffDescription";
-    public string IconPath { get; set; } = "";
-
+    public string BuffName { get; set; } = "";
     public double Duration { get; set; } = 60;
     public int Superpositions { get; set; } = 1;
     public int MaxSuperpositions { get; set; } = 1;

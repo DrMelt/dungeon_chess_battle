@@ -3,12 +3,6 @@ namespace DungeonChessBattle.Core.Interfaces {
         string BuffName {
             get;
         }
-        string BuffDescription {
-            get;
-        }
-        string IconPath {
-            get;
-        }
         double Duration {
             get;
         }

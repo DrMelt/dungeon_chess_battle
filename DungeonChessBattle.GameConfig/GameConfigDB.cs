@@ -17,30 +17,24 @@ public static class GameConfigDB {
     public static BuffDOTConfig BuffDotMagic {
         get;
     } = new() {
-        Id = "buff_dot_magic",
-        BuffName = "持续魔法伤害",
         Duration = 30.0,
         MaxSuperpositions = 1,
-        DamageType = "Magic",
+        DamageType = Enum_DamageType.Magic,
         DamagePerSec = 10.0f,
     };
 
     public static BuffDOTConfig BuffDotPhyscial {
         get;
     } = new() {
-        Id = "buff_dot_physcial",
-        BuffName = "",
         Duration = 15.0,
         MaxSuperpositions = 1,
-        DamageType = "Physcial",
+        DamageType = Enum_DamageType.Physcial,
         DamagePerSec = 100.0f,
     };
 
     public static BuffHOTConfig BuffHot {
         get;
     } = new() {
-        Id = "buff_hot",
-        BuffName = "持续治疗",
         Duration = 15.0,
         MaxSuperpositions = 1,
         HealthPerSec = 100.0f,
@@ -51,9 +45,6 @@ public static class GameConfigDB {
     public static SkillDamageConfig SkillMagicDamage {
         get;
     } = new() {
-        Id = "skill_magic_damage",
-        SkillName = "魔法攻击",
-        SkillDescription = "对目标发动魔法攻击\n威力：140",
         SkillSpellTime = 2.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
@@ -61,15 +52,12 @@ public static class GameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Different",
         Damage = 140.0f,
-        DamageType = "Magic",
+        DamageType = Enum_DamageType.Magic,
     };
 
     public static SkillCureConfig SkillCure {
         get;
     } = new() {
-        Id = "skill_cure",
-        SkillName = "治疗",
-        SkillDescription = "回复目标体力\n恢复力：500",
         SkillSpellTime = 0.5f,
         SkillCooldownTime = 0.5f,
         GCDTime = 2.0f,
@@ -82,51 +70,77 @@ public static class GameConfigDB {
     public static SkillAddBuffConfig SkillAddDotMagic {
         get;
     } = new() {
-        Id = "skill_add_dot_magic",
-        SkillName = "持续魔法伤害",
-        SkillDescription = "对目标添加持续魔法伤害buff\n威力：10\n持续时间：30秒",
         SkillSpellTime = 0.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         SkillCanAdd = "Different",
-        BuffId = "buff_dot_magic",
         BuffConfig = BuffDotMagic,
     };
 
     public static SkillAddBuffConfig SkillAddHot {
         get;
     } = new() {
-        Id = "skill_add_hot",
-        SkillName = "持续治疗",
-        SkillDescription = "对目标添加持续治疗buff\n恢复力：100\n持续时间：15秒",
         SkillSpellTime = 0.0f,
         SkillCooldownTime = 1.5f,
         GCDTime = 2.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         SkillCanAdd = "Same",
-        BuffId = "buff_hot",
         BuffConfig = BuffHot,
     };
 
     public static SkillRangeDamageConfig SkillRectRangeDamage {
         get;
     } = new() {
-        Id = "skill_rect_range_damage",
-        SkillName = "RectRangeDamage",
-        SkillDescription = "RectRangeDamage",
         SkillSpellTime = 2.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
         NeedPosTarget = true,
         Damage = 200.0f,
-        DamageType = "Physcial",
+        DamageType = Enum_DamageType.Physcial,
         Range = new RectRangeConfig {
             FarClamp = 5.0f,
         },
     };
+
+    // ── Units ──
+
+    public static UnitConfig UnitWhiteMage {
+        get;
+    } = new() {
+        BodyRadius = 1.0f,
+        MaxHealth = 1000f,
+        CureIntensity = 1.0f,
+        PhysicalAttackBase = 1.0f,
+        PhysicalTakePercent = 1.0f,
+        MagicAttackBase = 1.0f,
+        MagicTakePercent = 1.0f,
+        BaseSpeed = 2.0f,
+        Skills = [
+            SkillAddHot,
+            SkillCure,
+            SkillAddDotMagic,
+            SkillMagicDamage,
+            SkillRectRangeDamage,
+        ],
+    };
+
+    public static UnitModel ToUnitModel(UnitConfig config) {
+        ArgumentNullException.ThrowIfNull(config);
+
+        return new UnitModel {
+            BodyRadius = config.BodyRadius,
+            MaxHealth = config.MaxHealth,
+            CureIntensity = config.CureIntensity,
+            PhysicalAttackBase = config.PhysicalAttackBase,
+            PhysicalTakePercent = config.PhysicalTakePercent,
+            MagicAttackBase = config.MagicAttackBase,
+            MagicTakePercent = config.MagicTakePercent,
+            BaseSpeed = config.BaseSpeed,
+        };
+    }
 
     // ── 配置 → 运行时 Model 转换 ──
 
@@ -136,7 +150,7 @@ public static class GameConfigDB {
         var model = config switch {
             SkillDamageConfig dmg => (SkillModel)new SkillDamageModel {
                 Damage = dmg.Damage,
-                DamageType = Enum.Parse<Enum_DamageType>(dmg.DamageType),
+                DamageType = dmg.DamageType,
             },
             SkillCureConfig cure => new SkillCureModel {
                 CurePotency = cure.CurePotency,
@@ -146,16 +160,14 @@ public static class GameConfigDB {
             },
             SkillRangeDamageConfig rangeDmg => new SkillRangeDamageModel {
                 Damage = rangeDmg.Damage,
-                DamageType = Enum.Parse<Enum_DamageType>(rangeDmg.DamageType),
+                DamageType = rangeDmg.DamageType,
                 RangeRes = ToRangeRes(rangeDmg.Range),
             },
             _ => throw new InvalidOperationException(
-                $"Unknown SkillConfig type: {config.GetType().Name} (Id={config.Id}). " +
+                $"Unknown SkillConfig type: {config.GetType().Name}. " +
                 "Please add the corresponding case in GameConfigDB.ToSkillModel()."),
         };
 
-        model.SkillName = config.SkillName;
-        model.SkillDescription = config.SkillDescription;
         model.SkillSpellTime = config.SkillSpellTime;
         model.SkillCooldownTime = config.SkillCooldownTime;
         model.GCDTime = config.GCDTime;
@@ -171,19 +183,17 @@ public static class GameConfigDB {
 
         var model = config switch {
             BuffDOTConfig dot => (BuffModel)new BuffDOTModel {
-                DamageType = Enum.Parse<Enum_DamageType>(dot.DamageType),
+                DamageType = dot.DamageType,
                 DamagePerSec = dot.DamagePerSec,
             },
             BuffHOTConfig hot => new BuffHOTModel {
                 HealthPerSec = hot.HealthPerSec,
             },
             _ => throw new InvalidOperationException(
-                $"Unknown BuffConfig type: {config.GetType().Name} (Id={config.Id}). " +
+                $"Unknown BuffConfig type: {config.GetType().Name}. " +
                 "Please add the corresponding case in GameConfigDB.ToBuffModel()."),
         };
 
-        model.BuffName = config.BuffName;
-        model.BuffDescription = config.BuffDescription;
         model.Duration = config.Duration;
         model.MaxSuperpositions = config.MaxSuperpositions;
 

@@ -4,14 +4,20 @@ using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Client;
+using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
 namespace DungeonChessBattle;
 
 [GlobalClass]
 public partial class UnitState : Resource, IUnitState {
-    private readonly UnitModel _model = new();
-    private bool _modelSynced;
+    private UnitModel? _model;
+
+    /// <summary>
+    /// 子类重写此属性，直接返回 GameConfigDB 中的 UnitConfig（类型安全，编译期检查）
+    /// </summary>
+    protected virtual UnitConfig? Config => null;
 
     /// <summary>
     /// 暴露内部 UnitModel，供 BattleService 调用。
@@ -24,89 +30,50 @@ public partial class UnitState : Resource, IUnitState {
     string _UnitStateName = "UnitStateName";
     public string UnitStateName {
         get => EnsureSynced().UnitStateName;
-        set => _model.UnitStateName = value;
+        set => EnsureSynced().UnitStateName = value;
     }
 
     [Export]
     Godot.Collections.Array<UnitSkillBaseGodot> _skillsList = null!;
     public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList;
 
-    [Export]
-    float bodyRadius = 1.0f;
-    public float BodyRadius {
-        get => EnsureSynced().BodyRadius;
-        set => _model.BodyRadius = value;
-    }
+
+    public float BodyRadius => EnsureSynced().BodyRadius;
 
     [Export]
     EnumCamp _camp = EnumCamp.None;
     public EnumCamp Camp {
         get => EnsureSynced().Camp;
-        set => _model.Camp = value;
+        set => EnsureSynced().Camp = value;
     }
 
-    [Export]
-    float _maxHealth = 1000;
-    public float MaxHealth {
-        get => EnsureSynced().MaxHealth;
-        private set => _model.MaxHealth = value;
-    }
+    public float MaxHealth => EnsureSynced().MaxHealth;
 
     [Export]
     float _health = 1000;
     public float Health {
         get => EnsureSynced().Health;
-        private set => _model.Health = value;
+        private set => EnsureSynced().Health = value;
     }
 
     public static float Shield => 0.0f;
 
-    public float Health_Shield => _model.HealthShield;
-    public float Health_Percent => _model.HealthPercent;
-    public float Health_Shield_Percent => _model.HealthShieldPercent;
+    public float Health_Shield => Model.HealthShield;
+    public float Health_Percent => Model.HealthPercent;
+    public float Health_Shield_Percent => Model.HealthShieldPercent;
 
-    [Export]
-    float _cureIntensity = 1.0f;
-    public float CureIntensity {
-        get => EnsureSynced().CureIntensity;
-        set => _model.CureIntensity = value;
-    }
+    public float CureIntensity => EnsureSynced().CureIntensity;
 
-    [Export]
-    float _physicalAttackBase = 1.0f;
-    public float PhysicalAttackBase {
-        get => EnsureSynced().PhysicalAttackBase;
-        set => _model.PhysicalAttackBase = value;
-    }
+    public float PhysicalAttackBase => EnsureSynced().PhysicalAttackBase;
 
-    [Export]
-    float _physicalTakePercent = 1.0f;
-    public float PhysicalTakePercent {
-        get => EnsureSynced().PhysicalTakePercent;
-        set => _model.PhysicalTakePercent = value;
-    }
+    public float PhysicalTakePercent => EnsureSynced().PhysicalTakePercent;
 
-    [Export]
-    float _magicAttackBase = 1.0f;
-    public float MagicAttackBase {
-        get => EnsureSynced().MagicAttackBase;
-        set => _model.MagicAttackBase = value;
-    }
+    public float MagicAttackBase => EnsureSynced().MagicAttackBase;
 
-    [Export]
-    float _magicTakePercent = 1.0f;
-    public float MagicTakePercent {
-        get => EnsureSynced().MagicTakePercent;
-        set => _model.MagicTakePercent = value;
-    }
+    public float MagicTakePercent => EnsureSynced().MagicTakePercent;
 
-    [Export]
-    float _baseSpeed = 2.0f;
-    public float BaseSpeed {
-        get => EnsureSynced().BaseSpeed;
-        set => _model.BaseSpeed = value;
-    }
-    public float MoveSpeed => _model.MoveSpeed;
+    public float BaseSpeed => EnsureSynced().BaseSpeed;
+    public float MoveSpeed => Model.MoveSpeed;
 
     [ExportGroup("Runtime Parameters")]
     [Export]
@@ -116,7 +83,7 @@ public partial class UnitState : Resource, IUnitState {
     public void SetGlobalPosition(Vector3 position) {
         if (_position != position) {
             _position = position;
-            _model.SetPosition(new System.Numerics.Vector3(position.X, position.Y, position.Z));
+            EnsureSynced().SetPosition(new System.Numerics.Vector3(position.X, position.Y, position.Z));
             UnitMoved();
         }
     }
@@ -163,24 +130,21 @@ public partial class UnitState : Resource, IUnitState {
     #endregion
 
     private UnitModel EnsureSynced() {
-        if (!_modelSynced) {
-            _model.UnitStateName = _UnitStateName;
-            _model.BodyRadius = bodyRadius;
-            _model.Camp = _camp;
-            _model.MaxHealth = _maxHealth;
-            _model.Health = _health;
-            _model.CureIntensity = _cureIntensity;
-            _model.PhysicalAttackBase = _physicalAttackBase;
-            _model.PhysicalTakePercent = _physicalTakePercent;
-            _model.MagicAttackBase = _magicAttackBase;
-            _model.MagicTakePercent = _magicTakePercent;
-            _model.BaseSpeed = _baseSpeed;
-            _model.Hates = new Dictionary<string, float>(_hates ?? []);
-            _model.HealthChanged += OnModelHealthChanged;
-            _model.MaxHealthChanged += OnModelMaxHealthChanged;
-            _model.TookDamage += OnModelTookDamage;
-            _modelSynced = true;
-        }
+        if (_model != null)
+            return _model;
+
+        var config = Config ?? throw new InvalidOperationException(
+                $"Unit '{GetType().Name}' must override the Config property to provide a valid UnitConfig. " +
+                "Config returned null, which means this unit has no configuration.");
+        _model = GameConfigDB.ToUnitModel(config);
+
+        _model.UnitStateName = _UnitStateName;
+        _model.Camp = _camp;
+        _model.Health = _health;
+        _model.Hates = new Dictionary<string, float>(_hates ?? []);
+        _model.HealthChanged += OnModelHealthChanged;
+        _model.MaxHealthChanged += OnModelMaxHealthChanged;
+        _model.TookDamage += OnModelTookDamage;
 
         return _model;
     }
@@ -232,7 +196,7 @@ public partial class UnitState : Resource, IUnitState {
     #region Hate
 
     public string GetMaxHateUnitName() {
-        return _model.GetMaxHateUnitName() ?? "";
+        return EnsureSynced().GetMaxHateUnitName() ?? "";
     }
     #endregion
 
@@ -245,7 +209,7 @@ public partial class UnitState : Resource, IUnitState {
         if (buff is not BuffBaseGodot godotBuff)
             return;
 
-        _model.AddBuff(godotBuff);
+        EnsureSynced().AddBuff(godotBuff);
 
         BuffBaseGodot? find = buffList.Find(b => b.BuffName == godotBuff.BuffName);
         if (find != null) {
@@ -261,7 +225,7 @@ public partial class UnitState : Resource, IUnitState {
         if (buff is not BuffBaseGodot godotBuff)
             return;
 
-        _model.RemoveBuff(godotBuff);
+        EnsureSynced().RemoveBuff(godotBuff);
         buffList.RemoveAll(b => b.BuffName == godotBuff.BuffName);
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
@@ -269,10 +233,10 @@ public partial class UnitState : Resource, IUnitState {
     void UpdateBuffList(double deltaTime) {
         // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
         if (BattleServiceProvider.IsInitialized) {
-            BattleServiceProvider.Service.UpdateBuffs(null!, [_model], deltaTime);
+            BattleServiceProvider.Service.UpdateBuffs(null!, [EnsureSynced()], deltaTime);
         }
         else {
-            _model.UpdateBuffList(deltaTime);
+            EnsureSynced().UpdateBuffList(deltaTime);
         }
 
         List<BuffBaseGodot> tempList = [];

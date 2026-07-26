@@ -7,4 +7,6 @@
 resource_local_to_scene = true
 script = ExtResource("1_e8tc3")
 icon = ExtResource("1_u7puq")
+_skillName = "治疗"
+_skillDescription = "回复目标体力\n恢复力：500"
 metadata/_custom_type_script = "uid://vpibuyw7n6k8"

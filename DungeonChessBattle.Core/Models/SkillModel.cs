@@ -5,10 +5,6 @@ using DungeonChessBattle.Core.Interfaces;
 namespace DungeonChessBattle.Core.Models;
 
 public abstract class SkillModel : IUnitSkill {
-    public string SkillName { get; set; } = "SkillName";
-    public string SkillDescription { get; set; } = "SkillDescription";
-    public string IconPath { get; set; } = "";
-
     public float SkillSpellTime { get; set; } = 2.0f;
     public float SkillCooldownTime { get; set; } = 3.0f;
     public float GCDTime { get; set; } = 3.0f;
