@@ -18,6 +18,11 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     /// </summary>
     protected virtual SkillConfig? Config => null;
 
+    /// <summary>
+    /// 内部访问 Config，供 SkillResourceTable 等程序集内部使用。
+    /// </summary>
+    internal SkillConfig? InternalConfig => Config;
+
     [Export]
     Texture2D? icon = null;
     public Texture2D? Icon => icon;

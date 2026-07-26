@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillResourceTable" format=3 uid="uid://brkhv1q02f8yt"]
+
+[ext_resource type="Resource" uid="uid://ce85dbebhv73r" path="res://GameAssets/Skills/res_skill_add_hot.tres" id="1_addhot"]
+[ext_resource type="Script" uid="uid://b04jbwqi02bd7" path="res://GameAssets/Skills/scripts/UnitSkillBaseGodot.cs" id="1_wdvdq"]
+[ext_resource type="Resource" uid="uid://dep8x70a71ltj" path="res://GameAssets/Skills/res_skill_cure.tres" id="2_cure"]
+[ext_resource type="Resource" uid="uid://vwf7lsob4qxl" path="res://GameAssets/Skills/res_skill_add_dot_magic.tres" id="3_dotmagic"]
+[ext_resource type="Resource" uid="uid://ki4rvmooffx3" path="res://GameAssets/Skills/res_skill_magic_damage.tres" id="4_magicdamage"]
+[ext_resource type="Resource" uid="uid://dkyowavmc04rk" path="res://GameAssets/Skills/rect_range_damage/res_skill_rect_range_damage.tres" id="5_rangedamage"]
+[ext_resource type="Script" uid="uid://dbpdsyg0buv1r" path="res://GameAssets/Skills/SkillResourceTable.cs" id="6_script"]
+
+[resource]
+script = ExtResource("6_script")
+SkillResources = Array[ExtResource("1_wdvdq")]([ExtResource("1_addhot"), ExtResource("2_cure"), ExtResource("3_dotmagic"), ExtResource("4_magicdamage"), ExtResource("5_rangedamage")])

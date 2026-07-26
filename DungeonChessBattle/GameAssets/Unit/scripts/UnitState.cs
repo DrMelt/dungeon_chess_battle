@@ -6,6 +6,7 @@ using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameAssets.Skills;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -137,6 +138,14 @@ public partial class UnitState : Resource, IUnitState {
                 $"Unit '{GetType().Name}' must override the Config property to provide a valid UnitConfig. " +
                 "Config returned null, which means this unit has no configuration.");
         _model = GameConfigDB.ToUnitModel(config);
+
+        // 从 Config.Skills + 资源表 自动构建 Godot 技能列表（不再依赖 .tres 手动维护 _skillsList）
+        if (_skillsList == null || _skillsList.Count == 0) {
+            _skillsList = [];
+            foreach (var skillConfig in config.Skills) {
+                _skillsList.Add(SkillResourceTable.LoadResource(skillConfig));
+            }
+        }
 
         _model.UnitStateName = _UnitStateName;
         _model.Camp = _camp;

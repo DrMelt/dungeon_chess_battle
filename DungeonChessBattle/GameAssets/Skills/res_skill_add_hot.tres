@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Skill_Add_Hot" format=3 uid="uid://ce85dbebhv73r"]
+
+[ext_resource type="Texture2D" uid="uid://cli735me34nmu" path="res://icons/Regen/002628_hr1.png" id="1_kxi6u"]
+[ext_resource type="Script" uid="uid://cckpd6ss7g61l" path="res://GameAssets/Skills/scripts/Skill_Add_Hot.cs" id="2_rr8gh"]
+
+[resource]
+script = ExtResource("2_rr8gh")
+icon = ExtResource("1_kxi6u")
+_skillName = "持续治疗"
+_skillDescription = "对目标添加持续治疗buff
+恢复力：100
+持续时间：15秒"
