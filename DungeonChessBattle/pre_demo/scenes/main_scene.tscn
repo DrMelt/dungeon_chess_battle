@@ -289,19 +289,19 @@ userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef", "rayCast3DRef")]
 script = ExtResource("3_n8f6c")
-userInterfaceRes = ExtResource("11_34gv2")
 camera3DRef = NodePath("../../Camera3D_UserCamera")
 node2dUiRef = NodePath("../Node2d_UserUI")
+userInterfaceRes = ExtResource("11_34gv2")
 effectHintsRef = NodePath("EffectHints")
 rayCast3DRef = NodePath("RayCast3D")
 
 [node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841 node_paths=PackedStringArray("unitsInScene_Show_Ref", "userUI_Ref")]
 script = ExtResource("3_eaknj")
 userInterfaceRes = ExtResource("11_34gv2")
-_effectCircleRange_PKS = ExtResource("12_sph05")
-_effectRectRange_PKS = ExtResource("13_0by77")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 userUI_Ref = NodePath("../../Node2d_UserUI")
+_effectCircleRange_PKS = ExtResource("12_sph05")
+_effectRectRange_PKS = ExtResource("13_0by77")
 
 [node name="FocusOn_Outline" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
 script = ExtResource("4_qxep0")
@@ -350,8 +350,8 @@ userInterfaceRes = ExtResource("11_34gv2")
 layout_mode = 1
 anchors_preset = 0
 script = ExtResource("19_ctxme")
-stateBarSimple2d_PKD = ExtResource("20_uvuxq")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
+stateBarSimple2d_PKD = ExtResource("20_uvuxq")
 
 [node name="StateBar_List" parent="Interface/Node2d_UserUI" unique_id=318767437 instance=ExtResource("22_j0gmm")]
 layout_mode = 0

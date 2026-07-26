@@ -5,6 +5,6 @@ using Godot;
 namespace DungeonChessBattle;
 
 [GlobalClass]
-public partial class Skill_Add_BUFF : UnitSkillBaseGodot {
-    protected override SkillConfig Config => GameConfigDB.SkillAddDotMagic;
+public partial class Skill_Add_Hot : UnitSkillBaseGodot {
+    protected override SkillConfig Config => GameConfigDB.SkillAddHot;
 }

@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="Skill_Add_BUFF" format=3 uid="uid://vwf7lsob4qxl"]
+[gd_resource type="Resource" script_class="Skill_Add_Dot_Magic" format=3 uid="uid://vwf7lsob4qxl"]
 
-[ext_resource type="Script" uid="uid://578gt4jn0qjw" path="res://game_assets/Skills/scripts/Skill_Add_BUFF.cs" id="1_tgrrg"]
+[ext_resource type="Script" uid="uid://578gt4jn0qjw" path="res://game_assets/Skills/scripts/Skill_Add_Dot_Magic.cs" id="1_tgrrg"]
 [ext_resource type="Texture2D" uid="uid://he37ji5url52" path="res://icons/Aero/000401_hr1.png" id="2_rswio"]
 
 [resource]
