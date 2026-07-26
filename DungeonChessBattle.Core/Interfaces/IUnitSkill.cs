@@ -9,9 +9,7 @@ namespace DungeonChessBattle.Core.Interfaces {
         string SkillDescription {
             get;
         }
-        string IconPath {
-            get;
-        }
+
         float SkillSpellTime {
             get;
         }

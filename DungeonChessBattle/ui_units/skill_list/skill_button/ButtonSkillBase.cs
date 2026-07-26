@@ -19,7 +19,7 @@ public partial class ButtonSkillBase : Button {
 
 
     public void Init(UnitSkillBaseGodot bindSkill, UnitState bindUnitState, SkillsList skillsListRef) {
-        this.bindingSkill = bindSkill;
+        bindingSkill = bindSkill;
         this.bindUnitState = bindUnitState;
         this.skillsListRef = skillsListRef;
 

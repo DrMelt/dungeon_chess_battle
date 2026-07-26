@@ -19,9 +19,8 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     protected virtual SkillConfig? Config => null;
 
     [Export]
-    Texture2D icon = null!;
-    public Texture2D Icon => icon;
-    string IUnitSkill.IconPath => icon?.ResourcePath ?? "";
+    Texture2D? icon = null;
+    public Texture2D? Icon => icon;
 
     [ExportGroup("Runtime Parameters")]
     [Export]
