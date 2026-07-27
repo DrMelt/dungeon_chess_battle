@@ -97,7 +97,9 @@ public partial class SkillResourceTable : Resource {
             if (prop.PropertyType != typeof(UnitConfig))
                 continue;
 
-            var unitConfig = (UnitConfig)prop.GetValue(null)!;
+            var unitConfig = (UnitConfig?)prop.GetValue(null)
+                ?? throw new InvalidOperationException(
+                    $"自检失败：无法获取单位配置 '{prop.Name}' 的值。");
             foreach (var skill in unitConfig.Skills) {
                 if (!table._lookup.ContainsKey(skill)) {
                     throw new InvalidOperationException(

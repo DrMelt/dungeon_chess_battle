@@ -150,7 +150,10 @@ public partial class UnitState : Resource, IUnitState {
         _model.UnitStateName = _UnitStateName;
         _model.Camp = _camp;
         _model.Health = _health;
-        _model.Hates = new Dictionary<string, float>(_hates ?? []);
+        if (_hates == null)
+            throw new InvalidOperationException(
+                $"Unit '{GetType().Name}' has null _hates dictionary. Check the .tres resource.");
+        _model.Hates = new Dictionary<string, float>(_hates);
         _model.HealthChanged += OnModelHealthChanged;
         _model.MaxHealthChanged += OnModelMaxHealthChanged;
         _model.TookDamage += OnModelTookDamage;
@@ -204,8 +207,8 @@ public partial class UnitState : Resource, IUnitState {
 
     #region Hate
 
-    public string GetMaxHateUnitName() {
-        return EnsureSynced().GetMaxHateUnitName() ?? "";
+    public string? GetMaxHateUnitName() {
+        return EnsureSynced().GetMaxHateUnitName();
     }
     #endregion
 
@@ -242,7 +245,9 @@ public partial class UnitState : Resource, IUnitState {
     public void UpdateBuffList(double deltaTime) {
         // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
         if (BattleServiceProvider.IsInitialized) {
-            BattleServiceProvider.ClientService.UpdateBuffs(null!, [EnsureSynced()], deltaTime);
+            // roomId 当前不可用（UnitState 层缺少房间上下文），
+            // 但 IClientBattleService.UpdateBuffs 的两个实现均忽略 roomId 参数。
+            BattleServiceProvider.ClientService.UpdateBuffs("", [EnsureSynced()], deltaTime);
         }
         else {
             EnsureSynced().UpdateBuffList(deltaTime);
