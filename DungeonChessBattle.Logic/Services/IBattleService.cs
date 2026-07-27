@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 
@@ -21,11 +22,11 @@ public interface IBattleService {
     void EndBattle(BattleManager battle);
 
     // 技能
-    void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill,
-        IReadOnlyList<UnitModel>? allUnits = null);
+    void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits = null);
 
     // Buff 更新
-    void UpdateBuffs(BattleManager battle, IEnumerable<UnitModel> units, double deltaTime);
+    void UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime);
 
     // 胜负判定
     bool CheckBattleEnded(GameRoom room);

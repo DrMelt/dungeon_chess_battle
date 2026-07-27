@@ -1,5 +1,6 @@
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
+using LiteEntitySystem.Internal;
 using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Entities;
@@ -8,6 +9,8 @@ namespace DungeonChessBattle.Entities;
 /// 单位的网络同步 Entity。纯数据载体，由服务端直接操作 SyncVar/SyncList。
 /// </summary>
 public class UnitSyncEntity : EntityLogic {
+    private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
+
     public readonly SyncString UnitName = new();
     public SyncVar<float> Health;
     public SyncVar<float> MaxHealth;
@@ -29,6 +32,11 @@ public class UnitSyncEntity : EntityLogic {
     public event Action<UnitSyncEntity, SyncBuffData>? BuffAdded;
     public event Action<UnitSyncEntity, SyncBuffData>? BuffRemoved;
 
+    /// <summary>
+    /// 客户端发起技能请求时触发。回调参数为当前服务端实例和请求数据。
+    /// </summary>
+    public static event Action<UnitSyncEntity, SyncSkillRequest>? SkillCastRequested;
+
     public UnitSyncEntity(EntityParams entityParams) : base(entityParams) { }
 
     protected override void OnConstructed() {
@@ -42,6 +50,25 @@ public class UnitSyncEntity : EntityLogic {
         MagicTakePercent.Value = 1.0f;
         CureIntensity.Value = 1.0f;
         BaseSpeed.Value = 2.0f;
+    }
+
+    protected override void RegisterRPC(ref RPCRegistrator r) {
+        base.RegisterRPC(ref r);
+        r.CreateRPCAction<UnitSyncEntity, SyncSkillRequest>(
+            (e, req) => e.OnRpcCastSkill(req),
+            ref CastSkillRPC,
+            ExecuteFlags.ExecuteOnServer);
+    }
+
+    private void OnRpcCastSkill(SyncSkillRequest req) {
+        SkillCastRequested?.Invoke(this, req);
+    }
+
+    /// <summary>
+    /// 客户端调用，发起技能施放 RPC 到服务端。
+    /// </summary>
+    public void RequestCastSkill(SyncSkillRequest req) {
+        ExecuteRPC(CastSkillRPC, req);
     }
 
     public void ServerSetHealth(float newHealth) {

@@ -9,7 +9,9 @@ public enum BattlePhase {
 
 public class BattleManager {
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
-    public int RoundNumber { get; private set; }
+    public int RoundNumber {
+        get; private set;
+    }
 
     public event Action<BattlePhase, BattlePhase>? PhaseChanged;
     public event Action<int>? RoundStarted;

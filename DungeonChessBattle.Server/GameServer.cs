@@ -2,10 +2,12 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using LiteNetLib;
+using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.Network;
 
@@ -34,6 +36,23 @@ public class GameServer {
         _networkServer.OnClientConnected += peerId =>
             Console.WriteLine($"[Game] Client {peerId} connected.");
         _networkServer.OnCustomPacket += OnCustomPacket;
+        UnitSyncEntity.SkillCastRequested += OnSkillCastRequested;
+
+        // 注入相位同步回调：Logic 层 BattlePhase 变化时，自动写入对应 BattleRoomEntity。
+        _logicService.SetPhaseSyncCallback((roomId, phase, round, isFinished) => {
+            if (_lobby.Rooms.TryGetValue(roomId, out var entity)) {
+                entity.BattlePhase.Value = phase;
+                entity.CurrentRound.Value = round;
+                entity.IsFinished.Value = isFinished;
+                if (isFinished) {
+                    var room = _logicService.GetRoom(roomId);
+                    if (room != null && _logicService.CheckBattleEnded(room)) {
+                        entity.WinnerCamp.Value = (byte)(
+                            BattleResolver.HasAliveUnits(room.UnitsA) ? 1u : 2u);
+                    }
+                }
+            }
+        });
     }
 
     public void StartAsync() {
@@ -92,69 +111,33 @@ public class GameServer {
             if (roomEntity.BattlePhase.Value == 0 || roomEntity.BattlePhase.Value == 4)
                 continue;
 
-            // 将 UnitSyncEntity 的当前状态同步到 Logic 层的 UnitModel
-            SyncToModels(syncUnits, roomId);
-
-            // 通过 Logic 层结算 Buff
             var gameRoom = _logicService.GetRoom(roomId);
-            if (gameRoom != null) {
-                var battle = _logicService.GetBattle(roomId);
-                if (battle != null) {
-                    _logicService.UpdateBuffs(battle,
-                        gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
-                }
+            if (gameRoom == null)
+                continue;
+
+            // Entity → Logic: 外部 Health 变更写入 IUnitState
+            GameLogicService.SyncHealthFromExternal(gameRoom,
+                syncUnits.Select(s => (s.UnitName.Value, s.Health.Value)));
+
+            // Buff 结算
+            var battle = _logicService.GetBattle(roomId);
+            if (battle != null) {
+                _logicService.UpdateBuffs(battle,
+                    gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
             }
 
-            // 检查战斗结束
-            if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
-                roomEntity.BattlePhase.Value = 4;
-                roomEntity.IsFinished.Value = true;
-                uint winnerCamp = BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u;
-                roomEntity.WinnerCamp.Value = (byte)winnerCamp;
+            // 战斗结束检查（Phase 回调负责写入 IsFinished/WinnerCamp）
+            if (_logicService.CheckBattleEnded(gameRoom) && battle != null) {
+                _logicService.EndBattle(battle);
             }
 
-            // 将 Logic 层结算后的变化写回 UnitSyncEntity
-            SyncFromModels(syncUnits, roomId);
-        }
-    }
-
-    /// <summary>
-    /// 每帧 Tick 开始时，将 UnitSyncEntity 的网络状态同步到 Logic 层的 UnitModel。
-    /// </summary>
-    private void SyncToModels(List<UnitSyncEntity> syncUnits, string roomId) {
-        var gameRoom = _logicService.GetRoom(roomId);
-        if (gameRoom == null)
-            return;
-
-        var modelMap = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
-            .ToDictionary(m => m.UnitStateName);
-
-        foreach (var syncUnit in syncUnits) {
-            if (modelMap.TryGetValue(syncUnit.UnitName.Value, out var model)) {
-                // 回写客户端操作结果（如通过 CastSkill 外部修改的 Health）
-                if (MathF.Abs(syncUnit.Health.Value - model.Health) > 0.0001f) {
-                    model.Health = syncUnit.Health.Value;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// 每帧 Tick 结束时，将 UnitModel 经 Logic 结算后的变化写回 UnitSyncEntity。
-    /// </summary>
-    private void SyncFromModels(List<UnitSyncEntity> syncUnits, string roomId) {
-        var gameRoom = _logicService.GetRoom(roomId);
-        if (gameRoom == null)
-            return;
-
-        var modelMap = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
-            .ToDictionary(m => m.UnitStateName);
-
-        foreach (var syncUnit in syncUnits) {
-            if (modelMap.TryGetValue(syncUnit.UnitName.Value, out var model)) {
-                if (MathF.Abs(syncUnit.Health.Value - model.Health) > 0.0001f) {
-                    syncUnit.ServerSetHealth(model.Health);
-                }
+            // Logic → Entity: 结算后的 Health 写回 UnitSyncEntity
+            var syncMap = syncUnits.ToDictionary(s => s.UnitName.Value);
+            foreach (var unit in gameRoom.UnitsA.Concat(gameRoom.UnitsB)) {
+                if (!syncMap.TryGetValue(unit.UnitStateName, out var syncUnit))
+                    continue;
+                if (MathF.Abs(syncUnit.Health.Value - unit.Health) > 0.0001f)
+                    syncUnit.ServerSetHealth(unit.Health);
             }
         }
     }
@@ -169,9 +152,6 @@ public class GameServer {
             string? type = root.GetProperty("type").GetString();
 
             switch (type) {
-                case "cast_skill":
-                    HandleCastSkill(root);
-                    break;
                 case "start_battle":
                     HandleStartBattle(root);
                     break;
@@ -194,26 +174,6 @@ public class GameServer {
         }
     }
 
-    private void HandleCastSkill(JsonElement root) {
-        string? casterName = root.GetProperty("casterName").GetString();
-        string? targetName = root.GetProperty("targetName").GetString();
-
-        if (casterName == null || targetName == null)
-            return;
-
-        var caster = _lobby.FindUnitByName(casterName);
-        var target = _lobby.FindUnitByName(targetName);
-        if (caster == null || target == null) {
-            Console.WriteLine($"[Game] Skill request units not found: {casterName} -> {targetName}");
-            return;
-        }
-
-        bool isDamage = root.TryGetProperty("isDamage", out var isDamageProp) && isDamageProp.GetBoolean();
-        Console.WriteLine($"[Game] Skill cast: {casterName} -> {targetName} (isDamage={isDamage})");
-
-        ExecuteSkill(caster, target, root);
-    }
-
     private void HandleStartBattle(JsonElement root) {
         string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
         var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
@@ -223,11 +183,8 @@ public class GameServer {
             return;
         }
 
-        var battle = _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
-        roomEntity.BattlePhase.Value = 1;
-        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
-        roomEntity.IsFinished.Value = false;
-
+        _ = _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
+        // 相位回调会自动写入 BattlePhase/CurrentRound/IsFinished
         Console.WriteLine($"[Game] Battle started in room: {roomEntity.RoomId.Value}");
     }
 
@@ -241,8 +198,7 @@ public class GameServer {
         var battle = _logicService.GetBattle(roomEntity.RoomId.Value)
             ?? _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
         _logicService.AdvanceBattlePhase(battle);
-
-        SyncPhaseToEntity(battle, roomEntity);
+        // PhaseChanged 事件通过 SetPhaseSyncCallback 自动同步到 Entity
 
         Console.WriteLine($"[Game] Phase advanced to {roomEntity.BattlePhase.Value} in room: {roomEntity.RoomId.Value}");
     }
@@ -258,9 +214,8 @@ public class GameServer {
         if (battle == null)
             return;
 
-        // Advance 自动在 SkillCasting → PlayerTurn 时递增回合数。
         _logicService.AdvanceBattlePhase(battle);
-        SyncPhaseToEntity(battle, roomEntity);
+        // PhaseChanged 事件通过 SetPhaseSyncCallback 自动同步到 Entity
 
         Console.WriteLine($"[Game] Round {roomEntity.CurrentRound.Value} in room: {roomEntity.RoomId.Value}");
     }
@@ -273,60 +228,58 @@ public class GameServer {
         }
 
         var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
-        if (battle == null)
-            return;
-        _logicService.EndBattle(battle);
-
-        roomEntity.BattlePhase.Value = 4;
-        roomEntity.IsFinished.Value = true;
+        if (battle != null)
+            _logicService.EndBattle(battle);
+        // PhaseChanged → Finished 通过 SetPhaseSyncCallback 自动同步到 Entity
 
         Console.WriteLine($"[Game] Battle ended in room: {roomEntity.RoomId.Value}");
     }
 
-    private static void SyncPhaseToEntity(BattleManager battle, BattleRoomEntity roomEntity) {
-        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
-        roomEntity.BattlePhase.Value = battle.CurrentPhase switch {
-            BattlePhase.Waiting => 0,
-            BattlePhase.PlayerTurn => 1,
-            BattlePhase.SkillCasting => 2,
-            BattlePhase.Finished => 4,
-            _ => roomEntity.BattlePhase.Value
-        };
-    }
+    /// <summary>
+    /// 处理通过 RPC 到达的技能施放请求。
+    /// </summary>
+    private void OnSkillCastRequested(UnitSyncEntity casterSync, SyncSkillRequest req) {
+        var targetSync = _lobby.GetUnitById(req.TargetUnitNetId);
+        if (targetSync == null) {
+            Console.WriteLine($"[Game] Skill RPC: target unit {req.TargetUnitNetId} not found.");
+            return;
+        }
 
-    private void ExecuteSkill(UnitSyncEntity casterSync, UnitSyncEntity targetSync, JsonElement skillJson) {
-        // 从 Logic 层获取已挂载的 UnitModel，避免临时构建
         var casterModel = _logicService.FindUnitModel(casterSync.UnitName.Value);
         var targetModel = _logicService.FindUnitModel(targetSync.UnitName.Value);
-
         if (casterModel == null || targetModel == null) {
-            Console.WriteLine($"[Game] Skill execution failed: unit model not found in Logic layer.");
+            Console.WriteLine($"[Game] Skill RPC: unit model not found in Logic layer.");
+            return;
+        }
+
+        var roomId = _lobby.FindRoomIdByUnit(casterSync);
+        if (string.IsNullOrEmpty(roomId)) {
+            Console.WriteLine("[Game] Skill RPC: room not found for caster.");
+            return;
+        }
+        var battle = _logicService.GetBattle(roomId);
+        if (battle == null) {
+            Console.WriteLine("[Game] Skill RPC: no active battle in room.");
             return;
         }
 
         float oldTargetHealth = targetModel.Health;
 
-        bool isDamage = skillJson.TryGetProperty("isDamage", out var isDamageProp) && isDamageProp.GetBoolean();
-        var battle = _logicService.GetBattle(_lobby.FindRoomIdByUnit(casterSync) ?? "");
-
-        if (isDamage) {
-            float damage = skillJson.TryGetProperty("damage", out var d) ? d.GetSingle() : 100f;
-            int damageTypeInt = skillJson.TryGetProperty("damageType", out var dt) ? dt.GetInt32() : 1;
-            var damageType = (Core.Enums.Enum_DamageType)damageTypeInt;
-
-            var skill = new SkillDamageModel { Damage = damage, DamageType = damageType };
-            _logicService.CastSkill(battle ?? new BattleManager(), casterModel, targetModel, skill);
+        if (req.IsDamage) {
+            var skill = new SkillDamageModel {
+                Damage = req.DamageOrCureValue,
+                DamageType = (DungeonChessBattle.Core.Enums.Enum_DamageType)req.DamageType
+            };
+            _logicService.CastSkill(battle, casterModel, targetModel, skill);
         }
         else {
-            float cure = skillJson.TryGetProperty("cure", out var c) ? c.GetSingle() : 50f;
-            var skill = new SkillCureModel { CurePotency = cure };
-            _logicService.CastSkill(battle ?? new BattleManager(), casterModel, targetModel, skill);
+            var skill = new SkillCureModel { CurePotency = -req.DamageOrCureValue };
+            _logicService.CastSkill(battle, casterModel, targetModel, skill);
         }
 
-        // 写回网络同步实体
         targetSync.ServerSetHealth(targetModel.Health);
 
-        Console.WriteLine($"[Game] Skill result: {casterSync.UnitName.Value} -> {targetSync.UnitName.Value}, " +
+        Console.WriteLine($"[Game] Skill RPC result: {casterSync.UnitName.Value} -> {targetSync.UnitName.Value}, " +
                           $"HP: {oldTargetHealth:F0} -> {targetSync.Health.Value:F0}");
     }
 

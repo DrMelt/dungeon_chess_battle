@@ -4,12 +4,23 @@ using DungeonChessBattle.Core.Interfaces;
 
 namespace DungeonChessBattle.Core.Models;
 
+/// <summary>
+/// 单位数据模型，实现 IUnitState。
+/// 仅承载运行时数据与基础数值计算（伤害/治疗公式），不驱动行为循环。
+/// Buff 更新、技能 GCD 周转等行为由外部调用方（Logic BattleResolver / Godot UnitState）按需通过接口方法触发。
+/// </summary>
 public class UnitModel : IUnitState {
+    #region Identity & Camp
+
     public string UnitStateName { get; set; } = "UnitStateName";
 
     public float BodyRadius { get; set; } = 1.0f;
 
     public EnumCamp Camp { get; set; } = EnumCamp.None;
+
+    #endregion
+
+    #region Health & Shield
 
     public float MaxHealth {
         get;
@@ -40,17 +51,29 @@ public class UnitModel : IUnitState {
 
     public float HealthShieldPercent => HealthShield / MaxHealth;
 
-    public float CureIntensity { get; set; } = 1.0f;
+    public float CureIntensity {
+        get; set;
+    }
 
-    public float PhysicalAttackBase { get; set; } = 1.0f;
+    public float PhysicalAttackBase {
+        get; set;
+    }
 
-    public float PhysicalTakePercent { get; set; } = 1.0f;
+    public float PhysicalTakePercent {
+        get; set;
+    }
 
-    public float MagicAttackBase { get; set; } = 1.0f;
+    public float MagicAttackBase {
+        get; set;
+    }
 
-    public float MagicTakePercent { get; set; } = 1.0f;
+    public float MagicTakePercent {
+        get; set;
+    }
 
-    public float BaseSpeed { get; set; } = 2.0f;
+    public float BaseSpeed {
+        get; set;
+    }
 
     public float MoveSpeed => BaseSpeed;
 
@@ -73,6 +96,8 @@ public class UnitModel : IUnitState {
     public List<IBuff> BuffList => _buffList;
 
     public Dictionary<string, float> Hates { get; set; } = [];
+
+    #endregion
 
     // Events
     public event Action<float>? HealthChanged;

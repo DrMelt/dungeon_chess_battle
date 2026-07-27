@@ -5,6 +5,7 @@ using System.Text.Json;
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
+using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
@@ -100,31 +101,46 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
 
     public void EndBattle(BattleManager b) => SendCommand(new { type = "end_battle" });
 
-    public void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill,
-        IReadOnlyList<UnitModel>? allUnits = null) {
-        if (_serverPeer == null)
+    public void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits = null) {
+        if (_entityManager == null)
             return;
 
-        // 发送自定义 JSON 包（不走 LES），直接携带技能参数
-        var request = new {
-            type = "cast_skill",
-            casterName = caster.UnitStateName,
-            targetName = target.UnitStateName,
-            isDamage = skill is SkillDamageModel,
-            damage = (skill as SkillDamageModel)?.Damage ?? 0f,
-            damageType = (int)((skill as SkillDamageModel)?.DamageType ?? 0),
-            cure = (skill as SkillCureModel)?.CurePotency ?? 0f
+        var casterEntity = FindUnitEntityByName(caster.UnitStateName);
+        var targetEntity = FindUnitEntityByName(target.UnitStateName);
+        if (casterEntity == null || targetEntity == null)
+            return;
+
+        bool isDamage = skill is SkillDamageModel;
+        float damageOrCure = isDamage
+            ? ((SkillDamageModel)skill).Damage
+            : -((SkillCureModel)skill).CurePotency;
+        byte damageType = (byte)(isDamage ? (byte)((SkillDamageModel)skill).DamageType : 0);
+
+        var req = new SyncSkillRequest {
+            CasterUnitNetId = casterEntity.Id,
+            TargetUnitNetId = targetEntity.Id,
+            IsDamage = isDamage,
+            DamageOrCureValue = damageOrCure,
+            DamageType = damageType,
         };
-        string json = JsonSerializer.Serialize(request);
-        byte[] data = Encoding.UTF8.GetBytes(json);
-        _serverPeer.Send(data, DeliveryMethod.ReliableOrdered);
+        casterEntity.RequestCastSkill(req);
+    }
+
+    private UnitSyncEntity? FindUnitEntityByName(string unitName) {
+        foreach (var (_, units) in _roomUnits) {
+            var match = units.Find(u => u.UnitName.Value == unitName);
+            if (match != null)
+                return match;
+        }
+        return null;
     }
 
     /// <summary>
     /// 客户端不独立结算 Buff —— 服务端权威结算后通过 UnitSyncEntity.ServerSetHealth 下推结果。
     /// 本地 UI 通过订阅 UnitHealthChanged / UnitBuffAdded / UnitBuffRemoved 事件获取更新。
     /// </summary>
-    public void UpdateBuffs(BattleManager b, IEnumerable<UnitModel> u, double dt) {
+    public void UpdateBuffs(BattleManager b, IEnumerable<IUnitState> u, double dt) {
     }
 
     public bool CheckBattleEnded(GameRoom room)

@@ -1,3 +1,5 @@
+using DungeonChessBattle.Core.Interfaces;
+
 namespace DungeonChessBattle.Core.Models;
 
 /// <summary>
@@ -7,8 +9,8 @@ public class GameRoom(string roomId) {
     public string RoomId {
         get;
     } = roomId;
-    public List<UnitModel> UnitsA { get; } = [];
-    public List<UnitModel> UnitsB { get; } = [];
+    public List<IUnitState> UnitsA { get; } = [];
+    public List<IUnitState> UnitsB { get; } = [];
     public bool IsActive {
         get; set;
     } = true;

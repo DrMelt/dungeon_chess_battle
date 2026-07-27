@@ -12,6 +12,10 @@ namespace DungeonChessBattle.Core.Interfaces {
         string UnitStateName {
             get;
         }
+        float Health {
+            get;
+            set;
+        }
         float PhysicalAttackBase {
             get;
         }
@@ -29,5 +33,6 @@ namespace DungeonChessBattle.Core.Interfaces {
         float CureAmount(float curePotency);
         float RestoreHealth(float health);
         void AddBuff(IBuff buff);
+        void UpdateBuffList(double deltaTime);
     }
 }

@@ -54,7 +54,7 @@ public partial class UnitState : Resource, IUnitState {
     float _health = 1000;
     public float Health {
         get => EnsureSynced().Health;
-        private set => EnsureSynced().Health = value;
+        set => EnsureSynced().Health = value;
     }
 
     public static float Shield => 0.0f;
@@ -239,7 +239,7 @@ public partial class UnitState : Resource, IUnitState {
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 
-    void UpdateBuffList(double deltaTime) {
+    public void UpdateBuffList(double deltaTime) {
         // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
         if (BattleServiceProvider.IsInitialized) {
             BattleServiceProvider.Service.UpdateBuffs(null!, [EnsureSynced()], deltaTime);

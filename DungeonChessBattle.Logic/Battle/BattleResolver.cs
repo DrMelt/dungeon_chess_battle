@@ -1,22 +1,23 @@
 using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 
 namespace DungeonChessBattle.Logic.Battle;
 
 public class BattleResolver {
-    public static void ApplySkillDamage(UnitModel caster, UnitModel target, SkillDamageModel skill) {
+    public static void ApplySkillDamage(IUnitState caster, IUnitState target, SkillDamageModel skill) {
         float rawDamage = skill.DamageType == Enum_DamageType.Physcial
             ? caster.PhysicalDamageAmount(skill.Damage)
             : caster.MagicDamageAmount(skill.Damage);
         target.TakeDamage(rawDamage, skill.DamageType);
     }
 
-    public static void ApplySkillCure(UnitModel caster, UnitModel target, SkillCureModel skill) {
+    public static void ApplySkillCure(IUnitState caster, IUnitState target, SkillCureModel skill) {
         float rawCure = caster.CureAmount(skill.CurePotency);
         target.RestoreHealth(rawCure);
     }
 
-    public static void ApplySkillRangeDamage(UnitModel caster, IReadOnlyList<UnitModel> allUnits,
+    public static void ApplySkillRangeDamage(IUnitState caster, IReadOnlyList<IUnitState> allUnits,
         SkillRangeDamageModel skill) {
         float physicalDamage = caster.PhysicalDamageAmount(skill.Damage);
         float magicDamage = caster.MagicDamageAmount(skill.Damage);
@@ -36,15 +37,15 @@ public class BattleResolver {
         }
     }
 
-    public static void ApplySkillAddBuff(UnitModel target, SkillAddBuffModel skill) {
+    public static void ApplySkillAddBuff(IUnitState target, SkillAddBuffModel skill) {
         target.AddBuff(skill.Buff);
     }
 
-    public static void UpdateUnitBuffs(UnitModel unit, double deltaTime) {
+    public static void UpdateUnitBuffs(IUnitState unit, double deltaTime) {
         unit.UpdateBuffList(deltaTime);
     }
 
-    public static bool HasAliveUnits(IReadOnlyList<UnitModel> units) {
+    public static bool HasAliveUnits(IEnumerable<IUnitState> units) {
         return units.Any(u => u.Health > 0);
     }
 }

@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
@@ -46,13 +45,8 @@ public class GameLobby(EntityNetworkServer networkServer, GameLogicService logic
         units.Add(entity!);
         _unitById[entity!.Id] = entity;
 
-        // 同步在 Logic 层创建对应 UnitModel
-        var gameRoom = _logicService.GetRoom(roomId);
-        var model = new UnitModel { UnitStateName = unitName };
-        if (camp == 1)
-            gameRoom!.UnitsA.Add(model);
-        if (camp == 2)
-            gameRoom!.UnitsB.Add(model);
+        // 委托 Logic 层创建单位
+        _logicService.CreateUnit(roomId, unitName, camp);
 
         return entity!;
     }
@@ -62,6 +56,14 @@ public class GameLobby(EntityNetworkServer networkServer, GameLogicService logic
         _roomEntities.Remove(roomId);
         _logicService.RemoveRoom(roomId);
         return true;
+    }
+
+    /// <summary>
+    /// 通过 NetId 查找 UnitSyncEntity。
+    /// </summary>
+    public UnitSyncEntity? GetUnitById(ushort netId) {
+        _unitById.TryGetValue(netId, out var unit);
+        return unit;
     }
 
     public UnitSyncEntity? FindUnitByName(string unitName) {

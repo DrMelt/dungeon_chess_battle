@@ -84,15 +84,12 @@ public abstract class SkillModel : IUnitSkill {
 
     public bool CallSkillSpelling() {
         if (!IsCoolingdown() && SkillSpelledTime >= SkillSpellTime) {
-            CallSpelledSkill();
             ResetSpelledSkill();
             return true;
         }
 
         return false;
     }
-
-    protected abstract void CallSpelledSkill();
 
     protected void ResetSpelledSkill() {
         SkillCoolingTime = SkillCooldownTime;

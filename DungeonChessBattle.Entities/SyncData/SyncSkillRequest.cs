@@ -15,17 +15,32 @@ public struct SyncSkillRequest : ISpanSerializable {
     /// <summary>技能类型 ID（对应配置表）</summary>
     public ushort SkillTypeId;
 
-    public readonly int MaxSize => 2 + 2 + 2; // 6 bytes
+    /// <summary>伤害量（正）或治疗量（负）。纯 Buff 类技能为 0</summary>
+    public float DamageOrCureValue;
+
+    /// <summary>伤害类型（仅 IsDamage=true 时有效），对应 Enum_DamageType 转 byte</summary>
+    public byte DamageType;
+
+    /// <summary>true 为伤害技能，false 为治疗/Buff 技能</summary>
+    public bool IsDamage;
+
+    public readonly int MaxSize => 2 + 2 + 2 + 4 + 1 + 1;
 
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(CasterUnitNetId);
         writer.Put(TargetUnitNetId);
         writer.Put(SkillTypeId);
+        writer.Put(DamageOrCureValue);
+        writer.Put(DamageType);
+        writer.Put(IsDamage);
     }
 
     public void Deserialize(ref SpanReader reader) {
         CasterUnitNetId = reader.GetUShort();
         TargetUnitNetId = reader.GetUShort();
         SkillTypeId = reader.GetUShort();
+        DamageOrCureValue = reader.GetFloat();
+        DamageType = reader.GetByte();
+        IsDamage = reader.GetBool();
     }
 }

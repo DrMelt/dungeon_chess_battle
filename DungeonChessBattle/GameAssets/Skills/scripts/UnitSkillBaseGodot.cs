@@ -112,8 +112,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
 
 /// <summary>
 /// 占位 Model，当 Config 为 null 时使用（子类未重写配置）。
+/// CallSkillSpelling 在 SkillModel 中已有默认实现，无需额外重写。
 /// </summary>
 internal class InternalSkillPlaceholder : SkillModel {
-    protected override void CallSpelledSkill() {
-    }
 }

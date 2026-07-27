@@ -11,8 +11,4 @@ public class SkillRangeDamageModel : SkillModel {
         get; set;
     }
     public IRangeRes RangeRes { get; set; } = null!;
-
-    protected override void CallSpelledSkill() {
-        // 执行逻辑已迁移至 BattleResolver.ApplySkillRangeDamage。
-    }
 }
