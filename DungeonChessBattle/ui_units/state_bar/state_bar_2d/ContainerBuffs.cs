@@ -1,6 +1,4 @@
 using Godot;
-
-using DungeonChessBattle.Core;
 using DungeonChessBattle.ui_units.ui_interface;
 
 namespace DungeonChessBattle;

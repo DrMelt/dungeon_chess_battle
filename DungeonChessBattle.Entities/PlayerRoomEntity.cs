@@ -1,6 +1,5 @@
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
-using LiteEntitySystem.Internal;
 
 namespace DungeonChessBattle.Entities;
 

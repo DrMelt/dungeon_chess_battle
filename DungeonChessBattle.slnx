@@ -10,4 +10,5 @@
   <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Server\DungeonChessBattle.Server.csproj" />
+  <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
 </Solution>

@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core;
 using Godot;
 
 namespace DungeonChessBattle;

@@ -1,6 +1,5 @@
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
-using LiteEntitySystem.Internal;
 using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Entities;
