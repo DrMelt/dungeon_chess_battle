@@ -17,12 +17,12 @@ public interface IBattleService {
     // 战斗流程
     BattleManager StartBattleInRoom(string roomId);
     BattleManager? GetBattle(string roomId);
-    void AdvancePhase(BattleManager battle);
-    void NextRound(BattleManager battle);
+    void AdvanceBattlePhase(BattleManager battle);
     void EndBattle(BattleManager battle);
 
     // 技能
-    void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill);
+    void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill,
+        IReadOnlyList<UnitModel>? allUnits = null);
 
     // Buff 更新
     void UpdateBuffs(BattleManager battle, IEnumerable<UnitModel> units, double deltaTime);

@@ -6,7 +6,6 @@ public class SkillCureModel : SkillModel {
     }
 
     protected override void CallSpelledSkill() {
-        float health = CallSkillObject.CureAmount(CurePotency);
-        TargetObject.RestoreHealth(health);
+        // 执行逻辑已迁移至 BattleResolver.ApplySkillCure。
     }
 }

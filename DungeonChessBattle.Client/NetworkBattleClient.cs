@@ -96,13 +96,12 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
 
     public BattleManager? GetBattle(string roomId) => null;
 
-    public void AdvancePhase(BattleManager b) => SendCommand(new { type = "advance_phase" });
-
-    public void NextRound(BattleManager b) => SendCommand(new { type = "next_round" });
+    public void AdvanceBattlePhase(BattleManager b) => SendCommand(new { type = "advance_phase" });
 
     public void EndBattle(BattleManager b) => SendCommand(new { type = "end_battle" });
 
-    public void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill) {
+    public void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill,
+        IReadOnlyList<UnitModel>? allUnits = null) {
         if (_serverPeer == null)
             return;
 

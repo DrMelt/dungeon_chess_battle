@@ -13,27 +13,6 @@ public class SkillRangeDamageModel : SkillModel {
     public IRangeRes RangeRes { get; set; } = null!;
 
     protected override void CallSpelledSkill() {
-        float physicalDamage = CallSkillObject.PhysicalDamageAmount(Damage);
-        float magicDamage = CallSkillObject.MagicDamageAmount(Damage);
-
-        foreach (IUnitState testObject in TestObjects) {
-            if (testObject.Camp == CallSkillObject.Camp)
-                continue;
-
-            bool isInRange = RangeRes.IsInRange(CallSkillObject, testObject, TargetPos);
-
-            if (isInRange) {
-                if (DamageType == Enum_DamageType.Physcial) {
-                    testObject.TakeDamage(physicalDamage, Enum_DamageType.Physcial);
-                }
-                else if (DamageType == Enum_DamageType.Magic) {
-                    testObject.TakeDamage(magicDamage, Enum_DamageType.Magic);
-                }
-                else {
-                    throw new InvalidOperationException(
-                        $"Unknown damage type: {DamageType}. Skill={GetType().Name}, Damage={Damage}.");
-                }
-            }
-        }
+        // 执行逻辑已迁移至 BattleResolver.ApplySkillRangeDamage。
     }
 }

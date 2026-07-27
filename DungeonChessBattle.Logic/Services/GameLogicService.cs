@@ -36,9 +36,7 @@ public class GameLogicService : IBattleService {
 
     public BattleManager? GetBattle(string roomId) => _roomManager.GetBattle(roomId);
 
-    public void AdvancePhase(BattleManager battle) => battle.AdvancePhase();
-
-    public void NextRound(BattleManager battle) => battle.NextRound();
+    public void AdvanceBattlePhase(BattleManager battle) => battle.Advance();
 
     public void EndBattle(BattleManager battle) => battle.EndBattle();
 
@@ -46,9 +44,23 @@ public class GameLogicService : IBattleService {
 
     #region Skill
 
-    public void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill) {
-        BattleResolver.ApplySkillDamage(caster, target, skill);
-        BattleResolver.ApplySkillCure(caster, target, skill);
+    public void CastSkill(BattleManager battle, UnitModel caster, UnitModel target, SkillModel skill,
+        IReadOnlyList<UnitModel>? allUnits = null) {
+        switch (skill) {
+            case SkillDamageModel damage:
+                BattleResolver.ApplySkillDamage(caster, target, damage);
+                break;
+            case SkillCureModel cure:
+                BattleResolver.ApplySkillCure(caster, target, cure);
+                break;
+            case SkillRangeDamageModel range:
+                if (allUnits != null)
+                    BattleResolver.ApplySkillRangeDamage(caster, allUnits, range);
+                break;
+            case SkillAddBuffModel addBuff:
+                BattleResolver.ApplySkillAddBuff(target, addBuff);
+                break;
+        }
     }
 
     #endregion

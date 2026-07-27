@@ -11,17 +11,6 @@ public class SkillDamageModel : SkillModel {
     }
 
     protected override void CallSpelledSkill() {
-        if (DamageType == Enum_DamageType.Physcial) {
-            float damageAmount = CallSkillObject.PhysicalDamageAmount(Damage);
-            TargetObject.TakeDamage(damageAmount, Enum_DamageType.Physcial);
-        }
-        else if (DamageType == Enum_DamageType.Magic) {
-            float damageAmount = CallSkillObject.MagicDamageAmount(Damage);
-            TargetObject.TakeDamage(damageAmount, Enum_DamageType.Magic);
-        }
-        else {
-            throw new InvalidOperationException(
-                $"Unknown damage type: {DamageType}. Skill={GetType().Name}, Damage={Damage}.");
-        }
+        // 执行逻辑已迁移至 BattleResolver.ApplySkillDamage。
     }
 }

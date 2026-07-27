@@ -232,7 +232,7 @@ public class GameServer {
     }
 
     private void HandleAdvancePhase() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2);
         if (roomEntity == null) {
             Console.WriteLine("[Game] No active battle to advance.");
             return;
@@ -240,20 +240,15 @@ public class GameServer {
 
         var battle = _logicService.GetBattle(roomEntity.RoomId.Value)
             ?? _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
-        _logicService.AdvancePhase(battle);
+        _logicService.AdvanceBattlePhase(battle);
 
-        roomEntity.BattlePhase.Value = battle.CurrentPhase switch {
-            BattlePhase.PlayerTurn => 1,
-            BattlePhase.SkillCasting => 2,
-            BattlePhase.Settlement => 3,
-            _ => roomEntity.BattlePhase.Value
-        };
+        SyncPhaseToEntity(battle, roomEntity);
 
         Console.WriteLine($"[Game] Phase advanced to {roomEntity.BattlePhase.Value} in room: {roomEntity.RoomId.Value}");
     }
 
     private void HandleNextRound() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2);
         if (roomEntity == null) {
             Console.WriteLine("[Game] No active battle for next round.");
             return;
@@ -262,10 +257,10 @@ public class GameServer {
         var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
         if (battle == null)
             return;
-        _logicService.NextRound(battle);
 
-        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
-        roomEntity.BattlePhase.Value = 1;
+        // Advance 自动在 SkillCasting → PlayerTurn 时递增回合数。
+        _logicService.AdvanceBattlePhase(battle);
+        SyncPhaseToEntity(battle, roomEntity);
 
         Console.WriteLine($"[Game] Round {roomEntity.CurrentRound.Value} in room: {roomEntity.RoomId.Value}");
     }
@@ -288,6 +283,17 @@ public class GameServer {
         Console.WriteLine($"[Game] Battle ended in room: {roomEntity.RoomId.Value}");
     }
 
+    private static void SyncPhaseToEntity(BattleManager battle, BattleRoomEntity roomEntity) {
+        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
+        roomEntity.BattlePhase.Value = battle.CurrentPhase switch {
+            BattlePhase.Waiting => 0,
+            BattlePhase.PlayerTurn => 1,
+            BattlePhase.SkillCasting => 2,
+            BattlePhase.Finished => 4,
+            _ => roomEntity.BattlePhase.Value
+        };
+    }
+
     private void ExecuteSkill(UnitSyncEntity casterSync, UnitSyncEntity targetSync, JsonElement skillJson) {
         // 从 Logic 层获取已挂载的 UnitModel，避免临时构建
         var casterModel = _logicService.FindUnitModel(casterSync.UnitName.Value);
@@ -301,8 +307,7 @@ public class GameServer {
         float oldTargetHealth = targetModel.Health;
 
         bool isDamage = skillJson.TryGetProperty("isDamage", out var isDamageProp) && isDamageProp.GetBoolean();
-        var battle = _logicService.GetBattle(_lobby.FindRoomIdByUnit(casterSync) ?? "")
-            ?? new BattleManager();
+        var battle = _logicService.GetBattle(_lobby.FindRoomIdByUnit(casterSync) ?? "");
 
         if (isDamage) {
             float damage = skillJson.TryGetProperty("damage", out var d) ? d.GetSingle() : 100f;
@@ -310,12 +315,12 @@ public class GameServer {
             var damageType = (Core.Enums.Enum_DamageType)damageTypeInt;
 
             var skill = new SkillDamageModel { Damage = damage, DamageType = damageType };
-            _logicService.CastSkill(battle, casterModel, targetModel, skill);
+            _logicService.CastSkill(battle ?? new BattleManager(), casterModel, targetModel, skill);
         }
         else {
             float cure = skillJson.TryGetProperty("cure", out var c) ? c.GetSingle() : 50f;
             var skill = new SkillCureModel { CurePotency = cure };
-            _logicService.CastSkill(battle, casterModel, targetModel, skill);
+            _logicService.CastSkill(battle ?? new BattleManager(), casterModel, targetModel, skill);
         }
 
         // 写回网络同步实体
