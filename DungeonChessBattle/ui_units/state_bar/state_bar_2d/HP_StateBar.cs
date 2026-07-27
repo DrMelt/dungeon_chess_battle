@@ -1,3 +1,4 @@
+using System;
 using DungeonChessBattle.ui_units.ui_interface;
 using Godot;
 
@@ -21,7 +22,7 @@ public partial class HP_StateBar : Control, IUI_Update {
     Label label_ObjectNameRef = null!;
 
     public override void _Ready() {
-        stateBarRef_Mat = (stateBarRef.Material as ShaderMaterial)!;
+        stateBarRef_Mat = (stateBarRef.Material as ShaderMaterial) ?? throw new InvalidOperationException("stateBarRef.Material is not a ShaderMaterial.");
     }
 
     public void UpdateUI_WithUnit(UnitState unitState) {

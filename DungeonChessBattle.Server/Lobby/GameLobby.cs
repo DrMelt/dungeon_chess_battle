@@ -24,14 +24,14 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
             return value;
         var entity = _networkServer.EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = roomId;
-        });
-        _roomEntities[roomId] = entity!;
+        }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{roomId}'.");
+        _roomEntities[roomId] = entity;
         _roomUnits[roomId] = [];
 
         // 同步在 Logic 层创建对应房间
         _battleService.CreateRoom(roomId);
 
-        return entity!;
+        return entity;
     }
 
     public UnitSyncEntity CreateUnitEntity(string roomId, string unitName, byte camp) {
@@ -41,16 +41,16 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
         var entity = _networkServer.EntityManager.AddEntity<UnitSyncEntity>(e => {
             e.UnitName.Value = unitName;
             e.Camp.Value = camp;
-        });
-        units.Add(entity!);
-        _unitById[entity!.Id] = entity;
+        }) ?? throw new InvalidOperationException($"Failed to create UnitSyncEntity for unit '{unitName}' in room '{roomId}'.");
+        units.Add(entity);
+        _unitById[entity.Id] = entity;
 
         // 委托 Logic 层创建单位
         if (_battleService is GameLogicService logicService) {
             logicService.CreateUnit(roomId, unitName, camp);
         }
 
-        return entity!;
+        return entity;
     }
 
     public bool RemoveRoom(string roomId) {

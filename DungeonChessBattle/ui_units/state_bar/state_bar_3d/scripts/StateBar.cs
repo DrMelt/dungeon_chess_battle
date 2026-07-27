@@ -1,3 +1,4 @@
+using System;
 using DungeonChessBattle.ui_units.ui_interface;
 using Godot;
 
@@ -25,7 +26,7 @@ public partial class StateBar : Node3D, IUI_Update {
     [Export]
     Label3D label3D_NameRef = null!;
     public override void _Ready() {
-        stateBarRef_Mat = (stateBarRef.MaterialOverride as ShaderMaterial)!;
+        stateBarRef_Mat = (stateBarRef.MaterialOverride as ShaderMaterial) ?? throw new InvalidOperationException("stateBarRef.MaterialOverride is not a ShaderMaterial.");
     }
 
     public override void _Process(double delta) {

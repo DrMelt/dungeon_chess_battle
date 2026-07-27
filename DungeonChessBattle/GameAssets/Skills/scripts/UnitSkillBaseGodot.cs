@@ -54,7 +54,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
     public bool NeedPosTarget => _model?.NeedPosTarget ?? false;
     public EnumSkillCanAdd SkillCanAdd => _model?.SkillCanAdd ?? EnumSkillCanAdd.None;
     public float SkillSpellProgress => _model?.SkillSpellProgress ?? 0;
-    public IUnitState CallSkillObject => _model?.CallSkillObject!;
+    public IUnitState CallSkillObject => _model?.CallSkillObject ?? throw new InvalidOperationException("Skill model has not been initialized.");
 
     private void EnsureModelCreated() {
         if (_model != null)

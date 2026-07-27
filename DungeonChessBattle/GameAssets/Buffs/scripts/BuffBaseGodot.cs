@@ -30,8 +30,8 @@ public partial class BuffBaseGodot : Resource, IBuff {
     public double Duration => _model?.Duration ?? 0;
     public int Superpositions => _model?.Superpositions ?? 1;
     public int MaxSuperpositions => _model?.MaxSuperpositions ?? 1;
-    public bool IsAlive => _model?.IsAlive ?? true;
-    public IUnitState FromUnit => _model?.FromUnit!;
+    public bool IsAlive => _model?.IsAlive ?? throw new InvalidOperationException("Buff model has not been initialized.");
+    public IUnitState FromUnit => _model?.FromUnit ?? throw new InvalidOperationException("Buff model has not been initialized.");
 
     private void EnsureModelCreated() {
         if (_model != null)

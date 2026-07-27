@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -9,7 +10,7 @@ public partial class SkillRangeRect_Hint : Node3D {
     ShaderMaterial shaderMaterial = null!;
 
     public void Init(Vector3 fromPos, Vector3 toPos, float near, float far, float fromL, float toR) {
-        shaderMaterial = (decalRef.MaterialOverride as ShaderMaterial)!;
+        shaderMaterial = (decalRef.MaterialOverride as ShaderMaterial) ?? throw new InvalidOperationException("decalRef.MaterialOverride is not a ShaderMaterial.");
         GlobalPosition = fromPos;
         toPos.Y = fromPos.Y;
         LookAt(toPos, up: Vector3.Up);
