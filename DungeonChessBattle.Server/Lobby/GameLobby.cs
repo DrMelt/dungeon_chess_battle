@@ -1,13 +1,17 @@
+using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
 
 namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// 大厅模块，负责房间/单位的 CRUD、实体缓存和交互式 CLI。
+/// 创建 UnitSyncEntity 时同步在 Logic 层创建对应的 UnitModel。
 /// </summary>
-public class GameLobby(EntityNetworkServer networkServer) {
+public class GameLobby(EntityNetworkServer networkServer, GameLogicService logicService) {
     private readonly EntityNetworkServer _networkServer = networkServer;
+    private readonly GameLogicService _logicService = logicService;
 
     private readonly Dictionary<string, BattleRoomEntity> _roomEntities = [];
     private readonly Dictionary<string, List<UnitSyncEntity>> _roomUnits = [];
@@ -24,6 +28,10 @@ public class GameLobby(EntityNetworkServer networkServer) {
         });
         _roomEntities[roomId] = entity!;
         _roomUnits[roomId] = [];
+
+        // 同步在 Logic 层创建对应房间
+        _logicService.CreateRoom(roomId);
+
         return entity!;
     }
 
@@ -37,12 +45,23 @@ public class GameLobby(EntityNetworkServer networkServer) {
         });
         units.Add(entity!);
         _unitById[entity!.Id] = entity;
+
+        // 同步在 Logic 层创建对应 UnitModel
+        var gameRoom = _logicService.GetRoom(roomId);
+        var model = new UnitModel { UnitStateName = unitName };
+        if (camp == 1)
+            gameRoom!.UnitsA.Add(model);
+        if (camp == 2)
+            gameRoom!.UnitsB.Add(model);
+
         return entity!;
     }
 
     public bool RemoveRoom(string roomId) {
         _roomUnits.Remove(roomId);
-        return _roomEntities.Remove(roomId);
+        _roomEntities.Remove(roomId);
+        _logicService.RemoveRoom(roomId);
+        return true;
     }
 
     public UnitSyncEntity? FindUnitByName(string unitName) {
@@ -50,6 +69,17 @@ public class GameLobby(EntityNetworkServer networkServer) {
             var unit = units.Find(u => u.UnitName.Value == unitName);
             if (unit != null)
                 return unit;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 根据 UnitSyncEntity 查找其所属的房间 ID。
+    /// </summary>
+    public string? FindRoomIdByUnit(UnitSyncEntity syncUnit) {
+        foreach (var (roomId, units) in _roomUnits) {
+            if (units.Contains(syncUnit))
+                return roomId;
         }
         return null;
     }

@@ -70,10 +70,11 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
             return null;
         var room = new GameRoom(roomId);
         foreach (var u in units) {
+            var model = BuildModelFromSync(u);
             if (u.Camp.Value == 1)
-                room.UnitsA.Add(new UnitModel { UnitStateName = u.UnitName.Value });
+                room.UnitsA.Add(model);
             if (u.Camp.Value == 2)
-                room.UnitsB.Add(new UnitModel { UnitStateName = u.UnitName.Value });
+                room.UnitsB.Add(model);
         }
         return room;
     }
@@ -120,6 +121,10 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         _serverPeer.Send(data, DeliveryMethod.ReliableOrdered);
     }
 
+    /// <summary>
+    /// 客户端不独立结算 Buff —— 服务端权威结算后通过 UnitSyncEntity.ServerSetHealth 下推结果。
+    /// 本地 UI 通过订阅 UnitHealthChanged / UnitBuffAdded / UnitBuffRemoved 事件获取更新。
+    /// </summary>
     public void UpdateBuffs(BattleManager b, IEnumerable<UnitModel> u, double dt) {
     }
 
@@ -177,6 +182,18 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         byte[] data = Encoding.UTF8.GetBytes(json);
         _serverPeer.Send(data, DeliveryMethod.ReliableOrdered);
     }
+
+    private static UnitModel BuildModelFromSync(UnitSyncEntity u) => new() {
+        UnitStateName = u.UnitName.Value,
+        Health = u.Health.Value,
+        MaxHealth = u.MaxHealth.Value,
+        PhysicalAttackBase = u.PhysicalAttackBase.Value,
+        MagicAttackBase = u.MagicAttackBase.Value,
+        PhysicalTakePercent = u.PhysicalTakePercent.Value,
+        MagicTakePercent = u.MagicTakePercent.Value,
+        CureIntensity = u.CureIntensity.Value,
+        BaseSpeed = u.BaseSpeed.Value,
+    };
 
     #endregion
 

@@ -4,6 +4,7 @@ using System.Text.Json;
 using LiteNetLib;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
+using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.Network;
@@ -12,11 +13,12 @@ namespace DungeonChessBattle.Server;
 
 /// <summary>
 /// 游戏服务端主控类。使用 LiteEntitySystem 替代原有 JSON 消息系统。
-/// 大厅/房间管理委托给 GameLobby 模块。
+/// 大厅/房间管理委托给 GameLobby 模块，战斗逻辑委托给 GameLogicService。
 /// </summary>
 public class GameServer {
     private readonly EntityNetworkServer _networkServer;
     private readonly GameLobby _lobby;
+    private readonly GameLogicService _logicService = new();
     private Thread? _loopThread;
 
     private volatile bool _running;
@@ -28,7 +30,7 @@ public class GameServer {
 
     public GameServer() {
         _networkServer = new EntityNetworkServer();
-        _lobby = new GameLobby(_networkServer);
+        _lobby = new GameLobby(_networkServer, _logicService);
         _networkServer.OnClientConnected += peerId =>
             Console.WriteLine($"[Game] Client {peerId} connected.");
         _networkServer.OnCustomPacket += OnCustomPacket;
@@ -84,64 +86,76 @@ public class GameServer {
     private void Tick(double deltaTime) {
         _networkServer.EntityManager.Update();
 
-        // 遍历所有房间更新 Buff
-        foreach (var (roomId, units) in _lobby.RoomUnits) {
-            if (!_lobby.Rooms.TryGetValue(roomId, out var room))
+        foreach (var (roomId, syncUnits) in _lobby.RoomUnits) {
+            if (!_lobby.Rooms.TryGetValue(roomId, out var roomEntity))
                 continue;
-            if (room.BattlePhase.Value == 0 || room.BattlePhase.Value == 4)
+            if (roomEntity.BattlePhase.Value == 0 || roomEntity.BattlePhase.Value == 4)
                 continue;
 
-            UpdateBuffs(units, (float)deltaTime);
-            CheckBattleEnd(room, units);
+            // 将 UnitSyncEntity 的当前状态同步到 Logic 层的 UnitModel
+            SyncToModels(syncUnits, roomId);
+
+            // 通过 Logic 层结算 Buff
+            var gameRoom = _logicService.GetRoom(roomId);
+            if (gameRoom != null) {
+                var battle = _logicService.GetBattle(roomId);
+                if (battle != null) {
+                    _logicService.UpdateBuffs(battle,
+                        gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
+                }
+            }
+
+            // 检查战斗结束
+            if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
+                roomEntity.BattlePhase.Value = 4;
+                roomEntity.IsFinished.Value = true;
+                uint winnerCamp = BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u;
+                roomEntity.WinnerCamp.Value = (byte)winnerCamp;
+            }
+
+            // 将 Logic 层结算后的变化写回 UnitSyncEntity
+            SyncFromModels(syncUnits, roomId);
         }
     }
 
-    private static void UpdateBuffs(List<UnitSyncEntity> units, float deltaTime) {
-        foreach (var unit in units) {
-            if (unit.UnitState.Value != 0)
-                continue;
-            for (int i = unit.BuffsList.Count - 1; i >= 0; i--) {
-                var buff = unit.BuffsList[i];
-                buff.RemainingDuration -= deltaTime;
+    /// <summary>
+    /// 每帧 Tick 开始时，将 UnitSyncEntity 的网络状态同步到 Logic 层的 UnitModel。
+    /// </summary>
+    private void SyncToModels(List<UnitSyncEntity> syncUnits, string roomId) {
+        var gameRoom = _logicService.GetRoom(roomId);
+        if (gameRoom == null)
+            return;
 
-                if (buff.RemainingDuration <= 0) {
-                    unit.ServerRemoveBuffAt(i);
-                    continue;
-                }
+        var modelMap = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
+            .ToDictionary(m => m.UnitStateName);
 
-                if (buff.IsDOT) {
-                    float tickDmg = buff.TickValue * deltaTime;
-                    unit.ServerSetHealth(unit.Health.Value - tickDmg);
+        foreach (var syncUnit in syncUnits) {
+            if (modelMap.TryGetValue(syncUnit.UnitName.Value, out var model)) {
+                // 回写客户端操作结果（如通过 CastSkill 外部修改的 Health）
+                if (MathF.Abs(syncUnit.Health.Value - model.Health) > 0.0001f) {
+                    model.Health = syncUnit.Health.Value;
                 }
-                else if (buff.IsHOT) {
-                    float tickHeal = Math.Abs(buff.TickValue) * deltaTime;
-                    unit.ServerSetHealth(unit.Health.Value + tickHeal);
-                }
-
-                unit.BuffsList[i] = buff;
             }
         }
     }
 
-    private static void CheckBattleEnd(BattleRoomEntity room, List<UnitSyncEntity> units) {
-        bool aAlive = false, bAlive = false;
-        foreach (var u in units) {
-            if (u.UnitState.Value != 0)
-                continue;
-            if (u.Camp.Value == 1)
-                aAlive = true;
-            if (u.Camp.Value == 2)
-                bAlive = true;
-        }
-        if (!aAlive) {
-            room.BattlePhase.Value = 4;
-            room.IsFinished.Value = true;
-            room.WinnerCamp.Value = 2;
-        }
-        if (!bAlive) {
-            room.BattlePhase.Value = 4;
-            room.IsFinished.Value = true;
-            room.WinnerCamp.Value = 1;
+    /// <summary>
+    /// 每帧 Tick 结束时，将 UnitModel 经 Logic 结算后的变化写回 UnitSyncEntity。
+    /// </summary>
+    private void SyncFromModels(List<UnitSyncEntity> syncUnits, string roomId) {
+        var gameRoom = _logicService.GetRoom(roomId);
+        if (gameRoom == null)
+            return;
+
+        var modelMap = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
+            .ToDictionary(m => m.UnitStateName);
+
+        foreach (var syncUnit in syncUnits) {
+            if (modelMap.TryGetValue(syncUnit.UnitName.Value, out var model)) {
+                if (MathF.Abs(syncUnit.Health.Value - model.Health) > 0.0001f) {
+                    syncUnit.ServerSetHealth(model.Health);
+                }
+            }
         }
     }
 
@@ -202,88 +216,113 @@ public class GameServer {
 
     private void HandleStartBattle(JsonElement root) {
         string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
-        var room = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r) ? r : _lobby.Rooms.Values.FirstOrDefault();
-        if (room == null) {
+        var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
+            ? r : _lobby.Rooms.Values.FirstOrDefault();
+        if (roomEntity == null) {
             Console.WriteLine("[Game] No room to start battle.");
             return;
         }
-        room.BattlePhase.Value = 1;
-        Console.WriteLine($"[Game] Battle started in room: {room.RoomId.Value}");
+
+        var battle = _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
+        roomEntity.BattlePhase.Value = 1;
+        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
+        roomEntity.IsFinished.Value = false;
+
+        Console.WriteLine($"[Game] Battle started in room: {roomEntity.RoomId.Value}");
     }
 
     private void HandleAdvancePhase() {
-        var room = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
-        if (room == null) {
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
+        if (roomEntity == null) {
             Console.WriteLine("[Game] No active battle to advance.");
             return;
         }
-        byte nextPhase = (byte)Math.Min(room.BattlePhase.Value + 1, 3);
-        room.BattlePhase.Value = nextPhase;
-        Console.WriteLine($"[Game] Phase advanced to {nextPhase} in room: {room.RoomId.Value}");
+
+        var battle = _logicService.GetBattle(roomEntity.RoomId.Value)
+            ?? _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
+        _logicService.AdvancePhase(battle);
+
+        roomEntity.BattlePhase.Value = battle.CurrentPhase switch {
+            BattlePhase.PlayerTurn => 1,
+            BattlePhase.SkillCasting => 2,
+            BattlePhase.Settlement => 3,
+            _ => roomEntity.BattlePhase.Value
+        };
+
+        Console.WriteLine($"[Game] Phase advanced to {roomEntity.BattlePhase.Value} in room: {roomEntity.RoomId.Value}");
     }
 
     private void HandleNextRound() {
-        var room = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
-        if (room == null) {
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2 or 3);
+        if (roomEntity == null) {
             Console.WriteLine("[Game] No active battle for next round.");
             return;
         }
-        room.CurrentRound.Value++;
-        room.BattlePhase.Value = 1;
-        Console.WriteLine($"[Game] Round {room.CurrentRound.Value} in room: {room.RoomId.Value}");
+
+        var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
+        if (battle == null)
+            return;
+        _logicService.NextRound(battle);
+
+        roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
+        roomEntity.BattlePhase.Value = 1;
+
+        Console.WriteLine($"[Game] Round {roomEntity.CurrentRound.Value} in room: {roomEntity.RoomId.Value}");
     }
 
     private void HandleEndBattle() {
-        var room = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is not 0 and not 4);
-        if (room == null) {
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is not 0 and not 4);
+        if (roomEntity == null) {
             Console.WriteLine("[Game] No active battle to end.");
             return;
         }
-        room.BattlePhase.Value = 4;
-        room.IsFinished.Value = true;
-        Console.WriteLine($"[Game] Battle ended in room: {room.RoomId.Value}");
+
+        var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
+        if (battle == null)
+            return;
+        _logicService.EndBattle(battle);
+
+        roomEntity.BattlePhase.Value = 4;
+        roomEntity.IsFinished.Value = true;
+
+        Console.WriteLine($"[Game] Battle ended in room: {roomEntity.RoomId.Value}");
     }
 
-    private static void ExecuteSkill(UnitSyncEntity caster, UnitSyncEntity target, JsonElement skillJson) {
-        var casterModel = BuildUnitModelFromEntity(caster);
-        var targetModel = BuildUnitModelFromEntity(target);
+    private void ExecuteSkill(UnitSyncEntity casterSync, UnitSyncEntity targetSync, JsonElement skillJson) {
+        // 从 Logic 层获取已挂载的 UnitModel，避免临时构建
+        var casterModel = _logicService.FindUnitModel(casterSync.UnitName.Value);
+        var targetModel = _logicService.FindUnitModel(targetSync.UnitName.Value);
 
-        float oldTargetHealth = target.Health.Value;
+        if (casterModel == null || targetModel == null) {
+            Console.WriteLine($"[Game] Skill execution failed: unit model not found in Logic layer.");
+            return;
+        }
+
+        float oldTargetHealth = targetModel.Health;
 
         bool isDamage = skillJson.TryGetProperty("isDamage", out var isDamageProp) && isDamageProp.GetBoolean();
+        var battle = _logicService.GetBattle(_lobby.FindRoomIdByUnit(casterSync) ?? "")
+            ?? new BattleManager();
+
         if (isDamage) {
             float damage = skillJson.TryGetProperty("damage", out var d) ? d.GetSingle() : 100f;
             int damageTypeInt = skillJson.TryGetProperty("damageType", out var dt) ? dt.GetInt32() : 1;
             var damageType = (Core.Enums.Enum_DamageType)damageTypeInt;
 
             var skill = new SkillDamageModel { Damage = damage, DamageType = damageType };
-            BattleResolver.ApplySkillDamage(casterModel, targetModel, skill);
+            _logicService.CastSkill(battle, casterModel, targetModel, skill);
         }
         else {
             float cure = skillJson.TryGetProperty("cure", out var c) ? c.GetSingle() : 50f;
             var skill = new SkillCureModel { CurePotency = cure };
-            BattleResolver.ApplySkillCure(casterModel, targetModel, skill);
+            _logicService.CastSkill(battle, casterModel, targetModel, skill);
         }
 
-        target.ServerSetHealth(targetModel.Health);
+        // 写回网络同步实体
+        targetSync.ServerSetHealth(targetModel.Health);
 
-        Console.WriteLine($"[Game] Skill result: {caster.UnitName.Value} -> {target.UnitName.Value}, " +
-                          $"HP: {oldTargetHealth:F0} -> {target.Health.Value:F0}");
-    }
-
-    private static UnitModel BuildUnitModelFromEntity(UnitSyncEntity e) {
-        var model = new UnitModel {
-            UnitStateName = e.UnitName.Value,
-            Health = e.Health.Value,
-            MaxHealth = e.MaxHealth.Value,
-            PhysicalAttackBase = e.PhysicalAttackBase.Value,
-            MagicAttackBase = e.MagicAttackBase.Value,
-            PhysicalTakePercent = e.PhysicalTakePercent.Value,
-            MagicTakePercent = e.MagicTakePercent.Value,
-            CureIntensity = e.CureIntensity.Value,
-            BaseSpeed = e.BaseSpeed.Value
-        };
-        return model;
+        Console.WriteLine($"[Game] Skill result: {casterSync.UnitName.Value} -> {targetSync.UnitName.Value}, " +
+                          $"HP: {oldTargetHealth:F0} -> {targetSync.Health.Value:F0}");
     }
 
     #endregion

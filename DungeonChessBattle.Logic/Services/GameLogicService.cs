@@ -53,6 +53,20 @@ public class GameLogicService : IBattleService {
 
     #endregion
 
+    #region Unit Lookup
+
+    public UnitModel? FindUnitModel(string unitName) {
+        foreach (var room in _roomManager.GetAllRooms()) {
+            var unit = room.UnitsA.Concat(room.UnitsB)
+                .FirstOrDefault(u => u.UnitStateName == unitName);
+            if (unit != null)
+                return unit;
+        }
+        return null;
+    }
+
+    #endregion
+
     #region Buffs & Status
 
     public void UpdateBuffs(BattleManager battle, IEnumerable<UnitModel> units, double deltaTime) {

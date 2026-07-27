@@ -10,7 +10,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
     </ItemGroup>
 
     <ItemGroup>
