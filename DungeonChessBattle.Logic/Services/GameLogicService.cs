@@ -6,20 +6,11 @@ using DungeonChessBattle.Logic.Rooms;
 namespace DungeonChessBattle.Logic.Services;
 
 /// <summary>
-/// Logic 层对外门面服务，实现 IBattleService。
+/// Logic 层对外门面服务，同时实现 IServerBattleService 和 IClientBattleService。
 /// 组合 RoomManager 和 BattleResolver，提供房间管理、战斗流程、技能结算等全部业务操作。
 /// </summary>
-public class GameLogicService : IBattleService {
+public class GameLogicService : IServerBattleService, IClientBattleService {
     private readonly RoomManager _roomManager = new();
-    private Action<string, byte, ushort, bool>? _phaseSyncCallback;
-
-    /// <summary>
-    /// 注入战斗阶段变化的回调，Logic 层通过此回调通知外部实体层同步 Phase/Round/Finished。
-    /// 参数：roomId, phase, round, isFinished。
-    /// </summary>
-    public void SetPhaseSyncCallback(Action<string, byte, ushort, bool> callback) {
-        _phaseSyncCallback = callback;
-    }
 
     #region Room Management
 
@@ -50,50 +41,41 @@ public class GameLogicService : IBattleService {
 
     #region Battle Flow
 
-    public BattleManager StartBattleInRoom(string roomId) {
+    BattleManager IServerBattleService.StartBattleInRoom(string roomId) {
         _ = GetRoom(roomId)
             ?? throw new InvalidOperationException($"Room {roomId} not found.");
 
         var battle = _roomManager.GetOrCreateBattle(roomId);
         battle.StartBattle();
-        battle.PhaseChanged += OnBattlePhaseChanged;
         return battle;
     }
 
-    public BattleManager? GetBattle(string roomId) => _roomManager.GetBattle(roomId);
+    BattleManager? IServerBattleService.GetBattle(string roomId) => _roomManager.GetBattle(roomId);
 
-    public void AdvanceBattlePhase(BattleManager battle) => battle.Advance();
+    void IServerBattleService.AdvanceBattlePhase(BattleManager battle) => battle.Advance();
 
-    public void EndBattle(BattleManager battle) {
+    void IServerBattleService.EndBattle(BattleManager battle) {
         battle.EndBattle();
-        battle.PhaseChanged -= OnBattlePhaseChanged;
-    }
-
-    private void OnBattlePhaseChanged(BattlePhase prev, BattlePhase next) {
-        foreach (var room in _roomManager.GetAllRooms()) {
-            var battle = _roomManager.GetBattle(room.RoomId);
-            if (battle == null || battle.CurrentPhase != next)
-                continue;
-            _phaseSyncCallback?.Invoke(
-                room.RoomId,
-                next switch {
-                    BattlePhase.PlayerTurn => 1,
-                    BattlePhase.SkillCasting => 2,
-                    BattlePhase.Finished => 4,
-                    _ => 0
-                },
-                (ushort)battle.RoundNumber,
-                next == BattlePhase.Finished);
-            break;
-        }
     }
 
     #endregion
 
     #region Skill
 
-    public void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits = null) {
+    void IServerBattleService.CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits) {
+        CastSkillInternal(caster, target, skill, allUnits);
+    }
+
+    void IClientBattleService.CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits) {
+        _ = _roomManager.GetBattle(roomId)
+            ?? throw new InvalidOperationException($"No active battle in room {roomId}.");
+        CastSkillInternal(caster, target, skill, allUnits);
+    }
+
+    private static void CastSkillInternal(IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits) {
         switch (skill) {
             case SkillDamageModel damage:
                 BattleResolver.ApplySkillDamage(caster, target, damage);
@@ -150,7 +132,15 @@ public class GameLogicService : IBattleService {
 
     #region Buffs & Status
 
-    public void UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
+    void IServerBattleService.UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
+        UpdateBuffsInternal(units, deltaTime);
+    }
+
+    void IClientBattleService.UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
+        UpdateBuffsInternal(units, deltaTime);
+    }
+
+    private static void UpdateBuffsInternal(IEnumerable<IUnitState> units, double deltaTime) {
         foreach (var unit in units) {
             BattleResolver.UpdateUnitBuffs(unit, deltaTime);
         }
@@ -160,6 +150,11 @@ public class GameLogicService : IBattleService {
         bool aAlive = BattleResolver.HasAliveUnits(room.UnitsA);
         bool bAlive = BattleResolver.HasAliveUnits(room.UnitsB);
         return !aAlive || !bAlive;
+    }
+
+    bool IClientBattleService.CheckBattleEnded(string roomId) {
+        var room = GetRoom(roomId);
+        return room != null && CheckBattleEnded(room);
     }
 
     #endregion

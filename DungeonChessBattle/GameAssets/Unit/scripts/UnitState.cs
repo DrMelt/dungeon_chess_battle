@@ -242,7 +242,7 @@ public partial class UnitState : Resource, IUnitState {
     public void UpdateBuffList(double deltaTime) {
         // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
         if (BattleServiceProvider.IsInitialized) {
-            BattleServiceProvider.Service.UpdateBuffs(null!, [EnsureSynced()], deltaTime);
+            BattleServiceProvider.ClientService.UpdateBuffs(null!, [EnsureSynced()], deltaTime);
         }
         else {
             EnsureSynced().UpdateBuffList(deltaTime);

@@ -8,9 +8,9 @@ namespace DungeonChessBattle.Server.Lobby;
 /// 大厅模块，负责房间/单位的 CRUD、实体缓存和交互式 CLI。
 /// 创建 UnitSyncEntity 时同步在 Logic 层创建对应的 UnitModel。
 /// </summary>
-public class GameLobby(EntityNetworkServer networkServer, GameLogicService logicService) {
+public class GameLobby(EntityNetworkServer networkServer, IServerBattleService battleService) {
     private readonly EntityNetworkServer _networkServer = networkServer;
-    private readonly GameLogicService _logicService = logicService;
+    private readonly IServerBattleService _battleService = battleService;
 
     private readonly Dictionary<string, BattleRoomEntity> _roomEntities = [];
     private readonly Dictionary<string, List<UnitSyncEntity>> _roomUnits = [];
@@ -29,7 +29,7 @@ public class GameLobby(EntityNetworkServer networkServer, GameLogicService logic
         _roomUnits[roomId] = [];
 
         // 同步在 Logic 层创建对应房间
-        _logicService.CreateRoom(roomId);
+        _battleService.CreateRoom(roomId);
 
         return entity!;
     }
@@ -46,7 +46,9 @@ public class GameLobby(EntityNetworkServer networkServer, GameLogicService logic
         _unitById[entity!.Id] = entity;
 
         // 委托 Logic 层创建单位
-        _logicService.CreateUnit(roomId, unitName, camp);
+        if (_battleService is GameLogicService logicService) {
+            logicService.CreateUnit(roomId, unitName, camp);
+        }
 
         return entity!;
     }
@@ -54,7 +56,7 @@ public class GameLobby(EntityNetworkServer networkServer, GameLogicService logic
     public bool RemoveRoom(string roomId) {
         _roomUnits.Remove(roomId);
         _roomEntities.Remove(roomId);
-        _logicService.RemoveRoom(roomId);
+        _battleService.RemoveRoom(roomId);
         return true;
     }
 

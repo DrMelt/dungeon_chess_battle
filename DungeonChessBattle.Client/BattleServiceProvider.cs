@@ -3,37 +3,61 @@ using DungeonChessBattle.Logic.Services;
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// 全局战斗服务提供者，持有当前活跃的 IBattleService 实例。
-/// 支持本地模式（GameLogicService）和网络模式（NetworkBattleClient）切换。
+/// 全局战斗服务提供者，持有当前活跃的服务实例。
+/// 支持本地模式（GameLogicService，同时提供完整服务）和网络模式（NetworkBattleClient，仅客户端接口）切换。
 /// </summary>
 public static class BattleServiceProvider {
-    private static IBattleService? _instance;
+    private static IClientBattleService? _clientService;
+    private static BattleMode _mode = BattleMode.Uninitialized;
 
     /// <summary>
-    /// 当前活跃的战斗服务实例。
-    /// 离线模式下使用 GameLogicService，联网模式下使用 NetworkBattleClient。
+    /// 当前模式。
     /// </summary>
-    public static IBattleService Service {
-        get => _instance ?? throw new InvalidOperationException("BattleServiceProvider not initialized. Call InitializeLocal() or InitializeNetwork() first.");
-        set => _instance = value;
+    public static BattleMode Mode => _mode;
+
+    /// <summary>
+    /// 客户端接口，本地和网络模式均可用。
+    /// </summary>
+    public static IClientBattleService ClientService {
+        get => _clientService ?? throw new InvalidOperationException(
+            "BattleServiceProvider not initialized. Call InitializeLocal() or InitializeNetwork() first.");
     }
 
     /// <summary>
-    /// 初始化本地模式（单人离线）。
+    /// 初始化本地模式（单人离线）。同时设置 ClientService。
     /// </summary>
-    public static void InitializeLocal() {
-        _instance = new GameLogicService();
+    public static GameLogicService InitializeLocal() {
+        var service = new GameLogicService();
+        _clientService = service;
+        _mode = BattleMode.Local;
+        return service;
     }
 
     /// <summary>
-    /// 初始化网络模式（多人联网客户端）。
+    /// 初始化网络模式（多人联网客户端）。仅设置 ClientService。
     /// </summary>
-    public static void InitializeNetwork(IBattleService networkClient) {
-        _instance = networkClient;
+    public static void InitializeNetwork(IClientBattleService networkClient) {
+        _clientService = networkClient;
+        _mode = BattleMode.Network;
     }
 
     /// <summary>
     /// 检查是否已初始化。
     /// </summary>
-    public static bool IsInitialized => _instance != null;
+    public static bool IsInitialized => _clientService != null;
+
+    /// <summary>
+    /// 获取本地模式下的 IServerBattleService（仅在本地模式下可用）。
+    /// </summary>
+    public static IServerBattleService? TryGetServerService() =>
+        _clientService as IServerBattleService;
+}
+
+/// <summary>
+/// 战斗模式枚举。
+/// </summary>
+public enum BattleMode {
+    Uninitialized,
+    Local,
+    Network,
 }

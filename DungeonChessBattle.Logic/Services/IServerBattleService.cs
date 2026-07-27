@@ -5,10 +5,10 @@ using DungeonChessBattle.Logic.Battle;
 namespace DungeonChessBattle.Logic.Services;
 
 /// <summary>
-/// 战斗服务抽象接口，定义 Logic 层对外暴露的全部操作。
-/// 本地实现直接调用 Logic，网络实现通过 RPC 转发到服务端。
+/// 服务端战斗服务接口，包含房间管理、战斗流程控制等完整操作。
+/// 服务端内部使用，保留 BattleManager 作为上下文参数。
 /// </summary>
-public interface IBattleService {
+public interface IServerBattleService {
     // 房间管理
     GameRoom CreateRoom(string roomId);
     GameRoom? GetRoom(string roomId);

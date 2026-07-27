@@ -7,18 +7,18 @@ using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.Mapper;
 using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// 基于 LiteEntitySystem 的网络战斗客户端。
+/// 基于 LiteEntitySystem 的网络战斗客户端，实现 IClientBattleService。
 /// 状态同步由框架自动处理，客户端通过事件接收更新。
 /// </summary>
-public class NetworkBattleClient : IBattleService, INetEventListener {
+public class NetworkBattleClient : IClientBattleService, INetEventListener {
     private readonly NetManager _netClient;
     private ClientEntityManager? _entityManager;
     private NetPeer? _serverPeer;
@@ -60,10 +60,7 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         _entityManager?.Update();
     }
 
-    #region IBattleService
-
-    public GameRoom CreateRoom(string roomId)
-        => throw new NotSupportedException("Client cannot create rooms. Use server CLI.");
+    #region IClientBattleService
 
     public GameRoom? GetRoom(string roomId) {
         _roomUnits.TryGetValue(roomId, out var units);
@@ -80,28 +77,10 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         return room;
     }
 
-    public bool RemoveRoom(string roomId) {
-        _rooms.Remove(roomId);
-        _roomUnits.Remove(roomId);
-        return true;
-    }
     public IEnumerable<GameRoom> GetAllRooms()
         => _rooms.Keys.Select(id => GetRoom(id)!).Where(r => r != null);
 
-    public BattleManager StartBattleInRoom(string roomId) {
-        SendCommand(new {
-            type = "start_battle", roomId
-        });
-        return new BattleManager();
-    }
-
-    public BattleManager? GetBattle(string roomId) => null;
-
-    public void AdvanceBattlePhase(BattleManager b) => SendCommand(new { type = "advance_phase" });
-
-    public void EndBattle(BattleManager b) => SendCommand(new { type = "end_battle" });
-
-    public void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+    public void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
         IReadOnlyList<IUnitState>? allUnits = null) {
         if (_entityManager == null)
             return;
@@ -127,24 +106,16 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         casterEntity.RequestCastSkill(req);
     }
 
-    private UnitSyncEntity? FindUnitEntityByName(string unitName) {
-        foreach (var (_, units) in _roomUnits) {
-            var match = units.Find(u => u.UnitName.Value == unitName);
-            if (match != null)
-                return match;
-        }
-        return null;
-    }
-
     /// <summary>
     /// 客户端不独立结算 Buff —— 服务端权威结算后通过 UnitSyncEntity.ServerSetHealth 下推结果。
     /// 本地 UI 通过订阅 UnitHealthChanged / UnitBuffAdded / UnitBuffRemoved 事件获取更新。
     /// </summary>
-    public void UpdateBuffs(BattleManager b, IEnumerable<IUnitState> u, double dt) {
+    public void UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
+        // Buff 结算由服务端权威执行，客户端仅接收同步更新
     }
 
-    public bool CheckBattleEnded(GameRoom room)
-        => _rooms.TryGetValue(room.RoomId, out var r) && r.IsFinished.Value;
+    public bool CheckBattleEnded(string roomId)
+        => _rooms.TryGetValue(roomId, out var r) && r.IsFinished.Value;
 
     #endregion
 
@@ -198,17 +169,16 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
         _serverPeer.Send(data, DeliveryMethod.ReliableOrdered);
     }
 
-    private static UnitModel BuildModelFromSync(UnitSyncEntity u) => new() {
-        UnitStateName = u.UnitName.Value,
-        Health = u.Health.Value,
-        MaxHealth = u.MaxHealth.Value,
-        PhysicalAttackBase = u.PhysicalAttackBase.Value,
-        MagicAttackBase = u.MagicAttackBase.Value,
-        PhysicalTakePercent = u.PhysicalTakePercent.Value,
-        MagicTakePercent = u.MagicTakePercent.Value,
-        CureIntensity = u.CureIntensity.Value,
-        BaseSpeed = u.BaseSpeed.Value,
-    };
+    private UnitSyncEntity? FindUnitEntityByName(string unitName) {
+        foreach (var (_, units) in _roomUnits) {
+            var match = units.Find(u => u.UnitName.Value == unitName);
+            if (match != null)
+                return match;
+        }
+        return null;
+    }
+
+    private static UnitModel BuildModelFromSync(UnitSyncEntity u) => EntityModelMapper.FromSyncEntity(u);
 
     #endregion
 
@@ -222,7 +192,6 @@ public class NetworkBattleClient : IBattleService, INetEventListener {
 
     private void OnUnitEntityCreated(UnitSyncEntity unit) {
         // 根据所属房间缓存（简单策略：遍历所有房间，加入最近创建的房间）
-        // 更好的方式是通过服务端发送 roomId 关联，此处暂时用 Name 前缀查找
         var unitName = unit.UnitName.Value;
         foreach (var (roomId, room) in _rooms) {
             if (unitName.StartsWith(roomId)) {

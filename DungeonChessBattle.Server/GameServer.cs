@@ -20,7 +20,8 @@ namespace DungeonChessBattle.Server;
 public class GameServer {
     private readonly EntityNetworkServer _networkServer;
     private readonly GameLobby _lobby;
-    private readonly GameLogicService _logicService = new();
+    private readonly IServerBattleService _battleService;
+    private readonly GameLogicService _logicService;
     private Thread? _loopThread;
 
     private volatile bool _running;
@@ -31,28 +32,15 @@ public class GameServer {
     private const double TickInterval = 0.05; // 20 Hz
 
     public GameServer() {
+        _logicService = new GameLogicService();
+        _battleService = _logicService; // GameLogicService 同时实现 IServerBattleService
         _networkServer = new EntityNetworkServer();
-        _lobby = new GameLobby(_networkServer, _logicService);
+        _lobby = new GameLobby(_networkServer, _battleService);
+
         _networkServer.OnClientConnected += peerId =>
             Console.WriteLine($"[Game] Client {peerId} connected.");
         _networkServer.OnCustomPacket += OnCustomPacket;
         UnitSyncEntity.SkillCastRequested += OnSkillCastRequested;
-
-        // 注入相位同步回调：Logic 层 BattlePhase 变化时，自动写入对应 BattleRoomEntity。
-        _logicService.SetPhaseSyncCallback((roomId, phase, round, isFinished) => {
-            if (_lobby.Rooms.TryGetValue(roomId, out var entity)) {
-                entity.BattlePhase.Value = phase;
-                entity.CurrentRound.Value = round;
-                entity.IsFinished.Value = isFinished;
-                if (isFinished) {
-                    var room = _logicService.GetRoom(roomId);
-                    if (room != null && _logicService.CheckBattleEnded(room)) {
-                        entity.WinnerCamp.Value = (byte)(
-                            BattleResolver.HasAliveUnits(room.UnitsA) ? 1u : 2u);
-                    }
-                }
-            }
-        });
     }
 
     public void StartAsync() {
@@ -119,16 +107,16 @@ public class GameServer {
             GameLogicService.SyncHealthFromExternal(gameRoom,
                 syncUnits.Select(s => (s.UnitName.Value, s.Health.Value)));
 
-            // Buff 结算
-            var battle = _logicService.GetBattle(roomId);
+            // Buff 结算（通过接口调用）
+            var battle = _battleService.GetBattle(roomId);
             if (battle != null) {
-                _logicService.UpdateBuffs(battle,
+                _battleService.UpdateBuffs(battle,
                     gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
             }
 
-            // 战斗结束检查（Phase 回调负责写入 IsFinished/WinnerCamp）
-            if (_logicService.CheckBattleEnded(gameRoom) && battle != null) {
-                _logicService.EndBattle(battle);
+            // 战斗结束检查（PhaseChanged 事件订阅负责写入 IsFinished/WinnerCamp）
+            if (battle != null && _logicService.CheckBattleEnded(gameRoom)) {
+                _battleService.EndBattle(battle);
             }
 
             // Logic → Entity: 结算后的 Health 写回 UnitSyncEntity
@@ -174,6 +162,27 @@ public class GameServer {
         }
     }
 
+    private void SubscribePhaseSync(BattleManager battle, BattleRoomEntity roomEntity) {
+        battle.PhaseChanged += (prev, next) => {
+            roomEntity.BattlePhase.Value = next switch {
+                BattlePhase.PlayerTurn => 1,
+                BattlePhase.SkillCasting => 2,
+                BattlePhase.Finished => 4,
+                _ => 0
+            };
+            roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
+            roomEntity.IsFinished.Value = next == BattlePhase.Finished;
+
+            if (next == BattlePhase.Finished) {
+                var gameRoom = _logicService.GetRoom(roomEntity.RoomId.Value);
+                if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
+                    roomEntity.WinnerCamp.Value = (byte)(
+                        BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u);
+                }
+            }
+        };
+    }
+
     private void HandleStartBattle(JsonElement root) {
         string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
         var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
@@ -183,8 +192,9 @@ public class GameServer {
             return;
         }
 
-        _ = _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
-        // 相位回调会自动写入 BattlePhase/CurrentRound/IsFinished
+        var battle = _battleService.StartBattleInRoom(roomEntity.RoomId.Value);
+        SubscribePhaseSync(battle, roomEntity);
+
         Console.WriteLine($"[Game] Battle started in room: {roomEntity.RoomId.Value}");
     }
 
@@ -195,10 +205,13 @@ public class GameServer {
             return;
         }
 
-        var battle = _logicService.GetBattle(roomEntity.RoomId.Value)
-            ?? _logicService.StartBattleInRoom(roomEntity.RoomId.Value);
-        _logicService.AdvanceBattlePhase(battle);
-        // PhaseChanged 事件通过 SetPhaseSyncCallback 自动同步到 Entity
+        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
+        if (battle == null) {
+            battle = _battleService.StartBattleInRoom(roomEntity.RoomId.Value);
+            // 新创建的战斗实例也需要订阅同步事件
+            SubscribePhaseSync(battle, roomEntity);
+        }
+        _battleService.AdvanceBattlePhase(battle);
 
         Console.WriteLine($"[Game] Phase advanced to {roomEntity.BattlePhase.Value} in room: {roomEntity.RoomId.Value}");
     }
@@ -210,11 +223,11 @@ public class GameServer {
             return;
         }
 
-        var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
+        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
         if (battle == null)
             return;
 
-        _logicService.AdvanceBattlePhase(battle);
+        _battleService.AdvanceBattlePhase(battle);
         // PhaseChanged 事件通过 SetPhaseSyncCallback 自动同步到 Entity
 
         Console.WriteLine($"[Game] Round {roomEntity.CurrentRound.Value} in room: {roomEntity.RoomId.Value}");
@@ -227,9 +240,9 @@ public class GameServer {
             return;
         }
 
-        var battle = _logicService.GetBattle(roomEntity.RoomId.Value);
+        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
         if (battle != null)
-            _logicService.EndBattle(battle);
+            _battleService.EndBattle(battle);
         // PhaseChanged → Finished 通过 SetPhaseSyncCallback 自动同步到 Entity
 
         Console.WriteLine($"[Game] Battle ended in room: {roomEntity.RoomId.Value}");
@@ -257,7 +270,7 @@ public class GameServer {
             Console.WriteLine("[Game] Skill RPC: room not found for caster.");
             return;
         }
-        var battle = _logicService.GetBattle(roomId);
+        var battle = _battleService.GetBattle(roomId);
         if (battle == null) {
             Console.WriteLine("[Game] Skill RPC: no active battle in room.");
             return;
@@ -270,11 +283,11 @@ public class GameServer {
                 Damage = req.DamageOrCureValue,
                 DamageType = (DungeonChessBattle.Core.Enums.Enum_DamageType)req.DamageType
             };
-            _logicService.CastSkill(battle, casterModel, targetModel, skill);
+            _battleService.CastSkill(battle, casterModel, targetModel, skill);
         }
         else {
             var skill = new SkillCureModel { CurePotency = -req.DamageOrCureValue };
-            _logicService.CastSkill(battle, casterModel, targetModel, skill);
+            _battleService.CastSkill(battle, casterModel, targetModel, skill);
         }
 
         targetSync.ServerSetHealth(targetModel.Health);
