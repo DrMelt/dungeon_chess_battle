@@ -161,6 +161,20 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     #region Helpers
 
+    /// <summary>
+    /// 请求服务端创建房间。
+    /// </summary>
+    public void RequestCreateRoom(string roomId) {
+        SendCommand(new { type = "create_room", roomId });
+    }
+
+    /// <summary>
+    /// 请求加入已有房间。
+    /// </summary>
+    public void RequestJoinRoom(string roomId) {
+        SendCommand(new { type = "join_room", roomId });
+    }
+
     private void SendCommand(object command) {
         if (_serverPeer == null)
             return;

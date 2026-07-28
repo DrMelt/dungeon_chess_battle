@@ -140,6 +140,12 @@ public class GameServer {
             string? type = root.GetProperty("type").GetString();
 
             switch (type) {
+                case "create_room":
+                    HandleCreateRoom(root);
+                    break;
+                case "join_room":
+                    HandleJoinRoom(root);
+                    break;
                 case "start_battle":
                     HandleStartBattle(root);
                     break;
@@ -181,6 +187,37 @@ public class GameServer {
                 }
             }
         };
+    }
+
+    private void HandleCreateRoom(JsonElement root) {
+        string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
+        if (string.IsNullOrWhiteSpace(roomId)) {
+            Console.WriteLine("[Game] create_room: roomId is required.");
+            return;
+        }
+
+        if (_lobby.Rooms.ContainsKey(roomId)) {
+            Console.WriteLine($"[Game] Room '{roomId}' already exists.");
+            return;
+        }
+
+        _lobby.CreateRoomEntity(roomId);
+        Console.WriteLine($"[Game] Room '{roomId}' created.");
+    }
+
+    private void HandleJoinRoom(JsonElement root) {
+        string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
+        if (string.IsNullOrWhiteSpace(roomId)) {
+            Console.WriteLine("[Game] join_room: roomId is required.");
+            return;
+        }
+
+        if (!_lobby.Rooms.ContainsKey(roomId)) {
+            _lobby.CreateRoomEntity(roomId);
+        }
+
+        // TODO: 创建 PlayerRoomEntity 关联该玩家到房间
+        Console.WriteLine($"[Game] Client joined room '{roomId}'.");
     }
 
     private void HandleStartBattle(JsonElement root) {
