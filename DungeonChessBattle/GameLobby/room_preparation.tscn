@@ -62,6 +62,14 @@ grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("1_vmdyc")
 _unitCardScene = ExtResource("2_wj6uy")
+_roomNameLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/RoomNameLabel")
+_statusLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/StatusLabel")
+_unitCardGrid = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/ScrollContainer/UnitCardGrid")
+_campAButton = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox/CampAButton")
+_campBButton = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox/CampBButton")
+_campAListLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampAListLabel")
+_campBListLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampBListLabel")
+_startBattleButton = NodePath("Panel/MarginContainer/VBoxContainer/StartBattleButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445033]
 layout_mode = 1

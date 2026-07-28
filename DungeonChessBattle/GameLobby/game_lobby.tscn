@@ -66,6 +66,12 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_bw6yo")
 _roomInfoScene = ExtResource("2_wj6uy")
+_roomNameInput = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
+_createButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
+_refreshButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
+_joinButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
+_detailLabel = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/DetailLabel")
+_roomListContainer = NodePath("BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445032]
 layout_mode = 1
