@@ -242,12 +242,20 @@ public partial class UnitState : Resource, IUnitState {
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 
+    private BattleServiceProvider? _battleServiceProvider;
+
+    /// <summary>
+    /// 设置战斗服务提供者实例，由 Godot 场景初始化时调用。
+    /// </summary>
+    public void SetBattleServiceProvider(BattleServiceProvider? provider) {
+        _battleServiceProvider = provider;
+    }
+
     public void UpdateBuffList(double deltaTime) {
-        // 通过统一战斗服务更新 Buff（支持本地/网络双模式）
-        if (BattleServiceProvider.IsInitialized) {
+        if (_battleServiceProvider != null) {
             // roomId 当前不可用（UnitState 层缺少房间上下文），
             // 但 IClientBattleService.UpdateBuffs 的两个实现均忽略 roomId 参数。
-            BattleServiceProvider.ClientService.UpdateBuffs("", [EnsureSynced()], deltaTime);
+            _battleServiceProvider.ClientService.UpdateBuffs("", [EnsureSynced()], deltaTime);
         }
         else {
             EnsureSynced().UpdateBuffList(deltaTime);

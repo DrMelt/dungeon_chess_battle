@@ -7,13 +7,17 @@ using DungeonChessBattle.GameConfig.Data;
 namespace DungeonChessBattle.GameConfig;
 
 /// <summary>
-/// 纯 C# 静态配置数据库，数值对齐客户端 .tres 资源文件。
+/// 纯 C# 配置数据库，数值对齐客户端 .tres 资源文件。
 /// Server 和 Client 直接引用，零反射，编译期类型安全。
+/// 通过 IGameConfigDB 接口解耦，消费者可选注入。
 /// </summary>
-public static class GameConfigDB {
-    // ── Buffs ──
-    // Buffs 放在 Skills 前面，让 Skills 初始化时编译器流分析能确认 BuffConfig 非 null
+public class GameConfigDB : IGameConfigDB {
+    /// <summary>
+    /// 全局单例，Godot 脚本通过静态属性访问。
+    /// </summary>
+    public static readonly GameConfigDB Instance = new();
 
+    // Buffs 放在 Skills 前面，让 Skills 初始化时编译器流分析能确认 BuffConfig 非 null
     public static BuffDOTConfig BuffDotMagic {
         get;
     } = new() {
@@ -40,8 +44,7 @@ public static class GameConfigDB {
         HealthPerSec = 100.0f,
     };
 
-    // ── Skills ──
-
+    // Skills
     public static SkillDamageConfig SkillMagicDamage {
         get;
     } = new() {
@@ -105,8 +108,7 @@ public static class GameConfigDB {
         },
     };
 
-    // ── Units ──
-
+    // Units
     public static UnitConfig UnitWhiteMage {
         get;
     } = new() {
@@ -118,7 +120,8 @@ public static class GameConfigDB {
         MagicAttackBase = 1.0f,
         MagicTakePercent = 1.0f,
         BaseSpeed = 2.0f,
-        Skills = [
+        Skills =
+        [
             SkillAddHot,
             SkillCure,
             SkillAddDotMagic,
@@ -126,6 +129,24 @@ public static class GameConfigDB {
             SkillRectRangeDamage,
         ],
     };
+
+    // ── IGameConfigDB 显式实现，将调用委托给静态属性 ──
+
+    BuffDOTConfig IGameConfigDB.BuffDotMagic => BuffDotMagic;
+    BuffDOTConfig IGameConfigDB.BuffDotPhyscial => BuffDotPhyscial;
+    BuffHOTConfig IGameConfigDB.BuffHot => BuffHot;
+    SkillDamageConfig IGameConfigDB.SkillMagicDamage => SkillMagicDamage;
+    SkillCureConfig IGameConfigDB.SkillCure => SkillCure;
+    SkillAddBuffConfig IGameConfigDB.SkillAddDotMagic => SkillAddDotMagic;
+    SkillAddBuffConfig IGameConfigDB.SkillAddHot => SkillAddHot;
+    SkillRangeDamageConfig IGameConfigDB.SkillRectRangeDamage => SkillRectRangeDamage;
+    UnitConfig IGameConfigDB.UnitWhiteMage => UnitWhiteMage;
+
+    UnitModel IGameConfigDB.ToUnitModel(UnitConfig config) => ToUnitModel(config);
+    SkillModel IGameConfigDB.ToSkillModel(SkillConfig config) => ToSkillModel(config);
+    BuffModel IGameConfigDB.ToBuffModel(BuffConfig config) => ToBuffModel(config);
+
+    // ── 配置 → 运行时 Model 转换 ──
 
     public static UnitModel ToUnitModel(UnitConfig config) {
         ArgumentNullException.ThrowIfNull(config);
@@ -141,8 +162,6 @@ public static class GameConfigDB {
             BaseSpeed = config.BaseSpeed,
         };
     }
-
-    // ── 配置 → 运行时 Model 转换 ──
 
     public static SkillModel ToSkillModel(SkillConfig config) {
         ArgumentNullException.ThrowIfNull(config);
