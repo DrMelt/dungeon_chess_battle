@@ -5,22 +5,16 @@
 [ext_resource type="Script" uid="uid://cemq48f6igjuw" path="res://pre_demo/scenes/scripts/UnitsInScene_Show.cs" id="3_4e7mo"]
 [ext_resource type="Script" uid="uid://di6j8qxbvrjrl" path="res://pre_demo/scenes/EffectHints.cs" id="3_eaknj"]
 [ext_resource type="Script" uid="uid://cf63l72ki40bk" path="res://pre_demo/scenes/scripts/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
-[ext_resource type="Script" uid="uid://rjo6avxmq6cv" path="res://pre_demo/unit_object/UnitShowArea3D.cs" id="4_dowf7"]
 [ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://pre_demo/scenes/scripts/FocusOnOutline.cs" id="4_qxep0"]
 [ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://ui_units/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
-[ext_resource type="PackedScene" uid="uid://d1rr6kvqu3yv1" path="res://pre_demo/unit_object/unit_show.tscn" id="5_d8uwn"]
-[ext_resource type="Resource" uid="uid://ds5coc6n2poc4" path="res://pre_demo/unit_object/res_state_white_mage.tres" id="6_4e7mo"]
 [ext_resource type="Script" uid="uid://d207ua7c16i65" path="res://pre_demo/scenes/DungeonEnv.cs" id="7_dowf7"]
-[ext_resource type="FontFile" uid="uid://m3wiseb8garp" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Medium.ttf" id="10_d8uwn"]
 [ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
 [ext_resource type="Script" uid="uid://byoc2mg3gg4u4" path="res://pre_demo/scenes/scripts/Node2d_UserUI.cs" id="11_4e7mo"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="11_34gv2"]
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
-[ext_resource type="Script" uid="uid://bwroov12ay0pv" path="res://GameAssets/Unit/scripts/UnitState.cs" id="12_u3fd7"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
-[ext_resource type="Script" uid="uid://c8o2rtyvqktdg" path="res://pre_demo/scenes/TestInit.cs" id="13_eaknj"]
-[ext_resource type="Script" uid="uid://df7q4ovcrbmh1" path="res://GameAssets/TimeTable/MotionTimeTable.cs" id="13_uvuxq"]
-[ext_resource type="PackedScene" uid="uid://b4otb14bf2txn" path="res://pre_demo/scenes/start_point_area.tscn" id="14_cact4"]
+[ext_resource type="Script" uid="uid://b816warn7v4d2" path="res://GameAssets/Scene/CampStartPoints.cs" id="13_c4mp"]
+[ext_resource type="Script" uid="uid://bxb8q5r6yagve" path="res://GameLobby/BattleSceneInitializer.cs" id="13_init"]
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://ui_units/state_info/took_damage_info.tscn" id="14_roldv"]
 [ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
 [ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://ui_units/state_bar/state_bar_mark/StateBarMark.cs" id="19_ctxme"]
@@ -31,6 +25,7 @@
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/game_lobby.tscn" id="30_42c4a"]
+[ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GameLobby/room_preparation.tscn" id="31_room"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -61,132 +56,11 @@ albedo_color = Color(0.329158, 0.329158, 0.329158, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_uq67j"]
 size = Vector3(2, 0.2, 2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qxep0"]
-specular_mode = 2
-albedo_color = Color(0.136826, 0.136826, 0.136826, 1)
-emission_enabled = true
-emission = Color(0.30099648, 0.7181901, 0.4623322, 1)
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_0gsne"]
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_roldv"]
-
-[sub_resource type="Resource" id="Resource_qxep0"]
-script = ExtResource("13_uvuxq")
-
-[sub_resource type="Resource" id="Resource_eaknj"]
-script = ExtResource("12_u3fd7")
-_UnitStateName = "胶囊形怪物"
-_skillsList = null
-_camp = 2
-motionTimeTable = SubResource("Resource_qxep0")
-_hates = Dictionary[String, float]({})
-metadata/_custom_type_script = "uid://bwroov12ay0pv"
-
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
 render_priority = 0
 shader = ExtResource("2_uq67j")
 shader_parameter/outline_color = Color(0.97, 0.891915, 0.7469, 1)
 shader_parameter/outline_width = 0.002
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d8uwn"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.1, 0.1, 0.1, 0.3)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k83qp"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(1, 1, 1, 0.776471)
-draw_center = false
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-expand_margin_left = 2.0
-expand_margin_top = 2.0
-expand_margin_right = 2.0
-expand_margin_bottom = 2.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i4iy5"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.94, 0.94, 0.94, 0.6)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4e7mo"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.1, 0.1, 0.1, 0.6)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u3fd7"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(1, 0.9375, 0.75, 0.878431)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eaknj"]
-
-[sub_resource type="Theme" id="Theme_117wx"]
-default_font = ExtResource("10_d8uwn")
-BoxContainer/constants/separation = 4
-Button/colors/font_color = Color(0.875, 0.875, 0.875, 1)
-Button/colors/font_disabled_color = Color(0.875, 0.875, 0.875, 0.5)
-Button/colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
-Button/colors/font_hover_color = Color(0.95, 0.95, 0.95, 1)
-Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
-Button/colors/font_outline_color = Color(0, 0, 0, 1)
-Button/colors/font_pressed_color = Color(1, 1, 1, 1)
-Button/colors/icon_disabled_color = Color(1, 1, 1, 0.4)
-Button/colors/icon_focus_color = Color(1, 1, 1, 1)
-Button/colors/icon_hover_color = Color(1, 1, 1, 1)
-Button/colors/icon_hover_pressed_color = Color(1, 1, 1, 1)
-Button/colors/icon_normal_color = Color(1, 1, 1, 1)
-Button/colors/icon_pressed_color = Color(1, 1, 1, 1)
-Button/constants/align_to_largest_stylebox = 0
-Button/constants/h_separation = 4
-Button/constants/icon_max_width = 0
-Button/constants/outline_size = 0
-Button/font_sizes/font_size = 16
-Button/styles/disabled = SubResource("StyleBoxFlat_d8uwn")
-Button/styles/focus = SubResource("StyleBoxFlat_k83qp")
-Button/styles/hover = SubResource("StyleBoxFlat_i4iy5")
-Button/styles/normal = SubResource("StyleBoxFlat_4e7mo")
-Button/styles/pressed = SubResource("StyleBoxFlat_u3fd7")
-ProgressBar/styles/fill = SubResource("StyleBoxFlat_eaknj")
 
 [sub_resource type="LabelSettings" id="LabelSettings_uvuxq"]
 font_size = 24
@@ -198,9 +72,14 @@ font_size = 24
 [node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005]
 script = ExtResource("7_dowf7")
 
-[node name="StartPointArea" parent="Env/DungeonEnv" unique_id=1333730891 instance=ExtResource("14_cact4")]
+[node name="CampStartPoint_A" type="Node3D" parent="Env/DungeonEnv" unique_id=1333730891]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13)
-startPointRadius = 4.0
+script = ExtResource("13_c4mp")
+
+[node name="CampStartPoint_B" type="Node3D" parent="Env/DungeonEnv" unique_id=1333730892]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13)
+script = ExtResource("13_c4mp")
+_camp = 2
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env/DungeonEnv" unique_id=2066106198]
 transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
@@ -231,47 +110,6 @@ shape = SubResource("BoxShape3D_uq67j")
 
 [node name="UnitsInScene_Show" type="Node" parent="." unique_id=1868664178]
 script = ExtResource("3_4e7mo")
-
-[node name="WhiteMage" parent="UnitsInScene_Show" unique_id=361641365 node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
-unitStateRec = ExtResource("6_4e7mo")
-unitMeshInstanceRef = NodePath("MeshInstance3D_Mesh")
-
-[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/WhiteMage" unique_id=411386797]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-layers = 1024
-material_override = SubResource("StandardMaterial3D_qxep0")
-gi_mode = 2
-mesh = SubResource("CapsuleMesh_0gsne")
-
-[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/WhiteMage/MeshInstance3D_Mesh" unique_id=405233089 node_paths=PackedStringArray("unitShowRef")]
-collision_layer = 1024
-collision_mask = 0
-script = ExtResource("4_dowf7")
-unitShowRef = NodePath("../..")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/WhiteMage/MeshInstance3D_Mesh/Area3D" unique_id=859431125]
-shape = SubResource("CapsuleShape3D_roldv")
-
-[node name="Monster" parent="UnitsInScene_Show" unique_id=853076788 node_paths=PackedStringArray("unitMeshInstanceRef") instance=ExtResource("5_d8uwn")]
-transform = Transform3D(0.0169289, 0, -0.999857, 0, 1, 0, 0.999857, 0, 0.0169289, -3, 0, -1)
-unitStateRec = SubResource("Resource_eaknj")
-unitMeshInstanceRef = NodePath("MeshInstance3D_Mesh")
-
-[node name="MeshInstance3D_Mesh" type="MeshInstance3D" parent="UnitsInScene_Show/Monster" unique_id=132553483]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-layers = 1024
-gi_mode = 2
-mesh = SubResource("CapsuleMesh_0gsne")
-
-[node name="Area3D" type="Area3D" parent="UnitsInScene_Show/Monster/MeshInstance3D_Mesh" unique_id=477523017 node_paths=PackedStringArray("unitShowRef")]
-collision_layer = 1024
-collision_mask = 0
-script = ExtResource("4_dowf7")
-unitShowRef = NodePath("../..")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="UnitsInScene_Show/Monster/MeshInstance3D_Mesh/Area3D" unique_id=341407173]
-shape = SubResource("CapsuleShape3D_roldv")
 
 [node name="Camera3D_UserCamera" type="Camera3D" parent="." unique_id=1696345154]
 transform = Transform3D(1.0000001, 0, 0, 0, -4.3711385e-08, 1, 0, -0.99999994, -4.371139e-08, 0, 10, 0)
@@ -321,7 +159,6 @@ collide_with_areas = true
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
-theme = SubResource("Theme_117wx")
 script = ExtResource("11_4e7mo")
 userInterfaceRes = ExtResource("11_34gv2")
 unitsInGameRef = NodePath("../../UnitsInScene_Show")
@@ -388,7 +225,11 @@ anchor_top = 0.1
 anchor_right = 0.9
 anchor_bottom = 0.9
 
-[node name="Test_Init" type="Node" parent="." unique_id=1410018374 node_paths=PackedStringArray("unitsInScene_Show", "startPointAreaRef")]
-script = ExtResource("13_eaknj")
-unitsInScene_Show = NodePath("../UnitsInScene_Show")
-startPointAreaRef = NodePath("../Env/DungeonEnv/StartPointArea")
+[node name="RoomPreparation" parent="Interface" unique_id=416023587 instance=ExtResource("31_room")]
+
+[node name="BattleSceneInitializer" type="Node" parent="." unique_id=1410018375 node_paths=PackedStringArray("_gameLobby", "_unitsInSceneShow", "_campAStartPoint", "_campBStartPoint")]
+script = ExtResource("13_init")
+_gameLobby = NodePath("../Interface/GameLobby")
+_unitsInSceneShow = NodePath("../UnitsInScene_Show")
+_campAStartPoint = NodePath("../Env/DungeonEnv/CampStartPoint_A")
+_campBStartPoint = NodePath("../Env/DungeonEnv/CampStartPoint_B")

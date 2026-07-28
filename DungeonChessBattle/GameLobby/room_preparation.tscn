@@ -1,0 +1,183 @@
+[gd_scene format=3 uid="uid://c2kcy1t1hqkxp"]
+
+[ext_resource type="Script" uid="uid://5edbbd7o8yn" path="res://GameLobby/RoomPreparation.cs" id="1_vmdyc"]
+[ext_resource type="PackedScene" uid="uid://c7y2xepb38dhx" path="res://GameLobby/unit_select_card.tscn" id="2_wj6uy"]
+[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_ghvhs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
+bg_color = Color(0.25, 0.25, 0.25, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
+bg_color = Color(0.15, 0.15, 0.15, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.35, 0.35, 0.35, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_button"]
+bg_color = Color(0.15, 0.55, 0.15, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="RoomPreparation" type="Control" unique_id=416023587]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_vmdyc")
+_unitCardScene = ExtResource("2_wj6uy")
+
+[node name="Panel" type="Panel" parent="." unique_id=690445033]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_top = 0.05
+anchor_right = 0.95
+anchor_bottom = 0.95
+mouse_filter = 1
+theme_override_styles/panel = ExtResource("3_ghvhs")
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=391204852]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=715294105]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MainHSplit" type="HSplitContainer" parent="Panel/MarginContainer/VBoxContainer" unique_id=1532738878]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="TopVBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit" unique_id=122334620]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.55
+theme_override_constants/separation = 8
+
+[node name="RoomNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=482913754]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 20
+text = "房间: ----"
+horizontal_alignment = 1
+
+[node name="CampHBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=813572941]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CampAButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox" unique_id=359128477]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+toggle_mode = true
+text = "阵营 A"
+
+[node name="CampBButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox" unique_id=582741640]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+toggle_mode = true
+text = "阵营 B"
+
+[node name="StatusLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=593841209]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "请选择单位..."
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=1793043364]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UnitCardGrid" type="GridContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/ScrollContainer" unique_id=1840921332]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 3
+
+[node name="CampListVBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit" unique_id=760293416]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="CampAListLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox" unique_id=875123401]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.30972582, 0.0007766378, 0.8705095, 1)
+theme_override_font_sizes/font_size = 13
+text = "阵营 A:
+(空)"
+vertical_alignment = 1
+
+[node name="CampBListLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox" unique_id=875123402]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.83457875, 0, 0.21227127, 1)
+theme_override_font_sizes/font_size = 13
+text = "阵营 B:
+(空)"
+vertical_alignment = 1
+
+[node name="StartBattleButton" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=481936521]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_start_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "开始战斗"

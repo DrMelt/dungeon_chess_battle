@@ -69,9 +69,9 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
         var room = new GameRoom(roomId);
         foreach (var u in units) {
             var model = BuildModelFromSync(u);
-            if (u.Camp.Value == 1)
+            if (u.Camp.Value == (byte)Core.Enums.EnumCamp.Camp_A)
                 room.UnitsA.Add(model);
-            if (u.Camp.Value == 2)
+            if (u.Camp.Value == (byte)Core.Enums.EnumCamp.Camp_B)
                 room.UnitsB.Add(model);
         }
         return room;
@@ -79,6 +79,25 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     public IEnumerable<GameRoom> GetAllRooms()
         => _rooms.Keys.Select(id => GetRoom(id)!).Where(r => r != null);
+
+    public GameRoom CreateRoom(string roomId) {
+        RequestCreateRoom(roomId);
+        // 本地缓存一个临时房间对象
+        var room = new GameRoom(roomId);
+        if (!_rooms.ContainsKey(roomId)) {
+            _rooms[roomId] = null!; // 等待服务器同步实体
+            _roomUnits[roomId] = [];
+        }
+        return room;
+    }
+
+    public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
+        // 网络模式下通过服务器创建单位
+        SendCommand(new { type = "create_unit", roomId, unitName, camp });
+        // 返回临时模型（服务器会通过 Entity 同步正式数据）
+        var model = new DungeonChessBattle.Core.Models.UnitModel { UnitStateName = unitName, Camp = (DungeonChessBattle.Core.Enums.EnumCamp)camp };
+        return model;
+    }
 
     public void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
         IReadOnlyList<IUnitState>? allUnits = null) {

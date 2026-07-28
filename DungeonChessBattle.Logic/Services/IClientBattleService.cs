@@ -8,9 +8,11 @@ namespace DungeonChessBattle.Logic.Services;
 /// 所有方法使用 roomId 作为上下文标识，不暴露 BattleManager。
 /// </summary>
 public interface IClientBattleService {
-    // 房间查询
+    // 房间管理
     GameRoom? GetRoom(string roomId);
     IEnumerable<GameRoom> GetAllRooms();
+    GameRoom CreateRoom(string roomId);
+    IUnitState CreateUnit(string roomId, string unitName, byte camp);
 
     // 技能（客户端发起）
     void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,

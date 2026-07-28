@@ -3,6 +3,7 @@ namespace DungeonChessBattle.Core.Enums;
 public enum EnumCamp {
     None = 0,
     Camp_A,
+    Camp_B,
     Camp_BOSS,
     EnumCampLength,
 }

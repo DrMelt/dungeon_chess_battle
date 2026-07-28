@@ -12,6 +12,22 @@ namespace DungeonChessBattle;
 /// 服务通过 SetClientService 注入，若未注入则自动以 Local 模式启动。
 /// </summary>
 public partial class GameLobby : Control {
+    #region Signals
+
+    /// <summary>
+    /// 玩家进入房间时触发（创建或加入）。
+    /// </summary>
+    [Signal]
+    public delegate void RoomEnteredEventHandler(string roomId);
+
+    /// <summary>
+    /// 战斗开始（从准备界面发起的请求）。
+    /// </summary>
+    [Signal]
+    public delegate void BattleStartedEventHandler(string roomId);
+
+    #endregion
+
     #region Exported Node References
 
     [Export] private LineEdit _roomNameInput = null!;
@@ -28,6 +44,11 @@ public partial class GameLobby : Control {
 
     private IClientBattleService? _clientService;
     private NetworkBattleClient? _networkClient;
+
+    /// <summary>
+    /// 公开服务实例，供 BattleSceneInitializer 等外部组件获取。
+    /// </summary>
+    public IClientBattleService? ClientService => _clientService;
 
     #endregion
 
@@ -106,6 +127,25 @@ public partial class GameLobby : Control {
         }
 
         _roomNameInput?.Clear();
+
+        // 本地模式：创建后直接进入房间准备
+        if (_clientService is GameLogicService) {
+            EmitSignal(SignalName.RoomEntered, roomName);
+        }
+    }
+
+    /// <summary>
+    /// 公开方法：开始战斗。由 RoomPreparation 调用。
+    /// </summary>
+    public void StartBattle(string roomId) {
+        if (_clientService == null) {
+            GD.PrintErr("[GameLobby] Cannot start battle: no service.");
+            return;
+        }
+
+        Visible = false;
+        EmitSignal(SignalName.BattleStarted, roomId);
+        GD.Print($"[GameLobby] Battle started for room: {roomId}");
     }
 
     private void OnJoinRoom() {

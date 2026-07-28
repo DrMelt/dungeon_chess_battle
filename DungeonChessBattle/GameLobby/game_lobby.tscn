@@ -2,18 +2,7 @@
 
 [ext_resource type="Script" uid="uid://jtnsqftuhx74" path="res://GameLobby/GameLobby.cs" id="1_bw6yo"]
 [ext_resource type="PackedScene" uid="uid://dmgtnoig1aqc3" path="res://GameLobby/room_info.tscn" id="2_wj6uy"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wj6uy"]
-bg_color = Color(0.7330056, 0.7330054, 0.7330051, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
+[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_m741o"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
 bg_color = Color(0.25, 0.25, 0.25, 0.8)
@@ -76,12 +65,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_bw6yo")
-_roomNameInput = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
-_createButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
-_refreshButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
-_joinButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
-_detailLabel = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/DetailLabel")
-_roomListContainer = NodePath("BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
 _roomInfoScene = ExtResource("2_wj6uy")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445032]
@@ -92,7 +75,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-theme_override_styles/panel = SubResource("StyleBoxFlat_wj6uy")
+theme_override_styles/panel = ExtResource("3_m741o")
 
 [node name="BoxContainer" type="BoxContainer" parent="." unique_id=1532738877]
 layout_mode = 1

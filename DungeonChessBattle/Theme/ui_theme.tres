@@ -1,0 +1,6 @@
+[gd_resource type="Theme" format=3 uid="uid://ckondj30v66jg"]
+
+[ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="1_ry2yv"]
+
+[resource]
+default_font = ExtResource("1_ry2yv")
