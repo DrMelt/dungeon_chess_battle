@@ -22,6 +22,7 @@ public class RectRangeRes : IRangeRes {
             NearClamp,
             FarClamp,
             FromL,
-            ToR);
+            ToR,
+            bodyRadius: testObject.BodyRadius);
     }
 }

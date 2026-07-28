@@ -22,6 +22,7 @@ public class CircularRangeRes : IRangeRes {
             NearClamp,
             FarClamp,
             RadianFrom,
-            RadianTo);
+            RadianTo,
+            bodyRadius: testObject.BodyRadius);
     }
 }
