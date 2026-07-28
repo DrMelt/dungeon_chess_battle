@@ -30,6 +30,7 @@
 [ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
+[ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/game_lobby.tscn" id="30_42c4a"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -378,6 +379,14 @@ offset_left = 841.0
 offset_top = 514.0
 offset_right = 1148.0
 offset_bottom = 638.0
+
+[node name="GameLobby" parent="Interface" unique_id=307770633 instance=ExtResource("30_42c4a")]
+custom_minimum_size = Vector2(600, 300)
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.1
+anchor_right = 0.9
+anchor_bottom = 0.9
 
 [node name="Test_Init" type="Node" parent="." unique_id=1410018374 node_paths=PackedStringArray("unitsInScene_Show", "startPointAreaRef")]
 script = ExtResource("13_eaknj")

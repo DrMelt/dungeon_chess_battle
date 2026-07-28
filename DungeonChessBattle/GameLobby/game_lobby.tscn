@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://blik1l1wwmd5u"]
+
+[ext_resource type="Script" uid="uid://jtnsqftuhx74" path="res://GameLobby/GameLobby.cs" id="1_bw6yo"]
+[ext_resource type="PackedScene" uid="uid://dmgtnoig1aqc3" path="res://GameLobby/room_info.tscn" id="2_wj6uy"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wj6uy"]
+bg_color = Color(0.7330056, 0.7330054, 0.7330051, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m741o"]
+draw_center = false
+border_width_left = 2
+border_color = Color(0, 0, 0, 1)
+
+[node name="GameLobby" type="Control" unique_id=307770633]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bw6yo")
+
+[node name="Panel" type="Panel" parent="." unique_id=690445032]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wj6uy")
+
+[node name="BoxContainer" type="BoxContainer" parent="." unique_id=1532738877]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelLeft" type="Control" parent="BoxContainer" unique_id=122334619]
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.21
+
+[node name="PanelRight" type="Control" parent="BoxContainer" unique_id=1773130451]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="BoxContainer/PanelRight" unique_id=626718012]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 21
+theme_override_constants/margin_bottom = 5
+
+[node name="Panel" type="Panel" parent="BoxContainer/PanelRight/MarginContainer" unique_id=493276580]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_m741o")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="BoxContainer/PanelRight/MarginContainer" unique_id=1793043363]
+layout_mode = 2
+
+[node name="BoxContainer" type="BoxContainer" parent="BoxContainer/PanelRight/MarginContainer/ScrollContainer" unique_id=1840921331]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical = true
+
+[node name="RoomInfo" parent="BoxContainer/PanelRight/MarginContainer/ScrollContainer/BoxContainer" unique_id=1163350972 instance=ExtResource("2_wj6uy")]
+layout_mode = 2
+
+[node name="RoomInfo2" parent="BoxContainer/PanelRight/MarginContainer/ScrollContainer/BoxContainer" unique_id=1438811229 instance=ExtResource("2_wj6uy")]
+layout_mode = 2
