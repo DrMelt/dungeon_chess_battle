@@ -6,6 +6,9 @@ namespace DungeonChessBattle.Core.Interfaces {
         Vector3 Position {
             get;
         }
+        float BodyRadius {
+            get;
+        }
         EnumCamp Camp {
             get;
         }
