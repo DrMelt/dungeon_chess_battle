@@ -43,10 +43,10 @@ public class GameServer {
         UnitSyncEntity.SkillCastRequested += OnSkillCastRequested;
     }
 
-    public void StartAsync() {
+    public void StartAsync(int port = 9050) {
         if (_running)
             return;
-        _networkServer.Start();
+        _networkServer.Start(port);
         _running = true;
         _lastTickTime = _tickWatch.Elapsed.TotalSeconds;
 

@@ -9,5 +9,6 @@
     <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Server\DungeonChessBattle.Server.csproj" />
   </ItemGroup>
 </Project>

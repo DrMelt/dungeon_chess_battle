@@ -19,6 +19,10 @@ public partial class MainMenuInterRefs : Node {
         get; set;
     }
     [Export]
+    public Button? ServerManageButton {
+        get; set;
+    }
+    [Export]
     public Label? StatusLabel {
         get; set;
     }

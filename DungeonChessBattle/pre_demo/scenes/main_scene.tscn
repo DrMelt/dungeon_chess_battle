@@ -23,9 +23,9 @@
 [ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
-[ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/GameLobby/game_lobby.tscn" id="30_42c4a"]
-[ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GameLobby/RoomPreparation/room_preparation.tscn" id="31_room"]
-[ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GameLobby/MainMenu/main_menu.tscn" id="32_menu"]
+[ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="30_42c4a"]
+[ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
+[ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 

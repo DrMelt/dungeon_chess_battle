@@ -16,13 +16,19 @@ public partial class MainMenu : Control {
     private MainMenuInterRefs? _interRefs;
     private NetworkBattleClient? _networkClient;
     private GameLobby? _gameLobby;
+    private ServerManagementPanel? _serverMgmtPanel;
 
     #endregion
 
-    private const int DefaultPort = 10170;
+    private const int DefaultPort = 9050;
+
+    private PackedScene? _serverMgmtScene;
 
     public override void _Ready() {
         _interRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
+
+        // 加载服务器管理面板场景
+        _serverMgmtScene = GD.Load<PackedScene>("res://GamePanels/ServerManagement/server_management_panel.tscn");
 
         // 查找同级 GameLobby 节点
         _gameLobby = GetParent()?.GetNode<GameLobby>("GameLobby");
@@ -30,6 +36,9 @@ public partial class MainMenu : Control {
         // 连接按钮
         if (_interRefs?.ConnectButton is not null)
             _interRefs.ConnectButton.Pressed += OnConnectPressed;
+
+        if (_interRefs?.ServerManageButton is not null)
+            _interRefs.ServerManageButton.Pressed += OnServerManagePressed;
 
         // 初始隐藏 GameLobby，显示自身
         if (_gameLobby is not null)
@@ -78,6 +87,20 @@ public partial class MainMenu : Control {
                 _interRefs.ConnectButton.Disabled = false;
             GD.PrintErr($"[MainMenu] Connection failed: {ex.Message}");
         }
+    }
+
+    private void OnServerManagePressed() {
+        if (_serverMgmtScene == null)
+            return;
+
+        // 如果已有面板实例则复用，否则创建
+        if (_serverMgmtPanel == null) {
+            _serverMgmtPanel = _serverMgmtScene.Instantiate<ServerManagementPanel>();
+            // 挂到 Interface 节点下（MainMenu 的父节点）
+            GetParent()?.AddChild(_serverMgmtPanel);
+        }
+
+        _serverMgmtPanel.Visible = true;
     }
 
     #endregion

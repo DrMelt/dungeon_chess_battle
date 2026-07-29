@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c7y2xepb38dhx"]
 
-[ext_resource type="Script" uid="uid://bxjma1nkp7efg" path="res://GameLobby/UnitSelectCard/UnitSelectCard.cs" id="1_vmdyc"]
+[ext_resource type="Script" uid="uid://bxjma1nkp7efg" path="res://GamePanels/UnitSelectCard/UnitSelectCard.cs" id="1_vmdyc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 bg_color = Color(0.25, 0.25, 0.25, 0.8)

@@ -1,11 +1,23 @@
 [gd_scene format=3 uid="uid://bhsb7emplg5s"]
 
-[ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GameLobby/MainMenu/MainMenu.cs" id="1_main"]
-[ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GameLobby/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
+[ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GamePanels/MainMenu/MainMenu.cs" id="1_main"]
+[ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GamePanels/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_connect_button"]
 bg_color = Color(0.15, 0.45, 0.65, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_server_manage_button"]
+bg_color = Color(0.4, 0.35, 0.15, 0.85)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -55,6 +67,7 @@ script = ExtResource("2_irfs")
 HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
 PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")
 ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
+ServerManageButton = NodePath("../CenterContainer/VBoxContainer/ServerManageButton")
 StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
 
 [node name="Panel" type="Panel" parent="." unique_id=133359487]
@@ -115,7 +128,7 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
-text = "10170"
+text = "9050"
 placeholder_text = "端口号"
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2004157917]
@@ -132,6 +145,21 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_connect_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "连接服务器"
+
+[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2987654321]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="ServerManageButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=3876542109]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_server_manage_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "🔧 服务器管理"
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
 layout_mode = 2
