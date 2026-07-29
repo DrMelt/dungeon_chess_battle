@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://bhsb7emplg5s"]
 
+[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_8vrlr"]
 [ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GamePanels/MainMenu/MainMenu.cs" id="1_main"]
 [ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GamePanels/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
@@ -60,6 +61,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("1_8vrlr")
 script = ExtResource("1_main")
 
 [node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871]

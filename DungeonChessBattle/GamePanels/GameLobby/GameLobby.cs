@@ -11,7 +11,7 @@ namespace DungeonChessBattle;
 /// 游戏大厅主控脚本，负责房间列表展示、创建/加入房间等操作。
 /// 服务通过 SetClientService 注入，若未注入则自动以 Local 模式启动。
 /// </summary>
-public partial class GameLobby : Control {
+public partial class GameLobby : BaseGamePanel {
     #region Signals
 
     /// <summary>

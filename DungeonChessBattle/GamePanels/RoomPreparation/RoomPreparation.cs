@@ -9,7 +9,7 @@ namespace DungeonChessBattle;
 /// 房间准备界面。玩家进入房间后选择阵营单位，准备就绪后开始战斗。
 /// 通过连接 GameLobby.RoomEntered 信号自动切入准备流程。
 /// </summary>
-public partial class RoomPreparation : Control {
+public partial class RoomPreparation : BaseGamePanel {
     [Signal]
     public delegate void BattleStartRequestedEventHandler(string roomId);
 
@@ -53,10 +53,7 @@ public partial class RoomPreparation : Control {
         _roomId = roomId;
         _interRefs?.RoomNameLabel?.Text = $"房间: {roomId}";
         _interRefs?.StatusLabel?.Text = "请选择单位...";
-        Visible = true;
-
-        // 隐藏大厅
-        _lobby!.Visible = false;
+        OpenPanelFrom(_lobby);
     }
 
     private void PopulateUnitCards() {

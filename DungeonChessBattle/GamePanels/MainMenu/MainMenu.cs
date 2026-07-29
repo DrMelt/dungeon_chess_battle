@@ -7,7 +7,7 @@ namespace DungeonChessBattle;
 /// 主界面脚本，提供连接服务器功能。
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
-public partial class MainMenu : Control {
+public partial class MainMenu : BaseGamePanel {
     [Signal]
     public delegate void ServerConnectedEventHandler();
 
@@ -71,8 +71,7 @@ public partial class MainMenu : Control {
             UpdateStatus($"已连接到 {host}:{port}");
 
             // 切换界面：隐藏主菜单，显示大厅
-            Visible = false;
-            _gameLobby?.Visible = true;
+            _gameLobby?.OpenPanelFrom(this);
 
             EmitSignal(SignalName.ServerConnected);
             GD.Print($"[MainMenu] Connected to server: {host}:{port}");
@@ -96,7 +95,7 @@ public partial class MainMenu : Control {
             AddChild(_serverMgmtPanel);
         }
 
-        _serverMgmtPanel.Visible = true;
+        _serverMgmtPanel.OpenPanelFrom(this);
     }
 
     #endregion

@@ -6,7 +6,7 @@ namespace DungeonChessBattle;
 /// <summary>
 /// 服务器状态管理面板，提供启动/停止内嵌游戏服务器的功能。
 /// </summary>
-public partial class ServerManagementPanel : Control {
+public partial class ServerManagementPanel : BaseGamePanel {
     private ServerManagementPanelInterRefs? _interRefs;
     private GameServer? _server;
     private bool _serverRunning;
@@ -102,7 +102,7 @@ public partial class ServerManagementPanel : Control {
             confirm.PopupCentered();
         }
         else {
-            Visible = false;
+            ClosePanel();
         }
     }
 
@@ -157,7 +157,7 @@ public partial class ServerManagementPanel : Control {
         }
         UpdateButtonStates();
         UpdateStatus("服务器已停止");
-        Visible = false;
+        ClosePanel();
     }
 
     #endregion

@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://blik1l1wwmd5u"]
 
 [ext_resource type="Script" uid="uid://jtnsqftuhx74" path="res://GamePanels/GameLobby/GameLobby.cs" id="1_bw6yo"]
+[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_dnge3"]
 [ext_resource type="PackedScene" uid="uid://dmgtnoig1aqc3" path="res://GamePanels/RoomInfo/room_info.tscn" id="2_wj6uy"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_m741o"]
 [ext_resource type="Script" uid="uid://cafcc63d8fc11" path="res://GamePanels/GameLobby/GameLobbyInterRefs.cs" id="4_irfs"]
@@ -65,6 +66,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 
 [node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535]
