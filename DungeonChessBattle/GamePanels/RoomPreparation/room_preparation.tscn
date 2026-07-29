@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://c2kcy1t1hqkxp"]
 
+[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_n634y"]
 [ext_resource type="Script" uid="uid://5edbbd7o8yn" path="res://GamePanels/RoomPreparation/RoomPreparation.cs" id="1_vmdyc"]
 [ext_resource type="PackedScene" uid="uid://c7y2xepb38dhx" path="res://GamePanels/UnitSelectCard/unit_select_card.tscn" id="2_wj6uy"]
-[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_ghvhs"]
 [ext_resource type="Script" uid="uid://c5d647266fb6a" path="res://GamePanels/RoomPreparation/RoomPreparationInterRefs.cs" id="4_irfs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
@@ -61,6 +61,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
+theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
 [node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146]
@@ -83,7 +84,6 @@ anchor_top = 0.05
 anchor_right = 0.95
 anchor_bottom = 0.95
 mouse_filter = 1
-theme_override_styles/panel = ExtResource("3_ghvhs")
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=391204852]
 layout_mode = 1

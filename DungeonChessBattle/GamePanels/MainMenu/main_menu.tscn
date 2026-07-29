@@ -16,18 +16,6 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_server_manage_button"]
-bg_color = Color(0.4, 0.35, 0.15, 0.85)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
 bg_color = Color(0.15, 0.15, 0.15, 0.9)
 border_width_left = 2
@@ -52,6 +40,18 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_server_manage_button"]
+bg_color = Color(0.4, 0.35, 0.15, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [node name="MainMenu" type="Control" unique_id=95030102]
 layout_mode = 3
 anchors_preset = 15
@@ -64,11 +64,6 @@ script = ExtResource("1_main")
 
 [node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871]
 script = ExtResource("2_irfs")
-HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
-PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")
-ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
-ServerManageButton = NodePath("../CenterContainer/VBoxContainer/ServerManageButton")
-StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
 
 [node name="Panel" type="Panel" parent="." unique_id=133359487]
 layout_mode = 1
@@ -146,20 +141,20 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "连接服务器"
 
-[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2987654321]
+[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer" unique_id=-1307312975]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="ServerManageButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=3876542109]
+[node name="ServerManageButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=-418425187]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = SubResource("StyleBoxFlat_server_manage_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
-text = "🔧 服务器管理"
+text = "服务器管理"
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
 layout_mode = 2

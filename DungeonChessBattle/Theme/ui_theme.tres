@@ -1,6 +1,8 @@
 [gd_resource type="Theme" format=3 uid="uid://ckondj30v66jg"]
 
+[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="1_1844t"]
 [ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="1_ry2yv"]
 
 [resource]
 default_font = ExtResource("1_ry2yv")
+Panel/styles/panel = ExtResource("1_1844t")
