@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://wbwlne2vx1eh"]
+[gd_scene format=3 uid="uid://c2kcy1t1hqkxp"]
 
-[ext_resource type="Script" path="res://GameLobby/RoomPreparation.cs" id="1_vmdyc"]
-[ext_resource type="PackedScene" uid="uid://737dvqfxagkp" path="res://GameLobby/unit_select_card.tscn" id="2_wj6uy"]
+[ext_resource type="Script" uid="uid://5edbbd7o8yn" path="res://GameLobby/RoomPreparation/RoomPreparation.cs" id="1_vmdyc"]
+[ext_resource type="PackedScene" uid="uid://c7y2xepb38dhx" path="res://GameLobby/UnitSelectCard/unit_select_card.tscn" id="2_wj6uy"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_ghvhs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
@@ -62,6 +62,14 @@ grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("1_vmdyc")
 _unitCardScene = ExtResource("2_wj6uy")
+_roomNameLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/RoomNameLabel")
+_statusLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/StatusLabel")
+_unitCardGrid = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/ScrollContainer/UnitCardGrid")
+_campAButton = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox/CampAButton")
+_campBButton = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/CampHBox/CampBButton")
+_campAListLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampAListLabel")
+_campBListLabel = NodePath("Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampBListLabel")
+_startBattleButton = NodePath("Panel/MarginContainer/VBoxContainer/StartBattleButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445033]
 layout_mode = 1

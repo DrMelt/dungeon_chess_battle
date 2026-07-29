@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://bij2gumjax742"]
+[gd_scene format=3 uid="uid://blik1l1wwmd5u"]
 
-[ext_resource type="Script" path="res://GameLobby/GameLobby.cs" id="1_bw6yo"]
-[ext_resource type="PackedScene" uid="uid://5cqkf2hmkf5g" path="res://GameLobby/room_info.tscn" id="2_wj6uy"]
+[ext_resource type="Script" uid="uid://jtnsqftuhx74" path="res://GameLobby/GameLobby/GameLobby.cs" id="1_bw6yo"]
+[ext_resource type="PackedScene" uid="uid://dmgtnoig1aqc3" path="res://GameLobby/RoomInfo/room_info.tscn" id="2_wj6uy"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_m741o"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
@@ -66,6 +66,12 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_bw6yo")
 _roomInfoScene = ExtResource("2_wj6uy")
+_roomNameInput = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
+_createButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
+_refreshButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
+_joinButton = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
+_detailLabel = NodePath("BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/DetailLabel")
+_roomListContainer = NodePath("BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445032]
 layout_mode = 1

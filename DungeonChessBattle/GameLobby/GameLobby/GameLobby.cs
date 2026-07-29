@@ -46,7 +46,7 @@ public partial class GameLobby : Control {
     private NetworkBattleClient? _networkClient;
 
     /// <summary>
-    /// 公开服务实例，供 BattleSceneInitializer 等外部组件获取。
+    /// 公开服务实例，供外部组件获取。
     /// </summary>
     public IClientBattleService? ClientService => _clientService;
 

@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://5cqkf2hmkf5g"]
+[gd_scene format=3 uid="uid://dmgtnoig1aqc3"]
 
-[ext_resource type="Script" path="res://GameLobby/RoomInfo.cs" id="1_vmdyc"]
+[ext_resource type="Script" uid="uid://20ygcps2r68o" path="res://GameLobby/RoomInfo/RoomInfo.cs" id="1_vmdyc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vmdyc"]
 bg_color = Color(0.8776157, 0.8776158, 0.87761563, 1)
@@ -16,24 +16,43 @@ corner_radius_bottom_left = 3
 
 [node name="RoomInfo" type="Container" unique_id=296642957]
 custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 0
 script = ExtResource("1_vmdyc")
+_label = NodePath("MarginContainer/Label")
+_bgPanel = NodePath("MarginContainer/Panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=246050559]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
 [node name="Panel" type="Panel" parent="MarginContainer" unique_id=200373368]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
 theme_override_styles/panel = SubResource("StyleBoxFlat_vmdyc")
 
 [node name="Label" type="Label" parent="MarginContainer" unique_id=280717608]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 16

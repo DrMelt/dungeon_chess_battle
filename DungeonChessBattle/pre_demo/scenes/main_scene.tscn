@@ -14,7 +14,6 @@
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
 [ext_resource type="Script" uid="uid://b816warn7v4d2" path="res://GameAssets/Scene/CampStartPoints.cs" id="13_c4mp"]
-[ext_resource type="Script" uid="uid://bxb8q5r6yagve" path="res://GameLobby/BattleSceneInitializer.cs" id="13_init"]
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://ui_units/state_info/took_damage_info.tscn" id="14_roldv"]
 [ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
 [ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://ui_units/state_bar/state_bar_mark/StateBarMark.cs" id="19_ctxme"]
@@ -24,8 +23,8 @@
 [ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
-[ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/game_lobby.tscn" id="30_42c4a"]
-[ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GameLobby/room_preparation.tscn" id="31_room"]
+[ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/GameLobby/game_lobby.tscn" id="30_42c4a"]
+[ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GameLobby/RoomPreparation/room_preparation.tscn" id="31_room"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -226,10 +225,3 @@ anchor_right = 0.9
 anchor_bottom = 0.9
 
 [node name="RoomPreparation" parent="Interface" unique_id=416023587 instance=ExtResource("31_room")]
-
-[node name="BattleSceneInitializer" type="Node" parent="." unique_id=1410018375 node_paths=PackedStringArray("_gameLobby", "_unitsInSceneShow", "_campAStartPoint", "_campBStartPoint")]
-script = ExtResource("13_init")
-_gameLobby = NodePath("../Interface/GameLobby")
-_unitsInSceneShow = NodePath("../UnitsInScene_Show")
-_campAStartPoint = NodePath("../Env/DungeonEnv/CampStartPoint_A")
-_campBStartPoint = NodePath("../Env/DungeonEnv/CampStartPoint_B")
