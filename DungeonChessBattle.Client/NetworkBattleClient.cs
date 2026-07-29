@@ -93,7 +93,9 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
         // 网络模式下通过服务器创建单位
-        SendCommand(new { type = "create_unit", roomId, unitName, camp });
+        SendCommand(new {
+            type = "create_unit", roomId, unitName, camp
+        });
         // 返回临时模型（服务器会通过 Entity 同步正式数据）
         var model = new DungeonChessBattle.Core.Models.UnitModel { UnitStateName = unitName, Camp = (DungeonChessBattle.Core.Enums.EnumCamp)camp };
         return model;
@@ -184,14 +186,18 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     /// 请求服务端创建房间。
     /// </summary>
     public void RequestCreateRoom(string roomId) {
-        SendCommand(new { type = "create_room", roomId });
+        SendCommand(new {
+            type = "create_room", roomId
+        });
     }
 
     /// <summary>
     /// 请求加入已有房间。
     /// </summary>
     public void RequestJoinRoom(string roomId) {
-        SendCommand(new { type = "join_room", roomId });
+        SendCommand(new {
+            type = "join_room", roomId
+        });
     }
 
     private void SendCommand(object command) {

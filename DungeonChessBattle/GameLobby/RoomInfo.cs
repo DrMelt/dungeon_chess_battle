@@ -12,8 +12,8 @@ public partial class RoomInfo : Container {
     private string _roomId = "";
     private bool _isSelected;
 
-    [Export] private Label _label = null!;
-    [Export] private Panel _bgPanel = null!;
+    [Export] private Label? _label;
+    [Export] private Panel? _bgPanel;
 
     // 缓存原始背景色用于高亮切换
     private Color _normalBgColor;
@@ -23,7 +23,7 @@ public partial class RoomInfo : Container {
 
     public override void _Ready() {
         // 缓存正常背景色
-        if (_bgPanel.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_bgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             _normalBgColor = flat.BgColor;
         }
 
@@ -38,14 +38,14 @@ public partial class RoomInfo : Container {
     /// </summary>
     public void Setup(string roomId, string statusText) {
         _roomId = roomId;
-        _label.Text = $"{roomId}  [{statusText}]";
+        _label?.Text = $"{roomId}  [{statusText}]";
     }
 
     /// <summary>
     /// 更新房间状态文本。
     /// </summary>
     public void UpdateStatus(string statusText) {
-        _label.Text = $"{_roomId}  [{statusText}]";
+        _label?.Text = $"{_roomId}  [{statusText}]";
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public partial class RoomInfo : Container {
     }
 
     private void UpdateVisualState() {
-        if (_bgPanel.GetThemeStylebox("panel") is not StyleBoxFlat flat)
+        if (_bgPanel?.GetThemeStylebox("panel") is not StyleBoxFlat flat)
             return;
 
         if (_isSelected) {
@@ -81,7 +81,7 @@ public partial class RoomInfo : Container {
         if (_isSelected)
             return;
 
-        if (_bgPanel.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_bgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             flat.BgColor = _normalBgColor.Lightened(0.15f);
         }
     }

@@ -13,9 +13,9 @@ public partial class UnitSelectCard : Container {
     private string _unitDisplayName = "";
     private bool _isSelected;
 
-    [Export] private Label _nameLabel = null!;
-    [Export] private Label _statsLabel = null!;
-    [Export] private Panel _bgPanel = null!;
+    [Export] private Label? _nameLabel;
+    [Export] private Label? _statsLabel;
+    [Export] private Panel? _bgPanel;
 
     private Color _normalBgColor;
     private static readonly Color SelectedBgColor = new(0.3f, 0.6f, 1.0f, 0.7f);
@@ -23,7 +23,7 @@ public partial class UnitSelectCard : Container {
     public string UnitConfigKey => _unitConfigKey;
 
     public override void _Ready() {
-        if (_bgPanel.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_bgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             _normalBgColor = flat.BgColor;
         }
 
@@ -38,8 +38,8 @@ public partial class UnitSelectCard : Container {
     public void Setup(string configKey, string displayName, string statsText) {
         _unitConfigKey = configKey;
         _unitDisplayName = displayName;
-        _nameLabel.Text = displayName;
-        _statsLabel.Text = statsText;
+        _nameLabel?.Text = displayName;
+        _statsLabel?.Text = statsText;
     }
 
     public void SetSelected(bool selected) {
@@ -48,7 +48,7 @@ public partial class UnitSelectCard : Container {
     }
 
     private void UpdateVisualState() {
-        if (_bgPanel.GetThemeStylebox("panel") is not StyleBoxFlat flat)
+        if (_bgPanel?.GetThemeStylebox("panel") is not StyleBoxFlat flat)
             return;
 
         if (_isSelected)
@@ -70,7 +70,7 @@ public partial class UnitSelectCard : Container {
         if (_isSelected)
             return;
 
-        if (_bgPanel.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_bgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             flat.BgColor = _normalBgColor.Lightened(0.15f);
         }
     }

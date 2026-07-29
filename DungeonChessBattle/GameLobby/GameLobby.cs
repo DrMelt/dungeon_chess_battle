@@ -30,13 +30,13 @@ public partial class GameLobby : Control {
 
     #region Exported Node References
 
-    [Export] private LineEdit _roomNameInput = null!;
-    [Export] private Button _createButton = null!;
-    [Export] private Button _refreshButton = null!;
-    [Export] private Button _joinButton = null!;
-    [Export] private Label _detailLabel = null!;
-    [Export] private BoxContainer _roomListContainer = null!;
-    [Export] private PackedScene _roomInfoScene = null!;
+    [Export] private LineEdit? _roomNameInput;
+    [Export] private Button? _createButton;
+    [Export] private Button? _refreshButton;
+    [Export] private Button? _joinButton;
+    [Export] private Label? _detailLabel;
+    [Export] private BoxContainer? _roomListContainer;
+    [Export] private PackedScene? _roomInfoScene;
 
     #endregion
 
@@ -80,10 +80,12 @@ public partial class GameLobby : Control {
 
     public override void _Ready() {
         // 连接按钮信号
-        _createButton.Pressed += OnCreateRoom;
-        _refreshButton.Pressed += OnRefreshRooms;
-        _joinButton.Pressed += OnJoinRoom;
-        _joinButton.Disabled = true;
+        _createButton?.Pressed += OnCreateRoom;
+        _refreshButton?.Pressed += OnRefreshRooms;
+        if (_joinButton is not null) {
+            _joinButton.Pressed += OnJoinRoom;
+            _joinButton.Disabled = true;
+        }
 
         // 若外部未注入服务，则自动以 Local 模式备选
         if (!_isInitialized) {
@@ -210,7 +212,9 @@ public partial class GameLobby : Control {
     }
 
     private RoomInfo CreateRoomInfoCard(string roomId) {
-        var instance = _roomInfoScene!.Instantiate<RoomInfo>();
+        if (_roomInfoScene is null)
+            throw new System.InvalidOperationException("_roomInfoScene is not assigned.");
+        var instance = _roomInfoScene.Instantiate<RoomInfo>();
         instance.Setup(roomId, "等待中");
         instance.RoomSelected += OnRoomSelected;
         return instance;
@@ -242,8 +246,7 @@ public partial class GameLobby : Control {
         }
 
         // 启用加入按钮
-        if (_joinButton != null)
-            _joinButton.Disabled = false;
+        _joinButton?.Disabled = false;
     }
 
     private static string GetRoomStatusText(GameRoom room) {

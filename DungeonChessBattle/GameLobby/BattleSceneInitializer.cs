@@ -10,11 +10,11 @@ namespace DungeonChessBattle;
 /// 替换 TestInit 的硬编码初始化方式。
 /// </summary>
 public partial class BattleSceneInitializer : Node {
-    [Export] private GameLobby _gameLobby = null!;
-    [Export] private UnitsInScene_Show _unitsInSceneShow = null!;
-    [Export] private CampStartPoints _campAStartPoint = null!;
-    [Export] private CampStartPoints _campBStartPoint = null!;
-    [Export] private PackedScene _unitShowScene = null!;
+    [Export] private GameLobby? _gameLobby;
+    [Export] private UnitsInScene_Show? _unitsInSceneShow;
+    [Export] private CampStartPoints? _campAStartPoint;
+    [Export] private CampStartPoints? _campBStartPoint;
+    [Export] private PackedScene? _unitShowScene;
 
     public override void _Ready() {
         if (_gameLobby == null) {
@@ -26,6 +26,11 @@ public partial class BattleSceneInitializer : Node {
     }
 
     private void OnBattleStarted(string roomId) {
+        if (_gameLobby is null) {
+            GD.PrintErr("[BattleSceneInitializer] _gameLobby not assigned!");
+            return;
+        }
+
         var clientService = _gameLobby.ClientService;
         if (clientService == null) {
             GD.PrintErr("[BattleSceneInitializer] No client service available!");
@@ -53,10 +58,25 @@ public partial class BattleSceneInitializer : Node {
         GD.Print($"[BattleSceneInitializer] Spawned {spawned} units.");
     }
 
-    private bool SpawnUnit(string unitName, EnumCamp camp, CampStartPoints startPoint) {
+    private bool SpawnUnit(string unitName, EnumCamp camp, CampStartPoints? startPoint) {
         var unitState = CreateUnitState(unitName);
         if (unitState == null) {
             GD.PrintErr($"[BattleSceneInitializer] Unknown unit type: {unitName}");
+            return false;
+        }
+
+        if (_unitShowScene is null) {
+            GD.PrintErr("[BattleSceneInitializer] _unitShowScene not assigned!");
+            return false;
+        }
+
+        if (_unitsInSceneShow is null) {
+            GD.PrintErr("[BattleSceneInitializer] _unitsInSceneShow not assigned!");
+            return false;
+        }
+
+        if (startPoint is null) {
+            GD.PrintErr("[BattleSceneInitializer] startPoint not assigned!");
             return false;
         }
 
@@ -79,7 +99,7 @@ public partial class BattleSceneInitializer : Node {
     /// 根据单位名称创建对应的 UnitState 实例。
     /// 使用正确覆写 Config 的子类来确保 EnsureSynced() 正常运作。
     /// </summary>
-    private static UnitState? CreateUnitState(string unitName) => unitName switch {
+    private static Unit_WhiteMage? CreateUnitState(string unitName) => unitName switch {
         "White Mage" => new Unit_WhiteMage(),
         _ => null,
     };
