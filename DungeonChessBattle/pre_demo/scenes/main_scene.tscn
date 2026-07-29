@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GameLobby/GameLobby/game_lobby.tscn" id="30_42c4a"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GameLobby/RoomPreparation/room_preparation.tscn" id="31_room"]
+[ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GameLobby/MainMenu/main_menu.tscn" id="32_menu"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -155,6 +156,7 @@ collision_mask = 1057
 collide_with_areas = true
 
 [node name="Node2d_UserUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInGameRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
+visible = false
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
@@ -216,7 +218,10 @@ offset_top = 514.0
 offset_right = 1148.0
 offset_bottom = 638.0
 
+[node name="MainMenu" parent="Interface" unique_id=1482847413 instance=ExtResource("32_menu")]
+
 [node name="GameLobby" parent="Interface" unique_id=307770633 instance=ExtResource("30_42c4a")]
+visible = false
 custom_minimum_size = Vector2(600, 300)
 anchors_preset = -1
 anchor_left = 0.1
@@ -225,3 +230,4 @@ anchor_right = 0.9
 anchor_bottom = 0.9
 
 [node name="RoomPreparation" parent="Interface" unique_id=416023587 instance=ExtResource("31_room")]
+visible = false

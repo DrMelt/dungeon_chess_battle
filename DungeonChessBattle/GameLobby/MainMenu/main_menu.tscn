@@ -1,0 +1,141 @@
+[gd_scene format=3 uid="uid://bhsb7emplg5s"]
+
+[ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GameLobby/MainMenu/MainMenu.cs" id="1_main"]
+[ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GameLobby/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
+[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_connect_button"]
+bg_color = Color(0.15, 0.45, 0.65, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
+bg_color = Color(0.15, 0.15, 0.15, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.35, 0.35, 0.35, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MainMenu" type="Control" unique_id=95030102]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_main")
+
+[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871]
+script = ExtResource("2_irfs")
+HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
+PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")
+ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
+StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
+
+[node name="Panel" type="Panel" parent="." unique_id=133359487]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = ExtResource("3_bg")
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=811588583]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=210725993]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=316176970]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 32
+text = "Dungeon Chess Battle"
+horizontal_alignment = 1
+
+[node name="Spacer1" type="Control" parent="CenterContainer/VBoxContainer" unique_id=948244177]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="HostLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=378461503]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 14
+text = "服务器地址"
+horizontal_alignment = 1
+
+[node name="HostInput" type="LineEdit" parent="CenterContainer/VBoxContainer" unique_id=1747921756]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "127.0.0.1"
+placeholder_text = "输入服务器地址..."
+
+[node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=1352197184]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 14
+text = "端口"
+horizontal_alignment = 1
+
+[node name="PortInput" type="LineEdit" parent="CenterContainer/VBoxContainer" unique_id=1077963074]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "10170"
+placeholder_text = "端口号"
+
+[node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2004157917]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ConnectButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1823049855]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_connect_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "连接服务器"
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "等待连接..."
+horizontal_alignment = 1
