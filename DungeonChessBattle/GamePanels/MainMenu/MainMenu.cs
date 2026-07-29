@@ -20,8 +20,6 @@ public partial class MainMenu : Control {
 
     #endregion
 
-    private const int DefaultPort = 9050;
-
     private PackedScene? _serverMgmtScene;
 
     public override void _Ready() {
@@ -41,8 +39,7 @@ public partial class MainMenu : Control {
             _interRefs.ServerManageButton.Pressed += OnServerManagePressed;
 
         // 初始隐藏 GameLobby，显示自身
-        if (_gameLobby is not null)
-            _gameLobby.Visible = false;
+        _gameLobby?.Visible = false;
     }
 
     #region Button Handlers
@@ -75,8 +72,7 @@ public partial class MainMenu : Control {
 
             // 切换界面：隐藏主菜单，显示大厅
             Visible = false;
-            if (_gameLobby is not null)
-                _gameLobby.Visible = true;
+            _gameLobby?.Visible = true;
 
             EmitSignal(SignalName.ServerConnected);
             GD.Print($"[MainMenu] Connected to server: {host}:{port}");
@@ -96,8 +92,8 @@ public partial class MainMenu : Control {
         // 如果已有面板实例则复用，否则创建
         if (_serverMgmtPanel == null) {
             _serverMgmtPanel = _serverMgmtScene.Instantiate<ServerManagementPanel>();
-            // 挂到 Interface 节点下（MainMenu 的父节点）
-            GetParent()?.AddChild(_serverMgmtPanel);
+            // 挂到 MainMenu 自身下，确保 Control 父节点锚点布局正确
+            AddChild(_serverMgmtPanel);
         }
 
         _serverMgmtPanel.Visible = true;
