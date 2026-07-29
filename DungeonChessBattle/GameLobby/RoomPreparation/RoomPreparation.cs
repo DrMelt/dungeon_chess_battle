@@ -13,22 +13,9 @@ public partial class RoomPreparation : Control {
     [Signal]
     public delegate void BattleStartRequestedEventHandler(string roomId);
 
-    #region Exported Node References
-
-    [Export] private Label? _roomNameLabel;
-    [Export] private Label? _statusLabel;
-    [Export] private GridContainer? _unitCardGrid;
-    [Export] private Button? _campAButton;
-    [Export] private Button? _campBButton;
-    [Export] private Button? _startBattleButton;
-    [Export] private Label? _campAListLabel;
-    [Export] private Label? _campBListLabel;
-    [Export] private PackedScene? _unitCardScene;
-
-    #endregion
-
     #region Service & State
 
+    private RoomPreparationInterRefs? _interRefs;
     private GameLobby? _lobby;
     private string _roomId = "";
     private EnumCamp _selectedCamp = EnumCamp.Camp_A;
@@ -44,16 +31,18 @@ public partial class RoomPreparation : Control {
     #endregion
 
     public override void _Ready() {
+        _interRefs = GetNode<RoomPreparationInterRefs>("RoomPreparationInterRefs");
+
         // 自动查找同级 GameLobby 节点并绑定信号
         _lobby = GetParent().GetNode<GameLobby>("GameLobby");
         _lobby.RoomEntered += OnRoomEntered;
         BattleStartRequested += _lobby.StartBattle;
 
-        _campAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
-        _campBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
-        if (_startBattleButton is not null) {
-            _startBattleButton.Pressed += OnStartBattleClicked;
-            _startBattleButton.Disabled = true;
+        _interRefs?.CampAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
+        _interRefs?.CampBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
+        if (_interRefs?.StartBattleButton is not null) {
+            _interRefs.StartBattleButton.Pressed += OnStartBattleClicked;
+            _interRefs.StartBattleButton.Disabled = true;
         }
 
         SelectCamp(EnumCamp.Camp_A);
@@ -62,8 +51,8 @@ public partial class RoomPreparation : Control {
 
     private void OnRoomEntered(string roomId) {
         _roomId = roomId;
-        _roomNameLabel?.Text = $"房间: {roomId}";
-        _statusLabel?.Text = "请选择单位...";
+        _interRefs?.RoomNameLabel?.Text = $"房间: {roomId}";
+        _interRefs?.StatusLabel?.Text = "请选择单位...";
         Visible = true;
 
         // 隐藏大厅
@@ -71,32 +60,32 @@ public partial class RoomPreparation : Control {
     }
 
     private void PopulateUnitCards() {
-        if (_unitCardGrid is null || _unitCardScene is null)
+        if (_interRefs?.UnitCardGrid is null || _interRefs?.UnitCardScene is null)
             return;
 
-        foreach (Node child in _unitCardGrid.GetChildren())
+        foreach (Node child in _interRefs.UnitCardGrid.GetChildren())
             child.QueueFree();
 
         foreach (var (key, (displayName, config)) in AvailableUnits) {
-            var card = _unitCardScene.Instantiate<UnitSelectCard>();
+            var card = _interRefs.UnitCardScene.Instantiate<UnitSelectCard>();
             string stats = $"HP: {config.MaxHealth:F0}  SPD: {config.BaseSpeed:F1}";
             card.Setup(key, displayName, stats);
             card.UnitSelected += OnUnitSelected;
-            _unitCardGrid.AddChild(card);
+            _interRefs.UnitCardGrid.AddChild(card);
         }
     }
 
     private void OnUnitSelected(string unitConfigKey) {
         _selectedUnitKey = unitConfigKey;
-        _statusLabel?.Text = $"已选择: {AvailableUnits[unitConfigKey].displayName} (将加入 {CampName(_selectedCamp)})";
+        _interRefs?.StatusLabel?.Text = $"已选择: {AvailableUnits[unitConfigKey].displayName} (将加入 {CampName(_selectedCamp)})";
         AddUnitToCamp();
     }
 
     private void SelectCamp(EnumCamp camp) {
         _selectedCamp = camp;
-        _campAButton?.ButtonPressed = camp == EnumCamp.Camp_A;
-        _campBButton?.ButtonPressed = camp == EnumCamp.Camp_B;
-        _statusLabel?.Text = $"当前阵营: {CampName(camp)} - 点击单位卡片添加";
+        _interRefs?.CampAButton?.ButtonPressed = camp == EnumCamp.Camp_A;
+        _interRefs?.CampBButton?.ButtonPressed = camp == EnumCamp.Camp_B;
+        _interRefs?.StatusLabel?.Text = $"当前阵营: {CampName(camp)} - 点击单位卡片添加";
     }
 
     private void AddUnitToCamp() {
@@ -119,18 +108,21 @@ public partial class RoomPreparation : Control {
         }
 
         UpdateCampLists();
-        _startBattleButton?.Disabled = _campAUnits.Count == 0 && _campBUnits.Count == 0;
-        _statusLabel?.Text = $"{displayName} 已加入 {CampName(_selectedCamp)}";
+        if (_interRefs?.StartBattleButton is not null)
+            _interRefs.StartBattleButton.Disabled = _campAUnits.Count == 0 && _campBUnits.Count == 0;
+        _interRefs?.StatusLabel?.Text = $"{displayName} 已加入 {CampName(_selectedCamp)}";
     }
 
     private void UpdateCampLists() {
-        _campAListLabel?.Text = "阵营 A:\n" + string.Join("\n", _campAUnits);
-        _campBListLabel?.Text = "阵营 B:\n" + string.Join("\n", _campBUnits);
+        if (_interRefs?.CampAListLabel is not null)
+            _interRefs.CampAListLabel.Text = "阵营 A:\n" + string.Join("\n", _campAUnits);
+        if (_interRefs?.CampBListLabel is not null)
+            _interRefs.CampBListLabel.Text = "阵营 B:\n" + string.Join("\n", _campBUnits);
     }
 
     private void OnStartBattleClicked() {
         if (_campAUnits.Count == 0 && _campBUnits.Count == 0) {
-            _statusLabel?.Text = "请先为至少一个阵营添加单位！";
+            _interRefs?.StatusLabel?.Text = "请先为至少一个阵营添加单位！";
             return;
         }
 
