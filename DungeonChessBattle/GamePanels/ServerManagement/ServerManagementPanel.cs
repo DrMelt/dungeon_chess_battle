@@ -58,25 +58,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
     }
 
     private void OnClosePressed() {
-        if (ServiceLocator.ServerService.IsRunning) {
-            // 确认关闭对话框
-            var confirm = new AcceptDialog {
-                Title = "确认",
-                DialogText = "服务器仍在运行中，确定要关闭面板吗？\n关闭面板将同时停止服务器。",
-                Exclusive = true,
-            };
-            confirm.Confirmed += () => {
-                ServiceLocator.ServerService.Stop();
-                ClosePanel();
-                confirm.QueueFree();
-            };
-            confirm.Canceled += () => confirm.QueueFree();
-            GetParent().AddChild(confirm);
-            confirm.PopupCentered();
-        }
-        else {
-            ClosePanel();
-        }
+        ClosePanel();
     }
 
     #endregion

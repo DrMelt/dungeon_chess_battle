@@ -53,18 +53,6 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_log_bg"]
-bg_color = Color(0.05, 0.05, 0.05, 0.7)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.15, 0.15, 0.15, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_close_button"]
 bg_color = Color(0.3, 0.3, 0.3, 0.85)
 border_width_left = 2
@@ -88,14 +76,13 @@ mouse_filter = 1
 theme = ExtResource("1_cw211")
 script = ExtResource("1_main")
 
-[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244 node_paths=PackedStringArray("PortInput", "StartButton", "StopButton", "CloseButton", "StatusLabel", "LogLabel")]
+[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244 node_paths=PackedStringArray("PortInput", "StartButton", "StopButton", "CloseButton", "StatusLabel")]
 script = ExtResource("2_irfs")
 PortInput = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PortInput")
 StartButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StartButton")
 StopButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StopButton")
 CloseButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
 StatusLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/StatusLabel")
-LogLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer/ScrollContainer/LogLabel")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1674892310]
 layout_mode = 1
@@ -182,43 +169,9 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_hover")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "■ 停止"
 
-[node name="LogTitle" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=-238675562]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 12
-text = "日志:"
-
-[node name="LogPanel" type="Panel" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=-943699816]
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_log_bg")
-
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel" unique_id=1287563490]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 6
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer" unique_id=1220640484]
-layout_mode = 2
-
-[node name="LogLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer/ScrollContainer" unique_id=-1616944112]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-size_flags_vertical = 1
-theme_override_colors/font_color = Color(0.55, 0.85, 0.55, 1)
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 2
-
 [node name="CloseButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=-165159643]
 layout_mode = 2
+size_flags_vertical = 10
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_close_button")

@@ -58,9 +58,7 @@ public partial class MainMenu : BaseGamePanel {
     /// 解决从 GameLobby / ServerManagementPanel 返回时按钮变灰无法点击的问题。
     /// </summary>
     protected override void OnPanelOpened() {
-        if (InterRefs?.ConnectButton != null) {
-            InterRefs.ConnectButton.Disabled = ServiceLocator.ClientService.IsConnected;
-        }
+        InterRefs?.ConnectButton?.Disabled = ServiceLocator.ClientService.IsConnected;
     }
 
     #region Button Handlers

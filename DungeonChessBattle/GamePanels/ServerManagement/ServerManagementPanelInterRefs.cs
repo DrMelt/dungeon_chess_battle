@@ -26,10 +26,6 @@ public partial class ServerManagementPanelInterRefs : Node {
     public Label? StatusLabel {
         get; private set;
     }
-    [Export]
-    public Label? LogLabel {
-        get; private set;
-    }
 
     public override void _Ready() {
         if (PortInput == null)
@@ -42,7 +38,5 @@ public partial class ServerManagementPanelInterRefs : Node {
             GD.PrintErr("[ServerManagementPanelInterRefs] [Export] CloseButton is not assigned!");
         if (StatusLabel == null)
             GD.PrintErr("[ServerManagementPanelInterRefs] [Export] StatusLabel is not assigned!");
-        if (LogLabel == null)
-            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] LogLabel is not assigned!");
     }
 }
