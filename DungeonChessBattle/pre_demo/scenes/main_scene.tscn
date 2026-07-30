@@ -22,6 +22,7 @@
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="22_roldv"]
 [ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
+[ext_resource type="PackedScene" uid="uid://duxpr0xqbx" path="res://GamePanels/ServerManagement/server_management_panel.tscn" id="27_server"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="30_42c4a"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
@@ -226,10 +227,16 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainMenu" parent="Interface/FrontUI" unique_id=1482847413 instance=ExtResource("32_menu")]
+[node name="MainMenu" parent="Interface/FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel") instance=ExtResource("32_menu")]
+layout_mode = 1
+_gameLobby = NodePath("../GameLobby")
+_serverMgmtPanel = NodePath("../ServerManagementPanel")
+
+[node name="ServerManagementPanel" parent="Interface/FrontUI" unique_id=-355691268 instance=ExtResource("27_server")]
+visible = false
 layout_mode = 1
 
-[node name="GameLobby" parent="Interface/FrontUI" unique_id=307770633 instance=ExtResource("30_42c4a")]
+[node name="GameLobby" parent="Interface/FrontUI" unique_id=307770633 node_paths=PackedStringArray("_roomPreparation") instance=ExtResource("30_42c4a")]
 visible = false
 custom_minimum_size = Vector2(600, 300)
 layout_mode = 1
@@ -238,6 +245,7 @@ anchor_left = 0.1
 anchor_top = 0.1
 anchor_right = 0.9
 anchor_bottom = 0.9
+_roomPreparation = NodePath("../RoomPreparation")
 
 [node name="RoomPreparation" parent="Interface/FrontUI" unique_id=416023587 instance=ExtResource("31_room")]
 visible = false

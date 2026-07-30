@@ -15,21 +15,17 @@ public partial class MainMenu : BaseGamePanel {
 
     private MainMenuInterRefs? _interRefs;
     private NetworkBattleClient? _networkClient;
+
+    [Export]
     private GameLobby? _gameLobby;
+
+    [Export]
     private ServerManagementPanel? _serverMgmtPanel;
 
     #endregion
 
-    private PackedScene? _serverMgmtScene;
-
     public override void _Ready() {
         _interRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
-
-        // 加载服务器管理面板场景
-        _serverMgmtScene = GD.Load<PackedScene>("res://GamePanels/ServerManagement/server_management_panel.tscn");
-
-        // 查找同级 GameLobby 节点
-        _gameLobby = GetParent()?.GetNode<GameLobby>("GameLobby");
 
         // 连接按钮
         if (_interRefs?.ConnectButton is not null)
@@ -71,7 +67,10 @@ public partial class MainMenu : BaseGamePanel {
             UpdateStatus($"已连接到 {host}:{port}");
 
             // 切换界面：隐藏主菜单，显示大厅
-            _gameLobby?.OpenPanelFrom(this);
+            if (_gameLobby != null)
+                NavigateTo(_gameLobby);
+            else
+                GD.PrintErr("[MainMenu] GameLobby reference is not assigned.");
 
             EmitSignal(SignalName.ServerConnected);
             GD.Print($"[MainMenu] Connected to server: {host}:{port}");
@@ -85,17 +84,10 @@ public partial class MainMenu : BaseGamePanel {
     }
 
     private void OnServerManagePressed() {
-        if (_serverMgmtScene == null)
-            return;
-
-        // 如果已有面板实例则复用，否则创建
-        if (_serverMgmtPanel == null) {
-            _serverMgmtPanel = _serverMgmtScene.Instantiate<ServerManagementPanel>();
-            // 挂到 MainMenu 自身下，确保 Control 父节点锚点布局正确
-            AddChild(_serverMgmtPanel);
-        }
-
-        _serverMgmtPanel.OpenPanelFrom(this);
+        if (_serverMgmtPanel != null)
+            NavigateTo(_serverMgmtPanel);
+        else
+            GD.PrintErr("[MainMenu] ServerManagementPanel reference is not assigned.");
     }
 
     #endregion

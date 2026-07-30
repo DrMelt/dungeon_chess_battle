@@ -41,4 +41,13 @@ public partial class BaseGamePanel : Control {
         Visible = false;
         _caller?.OpenPanelFrom();
     }
+
+    /// <summary>
+    /// 从当前面板导航到目标面板。隐藏自身，显示目标面板。
+    /// 各面板按钮打开其他面板时统一通过此方法。
+    /// </summary>
+    /// <param name="target">目标面板实例</param>
+    protected void NavigateTo(BaseGamePanel target) {
+        target.OpenPanelFrom(this);
+    }
 }

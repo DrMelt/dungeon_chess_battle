@@ -15,12 +15,6 @@ public partial class GameLobby : BaseGamePanel {
     #region Signals
 
     /// <summary>
-    /// 玩家进入房间时触发（创建或加入）。
-    /// </summary>
-    [Signal]
-    public delegate void RoomEnteredEventHandler(string roomId);
-
-    /// <summary>
     /// 战斗开始（从准备界面发起的请求）。
     /// </summary>
     [Signal]
@@ -33,6 +27,9 @@ public partial class GameLobby : BaseGamePanel {
     private GameLobbyInterRefs? _interRefs;
     private IClientBattleService? _clientService;
     private NetworkBattleClient? _networkClient;
+
+    [Export]
+    private RoomPreparation? _roomPreparation;
 
     /// <summary>
     /// 公开服务实例，供外部组件获取。
@@ -69,6 +66,9 @@ public partial class GameLobby : BaseGamePanel {
 
     public override void _Ready() {
         _interRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
+
+        // 连接 RoomPreparation 信号
+        _roomPreparation?.BattleStartRequested += StartBattle;
 
         // 连接按钮信号
         _interRefs?.CreateButton?.Pressed += OnCreateRoom;
@@ -122,8 +122,9 @@ public partial class GameLobby : BaseGamePanel {
         _interRefs?.RoomNameInput?.Clear();
 
         // 本地模式：创建后直接进入房间准备
-        if (_clientService is GameLogicService) {
-            EmitSignal(SignalName.RoomEntered, roomName);
+        if (_clientService is GameLogicService && _roomPreparation != null) {
+            _roomPreparation.EnterRoom(roomName, _clientService);
+            NavigateTo(_roomPreparation);
         }
     }
 

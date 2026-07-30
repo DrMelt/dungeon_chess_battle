@@ -1,5 +1,6 @@
 using Godot;
 using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 
@@ -16,7 +17,7 @@ public partial class RoomPreparation : BaseGamePanel {
     #region Service & State
 
     private RoomPreparationInterRefs? _interRefs;
-    private GameLobby? _lobby;
+    private IClientBattleService? _clientService;
     private string _roomId = "";
     private EnumCamp _selectedCamp = EnumCamp.Camp_A;
     private string? _selectedUnitKey;
@@ -33,11 +34,6 @@ public partial class RoomPreparation : BaseGamePanel {
     public override void _Ready() {
         _interRefs = GetNode<RoomPreparationInterRefs>("RoomPreparationInterRefs");
 
-        // 自动查找同级 GameLobby 节点并绑定信号
-        _lobby = GetParent().GetNode<GameLobby>("GameLobby");
-        _lobby.RoomEntered += OnRoomEntered;
-        BattleStartRequested += _lobby.StartBattle;
-
         _interRefs?.CampAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
         _interRefs?.CampBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
         if (_interRefs?.StartBattleButton is not null) {
@@ -49,11 +45,14 @@ public partial class RoomPreparation : BaseGamePanel {
         PopulateUnitCards();
     }
 
-    private void OnRoomEntered(string roomId) {
+    /// <summary>
+    /// 由 GameLobby 调用，设置房间信息并准备就绪。
+    /// </summary>
+    public void EnterRoom(string roomId, IClientBattleService? service) {
         _roomId = roomId;
+        _clientService = service;
         _interRefs?.RoomNameLabel?.Text = $"房间: {roomId}";
         _interRefs?.StatusLabel?.Text = "请选择单位...";
-        OpenPanelFrom(_lobby);
     }
 
     private void PopulateUnitCards() {
@@ -86,7 +85,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     private void AddUnitToCamp() {
-        if (string.IsNullOrEmpty(_selectedUnitKey) || _lobby?.ClientService == null)
+        if (string.IsNullOrEmpty(_selectedUnitKey) || _clientService == null)
             return;
 
         string displayName = AvailableUnits[_selectedUnitKey].displayName;
@@ -94,13 +93,13 @@ public partial class RoomPreparation : BaseGamePanel {
         if (_selectedCamp == EnumCamp.Camp_A) {
             if (!_campAUnits.Contains(displayName)) {
                 _campAUnits.Add(displayName);
-                _lobby.ClientService.CreateUnit(_roomId, displayName, 1);
+                _clientService.CreateUnit(_roomId, displayName, 1);
             }
         }
         else {
             if (!_campBUnits.Contains(displayName)) {
                 _campBUnits.Add(displayName);
-                _lobby.ClientService.CreateUnit(_roomId, displayName, 2);
+                _clientService.CreateUnit(_roomId, displayName, 2);
             }
         }
 

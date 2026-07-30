@@ -66,6 +66,11 @@ script = ExtResource("1_main")
 
 [node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871]
 script = ExtResource("2_irfs")
+HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
+PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")
+ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
+ServerManageButton = NodePath("../CenterContainer/VBoxContainer/ServerManageButton")
+StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
 
 [node name="Panel" type="Panel" parent="." unique_id=133359487]
 layout_mode = 1
