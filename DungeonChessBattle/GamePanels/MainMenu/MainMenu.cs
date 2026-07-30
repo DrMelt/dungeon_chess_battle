@@ -45,6 +45,16 @@ public partial class MainMenu : BaseGamePanel {
         _gameLobby?.Visible = false;
     }
 
+    /// <summary>
+    /// 面板重新显示时恢复连接按钮状态。
+    /// 解决从 GameLobby / ServerManagementPanel 返回时按钮变灰无法点击的问题。
+    /// </summary>
+    protected override void OnPanelOpened() {
+        if (InterRefs?.ConnectButton != null) {
+            InterRefs.ConnectButton.Disabled = false;
+        }
+    }
+
     #region Button Handlers
 
     private void OnConnectPressed() {

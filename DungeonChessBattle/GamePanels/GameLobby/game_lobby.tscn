@@ -69,7 +69,7 @@ grow_vertical = 2
 theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 
-[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer")]
+[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
 script = ExtResource("4_irfs")
 RoomNameInput = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
 CreateButton = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
@@ -77,6 +77,7 @@ RefreshButton = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContaine
 JoinButton = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
 DetailLabel = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/DetailLabel")
 RoomListContainer = NodePath("../BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
+BackButton = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/BackButton")
 RoomInfoScene = ExtResource("2_wj6uy")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445032]
@@ -118,6 +119,15 @@ theme_override_constants/margin_bottom = 10
 [node name="VBoxContainer" type="VBoxContainer" parent="BoxContainer/PanelLeft/MarginContainer" unique_id=715294103]
 layout_mode = 2
 theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=829104561]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "< 返回"
 
 [node name="TitleLabel" type="Label" parent="BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=482913752]
 layout_mode = 2

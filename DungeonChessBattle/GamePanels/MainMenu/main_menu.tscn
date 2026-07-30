@@ -130,7 +130,7 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
-text = "9050"
+text = "10170"
 placeholder_text = "端口号"
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2004157917]
@@ -148,6 +148,13 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "连接服务器"
 
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "等待连接..."
+horizontal_alignment = 1
+
 [node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer" unique_id=-1307312975]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
@@ -162,10 +169,3 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_server_manage_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "服务器管理"
-
-[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
-theme_override_font_sizes/font_size = 13
-text = "等待连接..."
-horizontal_alignment = 1

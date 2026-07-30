@@ -34,6 +34,10 @@ public partial class GameLobbyInterRefs : Node {
     public PackedScene? RoomInfoScene {
         get; private set;
     }
+    [Export]
+    public Button? BackButton {
+        get; private set;
+    }
 
     public override void _Ready() {
         if (RoomNameInput == null)
@@ -50,5 +54,7 @@ public partial class GameLobbyInterRefs : Node {
             GD.PrintErr("[GameLobbyInterRefs] [Export] RoomListContainer is not assigned!");
         if (RoomInfoScene == null)
             GD.PrintErr("[GameLobbyInterRefs] [Export] RoomInfoScene is not assigned!");
+        if (BackButton == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] BackButton is not assigned!");
     }
 }

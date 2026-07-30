@@ -81,6 +81,7 @@ public partial class GameLobby : BaseGamePanel {
         // 连接按钮信号
         InterRefs?.CreateButton?.Pressed += OnCreateRoom;
         InterRefs?.RefreshButton?.Pressed += OnRefreshRooms;
+        InterRefs?.BackButton?.Pressed += ClosePanel;
         var joinBtn = InterRefs?.JoinButton;
         if (joinBtn is not null) {
             joinBtn.Pressed += OnJoinRoom;

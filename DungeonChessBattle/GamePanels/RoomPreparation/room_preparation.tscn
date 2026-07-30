@@ -64,7 +64,7 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "CampAButton", "CampBButton", "StartBattleButton", "CampAListLabel", "CampBListLabel")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "CampAButton", "CampBButton", "StartBattleButton", "CampAListLabel", "CampBListLabel", "BackButton")]
 script = ExtResource("4_irfs")
 RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/RoomNameLabel")
 StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/StatusLabel")
@@ -74,6 +74,7 @@ CampBButton = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBo
 StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
 CampAListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampAListLabel")
 CampBListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampBListLabel")
+BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/BackButton")
 UnitCardScene = ExtResource("2_wj6uy")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445033]
@@ -111,6 +112,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.55
 theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=374920168]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "< 返回"
 
 [node name="RoomNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=482913754]
 layout_mode = 2

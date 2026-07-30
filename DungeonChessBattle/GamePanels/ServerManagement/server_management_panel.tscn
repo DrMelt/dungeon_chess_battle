@@ -95,7 +95,7 @@ StartButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxCo
 StopButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StopButton")
 CloseButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
 StatusLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/StatusLabel")
-LogLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer/LogLabel")
+LogLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer/ScrollContainer/LogLabel")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1674892310]
 layout_mode = 1
@@ -160,7 +160,7 @@ custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_input_bg")
-text = "9050"
+text = "10170"
 
 [node name="StartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=-1705565533]
 custom_minimum_size = Vector2(100, 0)
@@ -206,7 +206,10 @@ theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 6
 
-[node name="LogLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer" unique_id=-1616944112]
+[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer" unique_id=1220640484]
+layout_mode = 2
+
+[node name="LogLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LogPanel/MarginContainer/ScrollContainer" unique_id=-1616944112]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 size_flags_vertical = 1

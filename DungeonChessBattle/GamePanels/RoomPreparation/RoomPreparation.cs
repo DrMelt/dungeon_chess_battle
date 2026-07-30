@@ -41,6 +41,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         InterRefs?.CampAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
         InterRefs?.CampBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
+        InterRefs?.BackButton?.Pressed += ClosePanel;
         var startBtn = InterRefs?.StartBattleButton;
         if (startBtn is not null) {
             startBtn.Pressed += OnStartBattleClicked;
