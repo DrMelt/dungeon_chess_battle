@@ -67,10 +67,7 @@ public partial class MainMenu : BaseGamePanel {
             UpdateStatus($"已连接到 {host}:{port}");
 
             // 切换界面：隐藏主菜单，显示大厅
-            if (_gameLobby != null)
-                NavigateTo(_gameLobby);
-            else
-                GD.PrintErr("[MainMenu] GameLobby reference is not assigned.");
+            NavigateTo(_gameLobby);
 
             EmitSignal(SignalName.ServerConnected);
             GD.Print($"[MainMenu] Connected to server: {host}:{port}");
@@ -84,10 +81,7 @@ public partial class MainMenu : BaseGamePanel {
     }
 
     private void OnServerManagePressed() {
-        if (_serverMgmtPanel != null)
-            NavigateTo(_serverMgmtPanel);
-        else
-            GD.PrintErr("[MainMenu] ServerManagementPanel reference is not assigned.");
+        NavigateTo(_serverMgmtPanel);
     }
 
     #endregion

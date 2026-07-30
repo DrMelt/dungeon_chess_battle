@@ -47,7 +47,11 @@ public partial class BaseGamePanel : Control {
     /// 各面板按钮打开其他面板时统一通过此方法。
     /// </summary>
     /// <param name="target">目标面板实例</param>
-    protected void NavigateTo(BaseGamePanel target) {
+    protected void NavigateTo(BaseGamePanel? target) {
+        if (target == null) {
+            GD.PrintErr($"[{GetType().Name}] NavigateTo failed: target panel is not assigned.");
+            return;
+        }
         target.OpenPanelFrom(this);
     }
 }

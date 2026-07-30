@@ -68,7 +68,10 @@ public partial class GameLobby : BaseGamePanel {
         _interRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
 
         // 连接 RoomPreparation 信号
-        _roomPreparation?.BattleStartRequested += StartBattle;
+        if (_roomPreparation is not null)
+            _roomPreparation.BattleStartRequested += StartBattle;
+        else
+            GD.PrintErr("[GameLobby] RoomPreparation reference is not assigned. Room preparation will be unavailable.");
 
         // 连接按钮信号
         _interRefs?.CreateButton?.Pressed += OnCreateRoom;
