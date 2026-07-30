@@ -101,18 +101,17 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     public IEnumerable<GameRoom> GetAllRooms() {
         List<string> roomIds;
         lock (_roomLock) {
-            roomIds = [.. _rooms.Keys];
+            roomIds = [.. _rooms.Where(kv => kv.Value != null).Select(kv => kv.Key)];
         }
         return roomIds.Select(id => GetRoom(id)!).Where(r => r != null).ToList();
     }
 
     public GameRoom CreateRoom(string roomId) {
         RequestCreateRoom(roomId);
-        // 本地缓存一个临时房间对象
+        // 本地缓存一个临时房间对象（不写 null 占位，等待 Entity 同步回调自然填充）
         var room = new GameRoom(roomId);
         lock (_roomLock) {
-            if (!_rooms.ContainsKey(roomId)) {
-                _rooms[roomId] = null!; // 等待服务器同步实体
+            if (!_roomUnits.ContainsKey(roomId)) {
                 _roomUnits[roomId] = [];
             }
         }
@@ -181,12 +180,13 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
         _entityManager = new ClientEntityManager(typesMap, lesPeer, PacketHeader);
 
         // 订阅所有同步 Entity 类型的创建事件
+        // callOnExisting: true 确保连接时已存在的房间/单位能被客户端感知
         _entityManager.GetEntities<BattleRoomEntity>()
-            .SubscribeToConstructed(OnRoomEntityCreated, callOnExisting: false);
+            .SubscribeToConstructed(OnRoomEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<UnitSyncEntity>()
-            .SubscribeToConstructed(OnUnitEntityCreated, callOnExisting: false);
+            .SubscribeToConstructed(OnUnitEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<PlayerRoomEntity>()
-            .SubscribeToConstructed(OnPlayerEntityCreated, callOnExisting: false);
+            .SubscribeToConstructed(OnPlayerEntityCreated, callOnExisting: true);
 
         // 通知上层真正的连接已建立
         OnFullyConnected?.Invoke();

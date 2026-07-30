@@ -88,6 +88,11 @@ public partial class GameLobby : BaseGamePanel {
     /// 给 Entity 同步留出时间（网络模式下 OnPeerConnected → Entity 构造需要数个 Tick）。
     /// </summary>
     protected override void OnPanelOpened() {
+        // 防御性初始化：确保本地服务已就绪（防止面板在 InitLocalMode 之前被打开）
+        if (!ServiceLocator.ClientService.IsConnected && ServiceLocator.ClientService.Client == null) {
+            ServiceLocator.ClientService.InitLocalMode();
+            GD.Print("[GameLobby] InitLocalMode called from OnPanelOpened (defensive).");
+        }
         CallDeferred(nameof(OnRefreshRooms));
     }
 
@@ -201,6 +206,11 @@ public partial class GameLobby : BaseGamePanel {
 
             string statusText = GetRoomStatusText(room);
             roomInfo.UpdateStatus(statusText);
+        }
+
+        // 空状态提示
+        if (rooms.Count == 0 && InterRefs?.DetailLabel != null) {
+            InterRefs.DetailLabel.Text = "当前没有房间\n\n使用左侧面板创建一个房间吧！";
         }
     }
 
