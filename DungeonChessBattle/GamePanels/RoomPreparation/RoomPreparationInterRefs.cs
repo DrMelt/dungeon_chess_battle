@@ -8,38 +8,59 @@ namespace DungeonChessBattle;
 public partial class RoomPreparationInterRefs : Node {
     [Export]
     public Label? RoomNameLabel {
-        get; set;
+        get; private set;
     }
     [Export]
     public Label? StatusLabel {
-        get; set;
+        get; private set;
     }
     [Export]
     public GridContainer? UnitCardGrid {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? CampAButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? CampBButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? StartBattleButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Label? CampAListLabel {
-        get; set;
+        get; private set;
     }
     [Export]
     public Label? CampBListLabel {
-        get; set;
+        get; private set;
     }
     [Export]
     public PackedScene? UnitCardScene {
-        get; set;
+        get; private set;
+    }
+
+    public override void _Ready() {
+        if (RoomNameLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] RoomNameLabel is not assigned!");
+        if (StatusLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] StatusLabel is not assigned!");
+        if (UnitCardGrid == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardGrid is not assigned!");
+        if (CampAButton == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampAButton is not assigned!");
+        if (CampBButton == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampBButton is not assigned!");
+        if (StartBattleButton == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] StartBattleButton is not assigned!");
+        if (CampAListLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampAListLabel is not assigned!");
+        if (CampBListLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampBListLabel is not assigned!");
+        if (UnitCardScene == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardScene is not assigned!");
     }
 }

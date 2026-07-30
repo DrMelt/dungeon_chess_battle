@@ -24,7 +24,6 @@ public partial class GameLobby : BaseGamePanel {
 
     #region Service References
 
-    private GameLobbyInterRefs? _interRefs;
     private IClientBattleService? _clientService;
     private NetworkBattleClient? _networkClient;
 
@@ -34,6 +33,8 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 公开服务实例，供外部组件获取。
     /// </summary>
+    public GameLobbyInterRefs? InterRefs { get; private set; }
+
     public IClientBattleService? ClientService => _clientService;
 
     #endregion
@@ -65,7 +66,11 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     public override void _Ready() {
-        _interRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
+        InterRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
+        if (InterRefs is null) {
+            GD.PrintErr("[GameLobby] GameLobbyInterRefs node not found.");
+            return;
+        }
 
         // 连接 RoomPreparation 信号
         if (_roomPreparation is not null)
@@ -74,11 +79,12 @@ public partial class GameLobby : BaseGamePanel {
             GD.PrintErr("[GameLobby] RoomPreparation reference is not assigned. Room preparation will be unavailable.");
 
         // 连接按钮信号
-        _interRefs?.CreateButton?.Pressed += OnCreateRoom;
-        _interRefs?.RefreshButton?.Pressed += OnRefreshRooms;
-        if (_interRefs?.JoinButton is not null) {
-            _interRefs.JoinButton.Pressed += OnJoinRoom;
-            _interRefs.JoinButton.Disabled = true;
+        InterRefs?.CreateButton?.Pressed += OnCreateRoom;
+        InterRefs?.RefreshButton?.Pressed += OnRefreshRooms;
+        var joinBtn = InterRefs?.JoinButton;
+        if (joinBtn is not null) {
+            joinBtn.Pressed += OnJoinRoom;
+            joinBtn.Disabled = true;
         }
 
         // 若外部未注入服务，则自动以 Local 模式备选
@@ -104,7 +110,7 @@ public partial class GameLobby : BaseGamePanel {
     #region Button Handlers
 
     private void OnCreateRoom() {
-        string roomName = _interRefs?.RoomNameInput?.Text?.Trim() ?? "";
+        string roomName = InterRefs?.RoomNameInput?.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(roomName)) {
             GD.Print("[GameLobby] Room name is empty.");
             return;
@@ -122,7 +128,7 @@ public partial class GameLobby : BaseGamePanel {
             GD.PrintErr("[GameLobby] Cannot create room: not connected and not in local mode.");
         }
 
-        _interRefs?.RoomNameInput?.Clear();
+        InterRefs?.RoomNameInput?.Clear();
 
         // 本地模式：创建后直接进入房间准备
         if (_clientService is GameLogicService && _roomPreparation != null) {
@@ -173,7 +179,7 @@ public partial class GameLobby : BaseGamePanel {
     #region Room List UI
 
     private void RefreshRoomList(List<GameRoom> rooms) {
-        if (_interRefs?.RoomListContainer == null)
+        if (InterRefs?.RoomListContainer == null)
             return;
 
         var currentRoomIds = rooms.Select(r => r.RoomId).ToHashSet();
@@ -187,7 +193,7 @@ public partial class GameLobby : BaseGamePanel {
         }
         foreach (var roomId in toRemove) {
             if (_roomInfoCache.TryGetValue(roomId, out var node)) {
-                _interRefs.RoomListContainer.RemoveChild(node);
+                InterRefs.RoomListContainer.RemoveChild(node);
                 node.QueueFree();
                 _roomInfoCache.Remove(roomId);
             }
@@ -197,7 +203,7 @@ public partial class GameLobby : BaseGamePanel {
         foreach (var room in rooms) {
             if (!_roomInfoCache.TryGetValue(room.RoomId, out var roomInfo)) {
                 roomInfo = CreateRoomInfoCard(room.RoomId);
-                _interRefs.RoomListContainer.AddChild(roomInfo);
+                InterRefs.RoomListContainer.AddChild(roomInfo);
                 _roomInfoCache[room.RoomId] = roomInfo;
             }
 
@@ -207,9 +213,9 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     private RoomInfo CreateRoomInfoCard(string roomId) {
-        if (_interRefs?.RoomInfoScene is null)
+        if (InterRefs?.RoomInfoScene is null)
             throw new System.InvalidOperationException("RoomInfoScene is not assigned.");
-        var instance = _interRefs.RoomInfoScene.Instantiate<RoomInfo>();
+        var instance = InterRefs.RoomInfoScene.Instantiate<RoomInfo>();
         instance.Setup(roomId, "等待中");
         instance.RoomSelected += OnRoomSelected;
         return instance;
@@ -229,20 +235,19 @@ public partial class GameLobby : BaseGamePanel {
         }
 
         // 更新详情面板
-        if (_interRefs?.DetailLabel != null) {
-            _interRefs.DetailLabel.Text = $"选中房间: {roomId}\n";
+        if (InterRefs?.DetailLabel != null) {
+            InterRefs.DetailLabel.Text = $"选中房间: {roomId}\n";
             if (_clientService != null) {
                 var gameRoom = _clientService.GetRoom(roomId);
                 if (gameRoom != null) {
-                    _interRefs.DetailLabel.Text += $"阵营A单位: {gameRoom.UnitsA.Count}\n";
-                    _interRefs.DetailLabel.Text += $"阵营B单位: {gameRoom.UnitsB.Count}\n";
+                    InterRefs.DetailLabel.Text += $"阵营A单位: {gameRoom.UnitsA.Count}\n";
+                    InterRefs.DetailLabel.Text += $"阵营B单位: {gameRoom.UnitsB.Count}\n";
                 }
             }
         }
 
         // 启用加入按钮
-        if (_interRefs?.JoinButton is not null)
-            _interRefs.JoinButton.Disabled = false;
+        InterRefs?.JoinButton?.Disabled = false;
     }
 
     private static string GetRoomStatusText(GameRoom room) {

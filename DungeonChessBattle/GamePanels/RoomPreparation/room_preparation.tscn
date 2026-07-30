@@ -64,7 +64,7 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "CampAButton", "CampBButton", "StartBattleButton", "CampAListLabel", "CampBListLabel")]
 script = ExtResource("4_irfs")
 RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/RoomNameLabel")
 StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/StatusLabel")

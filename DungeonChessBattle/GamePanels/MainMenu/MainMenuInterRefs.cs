@@ -8,22 +8,35 @@ namespace DungeonChessBattle;
 public partial class MainMenuInterRefs : Node {
     [Export]
     public LineEdit? HostInput {
-        get; set;
+        get; private set;
     }
     [Export]
     public LineEdit? PortInput {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? ConnectButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? ServerManageButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Label? StatusLabel {
-        get; set;
+        get; private set;
+    }
+
+    public override void _Ready() {
+        if (HostInput == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] HostInput is not assigned!");
+        if (PortInput == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] PortInput is not assigned!");
+        if (ConnectButton == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] ConnectButton is not assigned!");
+        if (ServerManageButton == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] ServerManageButton is not assigned!");
+        if (StatusLabel == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] StatusLabel is not assigned!");
     }
 }

@@ -8,30 +8,47 @@ namespace DungeonChessBattle;
 public partial class GameLobbyInterRefs : Node {
     [Export]
     public LineEdit? RoomNameInput {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? CreateButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? RefreshButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Button? JoinButton {
-        get; set;
+        get; private set;
     }
     [Export]
     public Label? DetailLabel {
-        get; set;
+        get; private set;
     }
     [Export]
     public BoxContainer? RoomListContainer {
-        get; set;
+        get; private set;
     }
     [Export]
     public PackedScene? RoomInfoScene {
-        get; set;
+        get; private set;
+    }
+
+    public override void _Ready() {
+        if (RoomNameInput == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomNameInput is not assigned!");
+        if (CreateButton == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] CreateButton is not assigned!");
+        if (RefreshButton == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] RefreshButton is not assigned!");
+        if (JoinButton == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] JoinButton is not assigned!");
+        if (DetailLabel == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] DetailLabel is not assigned!");
+        if (RoomListContainer == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomListContainer is not assigned!");
+        if (RoomInfoScene == null)
+            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomInfoScene is not assigned!");
     }
 }

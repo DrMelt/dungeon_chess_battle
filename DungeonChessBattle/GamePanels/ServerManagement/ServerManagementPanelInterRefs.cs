@@ -8,31 +8,41 @@ namespace DungeonChessBattle;
 public partial class ServerManagementPanelInterRefs : Node {
     [Export]
     public LineEdit? PortInput {
-        get; set;
+        get; private set;
     }
-
     [Export]
     public Button? StartButton {
-        get; set;
+        get; private set;
     }
-
     [Export]
     public Button? StopButton {
-        get; set;
+        get; private set;
     }
-
     [Export]
     public Button? CloseButton {
-        get; set;
+        get; private set;
     }
-
     [Export]
     public Label? StatusLabel {
-        get; set;
+        get; private set;
     }
-
     [Export]
     public Label? LogLabel {
-        get; set;
+        get; private set;
+    }
+
+    public override void _Ready() {
+        if (PortInput == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] PortInput is not assigned!");
+        if (StartButton == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] StartButton is not assigned!");
+        if (StopButton == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] StopButton is not assigned!");
+        if (CloseButton == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] CloseButton is not assigned!");
+        if (StatusLabel == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] StatusLabel is not assigned!");
+        if (LogLabel == null)
+            GD.PrintErr("[ServerManagementPanelInterRefs] [Export] LogLabel is not assigned!");
     }
 }

@@ -7,28 +7,28 @@ namespace DungeonChessBattle;
 /// 服务器状态管理面板，提供启动/停止内嵌游戏服务器的功能。
 /// </summary>
 public partial class ServerManagementPanel : BaseGamePanel {
-    private ServerManagementPanelInterRefs? _interRefs;
     private GameServer? _server;
+
+    public ServerManagementPanelInterRefs? InterRefs { get; private set; }
     private bool _serverRunning;
 
     private const int DefaultPort = 9050;
 
     public override void _Ready() {
-        _interRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
-
-        if (_interRefs?.PortInput is not null)
-            _interRefs.PortInput.Text = DefaultPort.ToString();
-
-        if (_interRefs?.StartButton is not null)
-            _interRefs.StartButton.Pressed += OnStartPressed;
-
-        if (_interRefs?.StopButton is not null) {
-            _interRefs.StopButton.Pressed += OnStopPressed;
-            _interRefs.StopButton.Disabled = true;
+        InterRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
+        if (InterRefs is null) {
+            GD.PrintErr("[ServerManagementPanel] ServerManagementPanelInterRefs node not found.");
+            return;
         }
 
-        if (_interRefs?.CloseButton is not null)
-            _interRefs.CloseButton.Pressed += OnClosePressed;
+        InterRefs?.PortInput?.Text = DefaultPort.ToString();
+        InterRefs?.StartButton?.Pressed += OnStartPressed;
+        var stopBtn = InterRefs?.StopButton;
+        if (stopBtn is not null) {
+            stopBtn.Pressed += OnStopPressed;
+            stopBtn.Disabled = true;
+        }
+        InterRefs?.CloseButton?.Pressed += OnClosePressed;
 
         UpdateStatus("服务器未启动");
         AppendLog("面板已就绪");
@@ -42,7 +42,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
             return;
         }
 
-        string portText = _interRefs?.PortInput?.Text?.Trim() ?? "";
+        string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
         if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535) {
             AppendLog("端口号无效");
             return;
@@ -111,28 +111,27 @@ public partial class ServerManagementPanel : BaseGamePanel {
     #region UI Helpers
 
     private void UpdateButtonStates() {
-        if (_interRefs?.StartButton is not null)
-            _interRefs.StartButton.Disabled = _serverRunning;
-        if (_interRefs?.StopButton is not null)
-            _interRefs.StopButton.Disabled = !_serverRunning;
-        if (_interRefs?.PortInput is not null)
-            _interRefs.PortInput.Editable = !_serverRunning;
+        InterRefs?.StartButton?.Disabled = _serverRunning;
+        InterRefs?.StopButton?.Disabled = !_serverRunning;
+        InterRefs?.PortInput?.Editable = !_serverRunning;
     }
 
     private void UpdateStatus(string text, Color? color = null) {
-        if (_interRefs?.StatusLabel is null)
+        var label = InterRefs?.StatusLabel;
+        if (label is null)
             return;
 
-        _interRefs.StatusLabel.Text = $"状态: {text}";
-        _interRefs.StatusLabel.Modulate = color ?? Colors.Gray;
+        label.Text = $"状态: {text}";
+        label.Modulate = color ?? Colors.Gray;
     }
 
     private void AppendLog(string message) {
-        if (_interRefs?.LogLabel is null)
+        var log = InterRefs?.LogLabel;
+        if (log is null)
             return;
 
         string timestamp = System.DateTime.Now.ToString("HH:mm:ss");
-        string existing = _interRefs.LogLabel.Text;
+        string existing = log.Text;
         // 限制日志行数
         var lines = existing.Split('\n');
         if (lines.Length >= 50) {
@@ -141,7 +140,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
             existing = string.Join('\n', keep);
         }
 
-        _interRefs.LogLabel.Text = string.IsNullOrEmpty(existing)
+        log.Text = string.IsNullOrEmpty(existing)
             ? $"[{timestamp}] {message}"
             : $"{existing}\n[{timestamp}] {message}";
     }

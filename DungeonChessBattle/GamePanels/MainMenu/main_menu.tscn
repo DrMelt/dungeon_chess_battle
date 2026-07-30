@@ -64,7 +64,7 @@ mouse_filter = 1
 theme = ExtResource("1_8vrlr")
 script = ExtResource("1_main")
 
-[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871]
+[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871 node_paths=PackedStringArray("HostInput", "PortInput", "ConnectButton", "ServerManageButton", "StatusLabel")]
 script = ExtResource("2_irfs")
 HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
 PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")

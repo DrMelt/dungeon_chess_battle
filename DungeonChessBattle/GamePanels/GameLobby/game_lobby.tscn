@@ -69,7 +69,7 @@ grow_vertical = 2
 theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 
-[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535]
+[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer")]
 script = ExtResource("4_irfs")
 RoomNameInput = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
 CreateButton = NodePath("../BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")

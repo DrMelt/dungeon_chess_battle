@@ -88,7 +88,7 @@ mouse_filter = 1
 theme = ExtResource("1_cw211")
 script = ExtResource("1_main")
 
-[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244]
+[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244 node_paths=PackedStringArray("PortInput", "StartButton", "StopButton", "CloseButton", "StatusLabel", "LogLabel")]
 script = ExtResource("2_irfs")
 PortInput = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PortInput")
 StartButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StartButton")

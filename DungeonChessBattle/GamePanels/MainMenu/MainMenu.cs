@@ -13,7 +13,6 @@ public partial class MainMenu : BaseGamePanel {
 
     #region References
 
-    private MainMenuInterRefs? _interRefs;
     private NetworkBattleClient? _networkClient;
 
     [Export]
@@ -22,17 +21,25 @@ public partial class MainMenu : BaseGamePanel {
     [Export]
     private ServerManagementPanel? _serverMgmtPanel;
 
+    public MainMenuInterRefs? InterRefs {
+        get; private set;
+    }
+
     #endregion
 
     public override void _Ready() {
-        _interRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
+        InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
+        if (InterRefs is null) {
+            GD.PrintErr("[MainMenu] MainMenuInterRefs node not found.");
+            return;
+        }
+
+        // 验证所有 [Export] 字段是否已赋值
+        ValidateExports();
 
         // 连接按钮
-        if (_interRefs?.ConnectButton is not null)
-            _interRefs.ConnectButton.Pressed += OnConnectPressed;
-
-        if (_interRefs?.ServerManageButton is not null)
-            _interRefs.ServerManageButton.Pressed += OnServerManagePressed;
+        InterRefs?.ConnectButton?.Pressed += OnConnectPressed;
+        InterRefs?.ServerManageButton?.Pressed += OnServerManagePressed;
 
         // 初始隐藏 GameLobby，显示自身
         _gameLobby?.Visible = false;
@@ -41,8 +48,8 @@ public partial class MainMenu : BaseGamePanel {
     #region Button Handlers
 
     private void OnConnectPressed() {
-        string host = _interRefs?.HostInput?.Text?.Trim() ?? "";
-        string portText = _interRefs?.PortInput?.Text?.Trim() ?? "";
+        string host = InterRefs?.HostInput?.Text?.Trim() ?? "";
+        string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
 
         if (string.IsNullOrWhiteSpace(host)) {
             UpdateStatus("请输入服务器地址");
@@ -54,8 +61,7 @@ public partial class MainMenu : BaseGamePanel {
         }
 
         UpdateStatus($"正在连接 {host}:{port}...");
-        if (_interRefs?.ConnectButton is not null)
-            _interRefs.ConnectButton.Disabled = true;
+        InterRefs?.ConnectButton?.Disabled = true;
 
         try {
             _networkClient = new NetworkBattleClient();
@@ -74,8 +80,7 @@ public partial class MainMenu : BaseGamePanel {
         }
         catch (System.Exception ex) {
             UpdateStatus($"连接失败: {ex.Message}");
-            if (_interRefs?.ConnectButton is not null)
-                _interRefs.ConnectButton.Disabled = false;
+            InterRefs?.ConnectButton?.Disabled = false;
             GD.PrintErr($"[MainMenu] Connection failed: {ex.Message}");
         }
     }
@@ -88,9 +93,21 @@ public partial class MainMenu : BaseGamePanel {
 
     #region Helpers
 
+    /// <summary>
+    /// 验证所有 [Export] 导出字段是否已在 Godot 编辑器中正确赋值。
+    /// 如果未赋值，打印错误日志以辅助排查"点击无反应"类问题。
+    /// </summary>
+    private void ValidateExports() {
+        if (_gameLobby == null) {
+            GD.PrintErr("[MainMenu] [Export] _gameLobby is not assigned!");
+        }
+        if (_serverMgmtPanel == null) {
+            GD.PrintErr("[MainMenu] [Export] _serverMgmtPanel is not assigned!");
+        }
+    }
+
     private void UpdateStatus(string message) {
-        if (_interRefs?.StatusLabel is not null)
-            _interRefs.StatusLabel.Text = message;
+        InterRefs?.StatusLabel?.Text = message;
     }
 
     #endregion
