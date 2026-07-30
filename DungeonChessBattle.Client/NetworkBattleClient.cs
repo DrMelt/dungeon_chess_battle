@@ -27,15 +27,23 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     private const string ConnectionKey = "DungeonChessBattle";
     private const byte PacketHeader = 0xDC;
 
-    // Entity 缓存
+    // Entity 缓存（加锁保护，后台线程写入，Godot 主线程读取）
     private readonly Dictionary<string, BattleRoomEntity> _rooms = [];
     private readonly Dictionary<string, List<UnitSyncEntity>> _roomUnits = [];
+    private readonly object _roomLock = new();
+
+    // 待投递的事件队列（在后台线程收集，Update() 中统一投递）
+    private readonly Queue<Action> _pendingEventInvocations = new();
 
     // Events for Godot
     public event Action<string, float, float>? UnitHealthChanged;
     public event Action<string>? UnitDied;
     public event Action<string, SyncBuffData>? UnitBuffAdded;
     public event Action<string, SyncBuffData>? UnitBuffRemoved;
+
+    // 连接生命周期事件（通知 GameClientService 真正的连接/断开状态变化）
+    public event Action? OnFullyConnected;
+    public event Action? OnFullyDisconnected;
 
     public bool IsConnected => _serverPeer != null;
 
@@ -45,29 +53,42 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     public void Connect(string host, int port = DefaultPort) {
         _netClient.Start();
-        _serverPeer = _netClient.Connect(host, port, ConnectionKey);
+        _netClient.Connect(host, port, ConnectionKey);
+        // _serverPeer 等到 OnPeerConnected 回调中赋值，避免假阳性连接
     }
 
     public void Disconnect() {
         _netClient.Stop();
         _entityManager = null;
         _serverPeer = null;
-        _rooms.Clear();
-        _roomUnits.Clear();
+        lock (_roomLock) {
+            _rooms.Clear();
+            _roomUnits.Clear();
+        }
     }
 
-    public void Update(float _) {
+    public void Update(float delta) {
+        // LiteNetLib 网络事件必须显式 poll（否则 OnPeerConnected 等回调永不触发）
+        _netClient.PollEvents();
         _entityManager?.Update();
+
+        // 投递后台线程收集的事件
+        while (_pendingEventInvocations.TryDequeue(out var action)) {
+            action();
+        }
     }
 
     #region IClientBattleService
 
     public GameRoom? GetRoom(string roomId) {
-        _roomUnits.TryGetValue(roomId, out var units);
-        if (units == null)
-            return null;
+        List<UnitSyncEntity>? unitsSnapshot;
+        lock (_roomLock) {
+            if (!_roomUnits.TryGetValue(roomId, out var units))
+                return null;
+            unitsSnapshot = [.. units];
+        }
         var room = new GameRoom(roomId);
-        foreach (var u in units) {
+        foreach (var u in unitsSnapshot) {
             var model = BuildModelFromSync(u);
             if (u.Camp.Value == (byte)Core.Enums.EnumCamp.Camp_A)
                 room.UnitsA.Add(model);
@@ -77,16 +98,23 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
         return room;
     }
 
-    public IEnumerable<GameRoom> GetAllRooms()
-        => _rooms.Keys.Select(id => GetRoom(id)!).Where(r => r != null);
+    public IEnumerable<GameRoom> GetAllRooms() {
+        List<string> roomIds;
+        lock (_roomLock) {
+            roomIds = [.. _rooms.Keys];
+        }
+        return roomIds.Select(id => GetRoom(id)!).Where(r => r != null).ToList();
+    }
 
     public GameRoom CreateRoom(string roomId) {
         RequestCreateRoom(roomId);
         // 本地缓存一个临时房间对象
         var room = new GameRoom(roomId);
-        if (!_rooms.ContainsKey(roomId)) {
-            _rooms[roomId] = null!; // 等待服务器同步实体
-            _roomUnits[roomId] = [];
+        lock (_roomLock) {
+            if (!_rooms.ContainsKey(roomId)) {
+                _rooms[roomId] = null!; // 等待服务器同步实体
+                _roomUnits[roomId] = [];
+            }
         }
         return room;
     }
@@ -135,8 +163,11 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
         // Buff 结算由服务端权威执行，客户端仅接收同步更新
     }
 
-    public bool CheckBattleEnded(string roomId)
-        => _rooms.TryGetValue(roomId, out var r) && r.IsFinished.Value;
+    public bool CheckBattleEnded(string roomId) {
+        lock (_roomLock) {
+            return _rooms.TryGetValue(roomId, out var r) && r.IsFinished.Value;
+        }
+    }
 
     #endregion
 
@@ -144,6 +175,7 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     void INetEventListener.OnPeerConnected(NetPeer peer) {
         Console.WriteLine($"[Client] Connected. PeerId={peer.Id}");
+        _serverPeer = peer;
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         _entityManager = new ClientEntityManager(typesMap, lesPeer, PacketHeader);
@@ -155,14 +187,23 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
             .SubscribeToConstructed(OnUnitEntityCreated, callOnExisting: false);
         _entityManager.GetEntities<PlayerRoomEntity>()
             .SubscribeToConstructed(OnPlayerEntityCreated, callOnExisting: false);
+
+        // 通知上层真正的连接已建立
+        OnFullyConnected?.Invoke();
     }
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo info) {
-        Console.WriteLine($"[Client] Disconnected.");
+        Console.WriteLine($"[Client] Disconnected. Reason={info.Reason}");
         _entityManager = null;
         _serverPeer = null;
-        _rooms.Clear();
-        _roomUnits.Clear();
+
+        lock (_roomLock) {
+            _rooms.Clear();
+            _roomUnits.Clear();
+        }
+
+        // 通知上层连接已断开
+        OnFullyDisconnected?.Invoke();
     }
 
     void INetEventListener.OnNetworkError(IPEndPoint ep, SocketError err) {
@@ -209,10 +250,12 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     }
 
     private UnitSyncEntity? FindUnitEntityByName(string unitName) {
-        foreach (var (_, units) in _roomUnits) {
-            var match = units.Find(u => u.UnitName.Value == unitName);
-            if (match != null)
-                return match;
+        lock (_roomLock) {
+            foreach (var (_, units) in _roomUnits) {
+                var match = units.Find(u => u.UnitName.Value == unitName);
+                if (match != null)
+                    return match;
+            }
         }
         return null;
     }
@@ -224,36 +267,44 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     #region Entity Callbacks
 
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
-        _rooms[entity.RoomId.Value] = entity;
-        _roomUnits[entity.RoomId.Value] = [];
+        lock (_roomLock) {
+            _rooms[entity.RoomId.Value] = entity;
+            _roomUnits[entity.RoomId.Value] = [];
+        }
         Console.WriteLine($"[Client] Room entity created: {entity.RoomId.Value}");
     }
 
     private void OnUnitEntityCreated(UnitSyncEntity unit) {
         // 根据所属房间缓存（简单策略：遍历所有房间，加入最近创建的房间）
         var unitName = unit.UnitName.Value;
-        foreach (var (roomId, room) in _rooms) {
-            if (unitName.StartsWith(roomId)) {
-                _roomUnits[roomId].Add(unit);
-                break;
+        lock (_roomLock) {
+            foreach (var (roomId, room) in _rooms) {
+                if (unitName.StartsWith(roomId)) {
+                    _roomUnits[roomId].Add(unit);
+                    break;
+                }
+            }
+            // 如果没匹配到，加入最后一个房间
+            if (!_roomUnits.Values.Any(list => list.Contains(unit))) {
+                var lastRoomId = _rooms.Keys.LastOrDefault();
+                if (lastRoomId != null)
+                    _roomUnits[lastRoomId].Add(unit);
             }
         }
-        // 如果没匹配到，加入最后一个房间
-        if (!_roomUnits.Values.Any(list => list.Contains(unit))) {
-            var lastRoomId = _rooms.Keys.LastOrDefault();
-            if (lastRoomId != null)
-                _roomUnits[lastRoomId].Add(unit);
-        }
 
-        // 订阅单位事件，转发到公开事件
+        // 订阅单位事件，转发到公开事件（延迟到 Update() 中投递以保护订阅者的线程安全）
         unit.HealthChanged += (u, newHealth, oldHealth) =>
-            UnitHealthChanged?.Invoke(u.UnitName.Value, newHealth, oldHealth);
+            _pendingEventInvocations.Enqueue(() =>
+                UnitHealthChanged?.Invoke(u.UnitName.Value, newHealth, oldHealth));
         unit.UnitDied += (u) =>
-            UnitDied?.Invoke(u.UnitName.Value);
+            _pendingEventInvocations.Enqueue(() =>
+                UnitDied?.Invoke(u.UnitName.Value));
         unit.BuffAdded += (u, buff) =>
-            UnitBuffAdded?.Invoke(u.UnitName.Value, buff);
+            _pendingEventInvocations.Enqueue(() =>
+                UnitBuffAdded?.Invoke(u.UnitName.Value, buff));
         unit.BuffRemoved += (u, buff) =>
-            UnitBuffRemoved?.Invoke(u.UnitName.Value, buff);
+            _pendingEventInvocations.Enqueue(() =>
+                UnitBuffRemoved?.Invoke(u.UnitName.Value, buff));
 
         Console.WriteLine($"[Client] Unit entity created: {unit.UnitName.Value}, Camp={unit.Camp.Value}");
     }

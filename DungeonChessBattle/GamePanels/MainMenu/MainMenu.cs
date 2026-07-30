@@ -58,7 +58,11 @@ public partial class MainMenu : BaseGamePanel {
     /// 解决从 GameLobby / ServerManagementPanel 返回时按钮变灰无法点击的问题。
     /// </summary>
     protected override void OnPanelOpened() {
-        InterRefs?.ConnectButton?.Disabled = ServiceLocator.ClientService.IsConnected;
+        // 返回主界面时断开现有连接，允许用户重新连接
+        if (ServiceLocator.ClientService.IsConnected) {
+            ServiceLocator.ClientService.Disconnect();
+        }
+        InterRefs?.ConnectButton?.Disabled = false;
     }
 
     #region Button Handlers
@@ -91,6 +95,12 @@ public partial class MainMenu : BaseGamePanel {
     #region Service Event Handlers
 
     private void OnConnectionChanged(string host, int port, bool connected) {
+        // 使用 CallDeferred 确保 UI 操作在 Godot 主线程执行
+        // （ConnectionChanged 可能从后台线程 GameClient-Update 触发）
+        CallDeferred(nameof(DeferredConnectionChanged), host, port, connected);
+    }
+
+    private void DeferredConnectionChanged(string host, int port, bool connected) {
         if (connected) {
             UpdateStatus($"已连接到 {host}:{port}");
             EmitSignal(SignalName.ServerConnected);
@@ -99,7 +109,8 @@ public partial class MainMenu : BaseGamePanel {
         }
         else {
             UpdateStatus("连接已断开");
-            InterRefs?.ConnectButton?.Disabled = false;
+            if (InterRefs?.ConnectButton != null)
+                InterRefs.ConnectButton.Disabled = false;
         }
     }
 

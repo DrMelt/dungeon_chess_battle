@@ -18,7 +18,9 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
 
     private string _host = "";
     private int _port;
+    private long _connectStartTimestamp;
     private const double TickInterval = 0.05; // 20 Hz
+    private const double ConnectTimeoutSeconds = 10.0;
 
     public const int DefaultPort = 10170;
 
@@ -43,14 +45,22 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
             _host = host;
             _port = port;
             _client = new NetworkBattleClient();
+
+            // 连接状态改为由底层回调驱动，不再立即设为 true
+            _client.OnFullyConnected += () => {
+                _connected = true;
+                OnConnectionEstablished();
+            };
+            _client.OnFullyDisconnected += () => {
+                _connected = false;
+                OnConnectionLost();
+            };
+
+            _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
             _client.Connect(host, port);
-            _connected = true;
 
+            // 必须立即启动更新循环以驱动 PollEvents（否则 OnPeerConnected 永不触发）
             StartUpdateLoop();
-
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("已连接到 {Host}:{Port}", host, port);
-            ConnectionChanged?.Invoke(host, port, true);
         }
         catch (Exception ex) {
             _client = null;
@@ -58,6 +68,24 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
             _logger.LogError(ex, "连接失败");
             ConnectionChanged?.Invoke(host, port, false);
         }
+    }
+
+    private void OnConnectionEstablished() {
+        _connectStartTimestamp = 0; // 清除超时计时
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("已连接到 {Host}:{Port}", _host, _port);
+        ConnectionChanged?.Invoke(_host, _port, true);
+    }
+
+    private void OnConnectionLost() {
+        // OnPeerDisconnected 在 RunUpdate 线程中触发，不能 Join 自身
+        _running = false;
+        if (_updateThread != null && Thread.CurrentThread != _updateThread) {
+            _updateThread.Join(TimeSpan.FromSeconds(3));
+            _updateThread = null;
+        }
+        _logger.LogInformation("连接已断开");
+        ConnectionChanged?.Invoke(_host, _port, false);
     }
 
     public void Disconnect() {
@@ -101,8 +129,23 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
 
     private void StopUpdateLoop() {
         _running = false;
-        _updateThread?.Join(TimeSpan.FromSeconds(3));
+        // 避免在 RunUpdate 线程中 Join 自身（如断线回调触发的 StopUpdateLoop）
+        if (_updateThread != null && Thread.CurrentThread != _updateThread) {
+            _updateThread.Join(TimeSpan.FromSeconds(3));
+        }
         _updateThread = null;
+    }
+
+    private void HandleConnectionTimeout() {
+        _logger.LogWarning("连接超时 ({Host}:{Port})", _host, _port);
+        _connectStartTimestamp = 0;
+        _running = false;
+        _updateThread = null;
+
+        try { _client?.Disconnect(); } catch { }
+        _client = null;
+
+        ConnectionChanged?.Invoke(_host, _port, false);
     }
 
     private void RunUpdate() {
@@ -119,6 +162,15 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
                     _client?.Update((float)delta);
                 }
                 catch { }
+
+                // 连接超时检查
+                if (!_connected && _connectStartTimestamp != 0) {
+                    double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_connectStartTimestamp).TotalSeconds;
+                    if (elapsed > ConnectTimeoutSeconds) {
+                        HandleConnectionTimeout();
+                        return;
+                    }
+                }
             }
 
             Thread.Sleep(1);

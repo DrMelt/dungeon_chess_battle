@@ -81,8 +81,14 @@ public partial class GameLobby : BaseGamePanel {
         _refreshTimer.Timeout += OnRefreshRooms;
         AddChild(_refreshTimer);
 
-        // 首次刷新
-        OnRefreshRooms();
+    }
+
+    /// <summary>
+    /// 面板每次被 NavigateTo 打开时触发一次延迟刷新，
+    /// 给 Entity 同步留出时间（网络模式下 OnPeerConnected → Entity 构造需要数个 Tick）。
+    /// </summary>
+    protected override void OnPanelOpened() {
+        CallDeferred(nameof(OnRefreshRooms));
     }
 
     #region Button Handlers
