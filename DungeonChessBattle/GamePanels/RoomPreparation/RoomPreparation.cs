@@ -18,7 +18,9 @@ public partial class RoomPreparation : BaseGamePanel {
 
     private IClientBattleService? _clientService;
 
-    public RoomPreparationInterRefs? InterRefs { get; private set; }
+    public RoomPreparationInterRefs? InterRefs {
+        get; private set;
+    }
     private string _roomId = "";
     private EnumCamp _selectedCamp = EnumCamp.Camp_A;
     private string? _selectedUnitKey;

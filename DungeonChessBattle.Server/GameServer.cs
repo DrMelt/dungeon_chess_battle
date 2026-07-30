@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using LiteNetLib;
-using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
@@ -43,7 +42,7 @@ public class GameServer {
         UnitSyncEntity.SkillCastRequested += OnSkillCastRequested;
     }
 
-    public void StartAsync(int port = 9050) {
+    public void StartAsync(int port) {
         if (_running)
             return;
         _networkServer.Start(port);
@@ -58,7 +57,7 @@ public class GameServer {
     public void StartWithConsole() {
         if (_running)
             return;
-        StartAsync();
+        StartAsync(10170);
         Console.WriteLine("══════════════════════════════════════════");
         Console.WriteLine("  DungeonChessBattle Server (LES Edition)");
         Console.WriteLine("  Type 'help' for commands.");

@@ -1,18 +1,16 @@
 using Godot;
-using DungeonChessBattle.Server;
+using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
 
 /// <summary>
 /// 服务器状态管理面板，提供启动/停止内嵌游戏服务器的功能。
+/// 服务器生命周期由 GameServerService 后台服务管理，本面板仅负责 UI 交互。
 /// </summary>
 public partial class ServerManagementPanel : BaseGamePanel {
-    private GameServer? _server;
-
-    public ServerManagementPanelInterRefs? InterRefs { get; private set; }
-    private bool _serverRunning;
-
-    private const int DefaultPort = 9050;
+    public ServerManagementPanelInterRefs? InterRefs {
+        get; private set;
+    }
 
     public override void _Ready() {
         InterRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
@@ -21,7 +19,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
             return;
         }
 
-        InterRefs?.PortInput?.Text = DefaultPort.ToString();
+        InterRefs?.PortInput?.Text = ServiceLocator.DefaultPort.ToString();
         InterRefs?.StartButton?.Pressed += OnStartPressed;
         var stopBtn = InterRefs?.StopButton;
         if (stopBtn is not null) {
@@ -30,63 +28,37 @@ public partial class ServerManagementPanel : BaseGamePanel {
         }
         InterRefs?.CloseButton?.Pressed += OnClosePressed;
 
+        // 订阅后台服务事件
+        ServiceLocator.ServerService.StatusChanged += OnServerStatusChanged;
+
         UpdateStatus("服务器未启动");
-        AppendLog("面板已就绪");
     }
 
     #region Button Handlers
 
     private void OnStartPressed() {
-        if (_serverRunning) {
-            AppendLog("服务器已在运行中");
+        if (ServiceLocator.ServerService.IsRunning) {
             return;
         }
 
         string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
         if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535) {
-            AppendLog("端口号无效");
             return;
         }
 
-        try {
-            _server = new GameServer();
-            _server.StartAsync(port);
-            _serverRunning = true;
-
-            UpdateButtonStates();
-            UpdateStatus($"运行中 (端口 {port})", Colors.Green);
-            AppendLog($"服务器已启动，监听端口 {port}");
-        }
-        catch (System.Exception ex) {
-            AppendLog($"启动失败: {ex.Message}");
-            _server = null;
-            _serverRunning = false;
-            UpdateButtonStates();
-        }
+        ServiceLocator.ServerService.Start(port);
     }
 
     private void OnStopPressed() {
-        if (!_serverRunning || _server == null) {
-            AppendLog("服务器未在运行");
+        if (!ServiceLocator.ServerService.IsRunning) {
             return;
         }
 
-        try {
-            _server.Stop();
-            _server = null;
-            _serverRunning = false;
-
-            UpdateButtonStates();
-            UpdateStatus("服务器已停止");
-            AppendLog("服务器已停止");
-        }
-        catch (System.Exception ex) {
-            AppendLog($"停止失败: {ex.Message}");
-        }
+        ServiceLocator.ServerService.Stop();
     }
 
     private void OnClosePressed() {
-        if (_serverRunning) {
+        if (ServiceLocator.ServerService.IsRunning) {
             // 确认关闭对话框
             var confirm = new AcceptDialog {
                 Title = "确认",
@@ -94,7 +66,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
                 Exclusive = true,
             };
             confirm.Confirmed += () => {
-                StopAndHide();
+                ServiceLocator.ServerService.Stop();
+                ClosePanel();
                 confirm.QueueFree();
             };
             confirm.Canceled += () => confirm.QueueFree();
@@ -108,12 +81,27 @@ public partial class ServerManagementPanel : BaseGamePanel {
 
     #endregion
 
+    #region Service Event Handlers
+
+    private void OnServerStatusChanged(bool isRunning, int port) {
+        UpdateButtonStates();
+        if (isRunning) {
+            UpdateStatus($"运行中 (端口 {port})", Colors.Green);
+        }
+        else {
+            UpdateStatus("服务器已停止");
+        }
+    }
+
+    #endregion
+
     #region UI Helpers
 
     private void UpdateButtonStates() {
-        InterRefs?.StartButton?.Disabled = _serverRunning;
-        InterRefs?.StopButton?.Disabled = !_serverRunning;
-        InterRefs?.PortInput?.Editable = !_serverRunning;
+        bool running = ServiceLocator.ServerService.IsRunning;
+        InterRefs?.StartButton?.Disabled = running;
+        InterRefs?.StopButton?.Disabled = !running;
+        InterRefs?.PortInput?.Editable = !running;
     }
 
     private void UpdateStatus(string text, Color? color = null) {
@@ -125,50 +113,11 @@ public partial class ServerManagementPanel : BaseGamePanel {
         label.Modulate = color ?? Colors.Gray;
     }
 
-    private void AppendLog(string message) {
-        var log = InterRefs?.LogLabel;
-        if (log is null)
-            return;
-
-        string timestamp = System.DateTime.Now.ToString("HH:mm:ss");
-        string existing = log.Text;
-        // 限制日志行数
-        var lines = existing.Split('\n');
-        if (lines.Length >= 50) {
-            var keep = new string[49];
-            System.Array.Copy(lines, lines.Length - 49, keep, 0, 49);
-            existing = string.Join('\n', keep);
-        }
-
-        log.Text = string.IsNullOrEmpty(existing)
-            ? $"[{timestamp}] {message}"
-            : $"{existing}\n[{timestamp}] {message}";
-    }
-
-    private void StopAndHide() {
-        if (_serverRunning && _server != null) {
-            try {
-                _server.Stop();
-            }
-            catch { /* 忽略停止时的异常 */ }
-            _server = null;
-            _serverRunning = false;
-        }
-        UpdateButtonStates();
-        UpdateStatus("服务器已停止");
-        ClosePanel();
-    }
 
     #endregion
 
     public override void _ExitTree() {
-        if (_serverRunning && _server != null) {
-            try {
-                _server.Stop();
-            }
-            catch { /* 忽略 */ }
-            _server = null;
-            _serverRunning = false;
-        }
+        // 取消订阅，避免内存泄漏
+        ServiceLocator.ServerService.StatusChanged -= OnServerStatusChanged;
     }
 }

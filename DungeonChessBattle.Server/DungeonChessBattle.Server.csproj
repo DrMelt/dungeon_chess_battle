@@ -19,6 +19,7 @@
     <ItemGroup>
         <PackageReference Include="LiteNetLib" />
         <PackageReference Include="LiteEntitySystem" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>
 
 </Project>

@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using DungeonChessBattle.Client;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
 
 /// <summary>
 /// 游戏大厅主控脚本，负责房间列表展示、创建/加入房间等操作。
-/// 服务通过 SetClientService 注入，若未注入则自动以 Local 模式启动。
+/// 服务从 ServiceLocator 获取，不再由外部注入。
 /// </summary>
 public partial class GameLobby : BaseGamePanel {
     #region Signals
@@ -22,10 +22,7 @@ public partial class GameLobby : BaseGamePanel {
 
     #endregion
 
-    #region Service References
-
-    private IClientBattleService? _clientService;
-    private NetworkBattleClient? _networkClient;
+    #region References
 
     [Export]
     private RoomPreparation? _roomPreparation;
@@ -33,9 +30,14 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 公开服务实例，供外部组件获取。
     /// </summary>
-    public GameLobbyInterRefs? InterRefs { get; private set; }
+    public GameLobbyInterRefs? InterRefs {
+        get; private set;
+    }
 
-    public IClientBattleService? ClientService => _clientService;
+    /// <summary>
+    /// 当前客户端服务。从 ServiceLocator 获取。
+    /// </summary>
+    private static IClientBattleService? ClientService => ServiceLocator.ClientService.Client;
 
     #endregion
 
@@ -44,26 +46,8 @@ public partial class GameLobby : BaseGamePanel {
     private string? _selectedRoomId;
     private readonly Dictionary<string, RoomInfo> _roomInfoCache = [];
     private Timer? _refreshTimer;
-    private bool _isInitialized;
 
     #endregion
-
-    /// <summary>
-    /// 外部注入战斗服务（主场景在启动时调用）。
-    /// </summary>
-    public void SetClientService(IClientBattleService service) {
-        _clientService = service;
-
-        if (service is NetworkBattleClient nbClient) {
-            _networkClient = nbClient;
-            GD.Print("[GameLobby] Network mode activated.");
-        }
-        else {
-            GD.Print("[GameLobby] Local service set.");
-        }
-
-        _isInitialized = true;
-    }
 
     public override void _Ready() {
         InterRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
@@ -88,13 +72,6 @@ public partial class GameLobby : BaseGamePanel {
             joinBtn.Disabled = true;
         }
 
-        // 若外部未注入服务，则自动以 Local 模式备选
-        if (!_isInitialized) {
-            var localService = new GameLogicService();
-            SetClientService(localService);
-            GD.Print("[GameLobby] Initialized in Local mode (auto fallback).");
-        }
-
         // 启动定时刷新
         _refreshTimer = new Timer {
             WaitTime = 1.0,
@@ -117,23 +94,30 @@ public partial class GameLobby : BaseGamePanel {
             return;
         }
 
-        if (_networkClient != null && _networkClient.IsConnected) {
-            _networkClient.RequestCreateRoom(roomName);
-            GD.Print($"[GameLobby] Requested create room: {roomName}");
+        var clientService = ClientService;
+        if (clientService == null) {
+            GD.PrintErr("[GameLobby] Cannot create room: no service available.");
+            return;
         }
-        else if (_clientService is GameLogicService logicService) {
+
+        if (ServiceLocator.ClientService.IsConnected) {
+            // 网络模式：通过 NetworkBattleClient 请求
+            if (clientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
+                nbClient.RequestCreateRoom(roomName);
+                GD.Print($"[GameLobby] Requested create room: {roomName}");
+            }
+        }
+        else if (clientService is GameLogicService logicService) {
+            // 本地模式
             logicService.CreateRoom(roomName);
             GD.Print($"[GameLobby] Local room created: {roomName}");
-        }
-        else {
-            GD.PrintErr("[GameLobby] Cannot create room: not connected and not in local mode.");
         }
 
         InterRefs?.RoomNameInput?.Clear();
 
         // 本地模式：创建后直接进入房间准备
-        if (_clientService is GameLogicService && _roomPreparation != null) {
-            _roomPreparation.EnterRoom(roomName, _clientService);
+        if (!ServiceLocator.ClientService.IsConnected && clientService is GameLogicService && _roomPreparation != null) {
+            _roomPreparation.EnterRoom(roomName, clientService);
             NavigateTo(_roomPreparation);
         }
     }
@@ -142,7 +126,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 公开方法：开始战斗。由 RoomPreparation 调用。
     /// </summary>
     public void StartBattle(string roomId) {
-        if (_clientService == null) {
+        if (ClientService == null) {
             GD.PrintErr("[GameLobby] Cannot start battle: no service.");
             return;
         }
@@ -158,8 +142,8 @@ public partial class GameLobby : BaseGamePanel {
             return;
         }
 
-        if (_networkClient != null && _networkClient.IsConnected) {
-            _networkClient.RequestJoinRoom(_selectedRoomId);
+        if (ServiceLocator.ClientService.IsConnected && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
+            nbClient.RequestJoinRoom(_selectedRoomId);
             GD.Print($"[GameLobby] Requested join room: {_selectedRoomId}");
         }
         else {
@@ -168,10 +152,11 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     private void OnRefreshRooms() {
-        if (!_isInitialized || _clientService == null)
+        var clientService = ClientService;
+        if (clientService == null)
             return;
 
-        var rooms = _clientService.GetAllRooms().ToList();
+        var rooms = clientService.GetAllRooms().ToList();
         RefreshRoomList(rooms);
     }
 
@@ -238,8 +223,9 @@ public partial class GameLobby : BaseGamePanel {
         // 更新详情面板
         if (InterRefs?.DetailLabel != null) {
             InterRefs.DetailLabel.Text = $"选中房间: {roomId}\n";
-            if (_clientService != null) {
-                var gameRoom = _clientService.GetRoom(roomId);
+            var clientService = ClientService;
+            if (clientService != null) {
+                var gameRoom = clientService.GetRoom(roomId);
                 if (gameRoom != null) {
                     InterRefs.DetailLabel.Text += $"阵营A单位: {gameRoom.UnitsA.Count}\n";
                     InterRefs.DetailLabel.Text += $"阵营B单位: {gameRoom.UnitsB.Count}\n";

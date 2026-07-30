@@ -1,10 +1,11 @@
 using Godot;
-using DungeonChessBattle.Client;
+using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
 
 /// <summary>
 /// 主界面脚本，提供连接服务器功能。
+/// 连接生命周期由 GameClientService 后台服务管理，本面板仅负责 UI 交互。
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
 public partial class MainMenu : BaseGamePanel {
@@ -12,8 +13,6 @@ public partial class MainMenu : BaseGamePanel {
     public delegate void ServerConnectedEventHandler();
 
     #region References
-
-    private NetworkBattleClient? _networkClient;
 
     [Export]
     private GameLobby? _gameLobby;
@@ -41,8 +40,17 @@ public partial class MainMenu : BaseGamePanel {
         InterRefs?.ConnectButton?.Pressed += OnConnectPressed;
         InterRefs?.ServerManageButton?.Pressed += OnServerManagePressed;
 
+        // 订阅后台服务事件
+        ServiceLocator.ClientService.ConnectionChanged += OnConnectionChanged;
+
         // 初始隐藏 GameLobby，显示自身
         _gameLobby?.Visible = false;
+
+        // 默认端口
+        InterRefs?.PortInput?.Text = ServiceLocator.DefaultPort.ToString();
+
+        // 初始化本地模式（在没有网络连接时提供本地服务）
+        ServiceLocator.ClientService.InitLocalMode();
     }
 
     /// <summary>
@@ -51,7 +59,7 @@ public partial class MainMenu : BaseGamePanel {
     /// </summary>
     protected override void OnPanelOpened() {
         if (InterRefs?.ConnectButton != null) {
-            InterRefs.ConnectButton.Disabled = false;
+            InterRefs.ConnectButton.Disabled = ServiceLocator.ClientService.IsConnected;
         }
     }
 
@@ -73,30 +81,28 @@ public partial class MainMenu : BaseGamePanel {
         UpdateStatus($"正在连接 {host}:{port}...");
         InterRefs?.ConnectButton?.Disabled = true;
 
-        try {
-            _networkClient = new NetworkBattleClient();
-            _networkClient.Connect(host, port);
-
-            var provider = BattleServiceProvider.CreateNetwork(_networkClient);
-            _gameLobby?.SetClientService(provider.ClientService);
-
-            UpdateStatus($"已连接到 {host}:{port}");
-
-            // 切换界面：隐藏主菜单，显示大厅
-            NavigateTo(_gameLobby);
-
-            EmitSignal(SignalName.ServerConnected);
-            GD.Print($"[MainMenu] Connected to server: {host}:{port}");
-        }
-        catch (System.Exception ex) {
-            UpdateStatus($"连接失败: {ex.Message}");
-            InterRefs?.ConnectButton?.Disabled = false;
-            GD.PrintErr($"[MainMenu] Connection failed: {ex.Message}");
-        }
+        ServiceLocator.ClientService.Connect(host, port);
     }
 
     private void OnServerManagePressed() {
         NavigateTo(_serverMgmtPanel);
+    }
+
+    #endregion
+
+    #region Service Event Handlers
+
+    private void OnConnectionChanged(string host, int port, bool connected) {
+        if (connected) {
+            UpdateStatus($"已连接到 {host}:{port}");
+            EmitSignal(SignalName.ServerConnected);
+            // 切换界面：隐藏主菜单，显示大厅
+            NavigateTo(_gameLobby);
+        }
+        else {
+            UpdateStatus("连接已断开");
+            InterRefs?.ConnectButton?.Disabled = false;
+        }
     }
 
     #endregion
@@ -122,14 +128,7 @@ public partial class MainMenu : BaseGamePanel {
 
     #endregion
 
-    /// <summary>
-    /// 每帧更新网络客户端以处理实体同步。
-    /// </summary>
-    public override void _Process(double delta) {
-        _networkClient?.Update((float)delta);
-    }
-
     public override void _ExitTree() {
-        _networkClient?.Disconnect();
+        ServiceLocator.ClientService.ConnectionChanged -= OnConnectionChanged;
     }
 }
