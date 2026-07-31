@@ -55,7 +55,7 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
 
     BattleManager? IServerBattleService.GetBattle(string roomId) => _roomManager.GetBattle(roomId);
 
-    void IServerBattleService.AdvanceBattlePhase(BattleManager battle) => battle.Advance();
+    void IServerBattleService.TickBattle(BattleManager battle, float deltaTime) => battle.Tick(deltaTime);
 
     void IServerBattleService.EndBattle(BattleManager battle) {
         battle.EndBattle();

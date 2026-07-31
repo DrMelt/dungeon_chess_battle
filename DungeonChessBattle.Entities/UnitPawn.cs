@@ -1,3 +1,4 @@
+using System.Numerics;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -5,12 +6,18 @@ using DungeonChessBattle.Entities.SyncData;
 namespace DungeonChessBattle.Entities;
 
 /// <summary>
-/// 单位的网络同步 Entity。纯数据载体，由服务端直接操作 SyncVar/SyncList。
+/// 实时化的单位 Pawn 实体。继承 PawnLogic，支持移动、技能、预测回滚。
+/// 逐步替代 UnitSyncEntity（回合制纯数据载体）。
 /// </summary>
-public class UnitSyncEntity : EntityLogic {
+public class UnitPawn : PawnLogic {
+    // ── RPC ──────────────────────────────────────────────
     private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
 
+    // ── SyncVars ─────────────────────────────────────────
     public readonly SyncString UnitName = new();
+
+    public SyncVar<Vector2> Position;
+    public SyncVar<float> Rotation;
     public SyncVar<float> Health;
     public SyncVar<float> MaxHealth;
     public SyncVar<byte> Camp;
@@ -22,21 +29,20 @@ public class UnitSyncEntity : EntityLogic {
     public SyncVar<float> MagicTakePercent;
     public SyncVar<float> CureIntensity;
     public SyncVar<float> BaseSpeed;
+
     public readonly SyncList<SyncBuffData> BuffsList = [];
     public readonly SyncList<ushort> SkillIds = [];
     public readonly SyncList<SyncHateData> HatesList = [];
 
-    public event Action<UnitSyncEntity, float, float>? HealthChanged;
-    public event Action<UnitSyncEntity>? UnitDied;
-    public event Action<UnitSyncEntity, SyncBuffData>? BuffAdded;
-    public event Action<UnitSyncEntity, SyncBuffData>? BuffRemoved;
+    // ── 事件（客户端 UI 层监听） ──────────────────────────
+    public event Action<UnitPawn, float, float>? HealthChanged;
+    public event Action<UnitPawn>? UnitDied;
+    public event Action<UnitPawn, SyncBuffData>? BuffAdded;
+    public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
 
-    /// <summary>
-    /// 客户端发起技能请求时触发。回调参数为当前服务端实例和请求数据。
-    /// </summary>
-    public static event Action<UnitSyncEntity, SyncSkillRequest>? SkillCastRequested;
+    public static event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
 
-    public UnitSyncEntity(EntityParams entityParams) : base(entityParams) { }
+    public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
     protected override void OnConstructed() {
         Health.Value = 1000f;
@@ -53,7 +59,7 @@ public class UnitSyncEntity : EntityLogic {
 
     protected override void RegisterRPC(ref RPCRegistrator r) {
         base.RegisterRPC(ref r);
-        r.CreateRPCAction<UnitSyncEntity, SyncSkillRequest>(
+        r.CreateRPCAction<UnitPawn, SyncSkillRequest>(
             (e, req) => e.OnRpcCastSkill(req),
             ref CastSkillRPC,
             ExecuteFlags.ExecuteOnServer);
@@ -63,9 +69,6 @@ public class UnitSyncEntity : EntityLogic {
         SkillCastRequested?.Invoke(this, req);
     }
 
-    /// <summary>
-    /// 客户端调用，发起技能施放 RPC 到服务端。
-    /// </summary>
     public void RequestCastSkill(SyncSkillRequest req) {
         ExecuteRPC(CastSkillRPC, req);
     }
@@ -134,5 +137,17 @@ public class UnitSyncEntity : EntityLogic {
             }
         }
         HatesList.Add(new SyncHateData { TargetUnitNetId = targetUnitNetId, HateValue = hateValue });
+    }
+
+    public void ApplyMovement(Vector2 moveDir, float deltaTime) {
+        if (moveDir.LengthSquared() > 1f)
+            moveDir = Vector2.Normalize(moveDir);
+
+        Position.Value += moveDir * BaseSpeed.Value * deltaTime;
+    }
+
+    public void UpdateCooldowns(float deltaTime) {
+        if (GcdRemaining.Value > 0)
+            GcdRemaining.Value = Math.Max(0, GcdRemaining.Value - deltaTime);
     }
 }

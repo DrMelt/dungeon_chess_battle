@@ -1,6 +1,12 @@
 using DungeonChessBattle.Server;
+using Microsoft.Extensions.Logging;
 
-var server = new GameServer();
+using var loggerFactory = LoggerFactory.Create(builder => {
+    builder.AddConsole();
+    builder.SetMinimumLevel(LogLevel.Information);
+});
+
+var server = new GameServer(loggerFactory);
 
 // 注册 Ctrl+C 优雅退出
 Console.CancelKeyPress += (_, e) => {

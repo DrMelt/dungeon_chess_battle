@@ -8,8 +8,9 @@ namespace DungeonChessBattle.Client;
 /// 通过内部后台线程驱动帧更新，不依赖 Godot 节点生命周期。
 /// 支持本地模式回退。
 /// </summary>
-public sealed class GameClientService(ILogger<GameClientService> logger) {
+public sealed class GameClientService(ILogger<GameClientService> logger, ILoggerFactory loggerFactory) {
     private readonly ILogger<GameClientService> _logger = logger;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private NetworkBattleClient? _client;
     private GameLogicService? _localService;
     private Thread? _updateThread;
@@ -44,7 +45,7 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
         try {
             _host = host;
             _port = port;
-            _client = new NetworkBattleClient();
+            _client = new NetworkBattleClient(_loggerFactory.CreateLogger<NetworkBattleClient>());
 
             // 连接状态改为由底层回调驱动，不再立即设为 true
             _client.OnFullyConnected += () => {
@@ -142,7 +143,10 @@ public sealed class GameClientService(ILogger<GameClientService> logger) {
         _running = false;
         _updateThread = null;
 
-        try { _client?.Disconnect(); } catch { }
+        try {
+            _client?.Disconnect();
+        }
+        catch { }
         _client = null;
 
         ConnectionChanged?.Invoke(_host, _port, false);

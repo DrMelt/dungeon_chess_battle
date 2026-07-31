@@ -1,57 +1,56 @@
 namespace DungeonChessBattle.Logic.Battle;
 
+/// <summary>
+/// 战斗阶段（实时化简化：去掉回合制 PlayerTurn/SkillCasting）。
+/// </summary>
 public enum BattlePhase {
-    Waiting,
-    PlayerTurn,
-    SkillCasting,
-    Finished,
+    Waiting,   // 等待开始（大厅→战斗过渡）
+    Running,   // 战斗中（实时 Tick）
+    Finished,  // 战斗结束
 }
 
+/// <summary>
+/// 实时化战斗管理器。不再有回合概念，由 Tick(deltaTime) 驱动每帧逻辑。
+/// PhaseChanged 改为 BattleStarted / BattleEnded 事件。
+/// </summary>
 public class BattleManager {
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
-    public int RoundNumber {
+
+    /// <summary>战斗已运行的秒数</summary>
+    public float ElapsedTime {
         get; private set;
     }
 
-    public event Action<BattlePhase, BattlePhase>? PhaseChanged;
-    public event Action<int>? RoundStarted;
+    public event Action? BattleStarted;
+    public event Action? BattleEnded;
 
     public void StartBattle() {
-        RoundNumber = 1;
-        TransitionTo(BattlePhase.PlayerTurn);
-        RoundStarted?.Invoke(RoundNumber);
+        if (CurrentPhase == BattlePhase.Running)
+            return;
+
+        ElapsedTime = 0f;
+        var prev = CurrentPhase;
+        CurrentPhase = BattlePhase.Running;
+        if (prev != BattlePhase.Running)
+            BattleStarted?.Invoke();
     }
 
     /// <summary>
-    /// 推进到下个阶段。SkillCasting 后自动进入新回合的 PlayerTurn。
+    /// 每帧调用，驱动实时战斗逻辑（输入处理由 EntityManager 自动完成）。
+    /// 可选的额外逻辑层 tick（技能冷却、范围伤害判定等）。
     /// </summary>
-    public void Advance() {
-        var next = CurrentPhase switch {
-            BattlePhase.PlayerTurn => BattlePhase.SkillCasting,
-            BattlePhase.SkillCasting => BattlePhase.PlayerTurn,
-            _ => CurrentPhase,
-        };
-
-        // FIXME: [AI/2025-07-27] 当没有技能施放时不应进入 SkillCasting，当前未做守卫。
-        // 后续需要根据回合内是否提交过技能来决定是否跳过 SkillCasting 直接进入下回合。
-
-        if (next == BattlePhase.PlayerTurn) {
-            RoundNumber++;
-            RoundStarted?.Invoke(RoundNumber);
-        }
-
-        TransitionTo(next);
+    public void Tick(float deltaTime) {
+        if (CurrentPhase != BattlePhase.Running)
+            return;
+        ElapsedTime += deltaTime;
     }
 
     public void EndBattle() {
-        TransitionTo(BattlePhase.Finished);
-    }
-
-    private void TransitionTo(BattlePhase next) {
-        if (CurrentPhase == next)
+        if (CurrentPhase == BattlePhase.Finished)
             return;
         var prev = CurrentPhase;
-        CurrentPhase = next;
-        PhaseChanged?.Invoke(prev, next);
+        CurrentPhase = BattlePhase.Finished;
+        if (prev != BattlePhase.Finished)
+            BattleEnded?.Invoke();
     }
 }

@@ -9,6 +9,7 @@ using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.Network;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
 
@@ -21,6 +22,7 @@ public class GameServer {
     private readonly GameLobby _lobby;
     private readonly IServerBattleService _battleService;
     private readonly GameLogicService _logicService;
+    private readonly ILogger<GameServer> _logger;
     private Thread? _loopThread;
 
     private volatile bool _running;
@@ -28,18 +30,21 @@ public class GameServer {
     private double _lastTickTime;
 
     public bool IsRunning => _running;
-    private const double TickInterval = 0.05; // 20 Hz
+    private const double TickInterval = 0.016; // 60 Hz
 
-    public GameServer() {
+    public GameServer(ILoggerFactory loggerFactory) {
+        _logger = loggerFactory.CreateLogger<GameServer>();
         _logicService = new GameLogicService();
         _battleService = _logicService; // GameLogicService 同时实现 IServerBattleService
-        _networkServer = new EntityNetworkServer();
-        _lobby = new GameLobby(_networkServer, _battleService);
+        _networkServer = new EntityNetworkServer(loggerFactory.CreateLogger<EntityNetworkServer>());
+        _lobby = new GameLobby(_networkServer, _battleService, loggerFactory.CreateLogger<GameLobby>());
 
-        _networkServer.OnClientConnected += peerId =>
-            Console.WriteLine($"[Game] Client {peerId} connected.");
+        _networkServer.OnClientConnected += peerId => {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Game] Client {PeerId} connected.", peerId);
+        };
         _networkServer.OnCustomPacket += OnCustomPacket;
-        UnitSyncEntity.SkillCastRequested += OnSkillCastRequested;
+        UnitPawn.SkillCastRequested += OnPawnSkillCastRequested;
     }
 
     public void StartAsync(int port) {
@@ -51,7 +56,7 @@ public class GameServer {
 
         _loopThread = new Thread(RunLoop) { Name = "GameServer-MainLoop", IsBackground = true };
         _loopThread.Start();
-        Console.WriteLine("[GameServer] Started (async mode)");
+        _logger.LogInformation("[GameServer] Started (async mode)");
     }
 
     public void StartWithConsole() {
@@ -69,7 +74,8 @@ public class GameServer {
     public void Stop() {
         _running = false;
         _loopThread?.Join(TimeSpan.FromSeconds(3));
-        Console.WriteLine($"Server stopped. Peers: {_networkServer.PeerCount}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Server stopped. Peers: {PeerCount}", _networkServer.PeerCount);
         _networkServer.Stop();
     }
 
@@ -92,39 +98,40 @@ public class GameServer {
     private void Tick(double deltaTime) {
         _networkServer.EntityManager.Update();
 
-        foreach (var (roomId, syncUnits) in _lobby.RoomUnits) {
+        // 统一使用 UnitPawn 实时体系驱动所有战斗房间
+        foreach (var (roomId, pawns) in _lobby.RoomPawns) {
             if (!_lobby.Rooms.TryGetValue(roomId, out var roomEntity))
                 continue;
-            if (roomEntity.BattlePhase.Value == 0 || roomEntity.BattlePhase.Value == 4)
+            if ((BattlePhase)roomEntity.BattlePhase.Value != BattlePhase.Running)
                 continue;
 
             var gameRoom = _logicService.GetRoom(roomId);
-            if (gameRoom == null)
-                continue;
-
-            // Entity → Logic: 外部 Health 变更写入 IUnitState
-            GameLogicService.SyncHealthFromExternal(gameRoom,
-                syncUnits.Select(s => (s.UnitName.Value, s.Health.Value)));
-
-            // Buff 结算（通过接口调用）
             var battle = _battleService.GetBattle(roomId);
+
+            // 驱动战斗管理器 Tick
             if (battle != null) {
-                _battleService.UpdateBuffs(battle,
-                    gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
+                _battleService.TickBattle(battle, (float)deltaTime);
+                if (gameRoom != null)
+                    _battleService.UpdateBuffs(battle,
+                        gameRoom.UnitsA.Concat(gameRoom.UnitsB), deltaTime);
             }
 
-            // 战斗结束检查（PhaseChanged 事件订阅负责写入 IsFinished/WinnerCamp）
-            if (battle != null && _logicService.CheckBattleEnded(gameRoom)) {
+            // 驱动 UnitPawn 实时逻辑（技能冷却 + Service→Entity Health 同步）
+            foreach (var pawn in pawns) {
+                pawn.UpdateCooldowns((float)deltaTime);
+
+                // Service → Entity: Logic 层的血量变更写回 Pawn
+                if (gameRoom != null) {
+                    var model = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
+                        .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
+                    if (model != null && MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f)
+                        pawn.ServerSetHealth(model.Health);
+                }
+            }
+
+            // 战斗结束检查
+            if (battle != null && gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
                 _battleService.EndBattle(battle);
-            }
-
-            // Logic → Entity: 结算后的 Health 写回 UnitSyncEntity
-            var syncMap = syncUnits.ToDictionary(s => s.UnitName.Value);
-            foreach (var unit in gameRoom.UnitsA.Concat(gameRoom.UnitsB)) {
-                if (!syncMap.TryGetValue(unit.UnitStateName, out var syncUnit))
-                    continue;
-                if (MathF.Abs(syncUnit.Health.Value - unit.Health) > 0.0001f)
-                    syncUnit.ServerSetHealth(unit.Health);
             }
         }
     }
@@ -148,42 +155,33 @@ public class GameServer {
                 case "start_battle":
                     HandleStartBattle(root);
                     break;
-                case "advance_phase":
-                    HandleAdvancePhase();
-                    break;
-                case "next_round":
-                    HandleNextRound();
-                    break;
                 case "end_battle":
                     HandleEndBattle();
                     break;
                 default:
-                    Console.WriteLine($"[Game] Unknown command: {type}");
+                    _logger.LogWarning("[Game] Unknown command: {Type}", type);
                     break;
             }
         }
         catch (Exception ex) {
-            Console.WriteLine($"[Game] Custom packet error: {ex.Message}");
+            _logger.LogError(ex, "[Game] Custom packet error");
         }
     }
 
     private void SubscribePhaseSync(BattleManager battle, BattleRoomEntity roomEntity) {
-        battle.PhaseChanged += (prev, next) => {
-            roomEntity.BattlePhase.Value = next switch {
-                BattlePhase.PlayerTurn => 1,
-                BattlePhase.SkillCasting => 2,
-                BattlePhase.Finished => 4,
-                _ => 0
-            };
-            roomEntity.CurrentRound.Value = (ushort)battle.RoundNumber;
-            roomEntity.IsFinished.Value = next == BattlePhase.Finished;
+        battle.BattleStarted += () => {
+            roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
+            roomEntity.IsFinished.Value = false;
+        };
 
-            if (next == BattlePhase.Finished) {
-                var gameRoom = _logicService.GetRoom(roomEntity.RoomId.Value);
-                if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
-                    roomEntity.WinnerCamp.Value = (byte)(
-                        BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u);
-                }
+        battle.BattleEnded += () => {
+            roomEntity.BattlePhase.Value = (byte)BattlePhase.Finished;
+            roomEntity.IsFinished.Value = true;
+
+            var gameRoom = _logicService.GetRoom(roomEntity.RoomId.Value);
+            if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
+                roomEntity.WinnerCamp.Value = (byte)(
+                    BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u);
             }
         };
     }
@@ -191,23 +189,24 @@ public class GameServer {
     private void HandleCreateRoom(JsonElement root) {
         string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
         if (string.IsNullOrWhiteSpace(roomId)) {
-            Console.WriteLine("[Game] create_room: roomId is required.");
+            _logger.LogWarning("[Game] create_room: roomId is required.");
             return;
         }
 
         if (_lobby.Rooms.ContainsKey(roomId)) {
-            Console.WriteLine($"[Game] Room '{roomId}' already exists.");
+            _logger.LogWarning("[Game] Room '{RoomId}' already exists.", roomId);
             return;
         }
 
         _lobby.CreateRoomEntity(roomId);
-        Console.WriteLine($"[Game] Room '{roomId}' created.");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Room '{RoomId}' created.", roomId);
     }
 
     private void HandleJoinRoom(JsonElement root) {
         string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
         if (string.IsNullOrWhiteSpace(roomId)) {
-            Console.WriteLine("[Game] join_room: roomId is required.");
+            _logger.LogWarning("[Game] join_room: roomId is required.");
             return;
         }
 
@@ -216,7 +215,8 @@ public class GameServer {
         }
 
         // TODO: 创建 PlayerRoomEntity 关联该玩家到房间
-        Console.WriteLine($"[Game] Client joined room '{roomId}'.");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Client joined room '{RoomId}'.", roomId);
     }
 
     private void HandleStartBattle(JsonElement root) {
@@ -224,91 +224,57 @@ public class GameServer {
         var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
             ? r : _lobby.Rooms.Values.FirstOrDefault();
         if (roomEntity == null) {
-            Console.WriteLine("[Game] No room to start battle.");
+            _logger.LogWarning("[Game] No room to start battle.");
             return;
         }
 
         var battle = _battleService.StartBattleInRoom(roomEntity.RoomId.Value);
         SubscribePhaseSync(battle, roomEntity);
 
-        Console.WriteLine($"[Game] Battle started in room: {roomEntity.RoomId.Value}");
-    }
-
-    private void HandleAdvancePhase() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2);
-        if (roomEntity == null) {
-            Console.WriteLine("[Game] No active battle to advance.");
-            return;
-        }
-
-        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
-        if (battle == null) {
-            battle = _battleService.StartBattleInRoom(roomEntity.RoomId.Value);
-            // 新创建的战斗实例也需要订阅同步事件
-            SubscribePhaseSync(battle, roomEntity);
-        }
-        _battleService.AdvanceBattlePhase(battle);
-
-        Console.WriteLine($"[Game] Phase advanced to {roomEntity.BattlePhase.Value} in room: {roomEntity.RoomId.Value}");
-    }
-
-    private void HandleNextRound() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is 1 or 2);
-        if (roomEntity == null) {
-            Console.WriteLine("[Game] No active battle for next round.");
-            return;
-        }
-
-        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
-        if (battle == null)
-            return;
-
-        _battleService.AdvanceBattlePhase(battle);
-        // PhaseChanged 事件通过 SetPhaseSyncCallback 自动同步到 Entity
-
-        Console.WriteLine($"[Game] Round {roomEntity.CurrentRound.Value} in room: {roomEntity.RoomId.Value}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Battle started in room: {RoomId}", roomEntity.RoomId.Value);
     }
 
     private void HandleEndBattle() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value is not 0 and not 4);
+        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value != (byte)BattlePhase.Finished);
         if (roomEntity == null) {
-            Console.WriteLine("[Game] No active battle to end.");
+            _logger.LogWarning("[Game] No active battle to end.");
             return;
         }
 
         var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
         if (battle != null)
             _battleService.EndBattle(battle);
-        // PhaseChanged → Finished 通过 SetPhaseSyncCallback 自动同步到 Entity
 
-        Console.WriteLine($"[Game] Battle ended in room: {roomEntity.RoomId.Value}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Battle ended in room: {RoomId}", roomEntity.RoomId.Value);
     }
 
     /// <summary>
-    /// 处理通过 RPC 到达的技能施放请求。
+    /// 处理通过 UnitPawn RPC 到达的技能施放请求。
     /// </summary>
-    private void OnSkillCastRequested(UnitSyncEntity casterSync, SyncSkillRequest req) {
-        var targetSync = _lobby.GetUnitById(req.TargetUnitNetId);
-        if (targetSync == null) {
-            Console.WriteLine($"[Game] Skill RPC: target unit {req.TargetUnitNetId} not found.");
+    private void OnPawnSkillCastRequested(UnitPawn casterPawn, SyncSkillRequest req) {
+        var targetPawn = FindPawnById(req.TargetUnitNetId);
+        if (targetPawn == null) {
+            _logger.LogWarning("[Game] Skill RPC: target pawn {TargetId} not found.", req.TargetUnitNetId);
             return;
         }
 
-        var casterModel = _logicService.FindUnitModel(casterSync.UnitName.Value);
-        var targetModel = _logicService.FindUnitModel(targetSync.UnitName.Value);
+        var casterModel = _logicService.FindUnitModel(casterPawn.UnitName.Value);
+        var targetModel = _logicService.FindUnitModel(targetPawn.UnitName.Value);
         if (casterModel == null || targetModel == null) {
-            Console.WriteLine($"[Game] Skill RPC: unit model not found in Logic layer.");
+            _logger.LogWarning("[Game] Skill RPC: unit model not found in Logic layer.");
             return;
         }
 
-        var roomId = _lobby.FindRoomIdByUnit(casterSync);
+        var roomId = _lobby.FindRoomIdByPawn(casterPawn);
         if (string.IsNullOrEmpty(roomId)) {
-            Console.WriteLine("[Game] Skill RPC: room not found for caster.");
+            _logger.LogWarning("[Game] Skill RPC: room not found for caster.");
             return;
         }
         var battle = _battleService.GetBattle(roomId);
         if (battle == null) {
-            Console.WriteLine("[Game] Skill RPC: no active battle in room.");
+            _logger.LogWarning("[Game] Skill RPC: no active battle in room.");
             return;
         }
 
@@ -326,10 +292,23 @@ public class GameServer {
             _battleService.CastSkill(battle, casterModel, targetModel, skill);
         }
 
-        targetSync.ServerSetHealth(targetModel.Health);
+        targetPawn.ServerSetHealth(targetModel.Health);
 
-        Console.WriteLine($"[Game] Skill RPC result: {casterSync.UnitName.Value} -> {targetSync.UnitName.Value}, " +
-                          $"HP: {oldTargetHealth:F0} -> {targetSync.Health.Value:F0}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Skill RPC result: {Caster} -> {Target}, HP: {OldHealth:F0} -> {NewHealth:F0}",
+                casterPawn.UnitName.Value, targetPawn.UnitName.Value, oldTargetHealth, targetPawn.Health.Value);
+    }
+
+    /// <summary>
+    /// 在所有 RoomPawns 中按 NetId 查找 UnitPawn。
+    /// </summary>
+    private UnitPawn? FindPawnById(ushort netId) {
+        foreach (var (_, pawns) in _lobby.RoomPawns) {
+            var match = pawns.Find(p => p.Id == netId);
+            if (match != null)
+                return match;
+        }
+        return null;
     }
 
     #endregion

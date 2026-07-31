@@ -7,8 +7,9 @@ namespace DungeonChessBattle.Server;
 /// 提供 Start/Stop 操作和状态事件通知。
 /// GameServer 内部已有独立驱动线程，本类不创建额外线程。
 /// </summary>
-public sealed class GameServerService(ILogger<GameServerService> logger) {
+public sealed class GameServerService(ILogger<GameServerService> logger, ILoggerFactory loggerFactory) {
     private readonly ILogger<GameServerService> _logger = logger;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private GameServer? _server;
     private int _port;
 
@@ -27,7 +28,7 @@ public sealed class GameServerService(ILogger<GameServerService> logger) {
 
         try {
             _port = port;
-            _server = new GameServer();
+            _server = new GameServer(_loggerFactory);
             _server.StartAsync(port);
 
             if (_logger.IsEnabled(LogLevel.Information))

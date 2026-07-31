@@ -1,23 +1,25 @@
+using System.Numerics;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// 大厅模块，负责房间/单位的 CRUD、实体缓存和交互式 CLI。
-/// 创建 UnitSyncEntity 时同步在 Logic 层创建对应的 UnitModel。
+/// 实时化：完全使用 UnitPawn，不再依赖 UnitSyncEntity。
 /// </summary>
-public class GameLobby(EntityNetworkServer networkServer, IServerBattleService battleService) {
+public class GameLobby(EntityNetworkServer networkServer, IServerBattleService battleService, ILogger<GameLobby> logger) {
     private readonly EntityNetworkServer _networkServer = networkServer;
     private readonly IServerBattleService _battleService = battleService;
+    private readonly ILogger<GameLobby> _logger = logger;
 
     private readonly Dictionary<string, BattleRoomEntity> _roomEntities = [];
-    private readonly Dictionary<string, List<UnitSyncEntity>> _roomUnits = [];
-    private readonly Dictionary<ushort, UnitSyncEntity> _unitById = [];
+    private readonly Dictionary<string, List<UnitPawn>> _roomPawns = [];
 
     public IReadOnlyDictionary<string, BattleRoomEntity> Rooms => _roomEntities;
-    public IReadOnlyDictionary<string, List<UnitSyncEntity>> RoomUnits => _roomUnits;
+    public IReadOnlyDictionary<string, List<UnitPawn>> RoomPawns => _roomPawns;
 
     public BattleRoomEntity CreateRoomEntity(string roomId) {
         if (_roomEntities.TryGetValue(roomId, out BattleRoomEntity? value))
@@ -26,7 +28,7 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
             e.RoomId.Value = roomId;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{roomId}'.");
         _roomEntities[roomId] = entity;
-        _roomUnits[roomId] = [];
+        _roomPawns[roomId] = [];
 
         // 同步在 Logic 层创建对应房间
         _battleService.CreateRoom(roomId);
@@ -34,16 +36,21 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
         return entity;
     }
 
-    public UnitSyncEntity CreateUnitEntity(string roomId, string unitName, byte camp) {
-        if (!_roomUnits.TryGetValue(roomId, out var units))
-            throw new InvalidOperationException($"Room {roomId} not found.");
-
-        var entity = _networkServer.EntityManager.AddEntity<UnitSyncEntity>(e => {
+    /// <summary>
+    /// 创建实时 UnitPawn 实体。
+    /// </summary>
+    public UnitPawn CreatePawnEntity(string roomId, string unitName, byte camp, Vector2 spawnPos) {
+        var entity = _networkServer.EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitName.Value = unitName;
             e.Camp.Value = camp;
-        }) ?? throw new InvalidOperationException($"Failed to create UnitSyncEntity for unit '{unitName}' in room '{roomId}'.");
-        units.Add(entity);
-        _unitById[entity.Id] = entity;
+            e.Position.Value = spawnPos;
+        }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{roomId}'.");
+
+        if (!_roomPawns.TryGetValue(roomId, out var list)) {
+            list = [];
+            _roomPawns[roomId] = list;
+        }
+        list.Add(entity);
 
         // 委托 Logic 层创建单位
         if (_battleService is GameLogicService logicService) {
@@ -53,44 +60,35 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
         return entity;
     }
 
-    public bool RemoveRoom(string roomId) {
-        _roomUnits.Remove(roomId);
-        _roomEntities.Remove(roomId);
-        _battleService.RemoveRoom(roomId);
-        return true;
+    /// <summary>
+    /// 获取指定房间的所有 UnitPawn（可能为空列表）。
+    /// </summary>
+    public IReadOnlyList<UnitPawn> GetRoomPawns(string roomId) {
+        return _roomPawns.TryGetValue(roomId, out var list) ? list : [];
     }
 
     /// <summary>
-    /// 通过 NetId 查找 UnitSyncEntity。
+    /// 根据 UnitPawn 查找其所属的房间 ID。
     /// </summary>
-    public UnitSyncEntity? GetUnitById(ushort netId) {
-        _unitById.TryGetValue(netId, out var unit);
-        return unit;
-    }
-
-    public UnitSyncEntity? FindUnitByName(string unitName) {
-        foreach (var (_, units) in _roomUnits) {
-            var unit = units.Find(u => u.UnitName.Value == unitName);
-            if (unit != null)
-                return unit;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// 根据 UnitSyncEntity 查找其所属的房间 ID。
-    /// </summary>
-    public string? FindRoomIdByUnit(UnitSyncEntity syncUnit) {
-        foreach (var (roomId, units) in _roomUnits) {
-            if (units.Contains(syncUnit))
+    public string? FindRoomIdByPawn(UnitPawn pawn) {
+        foreach (var (roomId, pawns) in _roomPawns) {
+            if (pawns.Contains(pawn))
                 return roomId;
         }
         return null;
     }
 
+    public bool RemoveRoom(string roomId) {
+        _roomPawns.Remove(roomId);
+        _roomEntities.Remove(roomId);
+        _battleService.RemoveRoom(roomId);
+        return true;
+    }
+
     public void ListRooms() {
         foreach (var (id, room) in _roomEntities) {
-            Console.WriteLine($"  {id}: Phase={room.BattlePhase.Value}, Round={room.CurrentRound.Value}, Units={_roomUnits.GetValueOrDefault(id)?.Count ?? 0}");
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("  {RoomId}: Phase={Phase}, Pawns={PawnCount}", id, room.BattlePhase.Value, _roomPawns.GetValueOrDefault(id)?.Count ?? 0);
         }
     }
 

@@ -7,6 +7,7 @@ namespace DungeonChessBattle.Logic.Services;
 /// <summary>
 /// 服务端战斗服务接口，包含房间管理、战斗流程控制等完整操作。
 /// 服务端内部使用，保留 BattleManager 作为上下文参数。
+/// 实时化简化：TickBattle 取代回合制 AdvanceBattlePhase。
 /// </summary>
 public interface IServerBattleService {
     // 房间管理
@@ -18,7 +19,7 @@ public interface IServerBattleService {
     // 战斗流程
     BattleManager StartBattleInRoom(string roomId);
     BattleManager? GetBattle(string roomId);
-    void AdvanceBattlePhase(BattleManager battle);
+    void TickBattle(BattleManager battle, float deltaTime);
     void EndBattle(BattleManager battle);
 
     // 技能

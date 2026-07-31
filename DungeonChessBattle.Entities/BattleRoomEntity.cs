@@ -9,8 +9,6 @@ namespace DungeonChessBattle.Entities;
 public class BattleRoomEntity : EntityLogic {
     public readonly SyncString RoomId = new();
     public SyncVar<byte> BattlePhase;
-    public SyncVar<ushort> CurrentRound;
-    public SyncVar<byte> ActiveCamp;
     public SyncVar<bool> IsFinished;
     public SyncVar<byte> WinnerCamp;
 
@@ -18,8 +16,6 @@ public class BattleRoomEntity : EntityLogic {
 
     protected override void OnConstructed() {
         BattlePhase.Value = 0;
-        CurrentRound.Value = 1;
-        ActiveCamp.Value = 1;
         IsFinished.Value = false;
         WinnerCamp.Value = 0;
     }

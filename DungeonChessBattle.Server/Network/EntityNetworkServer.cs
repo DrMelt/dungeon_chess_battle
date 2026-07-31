@@ -4,6 +4,7 @@ using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Network;
 
@@ -14,6 +15,7 @@ namespace DungeonChessBattle.Server.Network;
 public class EntityNetworkServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ServerEntityManager _entityManager;
+    private readonly ILogger<EntityNetworkServer> _logger;
     private const int DefaultPort = 9050;
     private const string ConnectionKey = "DungeonChessBattle";
     private const byte PacketHeader = 0xDC;
@@ -24,12 +26,13 @@ public class EntityNetworkServer : INetEventListener {
     /// <summary>非 LES 自定义包回调。第一个 byte 已跳过 LES header。</summary>
     public event Action<NetPeer, ReadOnlySpan<byte>>? OnCustomPacket;
 
-    public EntityNetworkServer() {
+    public EntityNetworkServer(ILogger<EntityNetworkServer> logger) {
+        _logger = logger;
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         _entityManager = new ServerEntityManager(
             typesMap,
             PacketHeader,
-            framesPerSecond: 20,
+            framesPerSecond: 60,
             sendRate: ServerSendRate.EqualToFPS);
 
         _netManager = new NetManager(this);
@@ -37,12 +40,13 @@ public class EntityNetworkServer : INetEventListener {
 
     public void Start(int port = DefaultPort) {
         _netManager.Start(port);
-        Console.WriteLine($"[EntityNetwork] Listening on port {port}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[EntityNetwork] Listening on port {Port}", port);
     }
 
     public void Stop() {
         _netManager.Stop();
-        Console.WriteLine("[EntityNetwork] Stopped");
+        _logger.LogInformation("[EntityNetwork] Stopped");
     }
 
     public void PollEvents() {
@@ -58,19 +62,21 @@ public class EntityNetworkServer : INetEventListener {
     void INetEventListener.OnPeerConnected(NetPeer peer) {
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var player = _entityManager.AddPlayer(lesPeer);
-        Console.WriteLine($"[EntityNetwork] Peer connected: {peer.Id}, PlayerId: {player?.Id}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[EntityNetwork] Peer connected: {PeerId}, PlayerId: {PlayerId}", peer.Id, player?.Id);
         OnClientConnected?.Invoke(peer.Id);
     }
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
         if (peer.Tag is LiteNetLibNetPeer lesPeer)
             _entityManager.RemovePlayer(lesPeer);
-        Console.WriteLine($"[EntityNetwork] Peer disconnected: {peer.Id}, Reason: {disconnectInfo.Reason}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[EntityNetwork] Peer disconnected: {PeerId}, Reason: {Reason}", peer.Id, disconnectInfo.Reason);
         OnClientDisconnected?.Invoke(peer.Id);
     }
 
     void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError) {
-        Console.WriteLine($"[EntityNetwork] Error: {socketError} from {endPoint}");
+        _logger.LogError("[EntityNetwork] Error: {SocketError} from {EndPoint}", socketError, endPoint);
     }
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
