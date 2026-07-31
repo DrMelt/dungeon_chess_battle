@@ -95,7 +95,9 @@ public sealed class GameClientService(ILogger<GameClientService> logger, ILogger
         try {
             _client?.Disconnect();
         }
-        catch { }
+        catch (Exception ex) {
+            _logger.LogDebug(ex, "断开连接异常");
+        }
 
         _client = null;
         _connected = false;
@@ -146,7 +148,9 @@ public sealed class GameClientService(ILogger<GameClientService> logger, ILogger
         try {
             _client?.Disconnect();
         }
-        catch { }
+        catch (Exception ex) {
+            _logger.LogDebug(ex, "断开连接异常");
+        }
         _client = null;
 
         ConnectionChanged?.Invoke(_host, _port, false);
@@ -165,7 +169,9 @@ public sealed class GameClientService(ILogger<GameClientService> logger, ILogger
                 try {
                     _client?.Update((float)delta);
                 }
-                catch { }
+                catch (Exception ex) {
+                    _logger.LogWarning(ex, "客户端更新异常");
+                }
 
                 // 连接超时检查
                 if (!_connected && _connectStartTimestamp != 0) {
