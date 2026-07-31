@@ -16,11 +16,12 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Server;
 
 /// <summary>
-/// 游戏服务端主控类。使用 LiteEntitySystem 替代原有 JSON 消息系统。
-/// 大厅/房间管理委托给 GameLobby 模块，战斗逻辑委托给 GameLogicService。
+/// 游戏服务端主控类。
+/// 大厅端口 (10170) 处理 create_room / join_room 等 JSON 消息，
+/// 每个房间拥有独立的端口 + ServerEntityManager 实现物理隔离。
 /// </summary>
 public class GameServer {
-    private readonly EntityNetworkServer _networkServer;
+    private readonly LobbyNetworkServer _lobbyServer;
     private readonly GameLobby _lobby;
     private readonly IServerBattleService _battleService;
     private readonly GameLogicService _logicService;
@@ -38,29 +39,25 @@ public class GameServer {
         _logger = loggerFactory.CreateLogger<GameServer>();
         _logicService = new GameLogicService();
         _battleService = _logicService; // GameLogicService 同时实现 IServerBattleService
-        _networkServer = new EntityNetworkServer(loggerFactory.CreateLogger<EntityNetworkServer>());
-        _lobby = new GameLobby(_networkServer, _battleService, loggerFactory.CreateLogger<GameLobby>());
+        _lobbyServer = new LobbyNetworkServer(loggerFactory.CreateLogger<LobbyNetworkServer>());
+        _lobby = new GameLobby(_battleService, loggerFactory);
 
-        _networkServer.OnClientConnected += peerId => {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[Game] Client {PeerId} connected.", peerId);
-        };
-        _networkServer.OnCustomPacket += OnCustomPacket;
+        _lobbyServer.OnCustomPacket += OnCustomPacket;
         UnitPawn.SkillCastRequested += OnPawnSkillCastRequested;
         BattleRoomEntity.CreateUnitRequested += OnRoomCreateUnitRequested;
         BattleRoomEntity.StartBattleRequested += OnRoomStartBattleRequested;
     }
 
-    public void StartAsync(int port) {
+    public void StartAsync(int lobbyPort) {
         if (_running)
             return;
-        _networkServer.Start(port);
+        _lobbyServer.Start(lobbyPort);
         _running = true;
         _lastTickTime = _tickWatch.Elapsed.TotalSeconds;
 
         _loopThread = new Thread(RunLoop) { Name = "GameServer-MainLoop", IsBackground = true };
         _loopThread.Start();
-        _logger.LogInformation("[GameServer] Started (async mode)");
+        _logger.LogInformation("[GameServer] Started (async mode, lobby port: {Port})", lobbyPort);
     }
 
     public void StartWithConsole() {
@@ -68,26 +65,35 @@ public class GameServer {
             return;
         StartAsync(10170);
         Console.WriteLine("══════════════════════════════════════════");
-        Console.WriteLine("  DungeonChessBattle Server (LES Edition)");
+        Console.WriteLine("  DungeonChessBattle Server (Multi-Room)");
         Console.WriteLine("  Type 'help' for commands.");
         Console.WriteLine("══════════════════════════════════════════");
-        _lobby.RunConsoleLoop(() => _networkServer.PeerCount, () => _tickWatch.Elapsed);
+        _lobby.RunConsoleLoop(() => _lobbyServer.PeerCount, () => _tickWatch.Elapsed);
         Stop();
     }
 
     public void Stop() {
         _running = false;
         _loopThread?.Join(TimeSpan.FromSeconds(3));
+
+        // 停止所有房间服务器
+        foreach (var (_, server) in _lobby.RoomServers)
+            server.Stop();
+
+        _lobbyServer.Stop();
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Server stopped. Peers: {PeerCount}", _networkServer.PeerCount);
-        _networkServer.Stop();
+            _logger.LogInformation("Server stopped.");
     }
 
     private void RunLoop() {
         while (_running) {
             double now = _tickWatch.Elapsed.TotalSeconds;
             double deltaTime = now - _lastTickTime;
-            _networkServer.PollEvents();
+            _lobbyServer.PollEvents();
+
+            // 驱动所有房间服务器的网络事件
+            foreach (var (_, server) in _lobby.RoomServers)
+                server.PollEvents();
 
             if (deltaTime >= TickInterval) {
                 _lastTickTime = now;
@@ -100,9 +106,11 @@ public class GameServer {
     }
 
     private void Tick(double deltaTime) {
-        _networkServer.EntityManager.Update();
+        // 更新所有房间的 EntityManager
+        foreach (var (_, server) in _lobby.RoomServers)
+            server.EntityManager.Update();
 
-        // 统一使用 UnitPawn 实时体系驱动所有战斗房间
+        // 驱动每个房间的战斗逻辑
         foreach (var (roomId, pawns) in _lobby.RoomPawns) {
             if (!_lobby.Rooms.TryGetValue(roomId, out var roomEntity))
                 continue;
@@ -140,7 +148,7 @@ public class GameServer {
         }
     }
 
-    #region Custom Packet Handler
+    #region Custom Packet Handler (Lobby)
 
     private void OnCustomPacket(NetPeer peer, ReadOnlySpan<byte> data) {
         try {
@@ -197,10 +205,13 @@ public class GameServer {
             return;
         }
 
-        _lobby.CreateRoomEntity(roomId);
-        SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
+        // 创建房间服务器（端口 + SEM + BattleRoomEntity）
+        var (server, port) = _lobby.EnsureRoomServer(roomId);
+
+        // 创建房间后也应将客户端重定向到房间端口
+        SendToPeer(peer, MessageWriter.WriteJoinRoomRedirect(roomId, port));
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Room '{RoomId}' created.", roomId);
+            _logger.LogInformation("[Game] Room '{RoomId}' created, client redirected to port {Port}.", roomId, port);
     }
 
     private void HandleJoinRoom(NetPeer peer, JsonElement root) {
@@ -211,31 +222,36 @@ public class GameServer {
             return;
         }
 
-        if (!_lobby.Rooms.ContainsKey(roomId)) {
-            _lobby.CreateRoomEntity(roomId);
-        }
+        // 确保房间存在（不存在则创建，也允许直接加入已存在的房间）
+        var (server, port) = _lobby.EnsureRoomServer(roomId);
 
-        // 回发加入成功响应
-        SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, true));
+        // 回发重定向响应（携带房间端口号）
+        SendToPeer(peer, MessageWriter.WriteJoinRoomRedirect(roomId, port));
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Client joined room '{RoomId}'.", roomId);
+            _logger.LogInformation("[Game] Client redirected to room '{RoomId}' on port {Port}.", roomId, port);
     }
 
     #endregion
 
-    #region RPC Event Handlers
+    #region RPC Event Handlers (跨房间事件，从各个 SEM 的 Entity 触发)
 
     /// <summary>
     /// 处理客户端通过 RPC 发来的创建单位请求。
     /// </summary>
     private void OnRoomCreateUnitRequested(BattleRoomEntity roomEntity, SyncCreateUnitRequest req) {
         string roomId = roomEntity.RoomId.Value;
+        var roomServer = _lobby.GetRoomServer(roomId);
+        if (roomServer == null) {
+            _logger.LogWarning("[Game] CreateUnit RPC: room server not found for {RoomId}", roomId);
+            return;
+        }
+
         // 根据阵营计算默认出生点
         var spawnPos = req.Camp == 1
             ? new Vector2(0, 0)
             : new Vector2(5, 0);
 
-        _lobby.CreatePawnEntity(roomId, req.UnitName, req.Camp, spawnPos);
+        _lobby.CreatePawnEntity(roomServer, roomId, req.UnitName, req.Camp, spawnPos);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Unit created via RPC: {UnitName} in room {RoomId}, camp={Camp}",
@@ -256,8 +272,7 @@ public class GameServer {
 
     #endregion
 
-    #region Custom Packet Handler (continued)
-
+    #region Skill & Helpers
 
     /// <summary>
     /// 处理通过 UnitPawn RPC 到达的技能施放请求。

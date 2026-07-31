@@ -16,11 +16,12 @@ public static class MessageWriter {
     private static readonly JsonEncodedText ErrorKey = JsonEncodedText.Encode("error");
     private static readonly JsonEncodedText UnitNameKey = JsonEncodedText.Encode("unitName");
     private static readonly JsonEncodedText CampKey = JsonEncodedText.Encode("camp");
+    private static readonly JsonEncodedText PortKey = JsonEncodedText.Encode("port");
 
     /// <summary>
     /// 写入响应消息：{ "type":..., "roomId":..., "success":bool[, "error":...] }
     /// </summary>
-    public static byte[] WriteResponse(string type, string? roomId, bool success, string? error = null) {
+    public static byte[] WriteResponse(string type, string? roomId, bool success, string? error = null, int? port = null) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -30,6 +31,8 @@ public static class MessageWriter {
         writer.WriteBoolean(SuccessKey, success);
         if (error != null)
             writer.WriteString(ErrorKey, error);
+        if (port.HasValue)
+            writer.WriteNumber(PortKey, port.Value);
         writer.WriteEndObject();
 
         writer.Flush();
@@ -68,5 +71,12 @@ public static class MessageWriter {
 
         writer.Flush();
         return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入加入房间重定向响应：{ "type":"join_room_redirect", "roomId":..., "success":true, "port":... }
+    /// </summary>
+    public static byte[] WriteJoinRoomRedirect(string roomId, int roomPort) {
+        return WriteResponse(MessageType.JoinRoomRedirect, roomId, true, port: roomPort);
     }
 }

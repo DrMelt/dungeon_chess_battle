@@ -15,6 +15,9 @@ public static class MessageType {
     // ── 响应类型 ──
     public const string CreateRoomResponse = "create_room_response";
     public const string JoinRoomResponse = "join_room_response";
+
+    // ── 大厅重定向 ──
+    public const string JoinRoomRedirect = "join_room_redirect";
 }
 
 /// <summary>
@@ -27,4 +30,5 @@ public static class MessageProperty {
     public const string Error = "error";
     public const string UnitName = "unitName";
     public const string Camp = "camp";
+    public const string Port = "port";
 }

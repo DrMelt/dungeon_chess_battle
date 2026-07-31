@@ -9,38 +9,86 @@ namespace DungeonChessBattle.Server.Lobby;
 /// <summary>
 /// 大厅模块，负责房间/单位的 CRUD、实体缓存和交互式 CLI。
 /// 实时化：完全使用 UnitPawn，不再依赖 UnitSyncEntity。
+/// 多房间隔离：每个房间拥有独立的 RoomEntityServer。
 /// </summary>
-public class GameLobby(EntityNetworkServer networkServer, IServerBattleService battleService, ILogger<GameLobby> logger) {
-    private readonly EntityNetworkServer _networkServer = networkServer;
-    private readonly IServerBattleService _battleService = battleService;
-    private readonly ILogger<GameLobby> _logger = logger;
+public class GameLobby {
+    private readonly IServerBattleService _battleService;
+    private readonly ILogger<GameLobby> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     private readonly Dictionary<string, BattleRoomEntity> _roomEntities = [];
     private readonly Dictionary<string, List<UnitPawn>> _roomPawns = [];
+    private readonly Dictionary<string, RoomEntityServer> _roomServers = [];
+
+    // 端口池：从 10171 开始递增分配（10170 留给大厅）
+    private int _nextPort = 10171;
+    private readonly Queue<int> _portPool = new();
 
     public IReadOnlyDictionary<string, BattleRoomEntity> Rooms => _roomEntities;
     public IReadOnlyDictionary<string, List<UnitPawn>> RoomPawns => _roomPawns;
+    public IReadOnlyDictionary<string, RoomEntityServer> RoomServers => _roomServers;
 
-    public BattleRoomEntity CreateRoomEntity(string roomId) {
-        if (_roomEntities.TryGetValue(roomId, out BattleRoomEntity? value))
-            return value;
-        var entity = _networkServer.EntityManager.AddEntity<BattleRoomEntity>(e => {
+    public GameLobby(IServerBattleService battleService, ILoggerFactory loggerFactory) {
+        _battleService = battleService;
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<GameLobby>();
+    }
+
+    // ── 端口管理 ──────────────────────────────────────────
+
+    private int AllocatePort() {
+        if (_portPool.Count > 0)
+            return _portPool.Dequeue();
+        return _nextPort++;
+    }
+
+    private void RecyclePort(int port) {
+        _portPool.Enqueue(port);
+    }
+
+    // ── 房间服务器管理 ────────────────────────────────────
+
+    /// <summary>
+    /// 为指定 roomId 创建独立的 RoomEntityServer，并在其中创建 BattleRoomEntity。
+    /// </summary>
+    public RoomEntityServer CreateRoomServer(string roomId) {
+        if (_roomServers.TryGetValue(roomId, out var existing))
+            return existing;
+
+        int port = AllocatePort();
+        var server = new RoomEntityServer(port, roomId, _loggerFactory.CreateLogger<RoomEntityServer>());
+        server.Start();
+
+        // 在房间 SEM 中创建 BattleRoomEntity
+        var entity = server.EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = roomId;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{roomId}'.");
+
+        _roomServers[roomId] = server;
         _roomEntities[roomId] = entity;
         _roomPawns[roomId] = [];
 
         // 同步在 Logic 层创建对应房间
         _battleService.CreateRoom(roomId);
 
-        return entity;
+        return server;
     }
+
+    /// <summary>
+    /// 获取房间的 ServerEntityManager（可能为 null）。
+    /// </summary>
+    public RoomEntityServer? GetRoomServer(string roomId) {
+        _roomServers.TryGetValue(roomId, out var server);
+        return server;
+    }
+
+    // ── Entity CRUD ───────────────────────────────────────
 
     /// <summary>
     /// 创建实时 UnitPawn 实体。
     /// </summary>
-    public UnitPawn CreatePawnEntity(string roomId, string unitName, byte camp, Vector2 spawnPos) {
-        var entity = _networkServer.EntityManager.AddEntity<UnitPawn>(e => {
+    public UnitPawn CreatePawnEntity(RoomEntityServer roomServer, string roomId, string unitName, byte camp, Vector2 spawnPos) {
+        var entity = roomServer.EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitName.Value = unitName;
             e.Camp.Value = camp;
             e.Position.Value = spawnPos;
@@ -81,6 +129,13 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
     public bool RemoveRoom(string roomId) {
         _roomPawns.Remove(roomId);
         _roomEntities.Remove(roomId);
+
+        if (_roomServers.TryGetValue(roomId, out var server)) {
+            server.Stop();
+            RecyclePort(server.Port);
+            _roomServers.Remove(roomId);
+        }
+
         _battleService.RemoveRoom(roomId);
         return true;
     }
@@ -88,8 +143,22 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
     public void ListRooms() {
         foreach (var (id, room) in _roomEntities) {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("  {RoomId}: Phase={Phase}, Pawns={PawnCount}", id, room.BattlePhase.Value, _roomPawns.GetValueOrDefault(id)?.Count ?? 0);
+                _logger.LogInformation("  {RoomId}: Phase={Phase}, Pawns={PawnCount}, Port={Port}",
+                    id, room.BattlePhase.Value,
+                    _roomPawns.GetValueOrDefault(id)?.Count ?? 0,
+                    _roomServers.GetValueOrDefault(id)?.Port);
         }
+    }
+
+    // ── 房间生命周期 ──────────────────────────────────────
+
+    /// <summary>
+    /// 当客户端加入房间时调用。如果房间服务器不存在则创建。
+    /// </summary>
+    public (RoomEntityServer server, int port) EnsureRoomServer(string roomId) {
+        if (!_roomServers.TryGetValue(roomId, out var server))
+            server = CreateRoomServer(roomId);
+        return (server, server.Port);
     }
 
     #region Interactive Console
@@ -119,7 +188,7 @@ public class GameLobby(EntityNetworkServer networkServer, IServerBattleService b
                     break;
                 case "create":
                     if (parts.Length >= 2) {
-                        CreateRoomEntity(parts[1]);
+                        CreateRoomServer(parts[1]);
                         Console.WriteLine($"Room '{parts[1]}' created.");
                     }
                     break;

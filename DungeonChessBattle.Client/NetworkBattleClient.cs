@@ -52,6 +52,9 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     public event Action<string>? OnRoomJoined;
     public event Action<string>? OnRoomCreated;
 
+    /// <summary>大厅重定向到房间端口</summary>
+    public event Action<string, int>? OnRedirectToRoom;
+
     public bool IsConnected => _serverPeer != null;
 
     public NetworkBattleClient(ILogger<NetworkBattleClient> logger) {
@@ -312,24 +315,19 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     private void OnPawnEntityCreated(UnitPawn pawn) {
         var unitName = pawn.UnitName.Value;
         lock (_roomLock) {
-            foreach (var (roomId, _) in _rooms) {
-                if (unitName.StartsWith(roomId)) {
-                    if (!_roomPawns.TryGetValue(roomId, out var list)) {
-                        list = [];
-                        _roomPawns[roomId] = list;
-                    }
-                    list.Add(pawn);
-                    break;
-                }
-            }
-            // fallback: 加入最后一个房间
-            var lastRoomId = _rooms.Keys.LastOrDefault();
-            if (lastRoomId != null && !_roomPawns.Values.Any(list => list.Contains(pawn))) {
-                if (!_roomPawns.TryGetValue(lastRoomId, out var list)) {
+            // 物理隔离下客户端只属于一个房间，直接取第一个房间 ID
+            var roomId = _rooms.Keys.FirstOrDefault();
+            if (roomId != null) {
+                if (!_roomPawns.TryGetValue(roomId, out var list)) {
                     list = [];
-                    _roomPawns[lastRoomId] = list;
+                    _roomPawns[roomId] = list;
                 }
                 list.Add(pawn);
+            }
+            else {
+                // 防御：房间 Entity 应始终先于 Pawn 到达
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("[Client] Pawn '{UnitName}' arrived before room entity was created.", unitName);
             }
         }
 
@@ -371,6 +369,9 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
                 case MessageType.JoinRoomResponse:
                     HandleJoinRoomResponse(root);
                     break;
+                case MessageType.JoinRoomRedirect:
+                    HandleRedirectToRoom(root);
+                    break;
                 case MessageType.CreateRoomResponse:
                     HandleCreateRoomResponse(root);
                     break;
@@ -398,6 +399,21 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("[Client] Join room failed: {Error}", error ?? "unknown");
+        }
+    }
+
+    private void HandleRedirectToRoom(JsonElement root) {
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+        int port = root.TryGetProperty(MessageProperty.Port, out var pp) && pp.TryGetInt32(out var p) ? p : 0;
+
+        if (!string.IsNullOrEmpty(roomId) && port > 0) {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Client] Redirecting to room '{RoomId}' on port {Port}", roomId, port);
+            _pendingEventInvocations.Enqueue(() => OnRedirectToRoom?.Invoke(roomId, port));
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[Client] Redirect failed: invalid roomId or port");
         }
     }
 
