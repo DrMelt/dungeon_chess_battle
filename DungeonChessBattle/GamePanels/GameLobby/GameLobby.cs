@@ -154,11 +154,27 @@ public partial class GameLobby : BaseGamePanel {
         }
 
         if (ServiceLocator.ClientService.IsConnected && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
-            nbClient.RequestJoinRoom(_selectedRoomId);
-            GD.Print($"[GameLobby] Requested join room: {_selectedRoomId}");
+            var roomId = _selectedRoomId;
+
+            void OnJoined(string joinedRoomId) {
+                GD.Print($"[GameLobby] Joined room successfully: {joinedRoomId}");
+                CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
+                nbClient.OnRoomJoined -= OnJoined;
+            }
+
+            nbClient.OnRoomJoined += OnJoined;
+            nbClient.RequestJoinRoom(roomId);
+            GD.Print($"[GameLobby] Requested join room: {roomId}");
         }
         else {
             GD.PrintErr("[GameLobby] Cannot join room: not connected.");
+        }
+    }
+
+    private void OnJoinedDeferred(string joinedRoomId) {
+        if (_roomPreparation != null && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
+            _roomPreparation.EnterRoom(joinedRoomId, nbClient);
+            NavigateTo(_roomPreparation);
         }
     }
 

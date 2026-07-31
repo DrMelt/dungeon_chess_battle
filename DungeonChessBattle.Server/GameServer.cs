@@ -5,6 +5,7 @@ using LiteNetLib;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Server.Lobby;
@@ -143,19 +144,19 @@ public class GameServer {
             string json = Encoding.UTF8.GetString(data);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-            string? type = root.GetProperty("type").GetString();
+            string? type = root.GetProperty(MessageProperty.Type).GetString();
 
             switch (type) {
-                case "create_room":
-                    HandleCreateRoom(root);
+                case MessageType.CreateRoom:
+                    HandleCreateRoom(peer, root);
                     break;
-                case "join_room":
-                    HandleJoinRoom(root);
+                case MessageType.JoinRoom:
+                    HandleJoinRoom(peer, root);
                     break;
-                case "start_battle":
+                case MessageType.StartBattle:
                     HandleStartBattle(root);
                     break;
-                case "end_battle":
+                case MessageType.EndBattle:
                     HandleEndBattle();
                     break;
                 default:
@@ -186,8 +187,8 @@ public class GameServer {
         };
     }
 
-    private void HandleCreateRoom(JsonElement root) {
-        string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
+    private void HandleCreateRoom(NetPeer peer, JsonElement root) {
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         if (string.IsNullOrWhiteSpace(roomId)) {
             _logger.LogWarning("[Game] create_room: roomId is required.");
             return;
@@ -195,18 +196,21 @@ public class GameServer {
 
         if (_lobby.Rooms.ContainsKey(roomId)) {
             _logger.LogWarning("[Game] Room '{RoomId}' already exists.", roomId);
+            SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, false, "Room already exists."));
             return;
         }
 
         _lobby.CreateRoomEntity(roomId);
+        SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Room '{RoomId}' created.", roomId);
     }
 
-    private void HandleJoinRoom(JsonElement root) {
-        string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
+    private void HandleJoinRoom(NetPeer peer, JsonElement root) {
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         if (string.IsNullOrWhiteSpace(roomId)) {
             _logger.LogWarning("[Game] join_room: roomId is required.");
+            SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, null, false, "roomId is required."));
             return;
         }
 
@@ -214,13 +218,14 @@ public class GameServer {
             _lobby.CreateRoomEntity(roomId);
         }
 
-        // TODO: 创建 PlayerRoomEntity 关联该玩家到房间
+        // 回发加入成功响应
+        SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, true));
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Client joined room '{RoomId}'.", roomId);
     }
 
     private void HandleStartBattle(JsonElement root) {
-        string? roomId = root.TryGetProperty("roomId", out var rp) ? rp.GetString() : null;
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
             ? r : _lobby.Rooms.Values.FirstOrDefault();
         if (roomEntity == null) {
@@ -297,6 +302,13 @@ public class GameServer {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Skill RPC result: {Caster} -> {Target}, HP: {OldHealth:F0} -> {NewHealth:F0}",
                 casterPawn.UnitName.Value, targetPawn.UnitName.Value, oldTargetHealth, targetPawn.Health.Value);
+    }
+
+    /// <summary>
+    /// 向指定客户端发送 JSON 消息。
+    /// </summary>
+    private static void SendToPeer(NetPeer peer, byte[] messageBytes) {
+        peer.Send(messageBytes, DeliveryMethod.ReliableOrdered);
     }
 
     /// <summary>

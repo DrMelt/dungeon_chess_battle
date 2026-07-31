@@ -7,6 +7,7 @@ using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
@@ -46,6 +47,10 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     // 连接生命周期事件（通知 GameClientService 真正的连接/断开状态变化）
     public event Action? OnFullyConnected;
     public event Action? OnFullyDisconnected;
+
+    // 房间操作响应事件（通知 UI 层）
+    public event Action<string>? OnRoomJoined;
+    public event Action<string>? OnRoomCreated;
 
     public bool IsConnected => _serverPeer != null;
 
@@ -119,9 +124,7 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     }
 
     public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
-        SendCommand(new {
-            type = "create_unit", roomId, unitName, camp
-        });
+        SendCommand(MessageWriter.WriteCreateUnit(roomId, unitName, camp));
         var model = new DungeonChessBattle.Core.Models.UnitModel { UnitStateName = unitName, Camp = (DungeonChessBattle.Core.Enums.EnumCamp)camp };
         return model;
     }
@@ -204,7 +207,13 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     void INetEventListener.OnConnectionRequest(ConnectionRequest r) => r.Reject();
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery) {
-        _entityManager?.Deserialize(reader.GetRemainingBytes());
+        var data = reader.GetRemainingBytes();
+        if (data.Length > 0 && data[0] == PacketHeader) {
+            _entityManager?.Deserialize(data);
+        }
+        else {
+            HandleCustomPacket(data);
+        }
     }
 
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint ep, NetPacketReader r, UnconnectedMessageType t) {
@@ -217,23 +226,17 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     #region Helpers
 
     public void RequestCreateRoom(string roomId) {
-        SendCommand(new {
-            type = "create_room", roomId
-        });
+        SendCommand(MessageWriter.WriteRoomRequest(MessageType.CreateRoom, roomId));
     }
 
     public void RequestJoinRoom(string roomId) {
-        SendCommand(new {
-            type = "join_room", roomId
-        });
+        SendCommand(MessageWriter.WriteRoomRequest(MessageType.JoinRoom, roomId));
     }
 
-    private void SendCommand(object command) {
+    private void SendCommand(byte[] messageBytes) {
         if (_serverPeer == null)
             return;
-        string json = JsonSerializer.Serialize(command);
-        byte[] data = Encoding.UTF8.GetBytes(json);
-        _serverPeer.Send(data, DeliveryMethod.ReliableOrdered);
+        _serverPeer.Send(messageBytes, DeliveryMethod.ReliableOrdered);
     }
 
     private UnitPawn? FindPawnByName(string unitName) {
@@ -319,6 +322,66 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     private void OnPlayerEntityCreated(PlayerRoomEntity player) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Client] Player entity created: {PlayerName}", player.PlayerName.Value);
+    }
+
+    #endregion
+
+    #region Custom Packet Handling
+
+    private void HandleCustomPacket(ReadOnlySpan<byte> data) {
+        try {
+            string json = Encoding.UTF8.GetString(data);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            string? type = root.TryGetProperty(MessageProperty.Type, out var tp) ? tp.GetString() : null;
+
+            switch (type) {
+                case MessageType.JoinRoomResponse:
+                    HandleJoinRoomResponse(root);
+                    break;
+                case MessageType.CreateRoomResponse:
+                    HandleCreateRoomResponse(root);
+                    break;
+                default:
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning("[Client] Unknown custom packet: {Type}", type);
+                    break;
+            }
+        }
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "[Client] Custom packet parse error");
+        }
+    }
+
+    private void HandleJoinRoomResponse(JsonElement root) {
+        bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+        string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
+
+        if (success && !string.IsNullOrEmpty(roomId)) {
+            _pendingEventInvocations.Enqueue(() => OnRoomJoined?.Invoke(roomId));
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Client] Join room succeeded: {RoomId}", roomId);
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[Client] Join room failed: {Error}", error ?? "unknown");
+        }
+    }
+
+    private void HandleCreateRoomResponse(JsonElement root) {
+        bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+
+        if (success && !string.IsNullOrEmpty(roomId)) {
+            _pendingEventInvocations.Enqueue(() => OnRoomCreated?.Invoke(roomId));
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Client] Create room succeeded: {RoomId}", roomId);
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[Client] Create room failed");
+        }
     }
 
     #endregion
