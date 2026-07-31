@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using LiteNetLib;
@@ -46,6 +47,8 @@ public class GameServer {
         };
         _networkServer.OnCustomPacket += OnCustomPacket;
         UnitPawn.SkillCastRequested += OnPawnSkillCastRequested;
+        BattleRoomEntity.CreateUnitRequested += OnRoomCreateUnitRequested;
+        BattleRoomEntity.StartBattleRequested += OnRoomStartBattleRequested;
     }
 
     public void StartAsync(int port) {
@@ -153,12 +156,6 @@ public class GameServer {
                 case MessageType.JoinRoom:
                     HandleJoinRoom(peer, root);
                     break;
-                case MessageType.StartBattle:
-                    HandleStartBattle(root);
-                    break;
-                case MessageType.EndBattle:
-                    HandleEndBattle();
-                    break;
                 default:
                     _logger.LogWarning("[Game] Unknown command: {Type}", type);
                     break;
@@ -224,36 +221,43 @@ public class GameServer {
             _logger.LogInformation("[Game] Client joined room '{RoomId}'.", roomId);
     }
 
-    private void HandleStartBattle(JsonElement root) {
-        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
-        var roomEntity = roomId != null && _lobby.Rooms.TryGetValue(roomId, out var r)
-            ? r : _lobby.Rooms.Values.FirstOrDefault();
-        if (roomEntity == null) {
-            _logger.LogWarning("[Game] No room to start battle.");
-            return;
-        }
+    #endregion
 
-        var battle = _battleService.StartBattleInRoom(roomEntity.RoomId.Value);
+    #region RPC Event Handlers
+
+    /// <summary>
+    /// 处理客户端通过 RPC 发来的创建单位请求。
+    /// </summary>
+    private void OnRoomCreateUnitRequested(BattleRoomEntity roomEntity, SyncCreateUnitRequest req) {
+        string roomId = roomEntity.RoomId.Value;
+        // 根据阵营计算默认出生点
+        var spawnPos = req.Camp == 1
+            ? new Vector2(0, 0)
+            : new Vector2(5, 0);
+
+        _lobby.CreatePawnEntity(roomId, req.UnitName, req.Camp, spawnPos);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Unit created via RPC: {UnitName} in room {RoomId}, camp={Camp}",
+                req.UnitName, roomId, req.Camp);
+    }
+
+    /// <summary>
+    /// 处理客户端通过 RPC 发来的开始战斗请求。
+    /// </summary>
+    private void OnRoomStartBattleRequested(BattleRoomEntity roomEntity) {
+        string roomId = roomEntity.RoomId.Value;
+        var battle = _battleService.StartBattleInRoom(roomId);
         SubscribePhaseSync(battle, roomEntity);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Battle started in room: {RoomId}", roomEntity.RoomId.Value);
+            _logger.LogInformation("[Game] Battle started via RPC in room: {RoomId}", roomId);
     }
 
-    private void HandleEndBattle() {
-        var roomEntity = _lobby.Rooms.Values.FirstOrDefault(r => r.BattlePhase.Value != (byte)BattlePhase.Finished);
-        if (roomEntity == null) {
-            _logger.LogWarning("[Game] No active battle to end.");
-            return;
-        }
+    #endregion
 
-        var battle = _battleService.GetBattle(roomEntity.RoomId.Value);
-        if (battle != null)
-            _battleService.EndBattle(battle);
+    #region Custom Packet Handler (continued)
 
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Battle ended in room: {RoomId}", roomEntity.RoomId.Value);
-    }
 
     /// <summary>
     /// 处理通过 UnitPawn RPC 到达的技能施放请求。

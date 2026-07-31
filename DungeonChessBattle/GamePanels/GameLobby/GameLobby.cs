@@ -142,6 +142,12 @@ public partial class GameLobby : BaseGamePanel {
             return;
         }
 
+        // 网络模式：通过 RPC 发送开始战斗请求
+        if (ServiceLocator.ClientService.IsConnected && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
+            nbClient.RequestStartBattle(roomId);
+            GD.Print($"[GameLobby] Requested start battle via RPC for room: {roomId}");
+        }
+
         Visible = false;
         EmitSignal(SignalName.BattleStarted, roomId);
         GD.Print($"[GameLobby] Battle started for room: {roomId}");

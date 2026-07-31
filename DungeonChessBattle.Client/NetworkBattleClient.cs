@@ -124,7 +124,20 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     }
 
     public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
-        SendCommand(MessageWriter.WriteCreateUnit(roomId, unitName, camp));
+        // 通过 RPC 发送创建单位请求
+        BattleRoomEntity? roomEntity;
+        lock (_roomLock) {
+            _rooms.TryGetValue(roomId, out roomEntity);
+        }
+        if (roomEntity != null) {
+            var req = new SyncCreateUnitRequest { UnitName = unitName, Camp = camp };
+            roomEntity.RequestCreateUnit(req);
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[Client] CreateUnit: room entity not found for {RoomId}", roomId);
+        }
+
         var model = new DungeonChessBattle.Core.Models.UnitModel { UnitStateName = unitName, Camp = (DungeonChessBattle.Core.Enums.EnumCamp)camp };
         return model;
     }
@@ -231,6 +244,25 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
 
     public void RequestJoinRoom(string roomId) {
         SendCommand(MessageWriter.WriteRoomRequest(MessageType.JoinRoom, roomId));
+    }
+
+    /// <summary>
+    /// 客户端请求开始战斗（通过 RPC 发送到对应的 BattleRoomEntity）。
+    /// </summary>
+    public void RequestStartBattle(string roomId) {
+        BattleRoomEntity? roomEntity;
+        lock (_roomLock) {
+            _rooms.TryGetValue(roomId, out roomEntity);
+        }
+        if (roomEntity != null) {
+            roomEntity.RequestStartBattle();
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Client] RequestStartBattle via RPC: {RoomId}", roomId);
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[Client] RequestStartBattle: room entity not found for {RoomId}", roomId);
+        }
     }
 
     private void SendCommand(byte[] messageBytes) {
