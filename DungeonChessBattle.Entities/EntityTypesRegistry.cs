@@ -8,6 +8,7 @@ namespace DungeonChessBattle.Entities;
 public enum EntityClassId : ushort {
     BattleRoom = 1,
     PlayerRoom = 2,
+    UnitController = 3,
     UnitPawn = 4,
 }
 
@@ -24,6 +25,7 @@ public static class EntityTypesRegistry {
         _map = new EntityTypesMap<EntityClassId>()
             .Register(EntityClassId.BattleRoom, static p => new BattleRoomEntity(p))
             .Register(EntityClassId.PlayerRoom, static p => new PlayerRoomEntity(p))
+            .Register(EntityClassId.UnitController, static p => new UnitController(p))
             .Register(EntityClassId.UnitPawn, static p => new UnitPawn(p));
 
         return _map;
