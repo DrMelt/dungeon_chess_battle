@@ -72,6 +72,9 @@ public partial class GameLobby : BaseGamePanel {
             joinBtn.Disabled = true;
         }
 
+        // 持久订阅大厅客户端的房间加入事件（不再在 OnJoinRoom 中临时绑定）
+        ServiceLocator.ClientService.LobbyClient.OnRoomJoined += OnRoomJoinedHandler;
+
         // 启动定时刷新
         _refreshTimer = new Timer {
             WaitTime = 1.0,
@@ -105,30 +108,29 @@ public partial class GameLobby : BaseGamePanel {
             return;
         }
 
-        var clientService = ClientService;
-        if (clientService == null) {
-            GD.PrintErr("[GameLobby] Cannot create room: no service available.");
-            return;
-        }
-
         if (ServiceLocator.ClientService.IsConnected) {
-            // 网络模式：通过 NetworkBattleClient 请求
-            if (clientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
-                nbClient.RequestCreateRoom(roomName);
-                GD.Print($"[GameLobby] Requested create room: {roomName}");
-            }
+            // 网络模式：通过持久的大厅客户端发送创建请求
+            ServiceLocator.ClientService.LobbyClient.RequestCreateRoom(roomName);
+            GD.Print($"[GameLobby] Requested create room: {roomName}");
         }
-        else if (clientService is GameLogicService logicService) {
-            // 本地模式
-            logicService.CreateRoom(roomName);
-            GD.Print($"[GameLobby] Local room created: {roomName}");
+        else {
+            var clientService = ClientService;
+            if (clientService is GameLogicService logicService) {
+                // 本地模式
+                logicService.CreateRoom(roomName);
+                GD.Print($"[GameLobby] Local room created: {roomName}");
+            }
+            else {
+                GD.PrintErr("[GameLobby] Cannot create room: no service available.");
+                return;
+            }
         }
 
         InterRefs?.RoomNameInput?.Clear();
 
         // 本地模式：创建后直接进入房间准备
-        if (!ServiceLocator.ClientService.IsConnected && clientService is GameLogicService && _roomPreparation != null) {
-            _roomPreparation.EnterRoom(roomName, clientService);
+        if (!ServiceLocator.ClientService.IsConnected && ClientService is GameLogicService logicSvc && _roomPreparation != null) {
+            _roomPreparation.EnterRoom(roomName, logicSvc);
             NavigateTo(_roomPreparation);
         }
     }
@@ -137,14 +139,15 @@ public partial class GameLobby : BaseGamePanel {
     /// 公开方法：开始战斗。由 RoomPreparation 调用。
     /// </summary>
     public void StartBattle(string roomId) {
-        if (ClientService == null) {
+        var clientService = ClientService;
+        if (clientService == null) {
             GD.PrintErr("[GameLobby] Cannot start battle: no service.");
             return;
         }
 
         // 网络模式：通过 RPC 发送开始战斗请求
-        if (ServiceLocator.ClientService.IsConnected && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
-            nbClient.RequestStartBattle(roomId);
+        if (ServiceLocator.ClientService.IsConnected) {
+            ServiceLocator.ClientService.RoomClient.RequestStartBattle(roomId);
             GD.Print($"[GameLobby] Requested start battle via RPC for room: {roomId}");
         }
 
@@ -159,27 +162,28 @@ public partial class GameLobby : BaseGamePanel {
             return;
         }
 
-        if (ServiceLocator.ClientService.IsConnected && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
-            var roomId = _selectedRoomId;
-
-            void OnJoined(string joinedRoomId) {
-                GD.Print($"[GameLobby] Joined room successfully: {joinedRoomId}");
-                CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
-                nbClient.OnRoomJoined -= OnJoined;
-            }
-
-            nbClient.OnRoomJoined += OnJoined;
-            nbClient.RequestJoinRoom(roomId);
-            GD.Print($"[GameLobby] Requested join room: {roomId}");
+        if (ServiceLocator.ClientService.IsConnected) {
+            // 通过持久的大厅客户端发送请求（OnRoomJoined 回调已在 _Ready 中持久订阅）
+            ServiceLocator.ClientService.LobbyClient.RequestJoinRoom(_selectedRoomId);
+            GD.Print($"[GameLobby] Requested join room: {_selectedRoomId}");
         }
         else {
             GD.PrintErr("[GameLobby] Cannot join room: not connected.");
         }
     }
 
+    /// <summary>
+    /// 持久的事件处理器：大厅客户端收到 OnRoomJoined 时（重定向后房间端口连接成功）触发。
+    /// </summary>
+    private void OnRoomJoinedHandler(string joinedRoomId) {
+        GD.Print($"[GameLobby] Joined room successfully: {joinedRoomId}");
+        CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
+    }
+
     private void OnJoinedDeferred(string joinedRoomId) {
-        if (_roomPreparation != null && ClientService is DungeonChessBattle.Client.NetworkBattleClient nbClient) {
-            _roomPreparation.EnterRoom(joinedRoomId, nbClient);
+        if (_roomPreparation != null) {
+            // 使用持久的房间客户端（已通过 Reconnect 连接到房间端口）
+            _roomPreparation.EnterRoom(joinedRoomId, ServiceLocator.ClientService.RoomClient);
             NavigateTo(_roomPreparation);
         }
     }

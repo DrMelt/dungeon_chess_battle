@@ -29,7 +29,7 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
         var room = _roomManager.GetRoom(roomId)
             ?? throw new InvalidOperationException($"Room {roomId} not found.");
-        var model = new DungeonChessBattle.Core.Models.UnitModel {
+        var model = new UnitModel {
             UnitStateName = unitName,
             Camp = (Core.Enums.EnumCamp)camp,
         };

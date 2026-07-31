@@ -20,6 +20,5 @@ public static class ServiceLocator {
         LoggerFactory);
 
     public static readonly GameClientService ClientService = new(
-        LoggerFactory.CreateLogger<GameClientService>(),
         LoggerFactory);
 }
