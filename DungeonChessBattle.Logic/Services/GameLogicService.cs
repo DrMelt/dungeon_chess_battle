@@ -44,7 +44,7 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
 
     #region Battle Flow
 
-    BattleManager IServerBattleService.StartBattleInRoom(string roomId) {
+    public BattleManager StartBattleInRoom(string roomId) {
         _ = GetRoom(roomId)
             ?? throw new InvalidOperationException($"Room {roomId} not found.");
 
@@ -53,9 +53,17 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         return battle;
     }
 
+    BattleManager IServerBattleService.StartBattleInRoom(string roomId) {
+        return StartBattleInRoom(roomId);
+    }
+
     BattleManager? IServerBattleService.GetBattle(string roomId) => _roomManager.GetBattle(roomId);
 
     void IServerBattleService.TickBattle(BattleManager battle, float deltaTime) => battle.Tick(deltaTime);
+
+    public static void EndBattle(BattleManager battle) {
+        battle.EndBattle();
+    }
 
     void IServerBattleService.EndBattle(BattleManager battle) {
         battle.EndBattle();
@@ -64,6 +72,12 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     #endregion
 
     #region Skill
+
+    public static void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits = null) {
+        _ = battle; // 接口兼容保留参数，实际结算不依赖 BattleManager 引用
+        CastSkillInternal(caster, target, skill, allUnits);
+    }
 
     void IServerBattleService.CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
         IReadOnlyList<IUnitState>? allUnits) {
@@ -134,6 +148,11 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     #endregion
 
     #region Buffs & Status
+
+    public static void UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
+        _ = battle; // 接口兼容保留参数，实际结算不依赖 BattleManager 引用
+        UpdateBuffsInternal(units, deltaTime);
+    }
 
     void IServerBattleService.UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
         UpdateBuffsInternal(units, deltaTime);

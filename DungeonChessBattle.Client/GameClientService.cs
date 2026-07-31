@@ -81,7 +81,9 @@ public sealed class GameClientService(ILogger<GameClientService> logger, ILogger
             var oldClient = _client;
             if (oldClient != null) {
                 UnwireClientEvents(oldClient);
-                try { oldClient.Disconnect(); }
+                try {
+                    oldClient.Disconnect();
+                }
                 catch (Exception ex) { _logger.LogDebug(ex, "旧客户端断开异常"); }
             }
 

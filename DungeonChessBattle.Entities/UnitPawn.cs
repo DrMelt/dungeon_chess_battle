@@ -40,7 +40,7 @@ public class UnitPawn : PawnLogic {
     public event Action<UnitPawn, SyncBuffData>? BuffAdded;
     public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
 
-    public static event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
+    public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
 
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 

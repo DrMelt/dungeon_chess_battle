@@ -35,8 +35,8 @@ public class NetworkBattleClient : IClientBattleService, INetEventListener {
     private readonly Dictionary<string, List<UnitPawn>> _roomPawns = [];
     private readonly Lock _roomLock = new();
 
-    // 待投递的事件队列（在后台线程收集，Update() 中统一投递）
-    private readonly Queue<Action> _pendingEventInvocations = new();
+    // 待投递的事件队列（LES 网络线程入队，Update() 线程出队，需线程安全）
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _pendingEventInvocations = new();
 
     // Events for Godot
     public event Action<string, float, float>? UnitHealthChanged;

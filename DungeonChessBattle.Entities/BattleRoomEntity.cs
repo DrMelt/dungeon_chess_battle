@@ -17,12 +17,12 @@ public class BattleRoomEntity : EntityLogic {
     private static RemoteCallSerializable<SyncCreateUnitRequest> CreateUnitRPC;
     private static RemoteCall StartBattleRPC;
 
-    // ── 静态事件（服务端订阅） ──────────────────────────
+    // ── 实例事件（每个房间独立订阅） ────────────────────
     /// <summary>客户端请求创建单位。参数：房间实体、创建请求数据</summary>
-    public static event Action<BattleRoomEntity, SyncCreateUnitRequest>? CreateUnitRequested;
+    public event Action<BattleRoomEntity, SyncCreateUnitRequest>? CreateUnitRequested;
 
     /// <summary>客户端请求开始战斗。参数：房间实体</summary>
-    public static event Action<BattleRoomEntity>? StartBattleRequested;
+    public event Action<BattleRoomEntity>? StartBattleRequested;
 
     public BattleRoomEntity(EntityParams entityParams) : base(entityParams) { }
 
