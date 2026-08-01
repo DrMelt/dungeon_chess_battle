@@ -44,7 +44,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     /// 当前活跃的客户端接口（大厅客户端或房间客户端或本地服务）。
     /// </summary>
     public IClientBattleService? Client =>
-        _connected ? (_activeClient as IClientBattleService) : _localService;
+        _connected ? _roomClient : _localService;
 
     /// <summary>
     /// 大厅客户端（持久实例，用于发送 JSON 命令和订阅事件）。
@@ -89,7 +89,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     }
 
     /// <summary>
-    /// 断开大厅连接并重连到房间端口。
+    /// 重连到房间端口。大厅连接保持不断开。
     /// 由大厅重定向触发，用于切换到物理隔离的房间 SEM。
     /// </summary>
     private void ReconnectToRoom(string host, int roomPort, string roomId) {
@@ -98,11 +98,6 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
         _reconnecting = true;
         try {
-            try {
-                _lobbyClient.Disconnect();
-            }
-            catch (Exception ex) { _logger.LogDebug(ex, "大厅客户端断开异常"); }
-
             _host = host;
             _port = roomPort;
             _connected = false;
@@ -132,6 +127,11 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     }
 
     private void OnConnectionLost() {
+        if (_lobbyClient.IsConnected || _roomClient.IsConnected) {
+            _connected = _lobbyClient.IsConnected || _roomClient.IsConnected;
+            return;
+        }
+
         _connected = false;
 
         if (_reconnecting) {
@@ -195,7 +195,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             OnConnectionEstablished();
         };
         _lobbyClient.OnFullyDisconnected += () => {
-            _connected = false;
+            _connected = _roomClient.IsConnected;
             OnConnectionLost();
         };
         _lobbyClient.OnRedirectToRoom += (roomId, roomPort) => {
@@ -219,7 +219,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             }
         };
         _roomClient.OnFullyDisconnected += () => {
-            _connected = false;
+            _connected = _lobbyClient.IsConnected;
             OnConnectionLost();
         };
     }
@@ -276,7 +276,8 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             if (delta >= TickInterval) {
                 lastTick = now;
                 try {
-                    _activeClient?.Update((float)delta);
+                    _lobbyClient.Update((float)delta);
+                    _roomClient.Update((float)delta);
                 }
                 catch (Exception ex) {
                     _logger.LogWarning(ex, "客户端更新异常");
