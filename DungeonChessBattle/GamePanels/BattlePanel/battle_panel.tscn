@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3 uid="uid://bx3battlepanel01"]
+
+[ext_resource type="Script" path="res://GamePanels/BattlePanel/BattlePanel.cs" id="1_bp"]
+
+[node name="BattlePanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_bp")
+
+[node name="BattlePanelInterRefs" type="Node" parent="."]
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 400.0
+offset_bottom = 40.0
+text = "战斗准备中..."
+horizontal_alignment = 0
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 50.0
+offset_right = 120.0
+offset_bottom = 90.0
+text = "返回大厅"

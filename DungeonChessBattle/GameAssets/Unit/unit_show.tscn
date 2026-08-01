@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://chdi1enunki0s"]
+
+[ext_resource type="Script" uid="uid://bgxunitgameshow01" path="res://GameAssets/Unit/UnitGameShow.cs" id="1_show"]
+[ext_resource type="Script" uid="uid://bgxunitarea3d01" path="res://GameAssets/Unit/UnitShowArea3D.cs" id="2_area"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="3_res"]
+
+[node name="UnitShow" type="Node3D"]
+script = ExtResource("1_show")
+
+[node name="CollisionArea" type="Area3D" parent="."]
+collision_layer = 2048
+collision_mask = 0
+script = ExtResource("2_area")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="CollisionArea"]
+shape = SubResource("CylinderShape3D_default")
+
+[node name="MeshInstance" type="MeshInstance3D" parent="."]

@@ -13,8 +13,10 @@ public partial class Node2d_UserUI : Control {
     [ExportGroup("Internal")]
     [Export]
     SkillsList skillsListRef = null!;
+
     [Export]
     StateChangeInfo stateChangeInfoRef = null!;
+
     [Export]
     StateBarList stateBarListRef = null!;
 
@@ -36,20 +38,22 @@ public partial class Node2d_UserUI : Control {
     }
 
     public void UpdateBinding() {
-        stateChangeInfoRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
-        stateBarListRef.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+        if (unitsInGameRef != null) {
+            stateChangeInfoRef?.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+            stateBarListRef?.BindUnitsInScene(unitsInGameRef.UnitsInSceneRes);
+        }
     }
 
     public void UpdateSkillList(UnitGameShow unitShow) {
-        skillsListRef.UpdateSkillsList(unitShow);
+        skillsListRef?.UpdateSkillsList(unitShow);
     }
-
 
     public bool IsWaitSkillTarget() {
-        return skillsListRef.IsWaitTarget();
+        return skillsListRef != null && skillsListRef.IsWaitTarget();
     }
+
     public List<ButtonSkillBase> WaitingTargetSkillList() {
-        return skillsListRef.WaitingTargetSkillList();
+        return skillsListRef?.WaitingTargetSkillList() ?? [];
     }
 
     public static bool IsWaitMoveTarget() {

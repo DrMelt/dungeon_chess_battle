@@ -10,9 +10,7 @@ namespace DungeonChessBattle.Client;
 /// 处理 create_room、join_room 请求及对应的响应/重定向。
 /// 不包含 LES Entity 系统。
 /// </summary>
-public class LobbyClient : NetworkClientBase {
-    public LobbyClient(ILogger<LobbyClient> logger) : base(logger) {
-    }
+public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger) {
 
     // ── 房间操作事件 ──
     public event Action<string>? OnRoomJoined;

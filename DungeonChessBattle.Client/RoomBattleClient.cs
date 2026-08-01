@@ -5,6 +5,7 @@ using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +16,7 @@ namespace DungeonChessBattle.Client;
 /// 实现 IClientBattleService，管理 LES Entity（BattleRoomEntity、UnitPawn、PlayerRoomEntity）。
 /// 不包含大厅 JSON 协议。
 /// </summary>
-public class RoomBattleClient : NetworkClientBase, IClientBattleService {
+public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
 
     private const byte PacketHeader = 0xDC;
@@ -31,8 +32,14 @@ public class RoomBattleClient : NetworkClientBase, IClientBattleService {
     public event Action<string, SyncBuffData>? UnitBuffAdded;
     public event Action<string, SyncBuffData>? UnitBuffRemoved;
 
-    public RoomBattleClient(ILogger<RoomBattleClient> logger) : base(logger) {
-    }
+    /// <summary>
+    /// 战斗阶段变化事件（roomId, phase）。
+    /// 由 BattleRoomEntity.BattlePhase SyncVar 变化触发。
+    /// </summary>
+    public event Action<string, BattlePhase>? BattlePhaseChanged;
+
+    // 本地玩家的 UnitController（在 OnPlayerEntityCreated 中查找并保存）
+    private UnitController? _localController;
 
     // ── Reconnect 清理 ──
 
@@ -189,6 +196,16 @@ public class RoomBattleClient : NetworkClientBase, IClientBattleService {
         }
     }
 
+    // ── 玩家输入 ──
+
+    /// <summary>
+    /// Godot UI 层调用，提交当前帧的玩家输入到 LES 框架。
+    /// 框架自动进行 Delta 编码、UDP 发送、预测回滚。
+    /// </summary>
+    public void SubmitPlayerInput(System.Numerics.Vector2 moveDir, byte skillFlags, System.Numerics.Vector2 aimPos) {
+        _localController?.SubmitInput(moveDir, skillFlags, aimPos);
+    }
+
     // ── RPC 请求 ──
 
     public void RequestStartBattle(string roomId) {
@@ -214,6 +231,7 @@ public class RoomBattleClient : NetworkClientBase, IClientBattleService {
             _rooms[entity.RoomId.Value] = entity;
             _roomPawns[entity.RoomId.Value] = [];
         }
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] Room entity created: {RoomId}", entity.RoomId.Value);
     }
@@ -255,6 +273,13 @@ public class RoomBattleClient : NetworkClientBase, IClientBattleService {
     }
 
     private void OnPlayerEntityCreated(PlayerRoomEntity player) {
+        // 尝试查找并保存本地玩家的 UnitController（用于 SubmitPlayerInput）
+        if (_entityManager != null && _localController == null) {
+            _localController = _entityManager.GetPlayerController<UnitController>();
+            if (_localController != null && _logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[RoomBattleClient] Local UnitController found for player: {PlayerName}", player.PlayerName.Value);
+        }
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] Player entity created: {PlayerName}", player.PlayerName.Value);
     }
@@ -283,6 +308,7 @@ public class RoomBattleClient : NetworkClientBase, IClientBattleService {
             MagicTakePercent = p.MagicTakePercent.Value,
             CureIntensity = p.CureIntensity.Value,
             BaseSpeed = p.BaseSpeed.Value,
+            Camp = (Core.Enums.EnumCamp)p.Camp.Value,
         };
     }
 }

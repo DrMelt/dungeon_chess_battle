@@ -1,15 +1,15 @@
 [gd_scene format=3 uid="uid://bhhi7c0r5hisg"]
 
-[ext_resource type="Script" uid="uid://72jmsu2erdvo" path="res://pre_demo/scenes/scripts/Camera3dUserCamera.cs" id="1_s243o"]
+[ext_resource type="Script" uid="uid://coab1v74bi3y6" path="res://GameAssets/Scene/Camera3dUserCamera.cs" id="1_s243o"]
 [ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://pre_demo/scenes/shader/outline.gdshader" id="2_uq67j"]
-[ext_resource type="Script" uid="uid://cemq48f6igjuw" path="res://pre_demo/scenes/scripts/UnitsInScene_Show.cs" id="3_4e7mo"]
-[ext_resource type="Script" uid="uid://di6j8qxbvrjrl" path="res://pre_demo/scenes/EffectHints.cs" id="3_eaknj"]
-[ext_resource type="Script" uid="uid://cf63l72ki40bk" path="res://pre_demo/scenes/scripts/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
+[ext_resource type="Script" uid="uid://olfmxasvia4g" path="res://GameAssets/Scene/UnitsInScene_Show.cs" id="3_4e7mo"]
+[ext_resource type="Script" uid="uid://bvm0whqi2x4t4" path="res://GameAssets/Scene/EffectHints.cs" id="3_eaknj"]
+[ext_resource type="Script" uid="uid://cokgopgwe63ml" path="res://GamePanels/BattlePanel/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
 [ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://pre_demo/scenes/scripts/FocusOnOutline.cs" id="4_qxep0"]
 [ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://ui_units/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
-[ext_resource type="Script" uid="uid://d207ua7c16i65" path="res://pre_demo/scenes/DungeonEnv.cs" id="7_dowf7"]
+[ext_resource type="Script" uid="uid://7qbuef1x1sav" path="res://GameAssets/Scene/DungeonEnv.cs" id="7_dowf7"]
 [ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
-[ext_resource type="Script" uid="uid://byoc2mg3gg4u4" path="res://pre_demo/scenes/scripts/Node2d_UserUI.cs" id="11_4e7mo"]
+[ext_resource type="Script" uid="uid://bsd32rvj6xnep" path="res://GamePanels/BattlePanel/Node2d_UserUI.cs" id="11_4e7mo"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="11_34gv2"]
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
@@ -27,6 +27,13 @@
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="30_42c4a"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
+[ext_resource type="PackedScene" uid="uid://5c5c5lkw4i4g" path="res://GamePanels/BattlePanel/battle_panel.tscn" id="33_battle"]
+[ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://MainScene.cs" id="34_main"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
+albedo_color = Color(0.329158, 0.329158, 0.329158, 1)
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -40,23 +47,6 @@ background_color = Color(0.758192, 0.758192, 0.758192, 1)
 background_energy_multiplier = 1.61
 sky = SubResource("Sky_uq67j")
 
-[sub_resource type="NavigationMesh" id="NavigationMesh_i4iy5"]
-vertices = PackedVector3Array(-19.8, 0.2, -19.8, -19.8, 0.2, 19.8, 19.8, 0.2, 19.8, 19.8, 0.2, -19.8)
-polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
-geometry_collision_mask = 2049
-cell_size = 0.1
-cell_height = 0.1
-agent_radius = 0.2
-agent_max_climb = 0.3
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
-albedo_color = Color(0.329158, 0.329158, 0.329158, 1)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_uq67j"]
-size = Vector3(2, 0.2, 2)
-
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
 render_priority = 0
 shader = ExtResource("2_uq67j")
@@ -67,11 +57,18 @@ shader_parameter/outline_width = 0.002
 font_size = 24
 
 [node name="MainScene" type="Node" unique_id=46433431]
+script = ExtResource("34_main")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
 
 [node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005]
 script = ExtResource("7_dowf7")
+
+[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv" unique_id=1498989808]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
+mesh = SubResource("PlaneMesh_kkwdv")
+skeleton = NodePath("../../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
 
 [node name="CampStartPoint_A" type="Node3D" parent="Env/DungeonEnv" unique_id=1333730891]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13)
@@ -92,23 +89,6 @@ sky_mode = 1
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Env/DungeonEnv" unique_id=1770447821]
 environment = SubResource("Environment_r6hb3")
 
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Env/DungeonEnv" unique_id=1991647563]
-navigation_mesh = SubResource("NavigationMesh_i4iy5")
-
-[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv/NavigationRegion3D" unique_id=1498989808]
-transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
-mesh = SubResource("PlaneMesh_kkwdv")
-skeleton = NodePath("../../../..")
-surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
-
-[node name="StaticBody3D_Ground" type="StaticBody3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan" unique_id=797280013]
-collision_layer = 32
-collision_mask = 1024
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Env/DungeonEnv/NavigationRegion3D/MeshInstance3D_Plan/StaticBody3D_Ground" unique_id=1314000615]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
-shape = SubResource("BoxShape3D_uq67j")
-
 [node name="UnitsInScene_Show" type="Node" parent="." unique_id=1868664178]
 script = ExtResource("3_4e7mo")
 
@@ -127,13 +107,12 @@ userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Interface" type="Node" parent="." unique_id=1240739248]
 
-[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef", "rayCast3DRef")]
+[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef")]
 script = ExtResource("3_n8f6c")
 camera3DRef = NodePath("../../Camera3D_UserCamera")
 node2dUiRef = NodePath("../Node2d_UserUI")
 userInterfaceRes = ExtResource("11_34gv2")
 effectHintsRef = NodePath("EffectHints")
-rayCast3DRef = NodePath("RayCast3D")
 
 [node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841 node_paths=PackedStringArray("unitsInScene_Show_Ref", "userUI_Ref")]
 script = ExtResource("3_eaknj")
@@ -152,10 +131,6 @@ outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 material_override = SubResource("ShaderMaterial_3um0x")
 skeleton = NodePath("../..")
 
-[node name="RayCast3D" type="RayCast3D" parent="Interface/UserOperationInterface_Info" unique_id=659851569]
-collision_mask = 1057
-collide_with_areas = true
-
 [node name="Node2d_UserUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInGameRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
 visible = false
 layout_mode = 3
@@ -170,7 +145,7 @@ stateBarListRef = NodePath("StateBar_List")
 
 [node name="Label_DungeonTime" type="Label" parent="Interface/Node2d_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 0
-offset_left = 818.0
+offset_left = 907.0
 offset_top = -2.0
 offset_right = 1151.0
 offset_bottom = 57.0
@@ -228,6 +203,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="MainMenu" parent="Interface/FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel") instance=ExtResource("32_menu")]
+visible = false
 layout_mode = 1
 _gameLobby = NodePath("../GameLobby")
 _serverMgmtPanel = NodePath("../ServerManagementPanel")
@@ -249,4 +225,7 @@ _roomPreparation = NodePath("../RoomPreparation")
 
 [node name="RoomPreparation" parent="Interface/FrontUI" unique_id=416023587 instance=ExtResource("31_room")]
 visible = false
+layout_mode = 1
+
+[node name="BattlePanel" parent="Interface/FrontUI" unique_id=416023588 instance=ExtResource("33_battle")]
 layout_mode = 1
