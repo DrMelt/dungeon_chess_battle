@@ -4,38 +4,27 @@ namespace DungeonChessBattle;
 
 public partial class StateBar2d_Focus : Control {
 
-    [Export]
-    UserInterfaceRes userInterfaceRes = null!;
+    public StateBar2d_FocusInterRefs? InterRefs {
+        get; private set;
+    }
 
-
-    [ExportGroup("Internal Parameters")]
-    [Export]
-    UserUISettings userUISettingsRef = null!;
-
-
-    [ExportSubgroup("Buffs")]
-    [Export]
-    ContainerBuffs hboxContainerBuffsRef = null!;
-
-    [ExportSubgroup("State Bar")]
-    [Export]
-    HP_StateBar panelFocusStateRef = null!;
-
-    [Export]
-    SkillProgressBar panelSkillProgressBarRef = null!;
-
+    public override void _Ready() {
+        InterRefs = GetNode<StateBar2d_FocusInterRefs>("StateBar2d_FocusInterRefs");
+    }
 
     public override void _Process(double delta) {
         if (!Engine.IsEditorHint()) {
             Visible = false;
+            if (InterRefs == null)
+                return;
             UnitGameShow? showUnit = GetUnitShow();
 
             if (showUnit != null) {
                 Visible = true;
 
-                hboxContainerBuffsRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                panelFocusStateRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                panelSkillProgressBarRef.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
             }
 
         }
@@ -44,8 +33,11 @@ public partial class StateBar2d_Focus : Control {
 
     UnitGameShow? GetUnitShow() {
         UnitGameShow? showUnit = null;
-        UnitGameShow? mouseOnUnit = userInterfaceRes.MouseOnUnit;
-        UnitGameShow? focusOnUnit = userInterfaceRes.FocusOnUnit;
+        var uiRes = InterRefs?.UserInterfaceRes;
+        if (uiRes == null)
+            return null;
+        UnitGameShow? mouseOnUnit = uiRes.MouseOnUnit;
+        UnitGameShow? focusOnUnit = uiRes.FocusOnUnit;
         if (mouseOnUnit != null) {
             showUnit = mouseOnUnit;
         }

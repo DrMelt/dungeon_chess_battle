@@ -5,42 +5,34 @@ using Godot;
 namespace DungeonChessBattle;
 
 public partial class HP_StateBar : Control, IUI_Update {
-    [ExportGroup("References")]
-    [Export]
-    UserUISettings userUISettingsRef = null!;
-
-    [Export]
-    CanvasItem stateBarRef = null!;
-    ShaderMaterial stateBarRef_Mat = null!;
-
-
-    [Export]
-    Label label_PercentRef = null!;
-    [Export]
-    Label label_CurrentValueRef = null!;
-    [Export]
-    Label label_ObjectNameRef = null!;
+    public HP_StateBarInterRefs? InterRefs {
+        get; private set;
+    }
+    ShaderMaterial? stateBarMat;
 
     public override void _Ready() {
-        stateBarRef_Mat = (stateBarRef.Material as ShaderMaterial) ?? throw new InvalidOperationException("stateBarRef.Material is not a ShaderMaterial.");
+        InterRefs = GetNode<HP_StateBarInterRefs>("HP_StateBarInterRefs");
+        if (InterRefs?.StateBarRef?.Material is ShaderMaterial mat) {
+            stateBarMat = mat;
+        }
     }
 
     public void UpdateUI_WithUnit(UnitState unitState) {
-        if (unitState == null) {
+        if (unitState == null || InterRefs == null) {
             return;
         }
 
-        Color? campColor = userUISettingsRef.GetCampColor(unitState.Camp);
-        if (campColor != null) {
-            stateBarRef_Mat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
+        if (stateBarMat != null) {
+            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camp);
+            if (campColor != null) {
+                stateBarMat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
+            }
+            stateBarMat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
         }
-        stateBarRef_Mat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
 
-
-        label_PercentRef.Text = unitState.Health_Shield_Percent.ToString("P1");
-        label_CurrentValueRef.Text = unitState.Health_Shield.ToString("F1");
-
-        label_ObjectNameRef.Text = unitState.UnitStateName;
+        InterRefs.LabelPercentRef!.Text = unitState.Health_Shield_Percent.ToString("P1");
+        InterRefs.LabelCurrentValueRef!.Text = unitState.Health_Shield.ToString("F1");
+        InterRefs.LabelObjectNameRef!.Text = unitState.UnitStateName;
     }
 
 }

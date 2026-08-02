@@ -8,9 +8,17 @@ public partial class TookDamageInfo : FadeInfo {
 
     [ExportGroup("Internal")]
     [Export]
-    Label damageLabel = null!;
+    Label? damageLabel;
+
+    public override void _Ready() {
+        base._Ready();
+        if (damageLabel == null)
+            GD.PrintErr("[TookDamageInfo] [Export] damageLabel is not assigned!");
+    }
 
     public void Init(float damage, Enum_DamageType type, UserUISettings userUISettings) {
+        if (damageLabel == null)
+            return;
         if (type == Enum_DamageType.Magic) {
             damageLabel.SelfModulate = userUISettings.MagicInfoColor;
         }

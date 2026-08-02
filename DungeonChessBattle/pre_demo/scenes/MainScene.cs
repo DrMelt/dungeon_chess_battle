@@ -37,7 +37,7 @@ public partial class MainScene : Node {
     private DungeonEnv? _dungeonEnv;
 
     [Export]
-    private Node2d_UserUI? _userUI;
+    private UserOperationInterfaceInfo? _userOperationInterfaceInfo;
 
     [Export]
     private PackedScene? _unitShowScene;
@@ -80,8 +80,8 @@ public partial class MainScene : Node {
             GD.PrintErr("[MainScene] [Export] _unitsShow is not assigned!");
         if (_dungeonEnv == null)
             GD.PrintErr("[MainScene] [Export] _dungeonEnv is not assigned!");
-        if (_userUI == null)
-            GD.PrintErr("[MainScene] [Export] _userUI is not assigned!");
+        if (_userOperationInterfaceInfo == null)
+            GD.PrintErr("[MainScene] [Export] _userOperationInterfaceInfo is not assigned!");
         if (_unitShowScene == null)
             GD.PrintErr("[MainScene] [Export] _unitShowScene is not assigned!");
     }
@@ -106,8 +106,8 @@ public partial class MainScene : Node {
         // 从 LES Entity 缓存初始化 3D 单位
         InitializeUnitsFromCache();
 
-        // 绑定 UI
-        _userUI?.UpdateBinding();
+        // 绑定 UI（通过 VM 触发 View 初始化）
+        _userOperationInterfaceInfo?.BindToBattle();
 
         _gameLobby!.Visible = false;
         _inBattle = true;
@@ -125,6 +125,9 @@ public partial class MainScene : Node {
         }
 
         ClearUnits();
+
+        // 解绑 UI
+        _userOperationInterfaceInfo?.UnbindFromBattle();
 
         _roomClient = null;
         _roomId = "";
@@ -222,21 +225,11 @@ public partial class MainScene : Node {
     }
 
     private void CollectPlayerInput() {
-        float moveX = 0f;
-        float moveY = 0f;
-        if (Input.IsActionPressed("Move_Right"))
-            moveX += 1f;
-        if (Input.IsActionPressed("Move_Left"))
-            moveX -= 1f;
-        if (Input.IsActionPressed("Move_Up"))
-            moveY += 1f;
-        if (Input.IsActionPressed("Move_Down"))
-            moveY -= 1f;
+        // UI 阻塞时跳过战斗输入收集（等待技能/移动目标选择中）
+        if (_userOperationInterfaceInfo?.IsBlockingInput == true)
+            return;
 
-        var raw = new Vector2(moveX, moveY);
-        if (raw.Length() > 1f)
-            raw = raw.Normalized();
-        _moveDir = raw;
+        _moveDir = Input.GetVector("Move_Left", "Move_Right", "Move_Up", "Move_Down");
 
         _skillFlags = 0;
 

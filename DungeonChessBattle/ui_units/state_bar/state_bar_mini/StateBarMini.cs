@@ -4,34 +4,25 @@ namespace DungeonChessBattle;
 
 public partial class StateBarMini : Control {
 
-    [ExportGroup("Internal Parameters")]
-    [ExportSubgroup("Buffs")]
-    [Export]
-    ContainerBuffs containerBuffsRef = null!;
-
-    [ExportSubgroup("State Bar")]
-    [Export]
-    Panel outlineRef = null!;
-
-    [Export]
-    HP_StateBar hp_StateBarRef = null!;
-
-    [Export]
-    SkillProgressBar skillProgressBarRef = null!;
-
+    public StateBarMiniInterRefs? InterRefs {
+        get; private set;
+    }
 
     bool mouseOn = false;
 
     UnitState? bindingUnitStateRes;
 
     public override void _Ready() {
+        InterRefs = GetNode<StateBarMiniInterRefs>("StateBarMiniInterRefs");
         MouseEntered += () => {
             mouseOn = true;
-            outlineRef.Visible = true;
+            if (InterRefs?.OutlineRef != null)
+                InterRefs.OutlineRef.Visible = true;
         };
         MouseExited += () => {
             mouseOn = false;
-            outlineRef.Visible = false;
+            if (InterRefs?.OutlineRef != null)
+                InterRefs.OutlineRef.Visible = false;
         };
     }
 
@@ -40,9 +31,11 @@ public partial class StateBarMini : Control {
     }
 
     public override void _Process(double delta) {
-        containerBuffsRef.UpdateUI_WithUnit(bindingUnitStateRes!);
-        hp_StateBarRef.UpdateUI_WithUnit(bindingUnitStateRes!);
-        skillProgressBarRef.UpdateUI_WithUnit(bindingUnitStateRes!);
+        if (InterRefs == null)
+            return;
+        InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
+        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
+        InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
     }
 
 

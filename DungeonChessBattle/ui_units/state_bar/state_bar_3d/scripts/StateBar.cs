@@ -10,23 +10,16 @@ public partial class StateBar : Node3D, IUI_Update {
     [Export]
     float scaleCamera = 0.3f;
 
+    public StateBarInterRefs? InterRefs {
+        get; private set;
+    }
+    ShaderMaterial? stateBarMat;
 
-    [ExportGroup("Internal Parameters")]
-    [Export]
-    UserUISettings userUISettingsRef = null!;
-
-    [Export]
-    MeshInstance3D stateBarRef = null!;
-    ShaderMaterial stateBarRef_Mat = null!;
-
-    [Export]
-    Label3D label3D_PercentRef = null!;
-    [Export]
-    Label3D label3D_CurrentValueRef = null!;
-    [Export]
-    Label3D label3D_NameRef = null!;
     public override void _Ready() {
-        stateBarRef_Mat = (stateBarRef.MaterialOverride as ShaderMaterial) ?? throw new InvalidOperationException("stateBarRef.MaterialOverride is not a ShaderMaterial.");
+        InterRefs = GetNode<StateBarInterRefs>("StateBarInterRefs");
+        if (InterRefs?.StateBarRef?.MaterialOverride is ShaderMaterial mat) {
+            stateBarMat = mat;
+        }
     }
 
     public override void _Process(double delta) {
@@ -47,19 +40,21 @@ public partial class StateBar : Node3D, IUI_Update {
 
 
     public void UpdateUI_WithUnit(UnitState unitState) {
-        if (unitState == null) {
+        if (unitState == null || InterRefs == null) {
             return;
         }
 
-        Color? campColor = userUISettingsRef.GetCampColor(unitState.Camp);
-        if (campColor != null) {
-            stateBarRef_Mat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
+        if (stateBarMat != null) {
+            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camp);
+            if (campColor != null) {
+                stateBarMat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
+            }
+            stateBarMat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
         }
 
-        stateBarRef_Mat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
-        label3D_PercentRef.Text = unitState.Health_Shield_Percent.ToString("P1");
-        label3D_CurrentValueRef.Text = unitState.Health_Shield.ToString("F1");
-        label3D_NameRef.Text = unitState.UnitStateName;
+        InterRefs.Label3DPercentRef!.Text = unitState.Health_Shield_Percent.ToString("P1");
+        InterRefs.Label3DCurrentValueRef!.Text = unitState.Health_Shield.ToString("F1");
+        InterRefs.Label3DNameRef!.Text = unitState.UnitStateName;
     }
 
 }

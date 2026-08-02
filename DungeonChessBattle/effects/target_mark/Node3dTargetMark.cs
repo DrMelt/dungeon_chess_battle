@@ -5,33 +5,25 @@ using Godot;
 namespace DungeonChessBattle;
 
 public partial class Node3dTargetMark : Node3D, IUI_Update {
-    [Export]
-    UserInterfaceRes userInterfaceRes = null!;
-
-    [Export]
-    Decal targetDecalRef = null!;
-    public Decal TargetDecalRef => targetDecalRef;
-
-    [Export]
-    Color defultColor = new("ad9b24");
-
-    [Export]
-    UserUISettings userUISettingsRes = null!;
-
+    public Node3dTargetMarkInterRefs? InterRefs {
+        get; private set;
+    }
+    public Decal TargetDecalRef => InterRefs!.TargetDecalRef;
 
     public override void _Ready() {
+        InterRefs = GetNode<Node3dTargetMarkInterRefs>("Node3dTargetMarkInterRefs");
         SetCampColor(EnumCamp.None);
     }
 
     public void SetCampColor(EnumCamp camp) {
-        Color? resColor = userUISettingsRes.GetCampColor(camp);
+        Color? resColor = InterRefs!.UserUISettingsRes.GetCampColor(camp);
 
-        resColor ??= defultColor;
+        resColor ??= InterRefs!.DefultColor;
 
-        targetDecalRef.Modulate = (Color)resColor;
+        InterRefs!.TargetDecalRef.Modulate = (Color)resColor;
     }
     public void UpdateUI_WithUnit(UnitState unitState) {
-        if (userInterfaceRes.FocusOnUnit != null && unitState == userInterfaceRes.FocusOnUnit.UnitStateRec) {
+        if (InterRefs!.UserInterfaceRes.FocusOnUnit != null && unitState == InterRefs!.UserInterfaceRes.FocusOnUnit.UnitStateRec) {
             SetCampColor(unitState.Camp);
         }
         else {

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UserUISettings" load_steps=2 format=3 uid="uid://b0iwa5usgilno"]
+[gd_resource type="Resource" script_class="UserUISettings" format=3 uid="uid://b0iwa5usgilno"]
 
 [ext_resource type="Script" uid="uid://t1kvwvibg8vi" path="res://ui_units/user_ui_settings/UserUISettings.cs" id="1_ff8ny"]
 

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://82y4rbnu1uyx" path="res://effects/skill_range/circular/SkillRangeCircular_Hint.cs" id="1_tx0d2"]
 [ext_resource type="Shader" uid="uid://cyc28jqvii3bm" path="res://effects/skill_range/circular/circular_region.tres" id="2_8013p"]
+[ext_resource type="Script" uid="uid://ripkwd2x3tlk" path="res://effects/skill_range/circular/SkillRangeCircular_HintInterRefs.cs" id="3_interrefs"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dowf7"]
 resource_local_to_scene = true
@@ -15,9 +16,8 @@ shader_parameter/Skill_Radian_From = -1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_0gsne"]
 
-[node name="Skill_Range_Circular" type="Node3D" unique_id=244294658 node_paths=PackedStringArray("decalRef")]
+[node name="Skill_Range_Circular" type="Node3D" unique_id=244294658]
 script = ExtResource("1_tx0d2")
-decalRef = NodePath("Skill_Range_Decal_Circular")
 
 [node name="Skill_Range_Decal_Circular" type="MeshInstance3D" parent="." unique_id=564033646]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
@@ -25,3 +25,7 @@ layers = 2
 material_override = SubResource("ShaderMaterial_dowf7")
 cast_shadow = 0
 mesh = SubResource("BoxMesh_0gsne")
+
+[node name="SkillRangeCircular_HintInterRefs" type="Node" parent="."]
+script = ExtResource("3_interrefs")
+DecalRef = NodePath("../Skill_Range_Decal_Circular")

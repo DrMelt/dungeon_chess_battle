@@ -4,20 +4,17 @@ using Godot;
 namespace DungeonChessBattle;
 
 public partial class StateBarList : Control {
-    [Export]
-    EnumCamp listOfCamp;
+    public StateBarListInterRefs? InterRefs {
+        get; private set;
+    }
 
-    [ExportGroup("Internal")]
-    [Export]
-    VBoxContainer vBoxContainerRef = null!;
+    public override void _Ready() {
+        InterRefs = GetNode<StateBarListInterRefs>("StateBarListInterRefs");
+    }
 
-    [Export]
-    PackedScene stateBarMini_PKS = null!;
-    StateBarMini NewStateBarMini => stateBarMini_PKS.Instantiate<StateBarMini>();
-
+    StateBarMini NewStateBarMini => InterRefs!.StateBarMiniPKS!.Instantiate<StateBarMini>();
 
     UnitsInScene bindingUnitsInScene = null!;
-
 
     public void BindUnitsInScene(UnitsInScene unitsInScene) {
         bindingUnitsInScene?.OnUnitsChangedEvent -= OnUnitsChanged;
@@ -28,17 +25,19 @@ public partial class StateBarList : Control {
     }
 
     void OnUnitsChanged(UnitsInScene scene) {
-        var children = vBoxContainerRef.GetChildren();
+        if (InterRefs?.VBoxContainerRef == null)
+            return;
+        var children = InterRefs.VBoxContainerRef.GetChildren();
         foreach (var child in children) {
             child.QueueFree();
         }
 
         var units = scene.UnitsArr;
         foreach (var unit in units) {
-            if (unit.Camp == listOfCamp) {
+            if (unit.Camp == InterRefs.ListOfCamp) {
                 StateBarMini stateBarMini = NewStateBarMini;
 
-                vBoxContainerRef.AddChild(stateBarMini);
+                InterRefs.VBoxContainerRef.AddChild(stateBarMini);
                 stateBarMini.BindUnitState(unit);
             }
         }

@@ -4,21 +4,23 @@ using Godot;
 namespace DungeonChessBattle;
 
 public partial class SkillProgressBar : Control, IUI_Update {
-    [ExportGroup("References")]
-    [Export]
-    ProgressBar progressBarRef = null!;
-    [Export]
-    Label label_SkillNameRef = null!;
-    [Export]
-    Label label_RemainingTimeRef = null!;
+    public SkillProgressBarInterRefs? InterRefs {
+        get; private set;
+    }
+
+    public override void _Ready() {
+        InterRefs = GetNode<SkillProgressBarInterRefs>("SkillProgressBarInterRefs");
+    }
 
     public void UpdateUI_WithUnit(UnitState unitShow) {
+        if (InterRefs == null)
+            return;
         var spellingSkill = unitShow.SpellingSkill;
         if (spellingSkill != null) {
             Visible = true;
-            label_SkillNameRef.Text = spellingSkill.SkillName;
-            label_RemainingTimeRef.Text = (spellingSkill.SkillSpellTime - spellingSkill.SkillSpelledTime).ToString("F1");
-            progressBarRef.Value = spellingSkill.SkillSpelledTime / spellingSkill.SkillSpellTime;
+            InterRefs.LabelSkillNameRef!.Text = spellingSkill.SkillName;
+            InterRefs.LabelRemainingTimeRef!.Text = (spellingSkill.SkillSpellTime - spellingSkill.SkillSpelledTime).ToString("F1");
+            InterRefs.ProgressBarRef!.Value = spellingSkill.SkillSpelledTime / spellingSkill.SkillSpellTime;
         }
         else {
             Visible = false;

@@ -1,15 +1,19 @@
-[gd_scene load_steps=2 format=3 uid="uid://dy3y0pqqsp3sd"]
+[gd_scene load_steps=3 format=3 uid="uid://dy3y0pqqsp3sd"]
 
 [ext_resource type="Script" uid="uid://duod8exoqjbqv" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBar.cs" id="1_ytur1"]
+[ext_resource type="Script" uid="uid://bh1tcssn3bc77" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBarInterRefs.cs" id="2_skillprogressbar_interrefs"]
 
-[node name="Skill_ProgressBar" type="PanelContainer" node_paths=PackedStringArray("progressBarRef", "label_SkillNameRef", "label_RemainingTimeRef")]
+[node name="Skill_ProgressBar" type="PanelContainer"]
 custom_minimum_size = Vector2(166, 32)
 offset_right = 134.0
 offset_bottom = 23.0
 script = ExtResource("1_ytur1")
-progressBarRef = NodePath("ProgressBar")
-label_SkillNameRef = NodePath("Label_Skill_Name")
-label_RemainingTimeRef = NodePath("Label_RemainingTime")
+
+[node name="SkillProgressBarInterRefs" type="Node" parent="." node_paths=PackedStringArray("ProgressBarRef", "LabelSkillNameRef", "LabelRemainingTimeRef")]
+script = ExtResource("2_skillprogressbar_interrefs")
+ProgressBarRef = NodePath("../ProgressBar")
+LabelSkillNameRef = NodePath("../Label_Skill_Name")
+LabelRemainingTimeRef = NodePath("../Label_RemainingTime")
 
 [node name="Label_Skill_Name" type="Label" parent="."]
 layout_mode = 2

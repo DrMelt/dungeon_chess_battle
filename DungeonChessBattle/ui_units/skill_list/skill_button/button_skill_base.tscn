@@ -9,13 +9,13 @@ font_size = 28
 outline_size = 6
 outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 
-[node name="Button_SkillBase" type="Button" node_paths=PackedStringArray("label_CooldownTime_Ref")]
+[node name="Button_SkillBase" type="Button" node_paths=PackedStringArray("_labelCooldownTimeRef")]
 mouse_filter = 1
 toggle_mode = true
 icon = ExtResource("1_xjo8s")
 script = ExtResource("2_rvfo7")
-userInterfaceRes = ExtResource("3_m5lm5")
-label_CooldownTime_Ref = NodePath("Label_CooldownTime")
+_userInterfaceRes = ExtResource("3_m5lm5")
+_labelCooldownTimeRef = NodePath("Label_CooldownTime")
 
 [node name="Label_CooldownTime" type="Label" parent="."]
 layout_mode = 1

@@ -1,19 +1,25 @@
-[gd_scene load_steps=6 format=3 uid="uid://bnyra1mkp6yn2"]
+[gd_scene load_steps=8 format=3 uid="uid://bnyra1mkp6yn2"]
 
 [ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://ui_units/state_bar/state_bar_2d/StateBar2d_Focus.cs" id="1_yhj07"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_nayus"]
 [ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://ui_units/state_bar/hp_state/hp_state_bar.tscn" id="3_odry5"]
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://ui_units/state_bar/buff_state/buffs_state.tscn" id="4_bln5c"]
 [ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://ui_units/state_bar/skill_progressBar/skill_progress_bar.tscn" id="7_8vcj7"]
+[ext_resource type="Script" uid="uid://wystpvgpbayv" path="res://ui_units/state_bar/state_bar_2d/StateBar2d_FocusInterRefs.cs" id="8_sb2d_interrefs"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="9_ui_res"]
 
-[node name="State_Bar_2D" type="Control" node_paths=PackedStringArray("hboxContainerBuffsRef", "panelFocusStateRef", "panelSkillProgressBarRef")]
+[node name="State_Bar_2D" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_yhj07")
-userUISettingsRef = ExtResource("2_nayus")
-hboxContainerBuffsRef = NodePath("HBoxContainer_Buffs")
-panelFocusStateRef = NodePath("HP_StateBar")
-panelSkillProgressBarRef = NodePath("Panel_Skill_ProgressBar")
+
+[node name="StateBar2d_FocusInterRefs" type="Node" parent="." node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
+script = ExtResource("8_sb2d_interrefs")
+UserInterfaceRes = ExtResource("9_ui_res")
+UserUISettingsRef = ExtResource("2_nayus")
+HboxContainerBuffsRef = NodePath("../HBoxContainer_Buffs")
+PanelFocusStateRef = NodePath("../HP_StateBar")
+PanelSkillProgressBarRef = NodePath("../Panel_Skill_ProgressBar")
 
 [node name="HP_StateBar" parent="." instance=ExtResource("3_odry5")]
 layout_mode = 1

@@ -28,9 +28,14 @@ public partial class Camera3dUserCamera : Camera3D {
     bool _rotationEnabled = true;
 
     [Export]
-    UserInterfaceRes userInterfaceRes = null!;
+    UserInterfaceRes? userInterfaceRes;
 
     Vector2 mousePos;
+
+    public override void _Ready() {
+        if (userInterfaceRes == null)
+            GD.PrintErr("[Camera3dUserCamera] [Export] userInterfaceRes is not assigned!");
+    }
 
     public override void _Process(double delta) {
         Vector2 currentMouse = GetViewport().GetMousePosition() * GetViewport().GetVisibleRect().Size;
@@ -42,7 +47,7 @@ public partial class Camera3dUserCamera : Camera3D {
 
             Vector3 centerPos = GlobalPosition + cameraPreDir * (GlobalPosition.Y / -cameraPreDir.Y);
 
-            UnitGameShow? focusOn = userInterfaceRes.FocusOnUnit;
+            UnitGameShow? focusOn = userInterfaceRes?.FocusOnUnit;
             if (focusOn != null) {
                 centerPos = focusOn.GlobalPosition;
             }
@@ -83,7 +88,7 @@ public partial class Camera3dUserCamera : Camera3D {
         Vector3 cameraDir = -GlobalTransform.Basis.Z;
 
         if (Input.IsActionJustPressed("Camera_MoveToFocus")) {
-            UnitGameShow? focusOn = userInterfaceRes.FocusOnUnit;
+            UnitGameShow? focusOn = userInterfaceRes?.FocusOnUnit;
             if (focusOn != null) {
                 Vector3 vecToFocus = focusOn.GlobalPosition - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));

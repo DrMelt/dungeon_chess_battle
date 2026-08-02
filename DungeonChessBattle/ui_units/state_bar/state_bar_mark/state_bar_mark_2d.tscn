@@ -1,14 +1,18 @@
-[gd_scene load_steps=3 format=3 uid="uid://bmraovrwblgf1"]
+[gd_scene load_steps=4 format=3 uid="uid://bmraovrwblgf1"]
 
 [ext_resource type="Script" uid="uid://bhci7427y3h3q" path="res://ui_units/state_bar/state_bar_mark/StateBarMark2d.cs" id="1_21cjg"]
 [ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://ui_units/state_bar/hp_state/hp_state_bar.tscn" id="5_wjt61"]
+[ext_resource type="Script" uid="uid://b0dwcb0eg8ex3" path="res://ui_units/state_bar/state_bar_mark/StateBarMark2dInterRefs.cs" id="6_statemark2d_interrefs"]
 
-[node name="StateBarSimple2d" type="Control" node_paths=PackedStringArray("panelUnitStateBarRef")]
+[node name="StateBarSimple2d" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 scale = Vector2(0.5, 0.5)
 script = ExtResource("1_21cjg")
-panelUnitStateBarRef = NodePath("Panel_HP_State2")
+
+[node name="StateBarMark2dInterRefs" type="Node" parent="."]
+script = ExtResource("6_statemark2d_interrefs")
+PanelUnitStateBarRef = NodePath("../Panel_HP_State2")
 
 [node name="Panel_HP_State2" parent="." instance=ExtResource("5_wjt61")]
 layout_mode = 1

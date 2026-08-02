@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://23p073tbgnak"]
+[gd_scene load_steps=4 format=3 uid="uid://23p073tbgnak"]
 
 [ext_resource type="Script" uid="uid://yshioyvqvum2" path="res://ui_units/state_bar/state_bar_2d/ContainerBuffs.cs" id="1_b3lei"]
 [ext_resource type="PackedScene" uid="uid://b12ds1vg5bxh4" path="res://ui_units/buff_bar_2d/texture_rect_buff_icon.tscn" id="2_0nonf"]
+[ext_resource type="Script" uid="uid://bwl21yqaeq3x1" path="res://ui_units/state_bar/state_bar_2d/ContainerBuffsInterRefs.cs" id="3_containerbuffs_interrefs"]
 
 [node name="ContainerBuffs" type="HBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
@@ -9,4 +10,7 @@ offset_right = 33.0
 offset_bottom = 45.0
 scale = Vector2(0.75, 0.75)
 script = ExtResource("1_b3lei")
-buffIconPackedScene = ExtResource("2_0nonf")
+
+[node name="ContainerBuffsInterRefs" type="Node" parent="."]
+script = ExtResource("3_containerbuffs_interrefs")
+BuffIconPackedScene = ExtResource("2_0nonf")

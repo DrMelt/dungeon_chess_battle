@@ -21,13 +21,14 @@
 [ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://ui_units/state_bar/state_bar_list/state_bar_list.tscn" id="22_j0gmm"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="22_roldv"]
 [ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
+[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://ui_units/state_change_info/StateChangeInfoInterRefs.cs" id="23_0gsne_inter"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://duxpr0xqbx" path="res://GamePanels/ServerManagement/server_management_panel.tscn" id="27_server"]
 [ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="30_42c4a"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
-[ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://MainScene.cs" id="34_main"]
+[ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://pre_demo/scenes/MainScene.cs" id="34_main"]
 [ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_show.tscn" id="35_unit_show"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
@@ -56,13 +57,13 @@ shader_parameter/outline_width = 0.002
 [sub_resource type="LabelSettings" id="LabelSettings_uvuxq"]
 font_size = 24
 
-[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userUI")]
+[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userOperationInterfaceInfo")]
 script = ExtResource("34_main")
 _mainMenu = NodePath("Interface/FrontUI/MainMenu")
 _gameLobby = NodePath("Interface/FrontUI/GameLobby")
 _unitsShow = NodePath("UnitsInScene_Show")
 _dungeonEnv = NodePath("Env/DungeonEnv")
-_userUI = NodePath("Interface/Node2d_UserUI")
+_userOperationInterfaceInfo = NodePath("Interface/UserOperationInterface_Info")
 _unitShowScene = ExtResource("35_unit_show")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
@@ -113,18 +114,15 @@ userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Interface" type="Node" parent="." unique_id=1240739248]
 
-[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef")]
+[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101]
 script = ExtResource("3_n8f6c")
-camera3DRef = NodePath("../../Camera3D_UserCamera")
-node2dUiRef = NodePath("../Node2d_UserUI")
 userInterfaceRes = ExtResource("11_34gv2")
-effectHintsRef = NodePath("EffectHints")
+node2dUiRef = NodePath("../Game_UserUI")
+camera3DRef = NodePath("../../Camera3D_UserCamera")
 
-[node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841 node_paths=PackedStringArray("unitsInScene_Show_Ref", "userUI_Ref")]
+[node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841]
 script = ExtResource("3_eaknj")
 userInterfaceRes = ExtResource("11_34gv2")
-unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
-userUI_Ref = NodePath("../../Node2d_UserUI")
 _effectCircleRange_PKS = ExtResource("12_sph05")
 _effectRectRange_PKS = ExtResource("13_0by77")
 
@@ -137,19 +135,14 @@ outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 material_override = SubResource("ShaderMaterial_3um0x")
 skeleton = NodePath("../..")
 
-[node name="Node2d_UserUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInGameRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
-visible = false
+[node name="Game_UserUI" type="Control" parent="Interface" unique_id=955543473]
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
 script = ExtResource("11_4e7mo")
 userInterfaceRes = ExtResource("11_34gv2")
-unitsInGameRef = NodePath("../../UnitsInScene_Show")
-skillsListRef = NodePath("Skills_List")
-stateChangeInfoRef = NodePath("StateChange_Info")
-stateBarListRef = NodePath("StateBar_List")
 
-[node name="Label_DungeonTime" type="Label" parent="Interface/Node2d_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
+[node name="Label_DungeonTime" type="Label" parent="Interface/Game_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 0
 offset_left = 907.0
 offset_top = -2.0
@@ -162,38 +155,39 @@ vertical_alignment = 1
 script = ExtResource("18_ctxme")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 
-[node name="StateBar2d_Focus" parent="Interface/Node2d_UserUI" unique_id=716113945 instance=ExtResource("5_0fpm5")]
+[node name="StateBar2d_Focus" parent="Interface/Game_UserUI" unique_id=716113945 instance=ExtResource("5_0fpm5")]
 layout_mode = 1
 mouse_filter = 1
-userInterfaceRes = ExtResource("11_34gv2")
 
-[node name="StateBar_Simple" type="Control" parent="Interface/Node2d_UserUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
+[node name="StateBar_Simple" type="Control" parent="Interface/Game_UserUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 1
 anchors_preset = 0
 script = ExtResource("19_ctxme")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 stateBarSimple2d_PKD = ExtResource("20_uvuxq")
 
-[node name="StateBar_List" parent="Interface/Node2d_UserUI" unique_id=318767437 instance=ExtResource("22_j0gmm")]
+[node name="StateBar_List" parent="Interface/Game_UserUI" unique_id=318767437 instance=ExtResource("22_j0gmm")]
 layout_mode = 0
 offset_left = 858.0
 offset_top = 62.0
 offset_right = 1137.0
 offset_bottom = 494.0
 
-[node name="Skills_List" parent="Interface/Node2d_UserUI" unique_id=839039226 node_paths=PackedStringArray("unitsInGameRef") instance=ExtResource("10_sfuu4")]
+[node name="Skills_List" parent="Interface/Game_UserUI" unique_id=839039226 instance=ExtResource("10_sfuu4")]
 layout_mode = 0
 offset_right = 0.0
 offset_bottom = 0.0
-unitsInGameRef = NodePath("../../../UnitsInScene_Show")
 
-[node name="StateChange_Info" type="Node" parent="Interface/Node2d_UserUI" unique_id=820233417]
+[node name="StateChange_Info" type="Node" parent="Interface/Game_UserUI" unique_id=820233417]
 script = ExtResource("23_0gsne")
-userUISettingsRes = ExtResource("22_roldv")
-_tookDamageInfo_PKS = ExtResource("14_roldv")
-_buffChangeInfo_PKS = ExtResource("23_roldv")
 
-[node name="Panel_UI_Info" parent="Interface/Node2d_UserUI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
+[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/Game_UserUI/StateChange_Info" unique_id=188019131]
+script = ExtResource("23_0gsne_inter")
+UserUISettingsRes = ExtResource("22_roldv")
+TookDamageInfoPackedScene = ExtResource("14_roldv")
+BuffChangeInfoPackedScene = ExtResource("23_roldv")
+
+[node name="Panel_UI_Info" parent="Interface/Game_UserUI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
 layout_mode = 0
 offset_left = 841.0
 offset_top = 514.0
@@ -201,6 +195,7 @@ offset_right = 1148.0
 offset_bottom = 638.0
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

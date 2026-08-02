@@ -10,20 +10,21 @@ public partial class StateChangeInfo : Node {
         return screenPos;
     }
 
-    [Export]
-    UserUISettings userUISettingsRes = null!;
-    [Export]
-    PackedScene _tookDamageInfo_PKS = null!;
-    TookDamageInfo NewTookDamageInfo {
-        get => _tookDamageInfo_PKS.Instantiate<TookDamageInfo>();
-    }
-    [Export]
-    PackedScene _buffChangeInfo_PKS = null!;
-    BuffChangeInfo NewBuffChangeInfo {
-        get => _buffChangeInfo_PKS.Instantiate<BuffChangeInfo>();
+    public StateChangeInfoInterRefs? InterRefs {
+        get; private set;
     }
 
+    TookDamageInfo NewTookDamageInfo => InterRefs?.TookDamageInfoPackedScene?.Instantiate<TookDamageInfo>()!;
+    BuffChangeInfo NewBuffChangeInfo => InterRefs?.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()!;
+
     Godot.Collections.Array<UnitState> preUnits = null!;
+
+    public override void _Ready() {
+        InterRefs = GetNode<StateChangeInfoInterRefs>("StateChangeInfoInterRefs");
+        if (InterRefs == null) {
+            GD.PrintErr("[StateChangeInfo] StateChangeInfoInterRefs node not found.");
+        }
+    }
 
     public void BindUnitsInScene(UnitsInScene unitsInSceneRes) {
         unitsInSceneRes.OnUnitsChangedEvent += OnUnitsInSceneChanged;
@@ -76,7 +77,7 @@ public partial class StateChangeInfo : Node {
     void OnUnitTookDamage(UnitState unitState, float damage, Enum_DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         AddChild(tookDamageInfo);
-        tookDamageInfo.Init(damage, damageType, userUISettingsRes);
+        tookDamageInfo.Init(damage, damageType, InterRefs?.UserUISettingsRes!);
         tookDamageInfo.GlobalPosition = WorldToScreenPos(this, unitState.Position + Vector3.Up * 2.2f);
     }
 }

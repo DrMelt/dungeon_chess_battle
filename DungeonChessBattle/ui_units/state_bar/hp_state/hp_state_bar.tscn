@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://djjaubphsavfy"]
+[gd_scene load_steps=6 format=3 uid="uid://djjaubphsavfy"]
 
 [ext_resource type="Script" uid="uid://dyrf14c74kw7q" path="res://ui_units/state_bar/state_bar_2d/HP_StateBar.cs" id="1_x7igp"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_tflsb"]
 [ext_resource type="Shader" uid="uid://btbknd88cpw6h" path="res://ui_units/state_bar/state_bar_2d/shader_state_bar_2d.tres" id="3_ftjya"]
+[ext_resource type="Script" uid="uid://dscn0j88s24xn" path="res://ui_units/state_bar/state_bar_2d/HP_StateBarInterRefs.cs" id="4_hpstatebar_interrefs"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_uq67j"]
 resource_local_to_scene = true
@@ -11,18 +12,21 @@ shader_parameter/ParPin_02_Color = Color(0.537011, 0.537011, 0.537011, 1)
 shader_parameter/ParPin_01_Color = Color(0.0832, 0.52, 0.09048, 1)
 shader_parameter/ParPin_01 = 0.627
 
-[node name="HP_StateBar" type="PanelContainer" node_paths=PackedStringArray("stateBarRef", "label_PercentRef", "label_CurrentValueRef", "label_ObjectNameRef")]
+[node name="HP_StateBar" type="PanelContainer"]
 light_mask = 0
 custom_minimum_size = Vector2(220, 32)
 offset_right = 220.0
 offset_bottom = 23.0
 mouse_filter = 1
 script = ExtResource("1_x7igp")
-userUISettingsRef = ExtResource("2_tflsb")
-stateBarRef = NodePath("PanelContainer/ColorRect_State_Bar")
-label_PercentRef = NodePath("Label_Percent")
-label_CurrentValueRef = NodePath("Label_CurrentValue")
-label_ObjectNameRef = NodePath("Label_ObjectName")
+
+[node name="HP_StateBarInterRefs" type="Node" parent="." node_paths=PackedStringArray("StateBarRef", "LabelPercentRef", "LabelCurrentValueRef", "LabelObjectNameRef")]
+script = ExtResource("4_hpstatebar_interrefs")
+UserUISettingsRef = ExtResource("2_tflsb")
+StateBarRef = NodePath("../PanelContainer/ColorRect_State_Bar")
+LabelPercentRef = NodePath("../Label_Percent")
+LabelCurrentValueRef = NodePath("../Label_CurrentValue")
+LabelObjectNameRef = NodePath("../Label_ObjectName")
 
 [node name="Label_Percent" type="Label" parent="."]
 layout_mode = 2
