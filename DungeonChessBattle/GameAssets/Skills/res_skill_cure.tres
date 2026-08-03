@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Skill_Cure" format=3 uid="uid://dep8x70a71ltj"]
 
-[ext_resource type="Texture2D" uid="uid://jambdnamek1i" path="res://icons/Cure/000405_hr1.png" id="1_ou5dl"]
+[ext_resource type="Texture2D" uid="uid://jambdnamek1i" path="res://icons/skills_buffs/Cure/000405_hr1.png" id="1_ou5dl"]
 [ext_resource type="Script" uid="uid://vpibuyw7n6k8" path="res://GameAssets/Skills/scripts/Skill_Cure.cs" id="2_640i4"]
 
 [resource]

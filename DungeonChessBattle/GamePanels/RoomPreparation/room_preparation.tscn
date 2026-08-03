@@ -64,7 +64,7 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "CampAButton", "CampBButton", "StartBattleButton", "CampAListLabel", "CampBListLabel", "BackButton")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "CampAButton", "CampBButton", "StartBattleButton", "CampAListLabel", "CampBListLabel", "BackButton", "InfoLabel", "TitleLabel")]
 script = ExtResource("4_irfs")
 RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/RoomNameLabel")
 StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/StatusLabel")
@@ -75,6 +75,8 @@ StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattle
 CampAListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampAListLabel")
 CampBListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/CampListVBox/CampBListLabel")
 BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/BackButton")
+InfoLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/InfoLabel")
+TitleLabel = NodePath("../Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox/TitleLabel")
 UnitCardScene = ExtResource("2_wj6uy")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445033]
@@ -122,11 +124,18 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "< 返回"
 
+[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=949127420]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "房间标题"
+horizontal_alignment = 1
+
 [node name="RoomNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=482913754]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 20
-text = "房间: ----"
+theme_override_font_sizes/font_size = 14
+text = "房主 / 类别"
 horizontal_alignment = 1
 
 [node name="CampHBox" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=813572941]
@@ -158,6 +167,13 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
 theme_override_font_sizes/font_size = 14
 text = "请选择单位..."
+horizontal_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=582914033]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = ""
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBoxContainer/MainHSplit/TopVBox" unique_id=1793043364]

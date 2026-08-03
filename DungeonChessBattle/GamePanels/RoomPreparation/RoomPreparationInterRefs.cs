@@ -46,6 +46,14 @@ public partial class RoomPreparationInterRefs : Node {
     public Button? BackButton {
         get; private set;
     }
+    [Export]
+    public Label? InfoLabel {
+        get; private set;
+    }
+    [Export]
+    public Label? TitleLabel {
+        get; private set;
+    }
 
     public override void _Ready() {
         if (RoomNameLabel == null)
@@ -68,5 +76,9 @@ public partial class RoomPreparationInterRefs : Node {
             GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardScene is not assigned!");
         if (BackButton == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] BackButton is not assigned!");
+        if (InfoLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] InfoLabel is not assigned!");
+        if (TitleLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] TitleLabel is not assigned!");
     }
 }

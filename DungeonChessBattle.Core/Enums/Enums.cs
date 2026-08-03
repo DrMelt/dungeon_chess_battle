@@ -37,3 +37,22 @@ public enum BattlePhase : byte {
     Running,   // 战斗中（实时 Tick）
     Finished,  // 战斗结束
 }
+
+/// <summary>
+/// 房间分类（招募板使用）。
+/// </summary>
+public enum RoomCategory : byte {
+    Casual = 0,
+    Competitive = 1,
+    Practice = 2,
+    Tournament = 3,
+}
+
+/// <summary>
+/// 房间状态（招募板使用）。
+/// </summary>
+public enum RoomStatus : byte {
+    Waiting = 0,
+    InProgress = 1,
+    Finished = 2,
+}

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text.Json;
+using DungeonChessBattle.Core.Models;
 
 namespace DungeonChessBattle.Core.Network;
 
@@ -20,6 +21,19 @@ public static class MessageWriter {
     private static readonly JsonEncodedText PlayerNameKey = JsonEncodedText.Encode("playerName");
     private static readonly JsonEncodedText PasswordKey = JsonEncodedText.Encode("password");
     private static readonly JsonEncodedText ServerPasswordKey = JsonEncodedText.Encode("serverPassword");
+
+    // ── 招募板字段 ──
+    private static readonly JsonEncodedText ConfigKey = JsonEncodedText.Encode("config");
+    private static readonly JsonEncodedText TitleKey = JsonEncodedText.Encode("title");
+    private static readonly JsonEncodedText DescriptionKey = JsonEncodedText.Encode("description");
+    private static readonly JsonEncodedText CategoryKey = JsonEncodedText.Encode("category");
+    private static readonly JsonEncodedText HostNameKey = JsonEncodedText.Encode("hostName");
+    private static readonly JsonEncodedText MaxPlayersKey = JsonEncodedText.Encode("maxPlayers");
+    private static readonly JsonEncodedText CurrentPlayersKey = JsonEncodedText.Encode("currentPlayers");
+    private static readonly JsonEncodedText HasPasswordKey = JsonEncodedText.Encode("hasPassword");
+    private static readonly JsonEncodedText CreatedAtKey = JsonEncodedText.Encode("createdAt");
+    private static readonly JsonEncodedText StatusKey = JsonEncodedText.Encode("status");
+    private static readonly JsonEncodedText RoomsKey = JsonEncodedText.Encode("rooms");
 
     /// <summary>
     /// 写入响应消息：{ "type":..., "roomId":..., "success":bool[, "error":...] }
@@ -170,5 +184,154 @@ public static class MessageWriter {
     /// </summary>
     public static byte[] WriteJoinRoomRedirect(string roomId, int roomPort) {
         return WriteResponse(MessageType.JoinRoomRedirect, roomId, true, port: roomPort);
+    }
+
+    // ── 招募板消息 ──
+
+    /// <summary>
+    /// 写入创建房间请求（含招募板配置）：
+    /// { "type":"create_room", "roomId":..., "playerName":..., "playerId":..., "password"?:...,
+    ///   "config":{ "title":..., "description":..., "category":..., "hostName":..., "maxPlayers":... } }
+    /// </summary>
+    public static byte[] WriteCreateRoomRequest(string roomId, string playerName, string playerId,
+        string? roomPassword, GameRoom config, string? serverPassword = null) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.CreateRoom);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(PlayerNameKey, playerName);
+        writer.WriteString(PlayerIdKey, playerId);
+        if (!string.IsNullOrEmpty(roomPassword))
+            writer.WriteString(PasswordKey, roomPassword);
+        if (!string.IsNullOrEmpty(serverPassword))
+            writer.WriteString(ServerPasswordKey, serverPassword);
+
+        // config
+        writer.WriteStartObject(ConfigKey);
+        writer.WriteString(TitleKey, config.Title);
+        writer.WriteString(DescriptionKey, config.Description);
+        writer.WriteNumber(CategoryKey, (byte)config.Category);
+        writer.WriteString(HostNameKey, config.HostName);
+        writer.WriteNumber(MaxPlayersKey, config.MaxPlayers);
+        writer.WriteEndObject();
+
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入房间列表响应：
+    /// { "type":"list_rooms_response", "rooms":[...] }
+    /// </summary>
+    public static byte[] WriteListRoomsResponse(IEnumerable<RoomListing> rooms) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.ListRoomsResponse);
+
+        writer.WriteStartArray(RoomsKey);
+        foreach (var room in rooms) {
+            writer.WriteStartObject();
+            writer.WriteString(RoomIdKey, room.RoomId);
+            writer.WriteString(TitleKey, room.Title);
+            writer.WriteNumber(CategoryKey, (byte)room.Category);
+            writer.WriteString(HostNameKey, room.HostName);
+            writer.WriteNumber(CurrentPlayersKey, room.CurrentPlayers);
+            writer.WriteNumber(MaxPlayersKey, room.MaxPlayers);
+            writer.WriteBoolean(HasPasswordKey, room.HasPassword);
+            writer.WriteNumber(StatusKey, (byte)room.Status);
+            writer.WriteString(CreatedAtKey, room.CreatedAt.ToString("o"));
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    // ── 准备阶段消息（大厅 JSON 协议）──
+
+    /// <summary>
+    /// 写入添加单位请求：{ "type":"prepare_add_unit", "roomId":..., "unitName":..., "camp":... }
+    /// </summary>
+    public static byte[] WritePrepareAddUnit(string roomId, string unitName, byte camp) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.PrepareAddUnit);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(UnitNameKey, unitName);
+        writer.WriteNumber(CampKey, camp);
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入移除单位请求：{ "type":"prepare_remove_unit", "roomId":..., "unitName":... }
+    /// </summary>
+    public static byte[] WritePrepareRemoveUnit(string roomId, string unitName) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.PrepareRemoveUnit);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(UnitNameKey, unitName);
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入开始战斗请求：{ "type":"prepare_start_battle", "roomId":... }
+    /// </summary>
+    public static byte[] WritePrepareStartBattle(string roomId) {
+        return WriteRoomRequest(MessageType.PrepareStartBattle, roomId);
+    }
+
+    /// <summary>
+    /// 写入准备阶段开始战斗响应（含重定向端口）：
+    /// { "type":"prepare_start_battle_response", "roomId":..., "success":true, "port":... }
+    /// </summary>
+    public static byte[] WritePrepareStartBattleResponse(string roomId, int roomPort) {
+        return WriteResponse(MessageType.PrepareStartBattleResponse, roomId, true, port: roomPort);
+    }
+
+    /// <summary>
+    /// 写入准备阶段单位列表通知：
+    /// { "type":"prepare_unit_list", "roomId":..., "units":[{"unitName":..., "camp":...}, ...] }
+    /// </summary>
+    public static byte[] WritePrepareUnitList(string roomId, IEnumerable<(string UnitName, byte Camp)> units) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.PrepareUnitList);
+        writer.WriteString(RoomIdKey, roomId);
+
+        writer.WriteStartArray("units");
+        foreach (var (unitName, camp) in units) {
+            writer.WriteStartObject();
+            writer.WriteString(UnitNameKey, unitName);
+            writer.WriteNumber(CampKey, camp);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
     }
 }

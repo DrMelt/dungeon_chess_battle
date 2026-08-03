@@ -55,6 +55,9 @@ shader = ExtResource("2_uq67j")
 shader_parameter/outline_color = Color(0.9838709, 0.9432114, 0.868354, 1)
 shader_parameter/outline_width = 0.002
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
+bg_color = Color(0, 0, 0, 1)
+
 [node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userOperationInterfaceInfo")]
 script = ExtResource("34_main")
 _mainMenu = NodePath("Interface/FrontUI/MainMenu")
@@ -227,6 +230,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Interface/FrontUI" unique_id=1303827806]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_42c4a")
 
 [node name="MainMenu" parent="Interface/FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel") instance=ExtResource("32_menu")]
 layout_mode = 1

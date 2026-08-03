@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
@@ -129,16 +130,21 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     }
 
     /// <summary>
-    /// 请求创建房间（通过大厅 JSON 协议）。
+    /// 请求创建房间（通过大厅 JSON 协议，含招募板配置）。
     /// </summary>
-    public void RequestCreateRoom(string roomId, string? roomPassword = null) {
+    public void RequestCreateRoom(string roomId, string? roomPassword = null, GameRoom? config = null) {
         _cachedRoomId = roomId;
         _cachedRoomPassword = roomPassword;
 
-        var msg = MessageWriter.WriteRoomRequestFull(
-            MessageType.CreateRoom, roomId, _playerName,
-            roomPassword, _playerId, _serverPassword);
-        _lobbyClient.SendCommand(msg);
+        _lobbyClient.RequestCreateRoom(roomId, _playerName, _playerId,
+            roomPassword, config, _serverPassword);
+    }
+
+    /// <summary>
+    /// 请求房间列表（招募板）。
+    /// </summary>
+    public void RequestListRooms() {
+        _lobbyClient.RequestListRooms();
     }
 
     /// <summary>
@@ -318,6 +324,12 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _lobbyClient.OnRedirectToRoom += (roomId, roomPort) => {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("收到重定向: {RoomId} → {Host}:{Port}", roomId, _host, roomPort);
+            ReconnectToRoom(_host, roomPort, roomId);
+        };
+        _lobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, _host, roomPort);
+            _cachedRoomPort = roomPort;
             ReconnectToRoom(_host, roomPort, roomId);
         };
         _lobbyClient.OnReconnectFailed += (error) => {
