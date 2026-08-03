@@ -52,7 +52,7 @@ sky = SubResource("Sky_uq67j")
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
 render_priority = 0
 shader = ExtResource("2_uq67j")
-shader_parameter/outline_color = Color(0.97, 0.891915, 0.7469, 1)
+shader_parameter/outline_color = Color(0.9838709, 0.9432114, 0.868354, 1)
 shader_parameter/outline_width = 0.002
 
 [node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userOperationInterfaceInfo")]
@@ -112,9 +112,21 @@ userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Interface" type="Node" parent="." unique_id=1240739248]
 
-[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101]
+[node name="StateChange_Info" type="Node" parent="Interface" unique_id=820233417]
+script = ExtResource("23_0gsne")
+
+[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/StateChange_Info" unique_id=188019131]
+script = ExtResource("23_0gsne_inter")
+UserUISettingsRes = ExtResource("22_roldv")
+TookDamageInfoPackedScene = ExtResource("14_roldv")
+BuffChangeInfoPackedScene = ExtResource("23_roldv")
+
+[node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "node2dUiRef", "effectHintsRef")]
 script = ExtResource("3_n8f6c")
+camera3DRef = NodePath("../../Camera3D_UserCamera")
+node2dUiRef = NodePath("../Game_UserUI")
 userInterfaceRes = ExtResource("11_34gv2")
+effectHintsRef = NodePath("EffectHints")
 
 [node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841]
 script = ExtResource("3_eaknj")
@@ -133,7 +145,11 @@ skeleton = NodePath("../..")
 
 [node name="Game_UserUI" type="Control" parent="Interface" unique_id=955543473]
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
 theme = ExtResource("14_42c4a")
 script = ExtResource("11_4e7mo")
@@ -152,6 +168,8 @@ unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 
 [node name="StateBar2d_Focus" parent="Interface/Game_UserUI" unique_id=716113945 instance=ExtResource("5_0fpm5")]
 layout_mode = 1
+offset_right = -567.0
+offset_bottom = -458.0
 mouse_filter = 1
 
 [node name="StateBar_Simple" type="Control" parent="Interface/Game_UserUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
@@ -168,29 +186,30 @@ offset_top = 62.0
 offset_right = 1137.0
 offset_bottom = 494.0
 
-[node name="Skills_List" parent="Interface/Game_UserUI" unique_id=839039226 instance=ExtResource("10_sfuu4")]
+[node name="Skill_UI" type="Control" parent="Interface/Game_UserUI" unique_id=1773258382]
+anchors_preset = 0
+
+[node name="Skills_List" parent="Interface/Game_UserUI/Skill_UI" unique_id=839039226 instance=ExtResource("10_sfuu4")]
 layout_mode = 0
-offset_right = 0.0
-offset_bottom = 0.0
+offset_left = 285.0
+offset_top = 491.0
+offset_right = 285.0
+offset_bottom = 491.0
+scale = Vector2(0.5, 0.5)
 
-[node name="StateChange_Info" type="Node" parent="Interface/Game_UserUI" unique_id=820233417]
-script = ExtResource("23_0gsne")
-
-[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/Game_UserUI/StateChange_Info" unique_id=188019131]
-script = ExtResource("23_0gsne_inter")
-UserUISettingsRes = ExtResource("22_roldv")
-TookDamageInfoPackedScene = ExtResource("14_roldv")
-BuffChangeInfoPackedScene = ExtResource("23_roldv")
-
-[node name="Panel_UI_Info" parent="Interface/Game_UserUI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
+[node name="Panel_UI_Info" parent="Interface/Game_UserUI/Skill_UI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
 layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
 offset_left = 841.0
-offset_top = 514.0
+offset_top = 493.0
 offset_right = 1148.0
 offset_bottom = 638.0
+grow_horizontal = 1
+grow_vertical = 1
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

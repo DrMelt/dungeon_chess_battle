@@ -4,16 +4,16 @@
 [ext_resource type="Script" uid="uid://bh1tcssn3bc77" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBarInterRefs.cs" id="2_skillprogressbar_interrefs"]
 
 [node name="Skill_ProgressBar" type="Control" unique_id=1327954040]
-custom_minimum_size = Vector2(166, 32)
+custom_minimum_size = Vector2(150, 32)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 166.0
+offset_right = 150.0
 offset_bottom = 32.0
 script = ExtResource("1_ytur1")
 
 [node name="SkillProgressBarInterRefs" type="Node" parent="." unique_id=1493960129 node_paths=PackedStringArray("ProgressBarRef", "LabelSkillNameRef", "LabelRemainingTimeRef")]
 script = ExtResource("2_skillprogressbar_interrefs")
-ProgressBarRef = NodePath("../ProgressBar")
+ProgressBarRef = NodePath("../VBoxContainer/ProgressBar")
 LabelSkillNameRef = NodePath("../VBoxContainer/PanelContainer/Label_Skill_Name")
 LabelRemainingTimeRef = NodePath("../VBoxContainer/PanelContainer/Label_RemainingTime")
 
@@ -31,21 +31,20 @@ layout_mode = 2
 [node name="Label_Skill_Name" type="Label" parent="VBoxContainer/PanelContainer" unique_id=1809747838]
 layout_mode = 2
 size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 14
 text = "Label_Skill_Name"
 
 [node name="Label_RemainingTime" type="Label" parent="VBoxContainer/PanelContainer" unique_id=729434550]
 layout_mode = 2
 size_flags_horizontal = 8
+theme_override_font_sizes/font_size = 14
 text = "1.0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="ProgressBar" type="ProgressBar" parent="." unique_id=467267499]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 0
-offset_top = 24.0
-offset_right = 166.0
-offset_bottom = 32.0
+[node name="ProgressBar" type="ProgressBar" parent="VBoxContainer" unique_id=467267499]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
 size_flags_vertical = 8
 max_value = 1.0
 value = 0.2

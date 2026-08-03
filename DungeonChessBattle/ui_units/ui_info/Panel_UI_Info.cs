@@ -32,12 +32,12 @@ public partial class Panel_UI_Info : Control {
 
         if (control != null) {
             if (control is ButtonSkillBase mouseOnButtonSkill) {
-                skillNameLabel!.Text = mouseOnButtonSkill.BindSkill.SkillName;
+                skillNameLabel?.Text = mouseOnButtonSkill.BindSkill.SkillName;
                 skillDescriptionLabel!.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon buffIcon) {
-                skillNameLabel!.Text = buffIcon.BindingBuff.BuffName;
+                skillNameLabel?.Text = buffIcon.BindingBuff.BuffName;
                 skillDescriptionLabel!.Text = buffIcon.BindingBuff.BuffDescription;
                 isShow = true;
             }
