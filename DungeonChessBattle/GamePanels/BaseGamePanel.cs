@@ -1,4 +1,6 @@
 using Godot;
+using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
 
@@ -43,6 +45,19 @@ public partial class BaseGamePanel : Control {
     }
 
     /// <summary>
+    /// 返回到来源面板。保留 caller 的原有导航上下文，不覆盖其 _caller。
+    /// 与 ClosePanel 的区别：GoBack 直接显示 caller，不调用 OpenPanelFrom() 从而避免重置 caller 的 _caller。
+    /// </summary>
+    public void GoBack() {
+        OnPanelClosed();
+        Visible = false;
+        if (_caller != null) {
+            _caller.Visible = true;
+            _caller.OnPanelOpened();
+        }
+    }
+
+    /// <summary>
     /// 从当前面板导航到目标面板。隐藏自身，显示目标面板。
     /// 各面板按钮打开其他面板时统一通过此方法。
     /// </summary>
@@ -52,6 +67,9 @@ public partial class BaseGamePanel : Control {
             GD.PrintErr($"[{GetType().Name}] NavigateTo failed: target panel is not assigned.");
             return;
         }
+        var logger = ServiceLocator.CreateLogger(GetType().Name);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Navigate: {From} -> {To}", GetType().Name, target.GetType().Name);
         target.OpenPanelFrom(this);
     }
 }

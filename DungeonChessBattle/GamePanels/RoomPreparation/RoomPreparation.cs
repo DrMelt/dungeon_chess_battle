@@ -1,6 +1,8 @@
 using Godot;
+using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Services;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 
@@ -11,6 +13,8 @@ namespace DungeonChessBattle;
 /// 通过连接 GameLobby.RoomEntered 信号自动切入准备流程。
 /// </summary>
 public partial class RoomPreparation : BaseGamePanel {
+    private readonly ILogger<RoomPreparation> _logger = ServiceLocator.GetLogger<RoomPreparation>();
+
     [Signal]
     public delegate void BattleStartRequestedEventHandler(string roomId);
 
@@ -43,7 +47,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         InterRefs?.CampAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
         InterRefs?.CampBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
-        InterRefs?.BackButton?.Pressed += ClosePanel;
+        InterRefs?.BackButton?.Pressed += GoBack;
         var startBtn = InterRefs?.StartBattleButton;
         if (startBtn is not null) {
             startBtn.Pressed += OnStartBattleClicked;
@@ -52,6 +56,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         SelectCamp(EnumCamp.Camp_A);
         PopulateUnitCards();
+        _logger.LogInformation("RoomPreparation ready");
     }
 
     /// <summary>
@@ -59,7 +64,22 @@ public partial class RoomPreparation : BaseGamePanel {
     /// </summary>
     public void EnterRoom(string roomId, IClientBattleService? service) {
         _roomId = roomId;
+        _logger.LogInformation("进入房间: {RoomId}, service={ServiceType}", roomId, service?.GetType().Name);
+
+        // 取消旧服务的订阅
+        if (_clientService != null) {
+            _clientService.OnUnitCreated -= OnServiceUnitCreated;
+            _clientService.BattlePhaseChanged -= OnServiceBattlePhase;
+        }
+
         _clientService = service;
+
+        // 订阅新服务的事件
+        if (service != null) {
+            service.OnUnitCreated += OnServiceUnitCreated;
+            service.BattlePhaseChanged += OnServiceBattlePhase;
+        }
+
         InterRefs?.RoomNameLabel?.Text = $"房间: {roomId}";
         InterRefs?.StatusLabel?.Text = "请选择单位...";
     }
@@ -98,23 +118,39 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
 
         string displayName = AvailableUnits[_selectedUnitKey].displayName;
+        byte camp = _selectedCamp == EnumCamp.Camp_A ? (byte)1 : (byte)2;
 
-        if (_selectedCamp == EnumCamp.Camp_A) {
-            if (!_campAUnits.Contains(displayName)) {
-                _campAUnits.Add(displayName);
-                _clientService.CreateUnit(_roomId, displayName, 1);
-            }
+        // 网络模式：等待 OnServiceUnitCreated 回调确认
+        // 本地模式：回调同步触发，幂等过滤
+        _clientService.CreateUnit(_roomId, displayName, camp);
+
+        InterRefs?.StatusLabel?.Text = $"请求创建 {displayName} ({CampName(_selectedCamp)})...";
+    }
+
+    private void OnServiceUnitCreated(string eventRoomId, string unitName, byte camp) {
+        if (eventRoomId != _roomId)
+            return;
+
+        _logger.LogInformation("单位已创建: {UnitName}, camp={Camp}, room={RoomId}", unitName, camp, eventRoomId);
+
+        if (camp == 1) {
+            if (!_campAUnits.Contains(unitName))
+                _campAUnits.Add(unitName);
         }
-        else {
-            if (!_campBUnits.Contains(displayName)) {
-                _campBUnits.Add(displayName);
-                _clientService.CreateUnit(_roomId, displayName, 2);
-            }
+        else if (camp == 2) {
+            if (!_campBUnits.Contains(unitName))
+                _campBUnits.Add(unitName);
         }
 
         UpdateCampLists();
         InterRefs?.StartBattleButton?.Disabled = _campAUnits.Count == 0 && _campBUnits.Count == 0;
-        InterRefs?.StatusLabel?.Text = $"{displayName} 已加入 {CampName(_selectedCamp)}";
+        InterRefs?.StatusLabel?.Text = $"{unitName} 已加入 {(camp == 1 ? "阵营 A" : "阵营 B")}";
+    }
+
+    private void OnServiceBattlePhase(string eventRoomId, BattlePhase phase) {
+        if (eventRoomId != _roomId)
+            return;
+        GD.Print($"[RoomPreparation] Battle phase changed: {phase}");
     }
 
     private void UpdateCampLists() {
@@ -128,6 +164,7 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         }
 
+        _logger.LogInformation("请求开始战斗: {RoomId}, campA={CampACount}, campB={CampBCount}", _roomId, _campAUnits.Count, _campBUnits.Count);
         Visible = false;
         EmitSignal(SignalName.BattleStartRequested, _roomId);
     }

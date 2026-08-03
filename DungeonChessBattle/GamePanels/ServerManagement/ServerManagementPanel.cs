@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
@@ -8,6 +9,8 @@ namespace DungeonChessBattle;
 /// 服务器生命周期由 GameServerService 后台服务管理，本面板仅负责 UI 交互。
 /// </summary>
 public partial class ServerManagementPanel : BaseGamePanel {
+    private readonly ILogger<ServerManagementPanel> _logger = ServiceLocator.GetLogger<ServerManagementPanel>();
+
     public ServerManagementPanelInterRefs? InterRefs {
         get; private set;
     }
@@ -32,6 +35,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
         ServiceLocator.ServerService.StatusChanged += OnServerStatusChanged;
 
         UpdateStatus("服务器未启动");
+        _logger.LogInformation("ServerManagementPanel ready");
     }
 
     #region Button Handlers
@@ -46,7 +50,10 @@ public partial class ServerManagementPanel : BaseGamePanel {
             return;
         }
 
-        ServiceLocator.ServerService.Start(port);
+        string password = InterRefs?.PasswordInput?.Text?.Trim() ?? "";
+
+        _logger.LogInformation("启动服务器: port={Port}", port);
+        ServiceLocator.ServerService.Start(port, password);
     }
 
     private void OnStopPressed() {
@@ -54,11 +61,12 @@ public partial class ServerManagementPanel : BaseGamePanel {
             return;
         }
 
+        _logger.LogInformation("停止服务器");
         ServiceLocator.ServerService.Stop();
     }
 
     private void OnClosePressed() {
-        ClosePanel();
+        GoBack();
     }
 
     #endregion
@@ -66,6 +74,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
     #region Service Event Handlers
 
     private void OnServerStatusChanged(bool isRunning, int port) {
+        _logger.LogInformation("服务器状态变更: isRunning={IsRunning}, port={Port}", isRunning, port);
         UpdateButtonStates();
         if (isRunning) {
             UpdateStatus($"运行中 (端口 {port})", Colors.Green);
@@ -84,6 +93,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
         InterRefs?.StartButton?.Disabled = running;
         InterRefs?.StopButton?.Disabled = !running;
         InterRefs?.PortInput?.Editable = !running;
+        if (InterRefs?.PasswordInput is not null)
+            InterRefs.PasswordInput.Editable = !running;
     }
 
     private void UpdateStatus(string text, Color? color = null) {

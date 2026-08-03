@@ -1,18 +1,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using DungeonChessBattle.Client;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
-using DungeonChessBattle.Logic.Battle;
+using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Services;
-using SysNumerics = System.Numerics;
 
 namespace DungeonChessBattle;
 
 /// <summary>
 /// 主场景入口脚本，挂载到 MainScene 根节点。
 /// 负责初始化服务、处理战斗循环（输入收集 + LES Entity 位置同步）。
+/// 全部通过 IClientBattleService 接口消费服务，不再依赖 RoomBattleClient 具体类型。
 /// </summary>
 public partial class MainScene : Node {
     #region Signals
@@ -46,7 +46,9 @@ public partial class MainScene : Node {
 
     #region State
 
-    private RoomBattleClient? _roomClient;
+    /// <summary>战斗服务（接口类型，通过 ServiceLocator 获取）。唯一服务引用。</summary>
+    private IClientBattleService? _battleService;
+
     private string _roomId = "";
     private bool _inBattle;
 
@@ -92,18 +94,21 @@ public partial class MainScene : Node {
 
     private void OnBattleStarted(string roomId) {
         _roomId = roomId;
-        _roomClient = ServiceLocator.ClientService.RoomClient;
+        _battleService = ServiceLocator.ClientService.Client;
 
         GD.Print($"[MainScene] Battle started for room: {roomId}");
 
-        // 订阅 LES 事件
-        _roomClient.UnitHealthChanged += OnUnitHealth;
-        _roomClient.UnitDied += OnUnitDied;
-        _roomClient.UnitBuffAdded += OnBuffAdded;
-        _roomClient.UnitBuffRemoved += OnBuffRemoved;
-        _roomClient.BattlePhaseChanged += OnBattlePhase;
+        // 所有事件均通过接口订阅
+        if (_battleService != null) {
+            _battleService.BattlePhaseChanged += OnBattlePhase;
+            _battleService.OnUnitCreated += OnServiceUnitCreated;
+            _battleService.UnitHealthChanged += OnUnitHealth;
+            _battleService.UnitDied += OnUnitDied;
+            _battleService.UnitBuffAdded += OnBuffAdded;
+            _battleService.UnitBuffRemoved += OnBuffRemoved;
+        }
 
-        // 从 LES Entity 缓存初始化 3D 单位
+        // 从 Entity 缓存初始化 3D 单位
         InitializeUnitsFromCache();
 
         // 绑定 UI（通过 VM 触发 View 初始化）
@@ -116,12 +121,13 @@ public partial class MainScene : Node {
     }
 
     private void ExitBattle() {
-        if (_roomClient != null) {
-            _roomClient.UnitHealthChanged -= OnUnitHealth;
-            _roomClient.UnitDied -= OnUnitDied;
-            _roomClient.UnitBuffAdded -= OnBuffAdded;
-            _roomClient.UnitBuffRemoved -= OnBuffRemoved;
-            _roomClient.BattlePhaseChanged -= OnBattlePhase;
+        if (_battleService != null) {
+            _battleService.BattlePhaseChanged -= OnBattlePhase;
+            _battleService.OnUnitCreated -= OnServiceUnitCreated;
+            _battleService.UnitHealthChanged -= OnUnitHealth;
+            _battleService.UnitDied -= OnUnitDied;
+            _battleService.UnitBuffAdded -= OnBuffAdded;
+            _battleService.UnitBuffRemoved -= OnBuffRemoved;
         }
 
         ClearUnits();
@@ -129,7 +135,7 @@ public partial class MainScene : Node {
         // 解绑 UI
         _userOperationInterfaceInfo?.UnbindFromBattle();
 
-        _roomClient = null;
+        _battleService = null;
         _roomId = "";
         _unitShows.Clear();
         _inBattle = false;
@@ -140,15 +146,22 @@ public partial class MainScene : Node {
         GD.Print("[MainScene] Exited battle.");
     }
 
+    /// <summary>接口事件：服务端确认单位创建（网络模式异步，本地模式同步）。</summary>
+    private void OnServiceUnitCreated(string eventRoomId, string unitName, byte camp) {
+        if (eventRoomId != _roomId)
+            return;
+        GD.Print($"[MainScene] Unit created via service: {unitName} (camp={camp})");
+    }
+
     // =============================================================
     // 单位管理
     // =============================================================
 
     private void InitializeUnitsFromCache() {
-        if (_roomClient == null)
+        if (_battleService == null)
             return;
 
-        var room = _roomClient.GetRoom(_roomId);
+        var room = _battleService.GetRoom(_roomId);
         if (room == null) {
             GD.PrintErr("[MainScene] Room not found in cache: " + _roomId);
             return;
@@ -206,19 +219,16 @@ public partial class MainScene : Node {
     // =============================================================
 
     public override void _Process(double delta) {
-        if (!_inBattle || _roomClient == null)
+        if (!_inBattle || _battleService == null)
             return;
 
         CollectPlayerInput();
 
-        _roomClient.SubmitPlayerInput(
-            new SysNumerics.Vector2(_moveDir.X, _moveDir.Y),
-            _skillFlags,
-            new SysNumerics.Vector2(_aimPos.X, _aimPos.Y));
+        _battleService.SubmitPlayerInput(_moveDir.X, _moveDir.Y, _skillFlags, _aimPos.X, _aimPos.Y);
     }
 
     public override void _PhysicsProcess(double delta) {
-        if (!_inBattle || _roomClient == null)
+        if (!_inBattle || _battleService == null)
             return;
 
         SyncEntityPositionsToScene();
@@ -238,10 +248,10 @@ public partial class MainScene : Node {
     }
 
     private void SyncEntityPositionsToScene() {
-        if (_roomClient == null)
+        if (_battleService == null)
             return;
 
-        var room = _roomClient.GetRoom(_roomId);
+        var room = _battleService.GetRoom(_roomId);
         if (room == null)
             return;
 
@@ -254,7 +264,7 @@ public partial class MainScene : Node {
     }
 
     // =============================================================
-    // LES Entity 事件回调
+    // IClientBattleService 事件回调
     // =============================================================
 
     private void OnBattlePhase(string roomId, BattlePhase phase) {
@@ -291,18 +301,19 @@ public partial class MainScene : Node {
         }
     }
 
-    private void OnBuffAdded(string unitName, DungeonChessBattle.Entities.SyncData.SyncBuffData buff) {
+    private void OnBuffAdded(string unitName, BuffEventData buff) {
     }
-    private void OnBuffRemoved(string unitName, DungeonChessBattle.Entities.SyncData.SyncBuffData buff) {
+    private void OnBuffRemoved(string unitName, BuffEventData buff) {
     }
 
     public override void _ExitTree() {
-        if (_roomClient != null) {
-            _roomClient.UnitHealthChanged -= OnUnitHealth;
-            _roomClient.UnitDied -= OnUnitDied;
-            _roomClient.UnitBuffAdded -= OnBuffAdded;
-            _roomClient.UnitBuffRemoved -= OnBuffRemoved;
-            _roomClient.BattlePhaseChanged -= OnBattlePhase;
+        if (_battleService != null) {
+            _battleService.BattlePhaseChanged -= OnBattlePhase;
+            _battleService.OnUnitCreated -= OnServiceUnitCreated;
+            _battleService.UnitHealthChanged -= OnUnitHealth;
+            _battleService.UnitDied -= OnUnitDied;
+            _battleService.UnitBuffAdded -= OnBuffAdded;
+            _battleService.UnitBuffRemoved -= OnBuffRemoved;
         }
     }
 }

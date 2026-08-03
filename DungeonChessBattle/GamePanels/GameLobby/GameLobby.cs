@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Services;
@@ -12,6 +13,8 @@ namespace DungeonChessBattle;
 /// 服务从 ServiceLocator 获取，不再由外部注入。
 /// </summary>
 public partial class GameLobby : BaseGamePanel {
+    private readonly ILogger<GameLobby> _logger = ServiceLocator.GetLogger<GameLobby>();
+
     #region Signals
 
     /// <summary>
@@ -65,7 +68,7 @@ public partial class GameLobby : BaseGamePanel {
         // 连接按钮信号
         InterRefs?.CreateButton?.Pressed += OnCreateRoom;
         InterRefs?.RefreshButton?.Pressed += OnRefreshRooms;
-        InterRefs?.BackButton?.Pressed += ClosePanel;
+        InterRefs?.BackButton?.Pressed += GoBack;
         var joinBtn = InterRefs?.JoinButton;
         if (joinBtn is not null) {
             joinBtn.Pressed += OnJoinRoom;
@@ -74,6 +77,8 @@ public partial class GameLobby : BaseGamePanel {
 
         // 持久订阅大厅客户端的房间加入事件（不再在 OnJoinRoom 中临时绑定）
         ServiceLocator.ClientService.LobbyClient.OnRoomJoined += OnRoomJoinedHandler;
+
+        _logger.LogInformation("GameLobby ready");
 
         // 启动定时刷新
         _refreshTimer = new Timer {
@@ -91,10 +96,11 @@ public partial class GameLobby : BaseGamePanel {
     /// 给 Entity 同步留出时间（网络模式下 OnPeerConnected → Entity 构造需要数个 Tick）。
     /// </summary>
     protected override void OnPanelOpened() {
+        _logger.LogInformation("GameLobby opened, connected={IsConnected}", ServiceLocator.ClientService.IsConnected);
         // 防御性初始化：确保本地服务已就绪（防止面板在 InitLocalMode 之前被打开）
         if (!ServiceLocator.ClientService.IsConnected && ServiceLocator.ClientService.Client == null) {
             ServiceLocator.ClientService.InitLocalMode();
-            GD.Print("[GameLobby] InitLocalMode called from OnPanelOpened (defensive).");
+            _logger.LogInformation("InitLocalMode called from OnPanelOpened (defensive)");
         }
         CallDeferred(nameof(OnRefreshRooms));
     }
@@ -104,24 +110,24 @@ public partial class GameLobby : BaseGamePanel {
     private void OnCreateRoom() {
         string roomName = InterRefs?.RoomNameInput?.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(roomName)) {
-            GD.Print("[GameLobby] Room name is empty.");
+            _logger.LogWarning("创建房间失败: 房间名为空");
             return;
         }
 
         if (ServiceLocator.ClientService.IsConnected) {
-            // 网络模式：通过持久的大厅客户端发送创建请求
-            ServiceLocator.ClientService.LobbyClient.RequestCreateRoom(roomName);
-            GD.Print($"[GameLobby] Requested create room: {roomName}");
+            // 网络模式：通过 GameClientService 发送含完整身份信息的创建请求
+            _logger.LogInformation("请求创建房间(网络): {RoomName}", roomName);
+            ServiceLocator.ClientService.RequestCreateRoom(roomName);
         }
         else {
+            // 本地模式：通过接口创建
             var clientService = ClientService;
-            if (clientService is GameLogicService logicService) {
-                // 本地模式
-                logicService.CreateRoom(roomName);
-                GD.Print($"[GameLobby] Local room created: {roomName}");
+            if (clientService != null) {
+                clientService.CreateRoom(roomName);
+                _logger.LogInformation("本地房间创建成功: {RoomName}", roomName);
             }
             else {
-                GD.PrintErr("[GameLobby] Cannot create room: no service available.");
+                _logger.LogError("创建房间失败: 无可用服务");
                 return;
             }
         }
@@ -129,8 +135,8 @@ public partial class GameLobby : BaseGamePanel {
         InterRefs?.RoomNameInput?.Clear();
 
         // 本地模式：创建后直接进入房间准备
-        if (!ServiceLocator.ClientService.IsConnected && ClientService is GameLogicService logicSvc && _roomPreparation != null) {
-            _roomPreparation.EnterRoom(roomName, logicSvc);
+        if (!ServiceLocator.ClientService.IsConnected && ClientService != null && _roomPreparation != null) {
+            _roomPreparation.EnterRoom(roomName, ClientService);
             NavigateTo(_roomPreparation);
         }
     }
@@ -141,34 +147,32 @@ public partial class GameLobby : BaseGamePanel {
     public void StartBattle(string roomId) {
         var clientService = ClientService;
         if (clientService == null) {
-            GD.PrintErr("[GameLobby] Cannot start battle: no service.");
+            _logger.LogError("启动战斗失败: 房间 {RoomId} 无可用服务", roomId);
             return;
         }
 
-        // 网络模式：通过 RPC 发送开始战斗请求
-        if (ServiceLocator.ClientService.IsConnected) {
-            ServiceLocator.ClientService.RoomClient.RequestStartBattle(roomId);
-            GD.Print($"[GameLobby] Requested start battle via RPC for room: {roomId}");
-        }
+        // 通过接口调用（网络模式通过 RPC 发送，本地模式直接调用内部逻辑）
+        clientService.RequestStartBattle(roomId);
+        _logger.LogInformation("请求开始战斗: {RoomId}", roomId);
 
         Visible = false;
         EmitSignal(SignalName.BattleStarted, roomId);
-        GD.Print($"[GameLobby] Battle started for room: {roomId}");
+        _logger.LogInformation("战斗已开始: {RoomId}", roomId);
     }
 
     private void OnJoinRoom() {
         if (string.IsNullOrEmpty(_selectedRoomId)) {
-            GD.Print("[GameLobby] No room selected to join.");
+            _logger.LogWarning("加入房间失败: 未选中房间");
             return;
         }
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 通过持久的大厅客户端发送请求（OnRoomJoined 回调已在 _Ready 中持久订阅）
-            ServiceLocator.ClientService.LobbyClient.RequestJoinRoom(_selectedRoomId);
-            GD.Print($"[GameLobby] Requested join room: {_selectedRoomId}");
+            _logger.LogInformation("请求加入房间(网络): {RoomId}", _selectedRoomId);
+            ServiceLocator.ClientService.RequestJoinRoom(_selectedRoomId);
         }
         else {
-            GD.PrintErr("[GameLobby] Cannot join room: not connected.");
+            _logger.LogWarning("加入房间失败: 未连接到服务器");
         }
     }
 
@@ -176,7 +180,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 持久的事件处理器：大厅客户端收到 OnRoomJoined 时（重定向后房间端口连接成功）触发。
     /// </summary>
     private void OnRoomJoinedHandler(string joinedRoomId) {
-        GD.Print($"[GameLobby] Joined room successfully: {joinedRoomId}");
+        _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
         CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
     }
 
@@ -184,6 +188,7 @@ public partial class GameLobby : BaseGamePanel {
         if (_roomPreparation != null) {
             // 使用持久的房间客户端（已通过 Reconnect 连接到房间端口）
             _roomPreparation.EnterRoom(joinedRoomId, ServiceLocator.ClientService.RoomClient);
+            _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
             NavigateTo(_roomPreparation);
         }
     }
@@ -195,6 +200,7 @@ public partial class GameLobby : BaseGamePanel {
 
         var rooms = clientService.GetAllRooms().ToList();
         RefreshRoomList(rooms);
+        _logger.LogDebug("房间列表刷新: {Count} 个房间", rooms.Count);
     }
 
     #endregion

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -5,6 +6,7 @@ using System.Numerics;
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
+using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
@@ -19,14 +21,16 @@ namespace DungeonChessBattle.Server.Network;
 /// 独立的 Logic 实例 (GameLogicService + RoomManager + BattleManager)，
 /// 并运行在独立线程中，实现物理级别的 Entity 同步隔离与房间数据所有权。
 /// 创建 Entity 时仅该房间内的客户端可见。
+/// 支持断线重连：通过 playerId 白名单验证连接请求，保留断连玩家的 Entity。
 /// </summary>
 public class RoomEntityServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ServerEntityManager _entityManager;
     private readonly ILogger<RoomEntityServer> _logger;
-    private const string ConnectionKey = "DungeonChessBattle";
+    private const string DefaultConnectionKey = "DungeonChessBattle";
     private const byte PacketHeader = 0xDC;
     private const double TickInterval = 0.02; // 50 Hz
+    private const double ReconnectGracePeriodSeconds = 30.0;
 
     // 房间线程
     private Thread? _loopThread;
@@ -34,10 +38,21 @@ public class RoomEntityServer : INetEventListener {
     private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
     private double _lastTickTime;
 
-    // 玩家实体跟踪（按 NetPeer.Id 索引）
-    private readonly Dictionary<int, PlayerRoomEntity> _playerEntities = [];
-    private readonly Dictionary<int, NetPlayer> _netPlayers = [];
-    private readonly Dictionary<int, UnitController> _unitControllers = [];
+    // ── 玩家会话（P2-5：7 个独立字典合并为 2 个） ──────
+    /// <summary>playerId → PlayerSession 聚合映射（线程安全）</summary>
+    private readonly ConcurrentDictionary<string, PlayerSession> _sessions = new();
+    /// <summary>peer.Id → playerId 反向索引（断开时快速查找）</summary>
+    private readonly ConcurrentDictionary<int, string> _peerToPlayerId = new();
+
+    // ── 连接验证 ─────────────────────────────────────────
+    /// <summary>合法 playerId 白名单（活跃 + 宽限期内）。也可用 _sessions.Keys 替代，保留独立集合以加速 OnConnectionRequest 热路径。</summary>
+    private readonly ConcurrentDictionary<string, byte> _validPlayerIds = new();
+    /// <summary>已接受的连接密钥队列（OnConnectionRequest 入队，OnPeerConnected 出队）。
+    /// P3-8 分析：NetPeer 不暴露 EndPoint 属性，无法使用按地址匹配的字典方案。
+    /// 房间在单线程中顺序调用 PollEvents()，OnConnectionRequest 与 OnPeerConnected 在
+    /// 同一轮询周期内以 FIFO 顺序处理，不存在跨连接错位的竞态条件。
+    /// 保留 ConcurrentQueue 以保证线程安全。</summary>
+    private readonly ConcurrentQueue<string> _acceptedKeys = new();
 
     // ── 房间数据所有权（从 GameLobby 迁移） ──────────────
     /// <summary>本房间的所有 UnitPawn</summary>
@@ -69,6 +84,9 @@ public class RoomEntityServer : INetEventListener {
 
     public event Action<int>? OnClientConnected;
     public event Action<int>? OnClientDisconnected;
+
+    /// <summary>玩家彻底离开房间事件（超出宽限期后触发）</summary>
+    public event Action<string, string>? PlayerRemoved; // (roomId, playerId)
 
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
@@ -130,6 +148,11 @@ public class RoomEntityServer : INetEventListener {
         foreach (var pawn in _roomPawns)
             pawn.SkillCastRequested -= OnPawnSkillCast;
 
+        // 清理所有重连管理数据
+        _validPlayerIds.Clear();
+        _sessions.Clear();
+        // _acceptedKeys 是 ConcurrentQueue，无需 Clear
+
         _loopThread?.Join(TimeSpan.FromSeconds(3));
         _netManager.Stop();
 
@@ -178,6 +201,9 @@ public class RoomEntityServer : INetEventListener {
 
                     // 5. 战斗结束检查
                     CheckBattleEnded();
+
+                    // 6. 断连宽限期超时清理
+                    CleanupExpiredPlayers();
                 }
 
                 Thread.Sleep(1);
@@ -193,32 +219,76 @@ public class RoomEntityServer : INetEventListener {
         _netManager.PollEvents();
     }
 
+    // ── 公开方法（供 GameServer 大厅层调用） ─────────────
+
+    /// <summary>
+    /// 大厅层预注册玩家到白名单。客户端真正连接房间端口前调用。
+    /// </summary>
+    public void RegisterPlayer(string playerId, string playerName) {
+        _validPlayerIds[playerId] = 1;
+        _sessions.GetOrAdd(playerId, _ => new PlayerSession(playerId, playerName));
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) pre-registered.", RoomId, playerName, playerId);
+    }
+
+    /// <summary>
+    /// 大厅层查询玩家是否可重连（需在宽限期内）。
+    /// </summary>
+    public bool CanReconnect(string playerId) {
+        return _sessions.TryGetValue(playerId, out var session) && session.DisconnectTime != null;
+    }
+
+    /// <summary>
+    /// 更新已注册玩家的显示名（重连时可能更改）。
+    /// </summary>
+    public void UpdatePlayerName(string playerId, string playerName) {
+        if (_sessions.TryGetValue(playerId, out var session)) {
+            session.PlayerName = playerName;
+            if (session.Entity != null)
+                session.Entity.PlayerName.Value = playerName;
+        }
+        else {
+            // 预注册阶段（尚未创建 Entity + Session），创建 session
+            _sessions[playerId] = new PlayerSession(playerId, playerName);
+        }
+    }
+
     // ── INetEventListener ─────────────────────────────────
 
     void INetEventListener.OnConnectionRequest(ConnectionRequest request) {
-        request.AcceptIfKey(ConnectionKey);
+        string incomingKey = request.Data.GetString();
+
+        // 验证：playerId 在白名单中 或 使用默认连接密钥（向后兼容/调试模式）
+        if (incomingKey == DefaultConnectionKey || _validPlayerIds.ContainsKey(incomingKey)) {
+            _acceptedKeys.Enqueue(incomingKey);
+            request.Accept();
+        }
+        else {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[RoomServer:{RoomId}] Connection rejected: invalid key from {RemoteEP}", RoomId, request.RemoteEndPoint);
+            request.Reject();
+        }
     }
 
     void INetEventListener.OnPeerConnected(NetPeer peer) {
-        var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
-        var player = _entityManager.AddPlayer(lesPeer);
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Peer connected: {PeerId}, PlayerId: {PlayerId}", RoomId, peer.Id, player?.Id);
+        // 提取连接时使用的密钥（即 playerId 或默认密钥）
+        _acceptedKeys.TryDequeue(out string? connectionKey);
 
-        // 追踪 NetPlayer（用于创建 UnitController 等需要玩家引用的操作）
-        if (player != null)
-            _netPlayers[peer.Id] = player;
-
-        // 为房间内每个客户端创建 PlayerRoomEntity
-        var playerEntity = _entityManager.AddEntity<PlayerRoomEntity>(e => {
-            e.PlayerName.Value = $"Player_{peer.Id}";
-            e.IsReady.Value = false;
-            e.Camp.Value = 0;
-        });
-        if (playerEntity != null) {
-            _playerEntities[peer.Id] = playerEntity;
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomServer:{RoomId}] PlayerRoomEntity created for peer {PeerId}", RoomId, peer.Id);
+        // P1 修复：同一 playerId 已有活跃连接时，关闭旧连接接受新连接
+        if (connectionKey != null && connectionKey != DefaultConnectionKey
+            && _sessions.TryGetValue(connectionKey, out var existingSession)
+            && existingSession.Entity != null) {
+            if (existingSession.Entity.PlayerState.Value == (byte)PlayerConnectionState.Connected) {
+                // 替换：清理旧 peer，用新 peer 重连
+                _logger.LogInformation("[RoomServer:{RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
+                    RoomId, connectionKey);
+                ReplaceExistingConnection(connectionKey);
+            }
+            // 执行重连流程（Disconnected → 恢复 或 替换后重新绑定）
+            HandlePlayerReconnect(peer, connectionKey);
+        }
+        else {
+            HandleNewPlayerConnect(peer, connectionKey);
         }
 
         OnClientConnected?.Invoke(peer.Id);
@@ -228,12 +298,29 @@ public class RoomEntityServer : INetEventListener {
         if (peer.Tag is LiteNetLibNetPeer lesPeer)
             _entityManager.RemovePlayer(lesPeer);
 
-        _playerEntities.Remove(peer.Id);
-        _netPlayers.Remove(peer.Id);
-        _unitControllers.Remove(peer.Id);
+        // 查找该 peer 对应的 playerId（通过反向索引）
+        _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
+        if (playerId != null && _sessions.TryGetValue(playerId, out var session)) {
+            // 标记为断连状态（保留 Entity，不销毁）
+            if (session.Entity != null)
+                session.Entity.PlayerState.Value = (byte)PlayerConnectionState.Disconnected;
+            session.DisconnectTime = DateTime.UtcNow;
+            // 注意：不删除 _sessions 和 _validPlayerIds
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerId}' disconnected (reconnect grace period started).",
+                    RoomId, playerId);
+        }
+
+        // 清除旧 peer 的引用
+        if (playerId != null && _sessions.TryGetValue(playerId, out var s)) {
+            s.NetPlayer = null;
+            s.Controller = null;
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Peer disconnected: {PeerId}, Reason: {Reason}", RoomId, peer.Id, disconnectInfo.Reason);
+            _logger.LogInformation("[RoomServer:{RoomId}] Peer disconnected: {PeerId}, playerId={PlayerId}, Reason={Reason}",
+                RoomId, peer.Id, playerId, disconnectInfo.Reason);
+
         OnClientDisconnected?.Invoke(peer.Id);
     }
 
@@ -253,6 +340,139 @@ public class RoomEntityServer : INetEventListener {
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
     }
     void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency) {
+    }
+
+    // ── 玩家连接处理 ─────────────────────────────────────
+
+    /// <summary>
+    /// 处理新玩家首次连接：创建 PlayerSession + PlayerRoomEntity。
+    /// </summary>
+    private void HandleNewPlayerConnect(NetPeer peer, string? connectionKey) {
+        var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
+        var netPlayer = _entityManager.AddPlayer(lesPeer);
+
+        // 确定 playerId（优先使用连接密钥中的 playerId）
+        string effectivePlayerId = (connectionKey != null && connectionKey != DefaultConnectionKey)
+            ? connectionKey
+            : $"auto_{peer.Id}";
+
+        // 获取或新建 PlayerSession
+        var session = _sessions.GetOrAdd(effectivePlayerId,
+            _ => new PlayerSession(effectivePlayerId, $"Player_{effectivePlayerId[..Math.Min(effectivePlayerId.Length, 8)]}"));
+
+        // 确定玩家显示名
+        string playerName = session.PlayerName;
+        string displayId = session.DisplayId;
+
+        // 创建 PlayerRoomEntity
+        var playerEntity = _entityManager.AddEntity<PlayerRoomEntity>(e => {
+            e.PlayerName.Value = playerName;
+            e.DisplayId.Value = displayId;
+            e.PlayerState.Value = (byte)PlayerConnectionState.Connected;
+            e.IsReady.Value = false;
+            e.Camp.Value = 0;
+        });
+
+        if (playerEntity != null) {
+            session.PeerId = peer.Id;
+            session.Entity = playerEntity;
+            session.NetPlayer = netPlayer;
+            session.DisconnectTime = null;
+            _peerToPlayerId[peer.Id] = effectivePlayerId;
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[RoomServer:{RoomId}] PlayerRoomEntity created: '{PlayerName}' (display={DisplayId}), peer={PeerId}",
+                    RoomId, playerName, displayId, peer.Id);
+        }
+    }
+
+    /// <summary>
+    /// 处理玩家重连：将新网络连接绑定到已有的 PlayerSession。
+    /// </summary>
+    private void HandlePlayerReconnect(NetPeer peer, string playerId) {
+        if (!_sessions.TryGetValue(playerId, out var session) || session.Entity == null) {
+            _logger.LogWarning("[RoomServer:{RoomId}] Reconnect: entity not found for playerId '{PlayerId}', treating as new.", RoomId, playerId);
+            HandleNewPlayerConnect(peer, playerId);
+            return;
+        }
+
+        // 清除宽限期计时器
+        session.DisconnectTime = null;
+
+        // 恢复连接状态
+        session.Entity.PlayerState.Value = (byte)PlayerConnectionState.Connected;
+
+        // 重建网络层绑定
+        var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
+        var netPlayer = _entityManager.AddPlayer(lesPeer);
+        session.PeerId = peer.Id;
+        session.NetPlayer = netPlayer;
+        _peerToPlayerId[peer.Id] = playerId;
+
+        // 客户端通过 PlayerState SyncVar 从 Disconnected→Connected 的变化检测重连成功
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) reconnected (peer={PeerId}).",
+                RoomId, session.Entity.PlayerName.Value, playerId, peer.Id);
+    }
+
+    /// <summary>
+    /// 清理旧连接的所有映射（用于新连接替换旧连接场景）。
+    /// 不触发 OnPeerDisconnected 的宽限期逻辑，不修改 PlayerState。
+    /// </summary>
+    private void ReplaceExistingConnection(string playerId) {
+        if (!_sessions.TryGetValue(playerId, out var session))
+            return;
+
+        int oldPeerId = session.PeerId;
+
+        // 从 LES 框架移除旧玩家
+        if (session.NetPlayer != null)
+            _entityManager.RemovePlayer(session.NetPlayer);
+
+        _peerToPlayerId.TryRemove(oldPeerId, out _);
+        session.NetPlayer = null;
+        session.Controller = null;
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[RoomServer:{RoomId}] Old peer {OldPeerId} disconnected for playerId '{PlayerId}' (replaced by new).",
+                RoomId, oldPeerId, playerId);
+    }
+
+    // ── 断连清理 ──────────────────────────────────────────
+
+    /// <summary>
+    /// 检查并清理超出宽限期的断连玩家。
+    /// </summary>
+    private void CleanupExpiredPlayers() {
+        var now = DateTime.UtcNow;
+        var expiredIds = _sessions
+            .Where(kv => kv.Value.DisconnectTime.HasValue
+                && (now - kv.Value.DisconnectTime.Value).TotalSeconds > ReconnectGracePeriodSeconds)
+            .Select(kv => kv.Key)
+            .ToList();
+
+        foreach (var playerId in expiredIds) {
+            CleanupPlayer(playerId);
+        }
+    }
+
+    /// <summary>
+    /// 彻底清理指定玩家：从白名单移除，销毁 PlayerRoomEntity 和关联的 UnitPawn。
+    /// </summary>
+    private void CleanupPlayer(string playerId) {
+        _validPlayerIds.TryRemove(playerId, out _);
+
+        if (_sessions.TryRemove(playerId, out var session)) {
+            // 销毁 LES Entity（InternalEntity.Destroy），同步移除到所有客户端
+            session.Entity?.Destroy();
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) cleanup completed (timeout + entity destroyed).",
+                    RoomId, session.PlayerName, playerId);
+        }
+
+        // 通知外部（GameLobby 可据此判断是否需要销毁空房间）
+        PlayerRemoved?.Invoke(RoomId, playerId);
     }
 
     // ── Pawn 管理 ────────────────────────────────────────
@@ -352,7 +572,7 @@ public class RoomEntityServer : INetEventListener {
         if (req.IsDamage) {
             var skill = new SkillDamageModel {
                 Damage = req.DamageOrCureValue,
-                DamageType = (Core.Enums.Enum_DamageType)req.DamageType
+                DamageType = (Enum_DamageType)req.DamageType
             };
             GameLogicService.CastSkill(_battle, casterModel, targetModel, skill);
         }

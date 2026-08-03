@@ -1,13 +1,6 @@
-namespace DungeonChessBattle.Logic.Battle;
+using DungeonChessBattle.Core.Enums;
 
-/// <summary>
-/// 战斗阶段（实时化简化：去掉回合制 PlayerTurn/SkillCasting）。
-/// </summary>
-public enum BattlePhase {
-    Waiting,   // 等待开始（大厅→战斗过渡）
-    Running,   // 战斗中（实时 Tick）
-    Finished,  // 战斗结束
-}
+namespace DungeonChessBattle.Logic.Battle;
 
 /// <summary>
 /// 实时化战斗管理器。不再有回合概念，由 Tick(deltaTime) 驱动每帧逻辑。

@@ -20,15 +20,16 @@ public sealed class GameServerService(ILogger<GameServerService> logger, ILogger
 
     public event Action<bool, int>? StatusChanged;
 
-    public void Start(int port = DefaultPort) {
+    public void Start(int port = DefaultPort, string? serverPassword = null) {
         if (IsRunning) {
             _logger.LogWarning("服务器已在运行中");
             return;
         }
 
         try {
+            string? actualPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
             _port = port;
-            _server = new GameServer(_loggerFactory);
+            _server = new GameServer(_loggerFactory, actualPassword);
             _server.StartAsync(port);
 
             if (_logger.IsEnabled(LogLevel.Information))

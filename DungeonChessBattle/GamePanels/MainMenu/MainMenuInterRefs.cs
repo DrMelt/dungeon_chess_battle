@@ -26,6 +26,14 @@ public partial class MainMenuInterRefs : Node {
     public Label? StatusLabel {
         get; private set;
     }
+    [Export]
+    public LineEdit? UserNameInput {
+        get; private set;
+    }
+    [Export]
+    public LineEdit? PasswordInput {
+        get; private set;
+    }
 
     public override void _Ready() {
         if (HostInput == null)
@@ -38,5 +46,9 @@ public partial class MainMenuInterRefs : Node {
             GD.PrintErr("[MainMenuInterRefs] [Export] ServerManageButton is not assigned!");
         if (StatusLabel == null)
             GD.PrintErr("[MainMenuInterRefs] [Export] StatusLabel is not assigned!");
+        if (UserNameInput == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] UserNameInput is not assigned!");
+        if (PasswordInput == null)
+            GD.PrintErr("[MainMenuInterRefs] [Export] PasswordInput is not assigned!");
     }
 }

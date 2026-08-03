@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
@@ -11,6 +12,14 @@ namespace DungeonChessBattle.Logic.Services;
 /// </summary>
 public class GameLogicService : IServerBattleService, IClientBattleService {
     private readonly RoomManager _roomManager = new();
+
+    // ── IClientBattleService 事件 ──
+    public event Action<string, string, byte>? OnUnitCreated;
+    public event Action<string, BattlePhase>? BattlePhaseChanged;
+    public event Action<string, float, float>? UnitHealthChanged;
+    public event Action<string>? UnitDied;
+    public event Action<string, BuffEventData>? UnitBuffAdded;
+    public event Action<string, BuffEventData>? UnitBuffRemoved;
 
     #region Room Management
 
@@ -37,6 +46,9 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
             room.UnitsA.Add(model);
         else if (camp == (byte)Core.Enums.EnumCamp.Camp_B)
             room.UnitsB.Add(model);
+
+        // 触发 OnUnitCreated 事件（本地模式同步回调）
+        OnUnitCreated?.Invoke(roomId, unitName, camp);
         return model;
     }
 
@@ -50,7 +62,15 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
 
         var battle = _roomManager.GetOrCreateBattle(roomId);
         battle.StartBattle();
+
+        // 触发 BattlePhaseChanged 事件
+        BattlePhaseChanged?.Invoke(roomId, BattlePhase.Running);
         return battle;
+    }
+
+    /// <summary>IClientBattleService 的请求开始战斗入口。</summary>
+    void IClientBattleService.RequestStartBattle(string roomId) {
+        StartBattleInRoom(roomId);
     }
 
     BattleManager IServerBattleService.StartBattleInRoom(string roomId) {
@@ -177,6 +197,11 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     bool IClientBattleService.CheckBattleEnded(string roomId) {
         var room = GetRoom(roomId);
         return room != null && CheckBattleEnded(room);
+    }
+
+    /// <summary>IClientBattleService 的输入提交入口。本地模式无输入系统，空实现。</summary>
+    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY) {
+        // 本地模式无输入系统
     }
 
     #endregion

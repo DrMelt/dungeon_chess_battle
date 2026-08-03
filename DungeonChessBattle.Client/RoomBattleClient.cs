@@ -5,7 +5,7 @@ using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.Logic.Battle;
+using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
 
@@ -15,22 +15,28 @@ namespace DungeonChessBattle.Client;
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 (0xDC) 通信。
 /// 实现 IClientBattleService，管理 LES Entity（BattleRoomEntity、UnitPawn、PlayerRoomEntity）。
 /// 不包含大厅 JSON 协议。
+/// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary（P2-7 优化）。
 /// </summary>
 public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
 
     private const byte PacketHeader = 0xDC;
 
-    // Entity 缓存（加锁保护，后台线程写入，Godot 主线程读取）
-    private readonly Dictionary<string, BattleRoomEntity> _rooms = [];
-    private readonly Dictionary<string, List<UnitPawn>> _roomPawns = [];
-    private readonly Lock _roomLock = new();
+    // ── 单房间 Entity 缓存（P2-7：替代 Dictionary） ──
+    private BattleRoomEntity? _roomEntity;
+    private readonly List<UnitPawn> _roomPawns = [];
+    private string? _currentRoomId;
+    private readonly Lock _lock = new();
 
-    // ── 战斗事件（通知 UI 层） ──
+    // ── 接口战斗事件（IClientBattleService） ──
     public event Action<string, float, float>? UnitHealthChanged;
     public event Action<string>? UnitDied;
-    public event Action<string, SyncBuffData>? UnitBuffAdded;
-    public event Action<string, SyncBuffData>? UnitBuffRemoved;
+    public event Action<string, BuffEventData>? UnitBuffAdded;
+    public event Action<string, BuffEventData>? UnitBuffRemoved;
+
+    // ── 接口事件（IClientBattleService） ──
+    /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(byte)</summary>
+    public event Action<string, string, byte>? OnUnitCreated;
 
     /// <summary>
     /// 战斗阶段变化事件（roomId, phase）。
@@ -38,26 +44,34 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 
+    /// <summary>重连成功事件（客户端恢复连接后触发）</summary>
+    public event Action<string>? OnReconnectSucceeded;
+
     // 本地玩家的 UnitController（在 OnPlayerEntityCreated 中查找并保存）
     private UnitController? _localController;
+
+    /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
+    private byte _lastKnownPhase;
 
     // ── Reconnect 清理 ──
 
     protected override void OnReconnectCleanup() {
         base.OnReconnectCleanup();
         _entityManager = null;
-        lock (_roomLock) {
-            _rooms.Clear();
+        lock (_lock) {
+            _roomEntity = null;
             _roomPawns.Clear();
+            _currentRoomId = null;
         }
     }
 
     protected override void OnDisconnectCleanup() {
         base.OnDisconnectCleanup();
         _entityManager = null;
-        lock (_roomLock) {
-            _rooms.Clear();
+        lock (_lock) {
+            _roomEntity = null;
             _roomPawns.Clear();
+            _currentRoomId = null;
         }
     }
 
@@ -65,6 +79,19 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
 
     protected override void OnAfterPollEvents() {
         _entityManager?.Update();
+
+        // 检测 BattlePhase SyncVar 变化（LES 无公开 Changed 事件，通过轮询检测）
+        if (_roomEntity != null) {
+            var currentPhase = _roomEntity.BattlePhase.Value;
+            if (currentPhase != _lastKnownPhase) {
+                _lastKnownPhase = currentPhase;
+                var phase = (BattlePhase)currentPhase;
+                var roomId = _currentRoomId;
+                if (roomId != null)
+                    _pendingEventInvocations.Enqueue(() =>
+                        BattlePhaseChanged?.Invoke(roomId, phase));
+            }
+        }
     }
 
     // ── OnNetworkReceive（只处理 LES 0xDC 包） ──
@@ -97,20 +124,19 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
 
     protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
         _entityManager = null;
-        lock (_roomLock) {
-            _rooms.Clear();
+        lock (_lock) {
+            _roomEntity = null;
             _roomPawns.Clear();
+            _currentRoomId = null;
         }
     }
 
     // ── IClientBattleService ──
 
     public GameRoom? GetRoom(string roomId) {
-        List<UnitPawn>? pawnsSnapshot;
-        lock (_roomLock) {
-            if (!_roomPawns.TryGetValue(roomId, out var pawns))
-                return null;
-            pawnsSnapshot = [.. pawns];
+        List<UnitPawn> pawnsSnapshot;
+        lock (_lock) {
+            pawnsSnapshot = [.. _roomPawns];
         }
         var room = new GameRoom(roomId);
         foreach (var p in pawnsSnapshot) {
@@ -124,32 +150,26 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
     }
 
     public IEnumerable<GameRoom> GetAllRooms() {
-        List<string> roomIds;
-        lock (_roomLock) {
-            roomIds = [.. _rooms.Where(kv => kv.Value != null).Select(kv => kv.Key)];
-        }
-        return [.. roomIds.Select(id => GetRoom(id)!).Where(r => r != null)];
+        var roomId = _currentRoomId;
+        if (roomId == null)
+            return [];
+        var room = GetRoom(roomId);
+        return room != null ? [room] : [];
     }
 
     public GameRoom CreateRoom(string roomId) {
-        // 网络模式下通过大厅客户端发送 JSON 请求，此处返回空壳
+        _currentRoomId = roomId;
         var room = new GameRoom(roomId);
-        lock (_roomLock) {
-            if (!_roomPawns.ContainsKey(roomId)) {
-                _roomPawns[roomId] = [];
-            }
+        lock (_lock) {
+            _roomPawns.Clear();
         }
         return room;
     }
 
     public IUnitState CreateUnit(string roomId, string unitName, byte camp) {
-        BattleRoomEntity? roomEntity;
-        lock (_roomLock) {
-            _rooms.TryGetValue(roomId, out roomEntity);
-        }
-        if (roomEntity != null) {
+        if (_roomEntity != null) {
             var req = new SyncCreateUnitRequest { UnitName = unitName, Camp = camp };
-            roomEntity.RequestCreateUnit(req);
+            _roomEntity.RequestCreateUnit(req);
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
@@ -191,9 +211,7 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
     }
 
     public bool CheckBattleEnded(string roomId) {
-        lock (_roomLock) {
-            return _rooms.TryGetValue(roomId, out var r) && r.IsFinished.Value;
-        }
+        return _roomEntity?.IsFinished.Value ?? false;
     }
 
     // ── 玩家输入 ──
@@ -209,12 +227,8 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
     // ── RPC 请求 ──
 
     public void RequestStartBattle(string roomId) {
-        BattleRoomEntity? roomEntity;
-        lock (_roomLock) {
-            _rooms.TryGetValue(roomId, out roomEntity);
-        }
-        if (roomEntity != null) {
-            roomEntity.RequestStartBattle();
+        if (_roomEntity != null) {
+            _roomEntity.RequestStartBattle();
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomBattleClient] RequestStartBattle via RPC: {RoomId}", roomId);
         }
@@ -227,9 +241,10 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
     // ── Entity 回调 ──
 
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
-        lock (_roomLock) {
-            _rooms[entity.RoomId.Value] = entity;
-            _roomPawns[entity.RoomId.Value] = [];
+        lock (_lock) {
+            _roomEntity = entity;
+            _currentRoomId = entity.RoomId.Value;
+            _roomPawns.Clear();
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -238,19 +253,8 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
 
     private void OnPawnEntityCreated(UnitPawn pawn) {
         var unitName = pawn.UnitName.Value;
-        lock (_roomLock) {
-            var roomId = _rooms.Keys.FirstOrDefault();
-            if (roomId != null) {
-                if (!_roomPawns.TryGetValue(roomId, out var list)) {
-                    list = [];
-                    _roomPawns[roomId] = list;
-                }
-                list.Add(pawn);
-            }
-            else {
-                if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning("[RoomBattleClient] Pawn '{UnitName}' arrived before room entity was created.", unitName);
-            }
+        lock (_lock) {
+            _roomPawns.Add(pawn);
         }
 
         // 订阅 UnitPawn 事件
@@ -260,12 +264,23 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
         pawn.UnitDied += (u) =>
             _pendingEventInvocations.Enqueue(() =>
                 UnitDied?.Invoke(u.UnitName.Value));
-        pawn.BuffAdded += (u, buff) =>
+        pawn.BuffAdded += (u, buff) => {
+            var eventData = MapBuffData(buff);
             _pendingEventInvocations.Enqueue(() =>
-                UnitBuffAdded?.Invoke(u.UnitName.Value, buff));
-        pawn.BuffRemoved += (u, buff) =>
+                UnitBuffAdded?.Invoke(u.UnitName.Value, eventData));
+        };
+        pawn.BuffRemoved += (u, buff) => {
+            var eventData = MapBuffData(buff);
             _pendingEventInvocations.Enqueue(() =>
-                UnitBuffRemoved?.Invoke(u.UnitName.Value, buff));
+                UnitBuffRemoved?.Invoke(u.UnitName.Value, eventData));
+        };
+
+        // 触发 OnUnitCreated 事件（通知 UI 层）
+        var roomId = _currentRoomId;
+        if (roomId != null) {
+            _pendingEventInvocations.Enqueue(() =>
+                OnUnitCreated?.Invoke(roomId, unitName, pawn.Camp.Value));
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
@@ -284,17 +299,28 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
             _logger.LogInformation("[RoomBattleClient] Player entity created: {PlayerName}", player.PlayerName.Value);
     }
 
+    // ── IClientBattleService 兼容方法 ──
+
+    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY) {
+        SubmitPlayerInput(
+            new System.Numerics.Vector2(moveX, moveY),
+            skillFlags,
+            new System.Numerics.Vector2(aimX, aimY));
+    }
+
     // ── 辅助 ──
 
+    private static BuffEventData MapBuffData(SyncBuffData buff) => new() {
+        BuffTypeId = buff.BuffTypeId,
+        RemainingDuration = buff.RemainingDuration,
+        StackCount = buff.StackCount,
+        DamageType = buff.DamageType,
+    };
+
     private UnitPawn? FindPawnByName(string unitName) {
-        lock (_roomLock) {
-            foreach (var (_, pawns) in _roomPawns) {
-                var match = pawns.Find(p => p.UnitName.Value == unitName);
-                if (match != null)
-                    return match;
-            }
+        lock (_lock) {
+            return _roomPawns.Find(p => p.UnitName.Value == unitName);
         }
-        return null;
     }
 
     private static UnitModel BuildModelFromPawn(UnitPawn p) {

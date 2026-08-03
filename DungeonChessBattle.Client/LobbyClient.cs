@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Client;
 
 /// <summary>
 /// 大厅客户端，负责与大厅端口 (10170) 的 JSON 协议通信。
-/// 处理 create_room、join_room 请求及对应的响应/重定向。
+/// 处理 create_room、join_room、reconnect_room 请求及对应的响应/重定向。
 /// 不包含 LES Entity 系统。
 /// </summary>
 public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger) {
@@ -16,8 +16,11 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     public event Action<string>? OnRoomJoined;
     public event Action<string>? OnRoomCreated;
 
-    /// <summary>大厅重定向到房间端口</summary>
+    /// <summary>大厅重定向到房间端口 (roomId, port)</summary>
     public event Action<string, int>? OnRedirectToRoom;
+
+    /// <summary>重连失败事件</summary>
+    public event Action<string>? OnReconnectFailed;
 
     // ── 请求方法 ──
 
@@ -58,6 +61,9 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
                     break;
                 case MessageType.CreateRoomResponse:
                     HandleCreateRoomResponse(root);
+                    break;
+                case MessageType.ReconnectRoomResponse:
+                    HandleReconnectRoomResponse(root);
                     break;
                 default:
                     if (_logger.IsEnabled(LogLevel.Warning))
@@ -104,6 +110,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     private void HandleCreateRoomResponse(JsonElement root) {
         bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+        string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
 
         if (success && !string.IsNullOrEmpty(roomId)) {
             _pendingEventInvocations.Enqueue(() => OnRoomCreated?.Invoke(roomId));
@@ -112,7 +119,20 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[LobbyClient] Create room failed");
+                _logger.LogWarning("[LobbyClient] Create room failed: {Error}", error ?? "unknown");
         }
+    }
+
+    private void HandleReconnectRoomResponse(JsonElement root) {
+        bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
+        string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
+
+        if (!success) {
+            string errorMsg = error ?? "Reconnect failed";
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[LobbyClient] Reconnect failed: {Error}", errorMsg);
+            _pendingEventInvocations.Enqueue(() => OnReconnectFailed?.Invoke(errorMsg));
+        }
+        // 成功时会走已有的 HandleRedirectToRoom 流程（服务端返回重定向）
     }
 }

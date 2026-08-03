@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
 
@@ -9,6 +10,7 @@ namespace DungeonChessBattle.Client;
 /// 通过内部后台线程驱动帧更新，不依赖 Godot 节点生命周期。
 /// 支持本地模式回退。
 /// 支持大厅→房间端口的重定向重连（由 GameClientService 内部桥接 OnRoomJoined 事件）。
+/// 支持断线自动重连（通过缓存的 playerId + roomId 重新走大厅→房间流程）。
 /// </summary>
 public sealed class GameClientService(ILoggerFactory loggerFactory) {
     private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
@@ -38,6 +40,28 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
     public const int DefaultPort = 10170;
 
+    // ── 身份与会话缓存 ────────────────────────────────────
+
+    /// <summary>客户端生成的持久 playerId（整个会话不变）</summary>
+    private readonly string _playerId = Guid.NewGuid().ToString("N");
+
+    /// <summary>玩家显示名</summary>
+    private string _playerName = "Player";
+
+    /// <summary>服务器密码（null 表示无密码开发模式）</summary>
+    private string? _serverPassword;
+
+    /// <summary>当前所在的房间 ID（用于断线重连）</summary>
+    private string? _cachedRoomId;
+
+    /// <summary>当前房间端口（用于断线重连）</summary>
+    private int _cachedRoomPort;
+
+    /// <summary>当前房间密码（用于重连验证）</summary>
+    private string? _cachedRoomPassword;
+
+    // ── 公开属性 ──────────────────────────────────────────
+
     public bool IsConnected => _connected;
 
     /// <summary>
@@ -57,10 +81,23 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     public RoomBattleClient RoomClient => _roomClient;
 
     public string Host => _host;
-
     public int Port => _port;
+    public string PlayerId => _playerId;
+    public string PlayerName => _playerName;
 
     public event Action<string, int, bool>? ConnectionChanged;
+
+    // ── 配置方法（在 Connect 前调用）─────────────────────
+
+    /// <summary>
+    /// 设置玩家身份信息。在 Connect 前调用。
+    /// </summary>
+    public void Configure(string playerName, string? serverPassword = null) {
+        _playerName = playerName;
+        _serverPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
+    }
+
+    // ── 连接管理 ──────────────────────────────────────────
 
     public void Connect(string host, int port = DefaultPort) {
         if (_connected) {
@@ -74,9 +111,12 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
             WirePersistentEvents();
 
-            _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-            _lobbyClient.Connect(host, port);
+            // 使用服务器密码作为 ConnectionKey（无密码时使用默认值）
+            string connectionKey = _serverPassword ?? NetworkClientBase.ConnectionKey;
+            _lobbyClient.Connect(host, port, connectionKey);
+
             _activeClient = _lobbyClient;
+            _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
 
             StartUpdateLoop();
         }
@@ -89,8 +129,37 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     }
 
     /// <summary>
+    /// 请求创建房间（通过大厅 JSON 协议）。
+    /// </summary>
+    public void RequestCreateRoom(string roomId, string? roomPassword = null) {
+        _cachedRoomId = roomId;
+        _cachedRoomPassword = roomPassword;
+
+        var msg = MessageWriter.WriteRoomRequestFull(
+            MessageType.CreateRoom, roomId, _playerName,
+            roomPassword, _playerId, _serverPassword);
+        _lobbyClient.SendCommand(msg);
+    }
+
+    /// <summary>
+    /// 请求加入房间（通过大厅 JSON 协议）。
+    /// </summary>
+    public void RequestJoinRoom(string roomId, string? roomPassword = null) {
+        _cachedRoomId = roomId;
+        _cachedRoomPassword = roomPassword;
+
+        var msg = MessageWriter.WriteRoomRequestFull(
+            MessageType.JoinRoom, roomId, _playerName,
+            roomPassword, _playerId, _serverPassword);
+        _lobbyClient.SendCommand(msg);
+    }
+
+    // ── 房间重定向处理 ───────────────────────────────────
+
+    /// <summary>
     /// 重连到房间端口。大厅连接保持不断开。
     /// 由大厅重定向触发，用于切换到物理隔离的房间 SEM。
+    /// 使用客户端持久 _playerId 作为连接密钥（P0-1：playerId 不从服务端回传）。
     /// </summary>
     private void ReconnectToRoom(string host, int roomPort, string roomId) {
         if (_logger.IsEnabled(LogLevel.Information))
@@ -100,10 +169,13 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         try {
             _host = host;
             _port = roomPort;
+            _cachedRoomPort = roomPort;
+            _cachedRoomId = roomId;
             _connected = false;
             _pendingJoinRoomId = roomId;
 
-            _roomClient.Reconnect(host, roomPort);
+            // 使用客户端持久 _playerId 作为连接密钥（服务端白名单验证）
+            _roomClient.Reconnect(host, roomPort, _playerId);
             _activeClient = _roomClient;
 
             _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -118,6 +190,50 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             _reconnecting = false;
         }
     }
+
+    // ── 断线自动重连 ──────────────────────────────────────
+
+    /// <summary>
+    /// 当房间连接意外断开时，尝试通过大厅重新获取重定向。
+    /// 如果大厅未连接，先建立连接，再通过事件驱动发送重连请求（避免竞态）。
+    /// _reconnecting 覆盖从断线到重连成功的整个窗口。
+    /// </summary>
+    private void AttemptReconnectToRoom() {
+        if (string.IsNullOrEmpty(_cachedRoomId)) {
+            _logger.LogWarning("无法自动重连：缺少缓存的 roomId");
+            return;
+        }
+
+        _reconnecting = true;
+        _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, _playerId);
+
+        if (!_lobbyClient.IsConnected) {
+            // 事件驱动：等待大厅连接建立后再发送重连请求
+            string connectionKey = _serverPassword ?? NetworkClientBase.ConnectionKey;
+            Action? handler = null;
+            handler = () => {
+                _lobbyClient.OnFullyConnected -= handler;
+                SendReconnectRequest();
+            };
+            _lobbyClient.OnFullyConnected += handler;
+            _lobbyClient.Connect(_host, DefaultPort, connectionKey);
+        }
+        else {
+            SendReconnectRequest(); // 大厅已连接，直接发送
+        }
+    }
+
+    /// <summary>
+    /// 发送重连请求到大厅（需确保大厅已连接）。
+    /// </summary>
+    private void SendReconnectRequest() {
+        var msg = MessageWriter.WriteReconnectRoom(
+            _cachedRoomId!, _playerId, _playerName,
+            _cachedRoomPassword, _serverPassword);
+        _lobbyClient.SendCommand(msg);
+    }
+
+    // ── 内部连接回调 ─────────────────────────────────────
 
     private void OnConnectionEstablished() {
         _connectStartTimestamp = 0;
@@ -165,6 +281,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
         _activeClient = null;
         _connected = false;
+        _cachedRoomId = null;
 
         _logger.LogInformation("连接已断开");
         ConnectionChanged?.Invoke(_host, _port, false);
@@ -203,24 +320,42 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
                 _logger.LogInformation("收到重定向: {RoomId} → {Host}:{Port}", roomId, _host, roomPort);
             ReconnectToRoom(_host, roomPort, roomId);
         };
+        _lobbyClient.OnReconnectFailed += (error) => {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("重连失败: {Error}", error);
+            _reconnecting = false;
+            // 通知 UI 层重连失败
+            OnConnectionLost();
+        };
 
         // ── 房间客户端 ──
         _roomClient.OnFullyConnected += () => {
             _connected = true;
+            _reconnecting = false;
             OnConnectionEstablished();
 
             // 桥接：从重定向进入房间后，通知 UI 层 OnRoomJoined
             var roomId = _pendingJoinRoomId;
             if (roomId != null) {
                 _pendingJoinRoomId = null;
-                // 通过 _lobbyClient 的 TriggerRoomJoined 通知 UI
-                // （UI 已经订阅了 _lobbyClient.OnRoomJoined）
                 _lobbyClient.TriggerRoomJoined(roomId);
             }
         };
         _roomClient.OnFullyDisconnected += () => {
             _connected = _lobbyClient.IsConnected;
-            OnConnectionLost();
+
+            // 如果房间连接断开且不在重连中，尝试自动重连
+            if (!_reconnecting && !string.IsNullOrEmpty(_cachedRoomId)) {
+                _logger.LogInformation("房间连接意外断开，尝试自动重连...");
+                AttemptReconnectToRoom();
+            }
+            else {
+                OnConnectionLost();
+            }
+        };
+        _roomClient.OnReconnectSucceeded += (roomId) => {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("重连成功: {RoomId}", roomId);
         };
     }
 

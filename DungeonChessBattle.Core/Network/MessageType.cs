@@ -16,6 +16,10 @@ public static class MessageType {
     public const string CreateRoomResponse = "create_room_response";
     public const string JoinRoomResponse = "join_room_response";
 
+    // ── 重连 ──
+    public const string ReconnectRoom = "reconnect_room";
+    public const string ReconnectRoomResponse = "reconnect_room_response";
+
     // ── 大厅重定向 ──
     public const string JoinRoomRedirect = "join_room_redirect";
 }
@@ -31,4 +35,8 @@ public static class MessageProperty {
     public const string UnitName = "unitName";
     public const string Camp = "camp";
     public const string Port = "port";
+    public const string PlayerId = "playerId";
+    public const string PlayerName = "playerName";
+    public const string Password = "password";
+    public const string ServerPassword = "serverPassword";
 }

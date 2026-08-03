@@ -15,7 +15,7 @@ public abstract class NetworkClientBase : INetEventListener {
     protected NetPeer? _serverPeer;
     protected readonly ILogger _logger;
 
-    protected const string ConnectionKey = "DungeonChessBattle";
+    public const string ConnectionKey = "DungeonChessBattle";
     protected const int DefaultPort = 10170;
 
     // 待投递的事件队列（网络线程入队，Update() 线程出队，需线程安全）
@@ -33,8 +33,15 @@ public abstract class NetworkClientBase : INetEventListener {
     }
 
     public virtual void Connect(string host, int port = DefaultPort) {
+        Connect(host, port, ConnectionKey);
+    }
+
+    /// <summary>
+    /// 使用自定义连接密钥连接。
+    /// </summary>
+    public virtual void Connect(string host, int port, string connectionKey) {
         _netClient.Start();
-        _netClient.Connect(host, port, ConnectionKey);
+        _netClient.Connect(host, port, connectionKey);
     }
 
     /// <summary>
@@ -42,9 +49,16 @@ public abstract class NetworkClientBase : INetEventListener {
     /// 先执行 Disconnect 级别的清理（不触发 OnFullyDisconnected），再连接新地址。
     /// </summary>
     public virtual void Reconnect(string host, int port) {
+        Reconnect(host, port, ConnectionKey);
+    }
+
+    /// <summary>
+    /// 使用自定义连接密钥重连。
+    /// </summary>
+    public virtual void Reconnect(string host, int port, string connectionKey) {
         OnReconnectCleanup();
         _netClient.Start();
-        _netClient.Connect(host, port, ConnectionKey);
+        _netClient.Connect(host, port, connectionKey);
     }
 
     /// <summary>子类重写以在重连时清理自身状态。</summary>
@@ -78,7 +92,7 @@ public abstract class NetworkClientBase : INetEventListener {
     }
 
     /// <summary>发送原始字节数据到服务端。</summary>
-    protected void SendCommand(byte[] messageBytes) {
+    public void SendCommand(byte[] messageBytes) {
         if (_serverPeer == null)
             return;
         _serverPeer.Send(messageBytes, DeliveryMethod.ReliableOrdered);

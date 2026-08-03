@@ -5,18 +5,6 @@
 [ext_resource type="Script" uid="uid://dl5x0o3c70c1l" path="res://GamePanels/ServerManagement/ServerManagementPanelInterRefs.cs" id="2_irfs"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_input_bg"]
-bg_color = Color(0.08, 0.08, 0.08, 0.8)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.25, 0.25, 0.25, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_button"]
 bg_color = Color(0.1, 0.55, 0.25, 0.85)
 border_width_left = 2
@@ -76,13 +64,14 @@ mouse_filter = 1
 theme = ExtResource("1_cw211")
 script = ExtResource("1_main")
 
-[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244 node_paths=PackedStringArray("PortInput", "StartButton", "StopButton", "CloseButton", "StatusLabel")]
+[node name="ServerManagementPanelInterRefs" type="Node" parent="." unique_id=-1485436244 node_paths=PackedStringArray("PortInput", "StartButton", "StopButton", "CloseButton", "StatusLabel", "PasswordInput")]
 script = ExtResource("2_irfs")
 PortInput = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PortInput")
-StartButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StartButton")
-StopButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/StopButton")
+StartButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/StartButton")
+StopButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/StopButton")
 CloseButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
 StatusLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/StatusLabel")
+PasswordInput = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer3/PasswordInput")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1674892310]
 layout_mode = 1
@@ -119,7 +108,6 @@ theme_override_constants/separation = 10
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=-1152181677]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
 theme_override_font_sizes/font_size = 18
 text = "服务器管理"
 horizontal_alignment = 1
@@ -135,21 +123,43 @@ text = "状态: 服务器未启动"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1837405923]
 layout_mode = 2
-theme_override_constants/separation = 8
 
 [node name="PortLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=-1838768595]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
-text = "端口:"
+text = "端口"
+horizontal_alignment = 1
 
 [node name="PortInput" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=-324153770]
 custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_input_bg")
+size_flags_horizontal = 3
+size_flags_vertical = 4
+size_flags_stretch_ratio = 3.17
 text = "10170"
 
-[node name="StartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=-1705565533]
+[node name="HBoxContainer3" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1204917082]
+layout_mode = 2
+
+[node name="PasswordLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer3" unique_id=1876115786]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "服务器密码"
+horizontal_alignment = 1
+
+[node name="PasswordInput" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer3" unique_id=877457523]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+size_flags_stretch_ratio = 3.17
+placeholder_text = "留空表示无密码"
+secret = true
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1296445937]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2" unique_id=-1705565533]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -159,7 +169,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_hover")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "▶ 启动"
 
-[node name="StopButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1398640751]
+[node name="StopButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer2" unique_id=1398640751]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)

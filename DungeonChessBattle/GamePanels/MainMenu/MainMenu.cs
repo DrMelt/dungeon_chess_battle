@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
@@ -9,6 +10,8 @@ namespace DungeonChessBattle;
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
 public partial class MainMenu : BaseGamePanel {
+    private readonly ILogger<MainMenu> _logger = ServiceLocator.GetLogger<MainMenu>();
+
     [Signal]
     public delegate void ServerConnectedEventHandler();
 
@@ -40,6 +43,8 @@ public partial class MainMenu : BaseGamePanel {
         InterRefs?.ConnectButton?.Pressed += OnConnectPressed;
         InterRefs?.ServerManageButton?.Pressed += OnServerManagePressed;
 
+        _logger.LogInformation("MainMenu ready");
+
         // 订阅后台服务事件
         ServiceLocator.ClientService.ConnectionChanged += OnConnectionChanged;
 
@@ -70,6 +75,8 @@ public partial class MainMenu : BaseGamePanel {
     private void OnConnectPressed() {
         string host = InterRefs?.HostInput?.Text?.Trim() ?? "";
         string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
+        string playerName = InterRefs?.UserNameInput?.Text?.Trim() ?? "";
+        string password = InterRefs?.PasswordInput?.Text?.Trim() ?? "";
 
         if (string.IsNullOrWhiteSpace(host)) {
             UpdateStatus("请输入服务器地址");
@@ -80,6 +87,15 @@ public partial class MainMenu : BaseGamePanel {
             return;
         }
 
+        // 使用默认用户名（playerId 前8位）作为 fallback
+        if (string.IsNullOrWhiteSpace(playerName)) {
+            playerName = ServiceLocator.ClientService.PlayerId[..8];
+        }
+
+        // 在连接前设置身份信息
+        ServiceLocator.ClientService.Configure(playerName, password);
+
+        _logger.LogInformation("连接请求: {Host}:{Port}, player={PlayerName}", host, port, playerName);
         UpdateStatus($"正在连接 {host}:{port}...");
         InterRefs?.ConnectButton?.Disabled = true;
 
@@ -102,12 +118,14 @@ public partial class MainMenu : BaseGamePanel {
 
     private void DeferredConnectionChanged(string host, int port, bool connected) {
         if (connected) {
+            _logger.LogInformation("连接成功: {Host}:{Port}", host, port);
             UpdateStatus($"已连接到 {host}:{port}");
             EmitSignal(SignalName.ServerConnected);
             // 切换界面：隐藏主菜单，显示大厅
             NavigateTo(_gameLobby);
         }
         else {
+            _logger.LogWarning("连接断开: {Host}:{Port}", host, port);
             UpdateStatus("连接已断开");
             if (InterRefs?.ConnectButton != null)
                 InterRefs.ConnectButton.Disabled = false;

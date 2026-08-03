@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GamePanels/MainMenu/MainMenu.cs" id="1_main"]
 [ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GamePanels/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
+[ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="5_xoykb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_connect_button"]
 bg_color = Color(0.15, 0.45, 0.65, 0.85)
@@ -64,13 +65,15 @@ mouse_filter = 1
 theme = ExtResource("1_8vrlr")
 script = ExtResource("1_main")
 
-[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871 node_paths=PackedStringArray("HostInput", "PortInput", "ConnectButton", "ServerManageButton", "StatusLabel")]
+[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871 node_paths=PackedStringArray("HostInput", "PortInput", "ConnectButton", "ServerManageButton", "StatusLabel", "UserNameInput", "PasswordInput")]
 script = ExtResource("2_irfs")
-HostInput = NodePath("../CenterContainer/VBoxContainer/HostInput")
-PortInput = NodePath("../CenterContainer/VBoxContainer/PortInput")
+HostInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer/HostInput")
+PortInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer2/PortInput")
 ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
 ServerManageButton = NodePath("../CenterContainer/VBoxContainer/ServerManageButton")
 StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
+UserNameInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer3/UserNameInput")
+PasswordInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer3/PasswordInput")
 
 [node name="Panel" type="Panel" parent="." unique_id=133359487]
 layout_mode = 1
@@ -97,6 +100,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=316176970]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_xoykb")
 theme_override_font_sizes/font_size = 32
 text = "Dungeon Chess Battle"
 horizontal_alignment = 1
@@ -105,33 +109,65 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="HostLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=378461503]
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=602802390]
 layout_mode = 2
+
+[node name="HostLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=378461503]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0, 0, 0, 0.8)
 theme_override_font_sizes/font_size = 14
 text = "服务器地址"
 horizontal_alignment = 1
 
-[node name="HostInput" type="LineEdit" parent="CenterContainer/VBoxContainer" unique_id=1747921756]
+[node name="HostInput" type="LineEdit" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=1747921756]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0, 0, 1)
 text = "127.0.0.1"
 placeholder_text = "输入服务器地址..."
 
-[node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=1352197184]
+[node name="HBoxContainer2" type="HBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=760805599]
 layout_mode = 2
+
+[node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer2" unique_id=1352197184]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0, 0, 0, 0.8)
 theme_override_font_sizes/font_size = 14
 text = "端口"
 horizontal_alignment = 1
 
-[node name="PortInput" type="LineEdit" parent="CenterContainer/VBoxContainer" unique_id=1077963074]
+[node name="PortInput" type="LineEdit" parent="CenterContainer/VBoxContainer/HBoxContainer2" unique_id=1077963074]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0, 0, 1)
 text = "10170"
 placeholder_text = "端口号"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=862610435]
+layout_mode = 2
+
+[node name="UserNameLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer3" unique_id=1222183534]
+layout_mode = 2
+text = "用户名"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UserNameInput" type="LineEdit" parent="CenterContainer/VBoxContainer/HBoxContainer3" unique_id=1058987890]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "输入用户名..."
+
+[node name="PasswordLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer3" unique_id=489314115]
+layout_mode = 2
+text = "服务器密码"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PasswordInput" type="LineEdit" parent="CenterContainer/VBoxContainer/HBoxContainer3" unique_id=1646613837]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "留空表示无密码"
+secret = true
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer" unique_id=2004157917]
 custom_minimum_size = Vector2(0, 10)

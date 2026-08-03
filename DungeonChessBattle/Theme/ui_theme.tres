@@ -1,8 +1,42 @@
 [gd_resource type="Theme" format=3 uid="uid://ckondj30v66jg"]
 
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="1_1844t"]
+[ext_resource type="FontFile" uid="uid://kspuuvpx4tki" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Regular.ttf" id="1_a3fhg"]
 [ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="1_ry2yv"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a3fhg"]
+bg_color = Color(0.80049086, 0.8004908, 0.8004906, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ybtxp"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.29586652, 0.2958665, 0.2958665, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [resource]
-default_font = ExtResource("1_ry2yv")
+default_font = ExtResource("1_a3fhg")
+Button/fonts/font = ExtResource("1_ry2yv")
+Label/colors/font_color = Color(0, 0, 0, 0.8)
+Label/font_sizes/font_size = 14
+Label/fonts/font = ExtResource("1_a3fhg")
+LineEdit/colors/font_color = Color(0, 0, 0, 1)
+LineEdit/colors/font_placeholder_color = Color(0, 0, 0, 0.5176471)
+LineEdit/colors/font_uneditable_color = Color(0.09620453, 0.09620487, 0.096204616, 0.5019608)
+LineEdit/fonts/font = ExtResource("1_a3fhg")
+LineEdit/styles/normal = SubResource("StyleBoxFlat_a3fhg")
+LineEdit/styles/read_only = SubResource("StyleBoxFlat_ybtxp")
 Panel/styles/panel = ExtResource("1_1844t")
