@@ -143,7 +143,7 @@ outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 material_override = SubResource("ShaderMaterial_3um0x")
 skeleton = NodePath("../..")
 
-[node name="Game_UserUI" type="Control" parent="Interface" unique_id=955543473]
+[node name="Game_UserUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInSceneShowRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -154,6 +154,10 @@ mouse_filter = 1
 theme = ExtResource("14_42c4a")
 script = ExtResource("11_4e7mo")
 userInterfaceRes = ExtResource("11_34gv2")
+unitsInSceneShowRef = NodePath("../../UnitsInScene_Show")
+skillsListRef = NodePath("Skill_UI/Skills_List")
+stateChangeInfoRef = NodePath("../StateChange_Info")
+stateBarListRef = NodePath("StateBar_List")
 
 [node name="Label_DungeonTime" type="Label" parent="Interface/Game_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 0
@@ -187,15 +191,22 @@ offset_right = 1137.0
 offset_bottom = 494.0
 
 [node name="Skill_UI" type="Control" parent="Interface/Game_UserUI" unique_id=1773258382]
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Skills_List" parent="Interface/Game_UserUI/Skill_UI" unique_id=839039226 instance=ExtResource("10_sfuu4")]
-layout_mode = 0
-offset_left = 285.0
-offset_top = 491.0
-offset_right = 285.0
-offset_bottom = 491.0
+layout_mode = 1
+offset_left = 350.0
+offset_top = 510.0
+offset_right = 350.0
+offset_bottom = 510.0
 scale = Vector2(0.5, 0.5)
+offset_transform_position_ratio = Vector2(0.28, 0.765)
+offset_transform_scale = Vector2(0.8, 0.8)
 
 [node name="Panel_UI_Info" parent="Interface/Game_UserUI/Skill_UI" unique_id=1544932786 instance=ExtResource("29_h3qe1")]
 layout_mode = 0
@@ -210,6 +221,7 @@ grow_horizontal = 1
 grow_vertical = 1
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

@@ -26,7 +26,7 @@ public class RoomEntityServer : INetEventListener {
     private readonly ILogger<RoomEntityServer> _logger;
     private const string ConnectionKey = "DungeonChessBattle";
     private const byte PacketHeader = 0xDC;
-    private const double TickInterval = 0.016; // 60 Hz
+    private const double TickInterval = 0.02; // 50 Hz
 
     // 房间线程
     private Thread? _loopThread;
