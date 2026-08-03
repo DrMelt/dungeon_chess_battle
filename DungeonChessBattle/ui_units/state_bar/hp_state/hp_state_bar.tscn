@@ -1,59 +1,61 @@
-[gd_scene load_steps=6 format=3 uid="uid://djjaubphsavfy"]
+[gd_scene format=3 uid="uid://djjaubphsavfy"]
 
 [ext_resource type="Script" uid="uid://dyrf14c74kw7q" path="res://ui_units/state_bar/state_bar_2d/HP_StateBar.cs" id="1_x7igp"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_tflsb"]
-[ext_resource type="Shader" uid="uid://btbknd88cpw6h" path="res://ui_units/state_bar/state_bar_2d/shader_state_bar_2d.tres" id="3_ftjya"]
 [ext_resource type="Script" uid="uid://dscn0j88s24xn" path="res://ui_units/state_bar/state_bar_2d/HP_StateBarInterRefs.cs" id="4_hpstatebar_interrefs"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_uq67j"]
-resource_local_to_scene = true
-shader = ExtResource("3_ftjya")
-shader_parameter/ParPin_02_Color = Color(0.537011, 0.537011, 0.537011, 1)
-shader_parameter/ParPin_01_Color = Color(0.0832, 0.52, 0.09048, 1)
-shader_parameter/ParPin_01 = 0.627
-
-[node name="HP_StateBar" type="PanelContainer"]
+[node name="HP_StateBar" type="Control" unique_id=803507202]
 light_mask = 0
-custom_minimum_size = Vector2(220, 32)
-offset_right = 220.0
-offset_bottom = 23.0
+layout_mode = 3
+anchors_preset = 0
+offset_right = 256.0
+offset_bottom = 30.0
 mouse_filter = 1
 script = ExtResource("1_x7igp")
 
-[node name="HP_StateBarInterRefs" type="Node" parent="." node_paths=PackedStringArray("StateBarRef", "LabelPercentRef", "LabelCurrentValueRef", "LabelObjectNameRef")]
+[node name="HP_StateBarInterRefs" type="Node" parent="." unique_id=203956991 node_paths=PackedStringArray("ProgressBarRef", "LabelPercentRef", "LabelCurrentValueRef", "LabelObjectNameRef")]
 script = ExtResource("4_hpstatebar_interrefs")
 UserUISettingsRef = ExtResource("2_tflsb")
-StateBarRef = NodePath("../PanelContainer/ColorRect_State_Bar")
-LabelPercentRef = NodePath("../Label_Percent")
-LabelCurrentValueRef = NodePath("../Label_CurrentValue")
-LabelObjectNameRef = NodePath("../Label_ObjectName")
+ProgressBarRef = NodePath("../VBoxContainer/ProgressBar")
+LabelPercentRef = NodePath("../VBoxContainer/Control/MarginContainer/Label_Percent")
+LabelCurrentValueRef = NodePath("../VBoxContainer/Control/MarginContainer/Label_CurrentValue")
+LabelObjectNameRef = NodePath("../VBoxContainer/Control/MarginContainer/Label_ObjectName")
 
-[node name="Label_Percent" type="Label" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1483494890]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Control" type="PanelContainer" parent="VBoxContainer" unique_id=392393769]
 layout_mode = 2
-size_flags_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/Control" unique_id=681524877]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_right = 4
+
+[node name="Label_Percent" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=2073596792]
+layout_mode = 2
+size_flags_horizontal = 0
 text = "100.0%"
 
-[node name="Label_CurrentValue" type="Label" parent="."]
+[node name="Label_ObjectName" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=858613177]
 layout_mode = 2
-size_flags_vertical = 0
+size_flags_horizontal = 4
+text = "ObjectName"
+
+[node name="Label_CurrentValue" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=302196190]
+layout_mode = 2
+size_flags_horizontal = 8
 text = "1.0"
 horizontal_alignment = 2
 
-[node name="Label_ObjectName" type="Label" parent="."]
+[node name="ProgressBar" type="ProgressBar" parent="VBoxContainer" unique_id=177741220]
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
-size_flags_vertical = 0
-text = "ObjectName"
-horizontal_alignment = 1
-clip_text = true
-
-[node name="PanelContainer" type="PanelContainer" parent="."]
-custom_minimum_size = Vector2(0, 6.35)
-layout_mode = 2
-size_flags_vertical = 8
-size_flags_stretch_ratio = 0.5
-mouse_filter = 1
-
-[node name="ColorRect_State_Bar" type="ColorRect" parent="PanelContainer"]
-material = SubResource("ShaderMaterial_uq67j")
-layout_mode = 2
-mouse_filter = 1
+max_value = 1.0
+value = 0.35
+show_percentage = false

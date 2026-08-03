@@ -11,11 +11,23 @@ public partial class ContainerBuffsInterRefs : Node {
         get => _buffIconPackedScene;
         set => _buffIconPackedScene = value;
     }
+
+    [Export]
+    public HFlowContainer? BuffContainer {
+        get => _buffContainer;
+        set => _buffContainer = value;
+    }
+
+
     private PackedScene? _buffIconPackedScene;
+    private HFlowContainer? _buffContainer;
 
     public override void _Ready() {
         if (_buffIconPackedScene == null) {
             GD.PrintErr("[ContainerBuffsInterRefs] [Export] BuffIconPackedScene is not assigned!");
+        }
+        if (_buffContainer == null) {
+            GD.PrintErr("[ContainerBuffsInterRefs] [Export] BuffContainer is not assigned!");
         }
     }
 }

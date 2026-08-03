@@ -10,7 +10,7 @@ public partial class HP_StateBarInterRefs : Node {
     public UserUISettings? UserUISettingsRef { get; set; }
 
     [Export]
-    public CanvasItem? StateBarRef { get; set; }
+    public ProgressBar? ProgressBarRef { get; set; }
 
     [Export]
     public Label? LabelPercentRef { get; set; }
@@ -24,8 +24,8 @@ public partial class HP_StateBarInterRefs : Node {
     public override void _Ready() {
         if (UserUISettingsRef == null)
             GD.PrintErr("[HP_StateBarInterRefs] [Export] UserUISettingsRef is not assigned!");
-        if (StateBarRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] StateBarRef is not assigned!");
+        if (ProgressBarRef == null)
+            GD.PrintErr("[HP_StateBarInterRefs] [Export] ProgressBarRef is not assigned!");
         if (LabelPercentRef == null)
             GD.PrintErr("[HP_StateBarInterRefs] [Export] LabelPercentRef is not assigned!");
         if (LabelCurrentValueRef == null)

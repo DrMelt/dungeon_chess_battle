@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bnyra1mkp6yn2"]
+[gd_scene format=3 uid="uid://bnyra1mkp6yn2"]
 
 [ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://ui_units/state_bar/state_bar_2d/StateBar2d_Focus.cs" id="1_yhj07"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="2_nayus"]
@@ -8,33 +8,33 @@
 [ext_resource type="Script" uid="uid://wystpvgpbayv" path="res://ui_units/state_bar/state_bar_2d/StateBar2d_FocusInterRefs.cs" id="8_sb2d_interrefs"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="9_ui_res"]
 
-[node name="State_Bar_2D" type="Control"]
+[node name="State_Bar_2D" type="Control" unique_id=1035438243]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_yhj07")
 
-[node name="StateBar2d_FocusInterRefs" type="Node" parent="." node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
+[node name="StateBar2d_FocusInterRefs" type="Node" parent="." unique_id=560142546 node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
 script = ExtResource("8_sb2d_interrefs")
 UserInterfaceRes = ExtResource("9_ui_res")
 UserUISettingsRef = ExtResource("2_nayus")
-HboxContainerBuffsRef = NodePath("../HBoxContainer_Buffs")
-PanelFocusStateRef = NodePath("../HP_StateBar")
-PanelSkillProgressBarRef = NodePath("../Panel_Skill_ProgressBar")
+HboxContainerBuffsRef = NodePath("../VBoxContainer/HBoxContainer_Buffs")
+PanelFocusStateRef = NodePath("../VBoxContainer/HBoxContainer/HP_StateBar")
+PanelSkillProgressBarRef = NodePath("../VBoxContainer/HBoxContainer/Panel_Skill_ProgressBar")
 
-[node name="HP_StateBar" parent="." instance=ExtResource("3_odry5")]
-layout_mode = 1
-offset_right = 411.0
-offset_bottom = 36.0
-
-[node name="HBoxContainer_Buffs" parent="." instance=ExtResource("4_bln5c")]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=2145035574]
 layout_mode = 0
-offset_top = 36.0
+offset_right = 553.0
 offset_bottom = 81.0
-scale = Vector2(1, 1)
 
-[node name="Panel_Skill_ProgressBar" parent="." instance=ExtResource("7_8vcj7")]
-layout_mode = 0
-offset_left = 411.0
-offset_top = -1.0
-offset_right = 591.0
-offset_bottom = 35.0
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1551754485]
+layout_mode = 2
+
+[node name="HP_StateBar" parent="VBoxContainer/HBoxContainer" unique_id=1600851250 instance=ExtResource("3_odry5")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Panel_Skill_ProgressBar" parent="VBoxContainer/HBoxContainer" unique_id=1753394107 instance=ExtResource("7_8vcj7")]
+layout_mode = 2
+
+[node name="HBoxContainer_Buffs" parent="VBoxContainer" unique_id=1095143621 instance=ExtResource("4_bln5c")]
+layout_mode = 2

@@ -13,11 +13,12 @@ public partial class ContainerBuffs : Control, IUI_Update {
     }
 
     public void UpdateUI_WithUnit(UnitState unitState) {
-        var chilren = GetChildren();
-        foreach (var child in chilren) {
-            child.QueueFree();
+        var buffContainer = InterRefs?.BuffContainer;
+        if (buffContainer != null) {
+            foreach (var child in buffContainer.GetChildren()) {
+                child.QueueFree();
+            }
         }
-
 
         if (unitState == null) {
             return;
@@ -29,7 +30,7 @@ public partial class ContainerBuffs : Control, IUI_Update {
         foreach (BuffBaseGodot buff in unitState.BuffList) {
             TextureRectBuffIcon buffIcon = InterRefs.BuffIconPackedScene.Instantiate<TextureRectBuffIcon>();
             buffIcon.SetBuffIcon(buff, unitState);
-            AddChild(buffIcon);
+            buffContainer?.AddChild(buffIcon);
         }
     }
 }

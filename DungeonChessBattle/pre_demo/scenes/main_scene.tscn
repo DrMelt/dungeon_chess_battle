@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
 [ext_resource type="Script" uid="uid://b816warn7v4d2" path="res://GameAssets/Scene/CampStartPoints.cs" id="13_c4mp"]
+[ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="14_42c4a"]
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://ui_units/state_info/took_damage_info.tscn" id="14_roldv"]
 [ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
 [ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://ui_units/state_bar/state_bar_mark/StateBarMark.cs" id="19_ctxme"]
@@ -53,9 +54,6 @@ render_priority = 0
 shader = ExtResource("2_uq67j")
 shader_parameter/outline_color = Color(0.97, 0.891915, 0.7469, 1)
 shader_parameter/outline_width = 0.002
-
-[sub_resource type="LabelSettings" id="LabelSettings_uvuxq"]
-font_size = 24
 
 [node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userOperationInterfaceInfo")]
 script = ExtResource("34_main")
@@ -117,8 +115,6 @@ userInterfaceRes = ExtResource("11_34gv2")
 [node name="UserOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101]
 script = ExtResource("3_n8f6c")
 userInterfaceRes = ExtResource("11_34gv2")
-node2dUiRef = NodePath("../Game_UserUI")
-camera3DRef = NodePath("../../Camera3D_UserCamera")
 
 [node name="EffectHints" type="Node" parent="Interface/UserOperationInterface_Info" unique_id=1098280841]
 script = ExtResource("3_eaknj")
@@ -139,18 +135,17 @@ skeleton = NodePath("../..")
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1
+theme = ExtResource("14_42c4a")
 script = ExtResource("11_4e7mo")
 userInterfaceRes = ExtResource("11_34gv2")
 
 [node name="Label_DungeonTime" type="Label" parent="Interface/Game_UserUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
 layout_mode = 0
-offset_left = 907.0
-offset_top = -2.0
-offset_right = 1151.0
-offset_bottom = 57.0
+offset_left = 992.0
+offset_top = 2.0
+offset_right = 1147.0
+offset_bottom = 26.0
 text = "Label_DungeonTime"
-label_settings = SubResource("LabelSettings_uvuxq")
-horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("18_ctxme")
 unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")

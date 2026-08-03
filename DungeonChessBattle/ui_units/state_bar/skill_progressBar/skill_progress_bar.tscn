@@ -1,35 +1,51 @@
-[gd_scene load_steps=3 format=3 uid="uid://dy3y0pqqsp3sd"]
+[gd_scene format=3 uid="uid://dy3y0pqqsp3sd"]
 
 [ext_resource type="Script" uid="uid://duod8exoqjbqv" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBar.cs" id="1_ytur1"]
 [ext_resource type="Script" uid="uid://bh1tcssn3bc77" path="res://ui_units/state_bar/skill_progressBar/SkillProgressBarInterRefs.cs" id="2_skillprogressbar_interrefs"]
 
-[node name="Skill_ProgressBar" type="PanelContainer"]
+[node name="Skill_ProgressBar" type="Control" unique_id=1327954040]
 custom_minimum_size = Vector2(166, 32)
-offset_right = 134.0
-offset_bottom = 23.0
+layout_mode = 3
+anchors_preset = 0
+offset_right = 166.0
+offset_bottom = 32.0
 script = ExtResource("1_ytur1")
 
-[node name="SkillProgressBarInterRefs" type="Node" parent="." node_paths=PackedStringArray("ProgressBarRef", "LabelSkillNameRef", "LabelRemainingTimeRef")]
+[node name="SkillProgressBarInterRefs" type="Node" parent="." unique_id=1493960129 node_paths=PackedStringArray("ProgressBarRef", "LabelSkillNameRef", "LabelRemainingTimeRef")]
 script = ExtResource("2_skillprogressbar_interrefs")
 ProgressBarRef = NodePath("../ProgressBar")
-LabelSkillNameRef = NodePath("../Label_Skill_Name")
-LabelRemainingTimeRef = NodePath("../Label_RemainingTime")
+LabelSkillNameRef = NodePath("../VBoxContainer/PanelContainer/Label_Skill_Name")
+LabelRemainingTimeRef = NodePath("../VBoxContainer/PanelContainer/Label_RemainingTime")
 
-[node name="Label_Skill_Name" type="Label" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=456352200]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer" unique_id=813912449]
 layout_mode = 2
-size_flags_vertical = 0
+
+[node name="Label_Skill_Name" type="Label" parent="VBoxContainer/PanelContainer" unique_id=1809747838]
+layout_mode = 2
+size_flags_horizontal = 0
 text = "Label_Skill_Name"
 
-[node name="Label_RemainingTime" type="Label" parent="."]
+[node name="Label_RemainingTime" type="Label" parent="VBoxContainer/PanelContainer" unique_id=729434550]
 layout_mode = 2
-size_flags_vertical = 0
+size_flags_horizontal = 8
 text = "1.0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="ProgressBar" type="ProgressBar" parent="."]
+[node name="ProgressBar" type="ProgressBar" parent="." unique_id=467267499]
 custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
+layout_mode = 0
+offset_top = 24.0
+offset_right = 166.0
+offset_bottom = 32.0
 size_flags_vertical = 8
 max_value = 1.0
 value = 0.2
