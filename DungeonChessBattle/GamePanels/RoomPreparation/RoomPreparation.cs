@@ -1,10 +1,10 @@
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Services;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle;
 
@@ -25,10 +25,9 @@ public partial class RoomPreparation : BaseGamePanel {
         get; private set;
     }
     private string _roomId = "";
-    private EnumCamp _selectedCamp = EnumCamp.Camp_A;
+    private string _selectedCamp = "Camp_A";
     private string? _selectedUnitKey;
-    private readonly System.Collections.Generic.List<string> _campAUnits = [];
-    private readonly System.Collections.Generic.List<string> _campBUnits = [];
+    private readonly System.Collections.Generic.List<string> _units = [];
 
     // 可用单位配置（configKey → displayName & unitConfig）
     private static readonly System.Collections.Generic.Dictionary<string, (string displayName, UnitConfig config)> AvailableUnits = new() {
@@ -44,8 +43,10 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         }
 
-        InterRefs?.CampAButton?.Pressed += () => SelectCamp(EnumCamp.Camp_A);
-        InterRefs?.CampBButton?.Pressed += () => SelectCamp(EnumCamp.Camp_B);
+        InterRefs?.SelectUnitButton?.Pressed += () => {
+            if (InterRefs?.UnitSelectPanel is not null)
+                NavigateTo(InterRefs.UnitSelectPanel);
+        };
         InterRefs?.BackButton?.Pressed += GoBack;
         var startBtn = InterRefs?.StartBattleButton;
         if (startBtn is not null) {
@@ -53,11 +54,13 @@ public partial class RoomPreparation : BaseGamePanel {
             startBtn.Disabled = true;
         }
 
+        // 订阅 UnitSelectPanel 的选择信号
+        if (InterRefs?.UnitSelectPanel is not null)
+            InterRefs.UnitSelectPanel.UnitSelected += OnUnitSelectedFromPanel;
+
         // 持久订阅大厅准备阶段单位列表推送
         ServiceLocator.ClientService.LobbyClient.OnPrepareUnitListUpdated += OnPrepareUnitListUpdated;
 
-        SelectCamp(EnumCamp.Camp_A);
-        PopulateUnitCards();
         _logger.LogInformation("RoomPreparation ready");
     }
 
@@ -67,12 +70,12 @@ public partial class RoomPreparation : BaseGamePanel {
     /// </summary>
     public void EnterRoom(string roomId, GameRoom? config = null) {
         _roomId = roomId;
-        _logger.LogInformation("进入房间: {RoomId}", roomId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("进入房间: {RoomId}", roomId);
 
         // 清空之前的单位列表
-        _campAUnits.Clear();
-        _campBUnits.Clear();
-        UpdateCampLists();
+        _units.Clear();
+        UpdateUnitList();
 
         // 显示招募板信息
         if (config != null) {
@@ -110,41 +113,18 @@ public partial class RoomPreparation : BaseGamePanel {
         InterRefs?.StartBattleButton?.Disabled = true;
     }
 
-    private void PopulateUnitCards() {
-        if (InterRefs?.UnitCardGrid is null || InterRefs?.UnitCardScene is null)
-            return;
-
-        foreach (Node child in InterRefs.UnitCardGrid.GetChildren())
-            child.QueueFree();
-
-        foreach (var (key, (displayName, config)) in AvailableUnits) {
-            var card = InterRefs.UnitCardScene.Instantiate<UnitSelectCard>();
-            string stats = $"HP: {config.MaxHealth:F0}  SPD: {config.BaseSpeed:F1}";
-            card.Setup(key, displayName, stats);
-            card.UnitSelected += OnUnitSelected;
-            InterRefs.UnitCardGrid.AddChild(card);
-        }
-    }
-
-    private void OnUnitSelected(string unitConfigKey) {
+    private void OnUnitSelectedFromPanel(string unitConfigKey) {
         _selectedUnitKey = unitConfigKey;
-        InterRefs?.StatusLabel?.Text = $"已选择: {AvailableUnits[unitConfigKey].displayName} (将加入 {CampName(_selectedCamp)})";
-        AddUnitToCamp();
+        InterRefs?.StatusLabel?.Text = $"已选择: {AvailableUnits[unitConfigKey].displayName}";
+        AddUnit();
     }
 
-    private void SelectCamp(EnumCamp camp) {
-        _selectedCamp = camp;
-        InterRefs?.CampAButton?.ButtonPressed = camp == EnumCamp.Camp_A;
-        InterRefs?.CampBButton?.ButtonPressed = camp == EnumCamp.Camp_B;
-        InterRefs?.StatusLabel?.Text = $"当前阵营: {CampName(camp)} - 点击单位卡片添加";
-    }
-
-    private void AddUnitToCamp() {
+    private void AddUnit() {
         if (string.IsNullOrEmpty(_selectedUnitKey))
             return;
 
         string displayName = AvailableUnits[_selectedUnitKey].displayName;
-        byte camp = _selectedCamp == EnumCamp.Camp_A ? (byte)1 : (byte)2;
+        byte camp = _selectedCamp == "Camp_A" ? (byte)1 : (byte)2;
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：通过大厅 LobbyClient JSON 协议发送
@@ -154,14 +134,12 @@ public partial class RoomPreparation : BaseGamePanel {
             // 本地模式：直接通过 IClientBattleService
             var client = ServiceLocator.ClientService.Client;
             client?.CreateUnit(_roomId, displayName, camp);
-            // 本地模式同步更新列表
-            if (camp == 1) _campAUnits.Add(displayName);
-            else _campBUnits.Add(displayName);
-            UpdateCampLists();
-            InterRefs?.StartBattleButton?.Disabled = _campAUnits.Count == 0 && _campBUnits.Count == 0;
+            _units.Add(displayName);
+            UpdateUnitList();
+            InterRefs?.StartBattleButton?.Disabled = _units.Count == 0;
         }
 
-        InterRefs?.StatusLabel?.Text = $"请求创建 {displayName} ({CampName(_selectedCamp)})...";
+        InterRefs?.StatusLabel?.Text = $"请求创建 {displayName}...";
     }
 
     /// <summary>
@@ -171,33 +149,32 @@ public partial class RoomPreparation : BaseGamePanel {
         if (eventRoomId != _roomId)
             return;
 
-        _logger.LogInformation("准备单位列表更新: {RoomId}, count={Count}", eventRoomId, units.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("准备单位列表更新: {RoomId}, count={Count}", eventRoomId, units.Count);
 
-        _campAUnits.Clear();
-        _campBUnits.Clear();
+        _units.Clear();
 
-        foreach (var (unitName, camp) in units) {
-            if (camp == 1) _campAUnits.Add(unitName);
-            else _campBUnits.Add(unitName);
+        foreach (var (unitName, _) in units) {
+            _units.Add(unitName);
         }
 
-        UpdateCampLists();
-        InterRefs?.StartBattleButton?.Disabled = _campAUnits.Count == 0 && _campBUnits.Count == 0;
-        InterRefs?.StatusLabel?.Text = $"单位列表已更新 (A:{_campAUnits.Count} B:{_campBUnits.Count})";
+        UpdateUnitList();
+        InterRefs?.StartBattleButton?.Disabled = _units.Count == 0;
+        InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_units.Count})";
     }
 
-    private void UpdateCampLists() {
-        InterRefs?.CampAListLabel?.Text = "阵营 A:\n" + (_campAUnits.Count > 0 ? string.Join("\n", _campAUnits) : "(空)");
-        InterRefs?.CampBListLabel?.Text = "阵营 B:\n" + (_campBUnits.Count > 0 ? string.Join("\n", _campBUnits) : "(空)");
+    private void UpdateUnitList() {
+        InterRefs?.UnitListLabel?.Text = "已选单位:\n" + (_units.Count > 0 ? string.Join("\n", _units) : "(空)");
     }
 
     private void OnStartBattleClicked() {
-        if (_campAUnits.Count == 0 && _campBUnits.Count == 0) {
-            InterRefs?.StatusLabel?.Text = "请先为至少一个阵营添加单位！";
+        if (_units.Count == 0) {
+            InterRefs?.StatusLabel?.Text = "请先添加单位！";
             return;
         }
 
-        _logger.LogInformation("请求开始战斗: {RoomId}, campA={CampACount}, campB={CampBCount}", _roomId, _campAUnits.Count, _campBUnits.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("请求开始战斗: {RoomId}, units={UnitCount}", _roomId, _units.Count);
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：通过大厅 LobbyClient JSON 协议发送 prepare_start_battle
@@ -210,12 +187,6 @@ public partial class RoomPreparation : BaseGamePanel {
 
         Visible = false;
     }
-
-    private static string CampName(EnumCamp camp) => camp switch {
-        EnumCamp.Camp_A => "阵营 A",
-        EnumCamp.Camp_B => "阵营 B",
-        _ => "未知",
-    };
 
     private static string CategoryDisplayName(RoomCategory cat) => cat switch {
         RoomCategory.Casual => "休闲",

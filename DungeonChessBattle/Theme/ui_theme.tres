@@ -4,6 +4,54 @@
 [ext_resource type="FontFile" uid="uid://kspuuvpx4tki" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Regular.ttf" id="1_a3fhg"]
 [ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="1_ry2yv"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1d1no"]
+bg_color = Color(0.35, 0.35, 0.35, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i1grf"]
+bg_color = Color(0.35, 0.35, 0.35, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d5jpq"]
+bg_color = Color(0.25, 0.25, 0.25, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2j2v5"]
+bg_color = Color(0.15, 0.15, 0.15, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a3fhg"]
 bg_color = Color(0.80049086, 0.8004908, 0.8004906, 1)
 border_width_left = 2
@@ -29,7 +77,12 @@ corner_radius_bottom_left = 8
 
 [resource]
 default_font = ExtResource("1_a3fhg")
+Button/font_sizes/font_size = 14
 Button/fonts/font = ExtResource("1_ry2yv")
+Button/styles/disabled = SubResource("StyleBoxFlat_1d1no")
+Button/styles/hover = SubResource("StyleBoxFlat_i1grf")
+Button/styles/normal = SubResource("StyleBoxFlat_d5jpq")
+Button/styles/pressed = SubResource("StyleBoxFlat_2j2v5")
 Label/colors/font_color = Color(0, 0, 0, 0.8)
 Label/font_sizes/font_size = 14
 Label/fonts/font = ExtResource("1_a3fhg")
@@ -39,4 +92,8 @@ LineEdit/colors/font_uneditable_color = Color(0.09620453, 0.09620487, 0.09620461
 LineEdit/fonts/font = ExtResource("1_a3fhg")
 LineEdit/styles/normal = SubResource("StyleBoxFlat_a3fhg")
 LineEdit/styles/read_only = SubResource("StyleBoxFlat_ybtxp")
+MarginContainer/constants/margin_bottom = 12
+MarginContainer/constants/margin_left = 12
+MarginContainer/constants/margin_right = 12
+MarginContainer/constants/margin_top = 12
 Panel/styles/panel = ExtResource("1_1844t")

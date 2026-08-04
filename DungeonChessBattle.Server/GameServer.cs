@@ -171,9 +171,8 @@ public class GameServer {
     // ── create_room：仅注册，不重定向 ──────────────────────
 
     private void HandleCreateRoom(NetPeer peer, JsonElement root) {
-        string roomId, playerId;
         if (!ValidateServerPassword(peer, root, MessageType.CreateRoomResponse, null)
-            || !TryGetRoomParams(peer, root, MessageType.CreateRoomResponse, out roomId, out playerId))
+            || !TryGetRoomParams(peer, root, MessageType.CreateRoomResponse, out string roomId, out string playerId))
             return;
 
         if (_lobby.RoomExists(roomId)) {
@@ -186,7 +185,7 @@ public class GameServer {
         string? actualRoomPassword = string.IsNullOrEmpty(roomPassword) ? null : roomPassword;
 
         // 解析招募板配置
-        GameRoom? config = null;
+        GameRoom? config;
         if (root.TryGetProperty(MessageProperty.Config, out var configEl)) {
             config = new GameRoom(roomId) {
                 Title = configEl.TryGetProperty(MessageProperty.Title, out var t) ? t.GetString() ?? "" : "",
@@ -228,9 +227,8 @@ public class GameServer {
     // ── join_room：不重定向，只验证 ─────────────────────
 
     private void HandleJoinRoom(NetPeer peer, JsonElement root) {
-        string roomId, playerId;
         if (!ValidateServerPassword(peer, root, MessageType.JoinRoomResponse, null)
-            || !TryGetRoomParams(peer, root, MessageType.JoinRoomResponse, out roomId, out playerId))
+            || !TryGetRoomParams(peer, root, MessageType.JoinRoomResponse, out string roomId, out string playerId))
             return;
 
         if (!_lobby.RoomExists(roomId)) {
@@ -317,8 +315,7 @@ public class GameServer {
     // ── prepare_start_battle：创建 RoomEntityServer + 重定向 ──
 
     private void HandlePrepareStartBattle(NetPeer peer, JsonElement root) {
-        string roomId, playerId;
-        if (!TryGetRoomParams(peer, root, MessageType.PrepareStartBattleResponse, out roomId, out playerId))
+        if (!TryGetRoomParams(peer, root, MessageType.PrepareStartBattleResponse, out string roomId, out string playerId))
             return;
 
         if (!_lobby.RoomExists(roomId)) {
@@ -343,9 +340,8 @@ public class GameServer {
     // ── 重连（战斗中断线后使用） ──────────────────────────
 
     private void HandleReconnectRoom(NetPeer peer, JsonElement root) {
-        string roomId, playerId;
         if (!ValidateServerPassword(peer, root, MessageType.ReconnectRoomResponse, null)
-            || !TryGetRoomParams(peer, root, MessageType.ReconnectRoomResponse, out roomId, out playerId))
+            || !TryGetRoomParams(peer, root, MessageType.ReconnectRoomResponse, out string roomId, out string playerId))
             return;
 
         string? roomPassword = root.TryGetProperty(MessageProperty.Password, out var pp) ? pp.GetString() : null;

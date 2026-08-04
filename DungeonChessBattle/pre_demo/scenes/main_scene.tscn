@@ -7,13 +7,11 @@
 [ext_resource type="Script" uid="uid://cokgopgwe63ml" path="res://GamePanels/UserUI/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
 [ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://pre_demo/scenes/scripts/FocusOnOutline.cs" id="4_qxep0"]
 [ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://ui_units/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
-[ext_resource type="Script" uid="uid://7qbuef1x1sav" path="res://GameAssets/Scene/DungeonEnv.cs" id="7_dowf7"]
 [ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
 [ext_resource type="Script" uid="uid://bsd32rvj6xnep" path="res://GamePanels/UserUI/Node2d_UserUI.cs" id="11_4e7mo"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="11_34gv2"]
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
-[ext_resource type="Script" uid="uid://b816warn7v4d2" path="res://GameAssets/Scene/CampStartPoints.cs" id="13_c4mp"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="14_42c4a"]
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://ui_units/state_info/took_damage_info.tscn" id="14_roldv"]
 [ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
@@ -58,34 +56,23 @@ shader_parameter/outline_width = 0.002
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
 bg_color = Color(0, 0, 0, 1)
 
-[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_dungeonEnv", "_userOperationInterfaceInfo")]
+[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_userOperationInterfaceInfo")]
 script = ExtResource("34_main")
 _mainMenu = NodePath("Interface/FrontUI/MainMenu")
 _gameLobby = NodePath("Interface/FrontUI/GameLobby")
 _unitsShow = NodePath("UnitsInScene_Show")
-_dungeonEnv = NodePath("Env/DungeonEnv")
 _userOperationInterfaceInfo = NodePath("Interface/UserOperationInterface_Info")
 _unitShowScene = ExtResource("35_unit_show")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
 
 [node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005]
-script = ExtResource("7_dowf7")
 
 [node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv" unique_id=1498989808]
 transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
 mesh = SubResource("PlaneMesh_kkwdv")
 skeleton = NodePath("../../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
-
-[node name="CampStartPoint_A" type="Node3D" parent="Env/DungeonEnv" unique_id=1333730891]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13)
-script = ExtResource("13_c4mp")
-
-[node name="CampStartPoint_B" type="Node3D" parent="Env/DungeonEnv" unique_id=1333730892]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13)
-script = ExtResource("13_c4mp")
-_camp = 2
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env/DungeonEnv" unique_id=2066106198]
 transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)

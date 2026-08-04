@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://bf6aeputrgi3c"]
+
+[ext_resource type="Script" uid="uid://bnrdrdjwie6m1" path="res://GamePanels/UnitCard/UnitCard.cs" id="1_card"]
+[ext_resource type="LabelSettings" uid="uid://c8a2qa4riuwj1" path="res://GamePanels/UnitCard/label_setting_unit_card.tres" id="2_4cdja"]
+[ext_resource type="Script" uid="uid://bwpdh3yyew2vg" path="res://GamePanels/UnitCard/UnitCardInterRefs.cs" id="3_irfs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.25, 0.25, 0.25, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="UnitCard" type="Control" unique_id=1031006351]
+custom_minimum_size = Vector2(180, 100)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 180.0
+offset_bottom = 100.0
+script = ExtResource("1_card")
+
+[node name="UnitCardInterRefs" type="Node" parent="." unique_id=384729101 node_paths=PackedStringArray("NameLabel", "UserNameLabel", "HpLabel", "HpValueLabel", "BgPanel")]
+script = ExtResource("3_irfs")
+NameLabel = NodePath("../MarginContainer/VBoxContainer/HBoxContainer3/NameLabel")
+UserNameLabel = NodePath("../MarginContainer/VBoxContainer/HBoxContainer3/UserNameLabel")
+HpLabel = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/HP_Label")
+HpValueLabel = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/HpValueLabel")
+BgPanel = NodePath("../Panel")
+
+[node name="Panel" type="Panel" parent="." unique_id=2123801091]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1625833439]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1873616673]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=153818950]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer3" unique_id=733906163]
+layout_mode = 2
+text = "单位名"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UserNameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer3" unique_id=1210058712]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "用户名"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=830360338]
+layout_mode = 2
+
+[node name="HP_Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer" unique_id=1910043367]
+layout_mode = 2
+size_flags_vertical = 3
+text = "HP: "
+label_settings = ExtResource("2_4cdja")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HpValueLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer" unique_id=477742480]
+layout_mode = 2
+text = "1000"
+label_settings = ExtResource("2_4cdja")

@@ -103,11 +103,13 @@ public partial class GameLobby : BaseGamePanel {
     /// 给 Entity 同步留出时间（网络模式下 OnPeerConnected → Entity 构造需要数个 Tick）。
     /// </summary>
     protected override void OnPanelOpened() {
-        _logger.LogInformation("GameLobby opened, connected={IsConnected}", ServiceLocator.ClientService.IsConnected);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("GameLobby opened, connected={IsConnected}", ServiceLocator.ClientService.IsConnected);
         // 防御性初始化：确保本地服务已就绪（防止面板在 InitLocalMode 之前被打开）
         if (!ServiceLocator.ClientService.IsConnected && ServiceLocator.ClientService.Client == null) {
             ServiceLocator.ClientService.InitLocalMode();
-            _logger.LogInformation("InitLocalMode called from OnPanelOpened (defensive)");
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("InitLocalMode called from OnPanelOpened (defensive)");
         }
         CallDeferred(nameof(OnRefreshRooms));
     }
@@ -125,7 +127,8 @@ public partial class GameLobby : BaseGamePanel {
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：发送 create_room，等待 OnRoomCreated 回调后导航
-            _logger.LogInformation("请求创建房间(网络): {RoomName}", roomName);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("请求创建房间(网络): {RoomName}", roomName);
             _cachedCreateRoomId = roomName;
             ServiceLocator.ClientService.RequestCreateRoom(roomName);
         }
@@ -134,7 +137,8 @@ public partial class GameLobby : BaseGamePanel {
             var clientService = ClientService;
             if (clientService != null) {
                 clientService.CreateRoom(roomName);
-                _logger.LogInformation("本地房间创建成功: {RoomName}", roomName);
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("本地房间创建成功: {RoomName}", roomName);
                 if (_roomPreparation != null) {
                     var localConfig = clientService.GetRoom(roomName);
                     _roomPreparation.EnterRoom(roomName, localConfig);
@@ -160,7 +164,8 @@ public partial class GameLobby : BaseGamePanel {
 
         // 本地模式通过接口调用
         clientService.RequestStartBattle(roomId);
-        _logger.LogInformation("本地战斗启动: {RoomId}", roomId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("本地战斗启动: {RoomId}", roomId);
 
         EmitSignal(SignalName.BattleStarted, roomId);
     }
@@ -173,7 +178,8 @@ public partial class GameLobby : BaseGamePanel {
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：发送 join_room，等待 OnRoomJoined 回调后导航
-            _logger.LogInformation("请求加入房间(网络): {RoomId}", _selectedRoomId);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("请求加入房间(网络): {RoomId}", _selectedRoomId);
             ServiceLocator.ClientService.RequestJoinRoom(_selectedRoomId);
         }
         else {
@@ -185,7 +191,8 @@ public partial class GameLobby : BaseGamePanel {
     /// 持久的事件处理器：大厅客户端收到 OnRoomCreated 时触发（网络模式创建房间成功）。
     /// </summary>
     private void OnRoomCreatedHandler(string createdRoomId) {
-        _logger.LogInformation("房间创建成功: {RoomId}", createdRoomId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("房间创建成功: {RoomId}", createdRoomId);
         CallDeferred(nameof(OnCreatedDeferred), createdRoomId);
     }
 
@@ -209,7 +216,8 @@ public partial class GameLobby : BaseGamePanel {
     /// 准备阶段不重定向，直接进入 RoomPreparation 面板。
     /// </summary>
     private void OnRoomJoinedHandler(string joinedRoomId) {
-        _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
         CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
     }
 
@@ -222,7 +230,8 @@ public partial class GameLobby : BaseGamePanel {
                 CurrentPlayers = 1,
             };
             _roomPreparation.EnterRoom(joinedRoomId, config);
-            _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
             NavigateTo(_roomPreparation);
         }
     }
@@ -240,7 +249,8 @@ public partial class GameLobby : BaseGamePanel {
 
             var rooms = clientService.GetAllRooms().ToList();
             RefreshRoomList(rooms);
-            _logger.LogDebug("房间列表刷新: {Count} 个房间", rooms.Count);
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("房间列表刷新: {Count} 个房间", rooms.Count);
         }
     }
 
@@ -269,7 +279,8 @@ public partial class GameLobby : BaseGamePanel {
         }).ToList();
 
         RefreshRoomList(rooms);
-        _logger.LogDebug("招募板列表刷新: {Count} 个房间", rooms.Count);
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("招募板列表刷新: {Count} 个房间", rooms.Count);
     }
 
     #endregion

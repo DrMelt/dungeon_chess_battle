@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core.Enums;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -34,7 +33,7 @@ public partial class StateBarList : Control {
 
         var units = scene.UnitsArr;
         foreach (var unit in units) {
-            if (unit.Camp == InterRefs.ListOfCamp) {
+            if (unit.Camps.Contains(InterRefs.ListOfCamp)) {
                 StateBarMini stateBarMini = NewStateBarMini;
 
                 InterRefs.VBoxContainerRef.AddChild(stateBarMini);

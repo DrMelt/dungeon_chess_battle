@@ -40,11 +40,11 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
             ?? throw new InvalidOperationException($"Room {roomId} not found.");
         var model = new UnitModel {
             UnitStateName = unitName,
-            Camp = (Core.Enums.EnumCamp)camp,
+            Camps = [camp == 1 ? CampConstants.CampA : CampConstants.CampB],
         };
-        if (camp == (byte)Core.Enums.EnumCamp.Camp_A)
+        if (camp == 1)
             room.UnitsA.Add(model);
-        else if (camp == (byte)Core.Enums.EnumCamp.Camp_B)
+        else
             room.UnitsB.Add(model);
 
         // 触发 OnUnitCreated 事件（本地模式同步回调）

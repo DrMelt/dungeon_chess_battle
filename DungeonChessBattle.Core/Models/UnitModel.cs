@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
@@ -16,7 +17,7 @@ public class UnitModel : IUnitState {
 
     public float BodyRadius { get; set; } = 1.0f;
 
-    public EnumCamp Camp { get; set; } = EnumCamp.None;
+    public List<string> Camps { get; set; } = [];
 
     #endregion
 

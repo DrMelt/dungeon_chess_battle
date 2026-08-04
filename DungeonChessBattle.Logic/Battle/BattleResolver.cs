@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
@@ -23,7 +24,7 @@ public class BattleResolver {
         float magicDamage = caster.MagicDamageAmount(skill.Damage);
 
         foreach (var testUnit in allUnits) {
-            if (testUnit.Camp == caster.Camp)
+            if (testUnit.Camps.Any(c => caster.Camps.Contains(c)))
                 continue;
 
             bool isInRange = skill.RangeRes.IsInRange(caster, testUnit, skill.TargetPos);

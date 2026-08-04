@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
@@ -45,11 +46,12 @@ public abstract class SkillModel : IUnitSkill {
 
     private static EnumSkillCanAdd SkillAddEnum(IUnitState callSkillObject, IUnitState testObject) {
         EnumSkillCanAdd addEnum = EnumSkillCanAdd.None;
-        if (callSkillObject.Camp == testObject.Camp) {
+        bool isSameCamp = callSkillObject.Camps.Any(c => testObject.Camps.Contains(c));
+
+        if (isSameCamp) {
             addEnum |= EnumSkillCanAdd.Same;
         }
-
-        if (callSkillObject.Camp != testObject.Camp) {
+        else {
             addEnum |= EnumSkillCanAdd.Different;
         }
 

@@ -244,8 +244,7 @@ public class RoomEntityServer : INetEventListener {
     public void UpdatePlayerName(string playerId, string playerName) {
         if (_sessions.TryGetValue(playerId, out var session)) {
             session.PlayerName = playerName;
-            if (session.Entity != null)
-                session.Entity.PlayerName.Value = playerName;
+            session.Entity?.PlayerName.Value = playerName;
         }
         else {
             // 预注册阶段（尚未创建 Entity + Session），创建 session
@@ -280,7 +279,8 @@ public class RoomEntityServer : INetEventListener {
             && existingSession.Entity != null) {
             if (existingSession.Entity.PlayerState.Value == (byte)PlayerConnectionState.Connected) {
                 // 替换：清理旧 peer，用新 peer 重连
-                _logger.LogInformation("[RoomServer:{RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("[RoomServer:{RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
                     RoomId, connectionKey);
                 ReplaceExistingConnection(connectionKey);
             }
@@ -302,8 +302,7 @@ public class RoomEntityServer : INetEventListener {
         _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
         if (playerId != null && _sessions.TryGetValue(playerId, out var session)) {
             // 标记为断连状态（保留 Entity，不销毁）
-            if (session.Entity != null)
-                session.Entity.PlayerState.Value = (byte)PlayerConnectionState.Disconnected;
+            session.Entity?.PlayerState.Value = (byte)PlayerConnectionState.Disconnected;
             session.DisconnectTime = DateTime.UtcNow;
             // 注意：不删除 _sessions 和 _validPlayerIds
             if (_logger.IsEnabled(LogLevel.Information))

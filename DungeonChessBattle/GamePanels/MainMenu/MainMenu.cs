@@ -95,7 +95,8 @@ public partial class MainMenu : BaseGamePanel {
         // 在连接前设置身份信息
         ServiceLocator.ClientService.Configure(playerName, password);
 
-        _logger.LogInformation("连接请求: {Host}:{Port}, player={PlayerName}", host, port, playerName);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("连接请求: {Host}:{Port}, player={PlayerName}", host, port, playerName);
         UpdateStatus($"正在连接 {host}:{port}...");
         InterRefs?.ConnectButton?.Disabled = true;
 
@@ -118,7 +119,8 @@ public partial class MainMenu : BaseGamePanel {
 
     private void DeferredConnectionChanged(string host, int port, bool connected) {
         if (connected) {
-            _logger.LogInformation("连接成功: {Host}:{Port}", host, port);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("连接成功: {Host}:{Port}", host, port);
             UpdateStatus($"已连接到 {host}:{port}");
             EmitSignal(SignalName.ServerConnected);
             // 切换界面：隐藏主菜单，显示大厅

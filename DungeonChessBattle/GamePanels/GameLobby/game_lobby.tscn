@@ -6,44 +6,8 @@
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_m741o"]
 [ext_resource type="Script" uid="uid://cafcc63d8fc11" path="res://GamePanels/GameLobby/GameLobbyInterRefs.cs" id="4_irfs"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
-bg_color = Color(0.25, 0.25, 0.25, 0.8)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
-bg_color = Color(0.15, 0.15, 0.15, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
-bg_color = Color(0.35, 0.35, 0.35, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.2, 0.2, 0.2, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_detail_panel"]
-bg_color = Color(0.1, 0.1, 0.1, 0.5)
+bg_color = Color(0.101960786, 0.101960786, 0.101960786, 0.25882354)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -70,7 +34,7 @@ RoomNameInput = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContai
 CreateButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
 RefreshButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
 JoinButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
-DetailLabel = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/DetailLabel")
+DetailLabel = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/MarginContainer/DetailLabel")
 RoomListContainer = NodePath("../MarginContainer/BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
 RoomInfoScene = ExtResource("2_wj6uy")
 BackButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/BackButton")
@@ -125,10 +89,6 @@ theme_override_constants/separation = 8
 [node name="BackButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=829104561]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "< 返回"
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=482913752]
@@ -153,19 +113,11 @@ theme_override_constants/separation = 6
 [node name="CreateButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow" unique_id=359128476]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "创建房间"
 
 [node name="RefreshButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow" unique_id=582741639]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "刷新"
 
 [node name="HSeparator2" type="HSeparator" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=372819405]
@@ -177,25 +129,23 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_detail_panel")
 
-[node name="DetailLabel" type="Label" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel" unique_id=174820563]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel" unique_id=1209136251]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 0.8)
+
+[node name="DetailLabel" type="Label" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/MarginContainer" unique_id=174820563]
+layout_mode = 2
+size_flags_vertical = 1
 theme_override_font_sizes/font_size = 14
 text = "选择一个房间查看详情"
-vertical_alignment = 1
 
 [node name="JoinButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=481936520]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "加入房间"
 
 [node name="Spacer" type="Control" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=760293415]

@@ -8,20 +8,24 @@ namespace DungeonChessBattle;
 /// </summary>
 public partial class StateBarListInterRefs : Node {
     [Export]
-    public EnumCamp ListOfCamp { get; set; }
+    public string ListOfCamp { get; set; } = "";
 
     [Export]
-    public VBoxContainer? VBoxContainerRef { get; set; }
+    public VBoxContainer? VBoxContainerRef {
+        get; set;
+    }
 
     [Export]
-    public PackedScene? StateBarMiniPKS { get; set; }
+    public PackedScene? StateBarMiniPKS {
+        get; set;
+    }
 
     public override void _Ready() {
         if (VBoxContainerRef == null)
             GD.PrintErr("[StateBarListInterRefs] [Export] VBoxContainerRef is not assigned!");
         if (StateBarMiniPKS == null)
             GD.PrintErr("[StateBarListInterRefs] [Export] StateBarMiniPKS is not assigned!");
-        if (ListOfCamp == EnumCamp.None)
-            GD.PrintErr("[StateBarListInterRefs] [Export] ListOfCamp is still None!");
+        if (string.IsNullOrEmpty(ListOfCamp))
+            GD.PrintErr("[StateBarListInterRefs] [Export] ListOfCamp is still empty!");
     }
 }

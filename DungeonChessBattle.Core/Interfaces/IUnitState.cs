@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Collections.Generic;
 using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle.Core.Interfaces {
@@ -9,7 +10,7 @@ namespace DungeonChessBattle.Core.Interfaces {
         float BodyRadius {
             get;
         }
-        EnumCamp Camp {
+        List<string> Camps {
             get;
         }
         string UnitStateName {

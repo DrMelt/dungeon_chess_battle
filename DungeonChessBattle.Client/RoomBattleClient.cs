@@ -141,9 +141,9 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
         var room = new GameRoom(roomId);
         foreach (var p in pawnsSnapshot) {
             var model = BuildModelFromPawn(p);
-            if (p.Camp.Value == (byte)Core.Enums.EnumCamp.Camp_A)
+            if (p.Camp.Value == 1)
                 room.UnitsA.Add(model);
-            if (p.Camp.Value == (byte)Core.Enums.EnumCamp.Camp_B)
+            else if (p.Camp.Value == 2)
                 room.UnitsB.Add(model);
         }
         return room;
@@ -176,7 +176,7 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
                 _logger.LogWarning("[RoomBattleClient] CreateUnit: room entity not found for {RoomId}", roomId);
         }
 
-        var model = new UnitModel { UnitStateName = unitName, Camp = (Core.Enums.EnumCamp)camp };
+        var model = new UnitModel { UnitStateName = unitName, Camps = [camp == 1 ? CampConstants.CampA : CampConstants.CampB] };
         return model;
     }
 
@@ -334,7 +334,7 @@ public class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientB
             MagicTakePercent = p.MagicTakePercent.Value,
             CureIntensity = p.CureIntensity.Value,
             BaseSpeed = p.BaseSpeed.Value,
-            Camp = (Core.Enums.EnumCamp)p.Camp.Value,
+            Camps = [p.Camp.Value == 1 ? CampConstants.CampA : CampConstants.CampB],
         };
     }
 }

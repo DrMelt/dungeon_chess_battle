@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DungeonChessBattle.ui_units.ui_interface;
 using Godot;
 
@@ -45,7 +46,7 @@ public partial class StateBar : Node3D, IUI_Update {
         }
 
         if (stateBarMat != null) {
-            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camp);
+            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camps.FirstOrDefault() ?? "");
             if (campColor != null) {
                 stateBarMat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
             }

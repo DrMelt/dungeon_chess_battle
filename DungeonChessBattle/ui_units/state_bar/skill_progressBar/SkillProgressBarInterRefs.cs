@@ -7,13 +7,19 @@ namespace DungeonChessBattle;
 /// </summary>
 public partial class SkillProgressBarInterRefs : Node {
     [Export]
-    public ProgressBar? ProgressBarRef { get; set; }
+    public ProgressBar? ProgressBarRef {
+        get; set;
+    }
 
     [Export]
-    public Label? LabelSkillNameRef { get; set; }
+    public Label? LabelSkillNameRef {
+        get; set;
+    }
 
     [Export]
-    public Label? LabelRemainingTimeRef { get; set; }
+    public Label? LabelRemainingTimeRef {
+        get; set;
+    }
 
     public override void _Ready() {
         if (ProgressBarRef == null)

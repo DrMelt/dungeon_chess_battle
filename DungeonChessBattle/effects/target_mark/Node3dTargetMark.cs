@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.ui_units.ui_interface;
 using Godot;
@@ -12,10 +13,10 @@ public partial class Node3dTargetMark : Node3D, IUI_Update {
 
     public override void _Ready() {
         InterRefs = GetNode<Node3dTargetMarkInterRefs>("Node3dTargetMarkInterRefs");
-        SetCampColor(EnumCamp.None);
+        SetCampColor("");
     }
 
-    public void SetCampColor(EnumCamp camp) {
+    public void SetCampColor(string camp) {
         Color? resColor = InterRefs!.UserUISettingsRes.GetCampColor(camp);
 
         resColor ??= InterRefs!.DefultColor;
@@ -24,21 +25,21 @@ public partial class Node3dTargetMark : Node3D, IUI_Update {
     }
     public void UpdateUI_WithUnit(UnitState unitState) {
         if (InterRefs!.UserInterfaceRes.FocusOnUnit != null && unitState == InterRefs!.UserInterfaceRes.FocusOnUnit.UnitStateRec) {
-            SetCampColor(unitState.Camp);
+            SetCampColor(unitState.Camps.FirstOrDefault() ?? "");
         }
         else {
-            SetCampColor(EnumCamp.None);
+            SetCampColor("");
         }
 
         Scale = new Vector3(unitState.BodyRadius, 1, unitState.BodyRadius);
     }
 
     public void SetMark_Normal() {
-        SetCampColor(EnumCamp.None);
+        SetCampColor("");
     }
 
     internal void SetMark_Focus(UnitGameShow unitShow) {
-        SetCampColor(unitShow.UnitStateRec.Camp);
+        SetCampColor(unitShow.UnitStateRec.Camps.FirstOrDefault() ?? "");
     }
 
 }

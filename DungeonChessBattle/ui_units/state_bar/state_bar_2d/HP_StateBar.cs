@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonChessBattle.ui_units.ui_interface;
 using Godot;
 
@@ -19,7 +20,7 @@ public partial class HP_StateBar : Control, IUI_Update {
 
         var progressBar = InterRefs.ProgressBarRef;
         if (progressBar != null) {
-            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camp);
+            Color? campColor = InterRefs.UserUISettingsRef?.GetCampColor(unitState.Camps.FirstOrDefault() ?? "");
             progressBar.SelfModulate = campColor ?? Colors.White;
             progressBar.Value = unitState.Health_Percent;
         }

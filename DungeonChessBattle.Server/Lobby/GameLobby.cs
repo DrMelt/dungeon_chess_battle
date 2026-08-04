@@ -210,11 +210,10 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// 获取所有有效房间的招募板列表，按创建时间倒序排列。
     /// </summary>
     public List<RoomListing> GetRoomListings() {
-        return _roomConfigs
+        return [.. _roomConfigs
             .Where(kvp => kvp.Value.Status != RoomStatus.Finished)
             .Select(kvp => RoomListing.FromGameRoom(kvp.Value))
-            .OrderByDescending(r => r.CreatedAt)
-            .ToList();
+            .OrderByDescending(r => r.CreatedAt)];
     }
 
     /// <summary>

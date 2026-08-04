@@ -52,7 +52,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
 
         string password = InterRefs?.PasswordInput?.Text?.Trim() ?? "";
 
-        _logger.LogInformation("启动服务器: port={Port}", port);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("启动服务器: port={Port}", port);
         ServiceLocator.ServerService.Start(port, password);
     }
 
@@ -74,7 +75,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
     #region Service Event Handlers
 
     private void OnServerStatusChanged(bool isRunning, int port) {
-        _logger.LogInformation("服务器状态变更: isRunning={IsRunning}, port={Port}", isRunning, port);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("服务器状态变更: isRunning={IsRunning}, port={Port}", isRunning, port);
         UpdateButtonStates();
         if (isRunning) {
             UpdateStatus($"运行中 (端口 {port})", Colors.Green);

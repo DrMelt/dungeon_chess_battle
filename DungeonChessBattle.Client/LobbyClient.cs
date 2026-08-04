@@ -72,7 +72,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     /// <summary>
     /// 请求移除准备阶段单位。
     /// </summary>
-    public void RequestPrepareRemoveUnit(string roomId, string unitName, byte camp) {
+    public void RequestPrepareRemoveUnit(string roomId, string unitName) {
         SendCommand(MessageWriter.WritePrepareRemoveUnit(roomId, unitName));
     }
 

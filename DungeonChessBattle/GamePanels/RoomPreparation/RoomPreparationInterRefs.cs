@@ -19,11 +19,11 @@ public partial class RoomPreparationInterRefs : Node {
         get; private set;
     }
     [Export]
-    public Button? CampAButton {
+    public Button? SelectUnitButton {
         get; private set;
     }
     [Export]
-    public Button? CampBButton {
+    public UnitSelectPanel? UnitSelectPanel {
         get; private set;
     }
     [Export]
@@ -31,11 +31,7 @@ public partial class RoomPreparationInterRefs : Node {
         get; private set;
     }
     [Export]
-    public Label? CampAListLabel {
-        get; private set;
-    }
-    [Export]
-    public Label? CampBListLabel {
+    public Label? UnitListLabel {
         get; private set;
     }
     [Export]
@@ -62,16 +58,14 @@ public partial class RoomPreparationInterRefs : Node {
             GD.PrintErr("[RoomPreparationInterRefs] [Export] StatusLabel is not assigned!");
         if (UnitCardGrid == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardGrid is not assigned!");
-        if (CampAButton == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampAButton is not assigned!");
-        if (CampBButton == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampBButton is not assigned!");
+        if (SelectUnitButton == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] SelectUnitButton is not assigned!");
+        if (UnitSelectPanel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitSelectPanel is not assigned!");
         if (StartBattleButton == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] StartBattleButton is not assigned!");
-        if (CampAListLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampAListLabel is not assigned!");
-        if (CampBListLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] CampBListLabel is not assigned!");
+        if (UnitListLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitListLabel is not assigned!");
         if (UnitCardScene == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardScene is not assigned!");
         if (BackButton == null)

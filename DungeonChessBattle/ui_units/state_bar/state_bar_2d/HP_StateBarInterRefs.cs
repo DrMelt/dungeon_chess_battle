@@ -7,19 +7,29 @@ namespace DungeonChessBattle;
 /// </summary>
 public partial class HP_StateBarInterRefs : Node {
     [Export]
-    public UserUISettings? UserUISettingsRef { get; set; }
+    public UserUISettings? UserUISettingsRef {
+        get; set;
+    }
 
     [Export]
-    public ProgressBar? ProgressBarRef { get; set; }
+    public ProgressBar? ProgressBarRef {
+        get; set;
+    }
 
     [Export]
-    public Label? LabelPercentRef { get; set; }
+    public Label? LabelPercentRef {
+        get; set;
+    }
 
     [Export]
-    public Label? LabelCurrentValueRef { get; set; }
+    public Label? LabelCurrentValueRef {
+        get; set;
+    }
 
     [Export]
-    public Label? LabelObjectNameRef { get; set; }
+    public Label? LabelObjectNameRef {
+        get; set;
+    }
 
     public override void _Ready() {
         if (UserUISettingsRef == null)

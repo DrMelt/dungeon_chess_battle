@@ -34,9 +34,6 @@ public partial class MainScene : Node {
     private UnitsInScene_Show? _unitsShow;
 
     [Export]
-    private DungeonEnv? _dungeonEnv;
-
-    [Export]
     private UserOperationInterfaceInfo? _userOperationInterfaceInfo;
 
     [Export]
@@ -80,8 +77,6 @@ public partial class MainScene : Node {
             GD.PrintErr("[MainScene] [Export] _gameLobby is not assigned!");
         if (_unitsShow == null)
             GD.PrintErr("[MainScene] [Export] _unitsShow is not assigned!");
-        if (_dungeonEnv == null)
-            GD.PrintErr("[MainScene] [Export] _dungeonEnv is not assigned!");
         if (_userOperationInterfaceInfo == null)
             GD.PrintErr("[MainScene] [Export] _userOperationInterfaceInfo is not assigned!");
         if (_unitShowScene == null)
@@ -170,21 +165,17 @@ public partial class MainScene : Node {
         GD.Print($"[MainScene] Initializing units: CampA={room.UnitsA.Count}, CampB={room.UnitsB.Count}");
 
         foreach (var unit in room.UnitsA)
-            SpawnUnit(unit, EnumCamp.Camp_A);
+            SpawnUnit(unit);
         foreach (var unit in room.UnitsB)
-            SpawnUnit(unit, EnumCamp.Camp_B);
+            SpawnUnit(unit);
     }
 
-    private void SpawnUnit(IUnitState unit, EnumCamp camp) {
+    private void SpawnUnit(IUnitState unit) {
         if (_unitsShow == null)
             return;
 
-        // 从 DungeonEnv 获取生成点
-        CampStartPoints? spawnPoint = camp == EnumCamp.Camp_A
-            ? _dungeonEnv?.GetNodeOrNull<CampStartPoints>("CampStartPoint_A")
-            : _dungeonEnv?.GetNodeOrNull<CampStartPoints>("CampStartPoint_B");
-
-        Vector3 spawnPos = spawnPoint?.SamplePosition() ?? Vector3.Zero;
+        // 出生位置由 LES 同步，直接从 IUnitState.Position 获取
+        Vector3 spawnPos = new(unit.Position.X, 0, unit.Position.Y);
 
         if (_unitShowScene == null)
             return;
@@ -195,7 +186,8 @@ public partial class MainScene : Node {
         var unitState = unitShow.UnitStateRec;
         // IUnitState → UnitState (Godot Resource)
         unitState.UnitStateName = unit.UnitStateName;
-        unitState.Camp = unit.Camp;
+        unitState.Camps.Clear();
+        unitState.Camps.AddRange(unit.Camps);
         unitState.Health = unit.Health;
 
         unitShow.SetUnitGlobalPosition(spawnPos);

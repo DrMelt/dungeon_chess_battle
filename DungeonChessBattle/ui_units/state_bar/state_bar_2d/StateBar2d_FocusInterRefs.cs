@@ -7,19 +7,29 @@ namespace DungeonChessBattle;
 /// </summary>
 public partial class StateBar2d_FocusInterRefs : Node {
     [Export]
-    public UserInterfaceRes? UserInterfaceRes { get; set; }
+    public UserInterfaceRes? UserInterfaceRes {
+        get; set;
+    }
 
     [Export]
-    public UserUISettings? UserUISettingsRef { get; set; }
+    public UserUISettings? UserUISettingsRef {
+        get; set;
+    }
 
     [Export]
-    public ContainerBuffs? HboxContainerBuffsRef { get; set; }
+    public ContainerBuffs? HboxContainerBuffsRef {
+        get; set;
+    }
 
     [Export]
-    public HP_StateBar? PanelFocusStateRef { get; set; }
+    public HP_StateBar? PanelFocusStateRef {
+        get; set;
+    }
 
     [Export]
-    public SkillProgressBar? PanelSkillProgressBarRef { get; set; }
+    public SkillProgressBar? PanelSkillProgressBarRef {
+        get; set;
+    }
 
     public override void _Ready() {
         if (UserInterfaceRes == null)

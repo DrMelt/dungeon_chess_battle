@@ -211,16 +211,17 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         }
 
         _reconnecting = true;
-        _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, _playerId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, _playerId);
 
         if (!_lobbyClient.IsConnected) {
             // 事件驱动：等待大厅连接建立后再发送重连请求
             string connectionKey = _serverPassword ?? NetworkClientBase.ConnectionKey;
-            Action? handler = null;
-            handler = () => {
+            void handler() {
                 _lobbyClient.OnFullyConnected -= handler;
                 SendReconnectRequest();
-            };
+            }
+
             _lobbyClient.OnFullyConnected += handler;
             _lobbyClient.Connect(_host, DefaultPort, connectionKey);
         }

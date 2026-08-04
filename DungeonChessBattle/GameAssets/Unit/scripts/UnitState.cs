@@ -42,11 +42,8 @@ public partial class UnitState : Resource, IUnitState {
     public float BodyRadius => EnsureSynced().BodyRadius;
 
     [Export]
-    EnumCamp _camp = EnumCamp.None;
-    public EnumCamp Camp {
-        get => EnsureSynced().Camp;
-        set => EnsureSynced().Camp = value;
-    }
+    string[] _camps = [];
+    public List<string> Camps => EnsureSynced().Camps;
 
     public float MaxHealth => EnsureSynced().MaxHealth;
 
@@ -148,7 +145,7 @@ public partial class UnitState : Resource, IUnitState {
         }
 
         _model.UnitStateName = _UnitStateName;
-        _model.Camp = _camp;
+        _model.Camps = [.. _camps];
         _model.Health = _health;
         if (_hates == null)
             throw new InvalidOperationException(

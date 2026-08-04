@@ -9,13 +9,25 @@ namespace DungeonChessBattle.Core.Models;
 public class RoomListing {
     public string RoomId { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
-    public RoomCategory Category { get; init; }
+    public RoomCategory Category {
+        get; init;
+    }
     public string HostName { get; init; } = string.Empty;
-    public int CurrentPlayers { get; init; }
-    public int MaxPlayers { get; init; }
-    public bool HasPassword { get; init; }
-    public RoomStatus Status { get; init; }
-    public DateTime CreatedAt { get; init; }
+    public int CurrentPlayers {
+        get; init;
+    }
+    public int MaxPlayers {
+        get; init;
+    }
+    public bool HasPassword {
+        get; init;
+    }
+    public RoomStatus Status {
+        get; init;
+    }
+    public DateTime CreatedAt {
+        get; init;
+    }
 
     public static RoomListing FromGameRoom(GameRoom room) {
         return new RoomListing {
