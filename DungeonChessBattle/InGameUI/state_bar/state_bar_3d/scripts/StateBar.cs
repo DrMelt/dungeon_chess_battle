@@ -1,6 +1,5 @@
-using System;
 using System.Linq;
-using DungeonChessBattle.ui_units.ui_interface;
+using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -53,9 +52,9 @@ public partial class StateBar : Node3D, IUI_Update {
             stateBarMat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
         }
 
-        InterRefs.Label3DPercentRef!.Text = unitState.Health_Shield_Percent.ToString("P1");
-        InterRefs.Label3DCurrentValueRef!.Text = unitState.Health_Shield.ToString("F1");
-        InterRefs.Label3DNameRef!.Text = unitState.UnitStateName;
+        InterRefs.Label3DPercentRef?.Text = unitState.Health_Shield_Percent.ToString("P1");
+        InterRefs.Label3DCurrentValueRef?.Text = unitState.Health_Shield.ToString("F1");
+        InterRefs.Label3DNameRef?.Text = unitState.UnitStateName;
     }
 
 }

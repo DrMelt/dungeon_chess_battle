@@ -1,6 +1,6 @@
+using System;
 using System.Linq;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.ui_units.ui_interface;
+using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -9,7 +9,11 @@ public partial class Node3dTargetMark : Node3D, IUI_Update {
     public Node3dTargetMarkInterRefs? InterRefs {
         get; private set;
     }
-    public Decal TargetDecalRef => InterRefs!.TargetDecalRef;
+
+    private Node3dTargetMarkInterRefs InterRefsOrThrow =>
+        InterRefs ?? throw new InvalidOperationException("[Node3dTargetMark] InterRefs has not been initialized.");
+
+    public Decal? TargetDecalRef => InterRefsOrThrow.TargetDecalRef;
 
     public override void _Ready() {
         InterRefs = GetNode<Node3dTargetMarkInterRefs>("Node3dTargetMarkInterRefs");
@@ -17,14 +21,22 @@ public partial class Node3dTargetMark : Node3D, IUI_Update {
     }
 
     public void SetCampColor(string camp) {
-        Color? resColor = InterRefs!.UserUISettingsRes.GetCampColor(camp);
+        var interRefs = InterRefsOrThrow;
+        var uiSettings = interRefs.UserUISettingsRes
+            ?? throw new InvalidOperationException("[Node3dTargetMark] UserUISettingsRes is not assigned.");
+        var targetDecal = interRefs.TargetDecalRef
+            ?? throw new InvalidOperationException("[Node3dTargetMark] TargetDecalRef is not assigned.");
+        Color? resColor = uiSettings.GetCampColor(camp);
 
-        resColor ??= InterRefs!.DefultColor;
+        resColor ??= interRefs.DefultColor;
 
-        InterRefs!.TargetDecalRef.Modulate = (Color)resColor;
+        targetDecal.Modulate = (Color)resColor;
     }
     public void UpdateUI_WithUnit(UnitState unitState) {
-        if (InterRefs!.UserInterfaceRes.FocusOnUnit != null && unitState == InterRefs!.UserInterfaceRes.FocusOnUnit.UnitStateRec) {
+        var interRefs = InterRefsOrThrow;
+        var uiRes = interRefs.UserInterfaceRes
+            ?? throw new InvalidOperationException("[Node3dTargetMark] UserInterfaceRes is not assigned.");
+        if (uiRes.FocusOnUnit != null && unitState == uiRes.FocusOnUnit.UnitStateRec) {
             SetCampColor(unitState.Camps.FirstOrDefault() ?? "");
         }
         else {
@@ -41,5 +53,4 @@ public partial class Node3dTargetMark : Node3D, IUI_Update {
     internal void SetMark_Focus(UnitGameShow unitShow) {
         SetCampColor(unitShow.UnitStateRec.Camps.FirstOrDefault() ?? "");
     }
-
 }

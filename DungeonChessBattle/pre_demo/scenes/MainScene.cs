@@ -109,7 +109,7 @@ public partial class MainScene : Node {
         // 绑定 UI（通过 VM 触发 View 初始化）
         _userOperationInterfaceInfo?.BindToBattle();
 
-        _gameLobby!.Visible = false;
+        _gameLobby?.Visible = false;
         _inBattle = true;
 
         GD.Print("[MainScene] Entered battle.");

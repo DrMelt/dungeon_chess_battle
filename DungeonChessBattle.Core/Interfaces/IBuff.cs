@@ -15,7 +15,7 @@ namespace DungeonChessBattle.Core.Interfaces {
         bool IsAlive {
             get;
         }
-        IUnitState FromUnit {
+        IUnitState? FromUnit {
             get;
         }
 

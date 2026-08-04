@@ -4,16 +4,22 @@ namespace DungeonChessBattle;
 
 public partial class Node3dTargetMarkInterRefs : Node {
     [Export]
-    public UserInterfaceRes UserInterfaceRes { get; set; } = null!;
+    public UserInterfaceRes? UserInterfaceRes {
+        get; private set;
+    }
 
     [Export]
-    public Decal TargetDecalRef { get; set; } = null!;
+    public Decal? TargetDecalRef {
+        get; private set;
+    }
 
     [Export]
-    public Color DefultColor { get; set; } = new("ad9b24");
+    public Color DefultColor { get; private set; } = new("ad9b24");
 
     [Export]
-    public UserUISettings UserUISettingsRes { get; set; } = null!;
+    public UserUISettings? UserUISettingsRes {
+        get; private set;
+    }
 
     public override void _Ready() {
         if (UserInterfaceRes == null)

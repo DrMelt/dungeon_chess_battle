@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -11,9 +12,9 @@ public partial class ButtonSkillBase : Button {
     private Label? _labelCooldownTimeRef;
 
     private UnitSkillBaseGodot? _bindingSkill;
-    public UnitSkillBaseGodot BindSkill => _bindingSkill!;
+    public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
     private UnitState? _bindUnitState;
-    public UnitState BindUnitState => _bindUnitState!;
+    public UnitState BindUnitState => _bindUnitState ?? throw new InvalidOperationException("BindUnitState has not been initialized.");
 
     private SkillsList? _skillsListRef;
 
@@ -36,7 +37,7 @@ public partial class ButtonSkillBase : Button {
 
         MouseExited += () => {
             if (uiRes != null && uiRes.MouseOnUIControl == this)
-                uiRes.MouseOnUIControl = null!;
+                uiRes.MouseOnUIControl = null;
         };
     }
 

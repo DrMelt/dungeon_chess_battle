@@ -17,7 +17,7 @@ public partial class BuffBaseGodot : Resource, IBuff {
     protected virtual BuffConfig? Config => null;
 
     [Export]
-    public Texture2D icon = null!;
+    public Texture2D? icon;
 
     [Export]
     string _buffName = "";
@@ -31,7 +31,7 @@ public partial class BuffBaseGodot : Resource, IBuff {
     public int Superpositions => _model?.Superpositions ?? 1;
     public int MaxSuperpositions => _model?.MaxSuperpositions ?? 1;
     public bool IsAlive => _model?.IsAlive ?? throw new InvalidOperationException("Buff model has not been initialized.");
-    public IUnitState FromUnit => _model?.FromUnit ?? throw new InvalidOperationException("Buff model has not been initialized.");
+    public IUnitState? FromUnit => _model?.FromUnit ?? throw new InvalidOperationException("Buff model has not been initialized.");
 
     private void EnsureModelCreated() {
         if (_model != null)

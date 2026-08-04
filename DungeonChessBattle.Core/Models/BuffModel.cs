@@ -9,7 +9,9 @@ public class BuffModel : IBuff {
     public int MaxSuperpositions { get; set; } = 1;
     public bool IsAlive { get; set; } = true;
 
-    public IUnitState FromUnit { get; set; } = null!;
+    public IUnitState? FromUnit {
+        get; set;
+    }
 
     public void Update(double deltaTime, IUnitState unitState) {
         if (!IsAlive)

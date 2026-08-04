@@ -1,5 +1,5 @@
 using Godot;
-using DungeonChessBattle.ui_units.ui_interface;
+using DungeonChessBattle.InGameUI.ui_interface;
 
 namespace DungeonChessBattle;
 

@@ -77,7 +77,7 @@ public partial class UnitSkillBaseGodot : Resource, IUnitSkill {
         return _model?.IsCoolingdown() ?? true;
     }
 
-    public void SetSkill(IUnitState callSkillObject, IUnitState targetObject, System.Numerics.Vector3? targetPos, IEnumerable<IUnitState> testObjects) {
+    public void SetSkill(IUnitState callSkillObject, IUnitState? targetObject, System.Numerics.Vector3? targetPos, IEnumerable<IUnitState> testObjects) {
         EnsureModelCreated();
         if (_model == null)
             return;

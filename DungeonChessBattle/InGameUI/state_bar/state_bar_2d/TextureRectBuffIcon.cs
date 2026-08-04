@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -10,13 +11,19 @@ public partial class TextureRectBuffIcon : TextureRect {
 
     [ExportGroup("Internal Parameters")]
     [Export]
-    Label superpositionsLabelRef = null!;
+    Label? superpositionsLabelRef;
     [Export]
-    Label durationLabelRef = null!;
+    Label? durationLabelRef;
 
+    BuffBaseGodot? bindingBuff;
+    public BuffBaseGodot BindingBuff => bindingBuff ?? throw new InvalidOperationException("BindingBuff has not been set.");
 
-    BuffBaseGodot bindingBuff = null!;
-    public BuffBaseGodot BindingBuff => bindingBuff;
+    public override void _Ready() {
+        if (superpositionsLabelRef == null)
+            GD.PrintErr("[TextureRectBuffIcon] [Export] superpositionsLabelRef is not assigned!");
+        if (durationLabelRef == null)
+            GD.PrintErr("[TextureRectBuffIcon] [Export] durationLabelRef is not assigned!");
+    }
 
     public void SetBuffIcon(BuffBaseGodot buffBase, UnitState focusUnit) {
         bindingBuff = buffBase;
@@ -24,6 +31,9 @@ public partial class TextureRectBuffIcon : TextureRect {
         if (buffBase.FromUnit == focusUnit) {
             fontColor = fromFocusUnit;
         }
+
+        if (durationLabelRef == null || superpositionsLabelRef == null)
+            return;
 
         durationLabelRef.Text = buffBase.Duration.ToString("F0");
         superpositionsLabelRef.Text = buffBase.Superpositions.ToString();

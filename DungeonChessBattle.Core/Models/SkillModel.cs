@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Numerics;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
@@ -28,8 +27,12 @@ public abstract class SkillModel : IUnitSkill {
 
     public float SkillSpellProgress => SkillSpelledTime / SkillSpellTime;
 
-    public IUnitState CallSkillObject { get; protected set; } = null!;
-    protected IUnitState TargetObject { get; set; } = null!;
+    public IUnitState? CallSkillObject {
+        get; protected set;
+    }
+    protected IUnitState? TargetObject {
+        get; set;
+    }
     public Vector3 TargetPos {
         get; protected set;
     }
@@ -58,7 +61,7 @@ public abstract class SkillModel : IUnitSkill {
         return addEnum;
     }
 
-    public void SetSkill(IUnitState callSkillObject, IUnitState targetObject, Vector3? targetPos, IEnumerable<IUnitState> testObjects) {
+    public void SetSkill(IUnitState callSkillObject, IUnitState? targetObject, Vector3? targetPos, IEnumerable<IUnitState> testObjects) {
         if (NeedUnitTarget) {
             if (targetObject == null)
                 return;

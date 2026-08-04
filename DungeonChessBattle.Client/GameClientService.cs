@@ -234,8 +234,10 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     /// 发送重连请求到大厅（需确保大厅已连接）。
     /// </summary>
     private void SendReconnectRequest() {
+        var cachedRoomId = _cachedRoomId ??
+            throw new System.InvalidOperationException("cachedRoomId is not set before reconnect request.");
         var msg = MessageWriter.WriteReconnectRoom(
-            _cachedRoomId!, _playerId, _playerName,
+            cachedRoomId, _playerId, _playerName,
             _cachedRoomPassword, _serverPassword);
         _lobbyClient.SendCommand(msg);
     }

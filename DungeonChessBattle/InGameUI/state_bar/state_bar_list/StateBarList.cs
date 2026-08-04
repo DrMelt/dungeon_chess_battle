@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 namespace DungeonChessBattle;
 
@@ -7,13 +8,18 @@ public partial class StateBarList : Control {
         get; private set;
     }
 
+    private StateBarListInterRefs InterRefsOrThrow =>
+        InterRefs ?? throw new InvalidOperationException("[StateBarList] InterRefs has not been initialized.");
+
     public override void _Ready() {
         InterRefs = GetNode<StateBarListInterRefs>("StateBarListInterRefs");
     }
 
-    StateBarMini NewStateBarMini => InterRefs!.StateBarMiniPKS!.Instantiate<StateBarMini>();
+    StateBarMini NewStateBarMini =>
+        InterRefsOrThrow.StateBarMiniPKS?.Instantiate<StateBarMini>()
+        ?? throw new InvalidOperationException("[StateBarList] StateBarMiniPKS is not assigned or instantiation failed.");
 
-    UnitsInScene bindingUnitsInScene = null!;
+    UnitsInScene? bindingUnitsInScene;
 
     public void BindUnitsInScene(UnitsInScene unitsInScene) {
         bindingUnitsInScene?.OnUnitsChangedEvent -= OnUnitsChanged;

@@ -96,7 +96,7 @@ public partial class SkillsList : Control {
         }
 
         // 无目标需求：同步释放
-        skill.SetSkill(button.BindUnitState, null!, null, unitsArr ?? []);
+        skill.SetSkill(button.BindUnitState, targetObject: null, targetPos: null, unitsArr ?? []);
         button.ButtonPressed = false;
     }
 
@@ -120,7 +120,7 @@ public partial class SkillsList : Control {
                 var skill = _waitingButton.BindSkill;
                 skill.SetSkill(
                     _waitingButton.BindUnitState,
-                    null!,
+                    targetObject: null,
                     new System.Numerics.Vector3(v.X, v.Y, v.Z),
                     UnitsInGameRef?.UnitsArr ?? []);
             }

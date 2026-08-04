@@ -20,11 +20,11 @@ public partial class Panel_UI_Info : Control {
         if (skillDescriptionLabel == null)
             GD.PrintErr("[Panel_UI_Info] [Export] skillDescriptionLabel is not assigned!");
 
-        userInterfaceRes!.MouseOnUIControlChanged += UpdateInfo;
+        userInterfaceRes?.MouseOnUIControlChanged += UpdateInfo;
         UpdateInfo(null);
     }
     public override void _ExitTree() {
-        userInterfaceRes!.MouseOnUIControlChanged -= UpdateInfo;
+        userInterfaceRes?.MouseOnUIControlChanged -= UpdateInfo;
     }
 
     private void UpdateInfo(Control? control) {
@@ -33,12 +33,12 @@ public partial class Panel_UI_Info : Control {
         if (control != null) {
             if (control is ButtonSkillBase mouseOnButtonSkill) {
                 skillNameLabel?.Text = mouseOnButtonSkill.BindSkill.SkillName;
-                skillDescriptionLabel!.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
+                skillDescriptionLabel?.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon buffIcon) {
                 skillNameLabel?.Text = buffIcon.BindingBuff.BuffName;
-                skillDescriptionLabel!.Text = buffIcon.BindingBuff.BuffDescription;
+                skillDescriptionLabel?.Text = buffIcon.BindingBuff.BuffDescription;
                 isShow = true;
             }
         }

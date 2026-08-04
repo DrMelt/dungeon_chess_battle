@@ -11,10 +11,22 @@ public partial class BuffChangeInfo : FadeInfo {
 
     [ExportGroup("Internal")]
     [Export]
-    Label label_ChangeRef = null!;
+    Label? label_ChangeRef;
     [Export]
-    TextureRect textureRectRef = null!;
+    TextureRect? textureRectRef;
+
+    public override void _Ready() {
+        base._Ready();
+        if (label_ChangeRef == null)
+            GD.PrintErr("[BuffChangeInfo] [Export] label_ChangeRef is not assigned!");
+        if (textureRectRef == null)
+            GD.PrintErr("[BuffChangeInfo] [Export] textureRectRef is not assigned!");
+    }
+
     public void Init(BuffBaseGodot buffBase, Enum_BuffChangeType changeType) {
+        if (label_ChangeRef == null || textureRectRef == null)
+            return;
+
         label_ChangeRef.Text = changeType switch {
             Enum_BuffChangeType.Added => "+",
             Enum_BuffChangeType.Removed => "-",

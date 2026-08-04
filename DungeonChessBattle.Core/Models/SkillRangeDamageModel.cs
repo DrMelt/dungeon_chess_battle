@@ -10,5 +10,7 @@ public class SkillRangeDamageModel : SkillModel {
     public Enum_DamageType DamageType {
         get; set;
     }
-    public IRangeRes RangeRes { get; set; } = null!;
+    public IRangeRes? RangeRes {
+        get; set;
+    }
 }

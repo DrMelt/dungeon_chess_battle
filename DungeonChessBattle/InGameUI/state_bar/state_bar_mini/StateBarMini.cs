@@ -31,11 +31,11 @@ public partial class StateBarMini : Control {
     }
 
     public override void _Process(double delta) {
-        if (InterRefs == null)
+        if (InterRefs == null || bindingUnitStateRes == null)
             return;
-        InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
-        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
-        InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingUnitStateRes!);
+        InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingUnitStateRes);
+        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingUnitStateRes);
+        InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingUnitStateRes);
     }
 
 

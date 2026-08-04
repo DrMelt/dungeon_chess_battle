@@ -8,20 +8,22 @@ public partial class SkillRangeCircular_Hint : Node3D {
         get; private set;
     }
 
-    ShaderMaterial shaderMaterial = null!;
+    ShaderMaterial? shaderMaterial;
 
     public override void _Ready() {
         InterRefs = GetNode<SkillRangeCircular_HintInterRefs>("SkillRangeCircular_HintInterRefs");
     }
 
     public void Init(Vector3 fromPos, Vector3 toPos, float near, float far, float radianFrom, float radianTo) {
-        shaderMaterial = (InterRefs!.DecalRef.MaterialOverride as ShaderMaterial) ?? throw new InvalidOperationException("decalRef.MaterialOverride is not a ShaderMaterial.");
+        var interRefs = InterRefs ?? throw new InvalidOperationException("InterRefs has not been initialized.");
+        var decalRef = interRefs.DecalRef ?? throw new InvalidOperationException("DecalRef is not assigned.");
+        shaderMaterial = (decalRef.MaterialOverride as ShaderMaterial) ?? throw new InvalidOperationException("decalRef.MaterialOverride is not a ShaderMaterial.");
 
         GlobalPosition = fromPos;
         toPos.Y = GlobalPosition.Y;
         LookAt(toPos, up: Vector3.Up);
 
-        InterRefs!.DecalRef.Scale = new Vector3(far * 2, 1, far * 2);
+        decalRef.Scale = new Vector3(far * 2, 1, far * 2);
 
         shaderMaterial.SetShaderParameter("Near", near);
         shaderMaterial.SetShaderParameter("Skill_Radian_From", radianFrom);
@@ -29,8 +31,6 @@ public partial class SkillRangeCircular_Hint : Node3D {
     }
 
     public void SetSkillProgress(float progress) {
-        shaderMaterial.SetShaderParameter("Skill_Progress", progress);
+        shaderMaterial?.SetShaderParameter("Skill_Progress", progress);
     }
-
-
 }

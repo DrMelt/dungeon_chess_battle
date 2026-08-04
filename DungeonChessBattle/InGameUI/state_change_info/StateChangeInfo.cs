@@ -1,5 +1,6 @@
 using Godot;
 using DungeonChessBattle.Core.Enums;
+using System;
 
 namespace DungeonChessBattle;
 
@@ -14,10 +15,18 @@ public partial class StateChangeInfo : Node {
         get; private set;
     }
 
-    TookDamageInfo NewTookDamageInfo => InterRefs?.TookDamageInfoPackedScene?.Instantiate<TookDamageInfo>()!;
-    BuffChangeInfo NewBuffChangeInfo => InterRefs?.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()!;
+    private StateChangeInfoInterRefs InterRefsOrThrow =>
+        InterRefs ?? throw new InvalidOperationException("[StateChangeInfo] InterRefs has not been initialized.");
 
-    Godot.Collections.Array<UnitState> preUnits = null!;
+    TookDamageInfo NewTookDamageInfo =>
+        InterRefsOrThrow.TookDamageInfoPackedScene?.Instantiate<TookDamageInfo>()
+        ?? throw new InvalidOperationException("[StateChangeInfo] TookDamageInfoPackedScene is not assigned or instantiation failed.");
+
+    BuffChangeInfo NewBuffChangeInfo =>
+        InterRefsOrThrow.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()
+        ?? throw new InvalidOperationException("[StateChangeInfo] BuffChangeInfoPackedScene is not assigned or instantiation failed.");
+
+    Godot.Collections.Array<UnitState>? preUnits;
 
     public override void _Ready() {
         InterRefs = GetNode<StateChangeInfoInterRefs>("StateChangeInfoInterRefs");
@@ -77,7 +86,9 @@ public partial class StateChangeInfo : Node {
     void OnUnitTookDamage(UnitState unitState, float damage, Enum_DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         AddChild(tookDamageInfo);
-        tookDamageInfo.Init(damage, damageType, InterRefs?.UserUISettingsRes!);
+        var uiSettings = InterRefsOrThrow.UserUISettingsRes
+            ?? throw new InvalidOperationException("[StateChangeInfo] UserUISettingsRes is not assigned in InterRefs.");
+        tookDamageInfo.Init(damage, damageType, uiSettings);
         tookDamageInfo.GlobalPosition = WorldToScreenPos(this, unitState.Position + Vector3.Up * 2.2f);
     }
 }

@@ -35,8 +35,8 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     [Export]
-    Godot.Collections.Array<UnitSkillBaseGodot> _skillsList = null!;
-    public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList;
+    Godot.Collections.Array<UnitSkillBaseGodot>? _skillsList;
+    public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList ??= [];
 
 
     public float BodyRadius => EnsureSynced().BodyRadius;
@@ -100,9 +100,9 @@ public partial class UnitState : Resource, IUnitState {
     }
 
     [Export]
-    UnitsInScene unitsInSceneRes = null!;
+    UnitsInScene? unitsInSceneRes;
     [Export]
-    MotionTimeTable motionTimeTable = null!;
+    MotionTimeTable? motionTimeTable;
 
     [ExportSubgroup("Spell")]
     [Export]
@@ -114,7 +114,7 @@ public partial class UnitState : Resource, IUnitState {
 
     [ExportSubgroup("Hate")]
     [Export]
-    Godot.Collections.Dictionary<string, float> _hates = null!;
+    Godot.Collections.Dictionary<string, float>? _hates;
     #endregion
 
     #region Events

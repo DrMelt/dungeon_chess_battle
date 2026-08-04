@@ -25,7 +25,8 @@ public partial class UserUISettings : Resource {
     public Color EnemyCampColor { get; private set; } = new(1, 1, 1, 1);
 
     public Color? GetCampColor(string camp) {
-        if (string.IsNullOrEmpty(camp)) return NeutralCampColor;
+        if (string.IsNullOrEmpty(camp))
+            return NeutralCampColor;
         return camp switch {
             "Camp_A" or "0" => AllyCampColor,
             "Camp_B" or "2" => EnemyCampColor,

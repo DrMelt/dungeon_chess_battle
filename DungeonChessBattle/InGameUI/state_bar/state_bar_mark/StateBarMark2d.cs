@@ -1,4 +1,4 @@
-using DungeonChessBattle.ui_units.ui_interface;
+using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
 namespace DungeonChessBattle;

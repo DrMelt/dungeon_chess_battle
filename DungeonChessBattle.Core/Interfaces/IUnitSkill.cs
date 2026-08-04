@@ -18,7 +18,7 @@ namespace DungeonChessBattle.Core.Interfaces {
         bool NeedPosTarget {
             get;
         }
-        IUnitState CallSkillObject {
+        IUnitState? CallSkillObject {
             get;
         }
         Vector3 TargetPos {
@@ -27,7 +27,7 @@ namespace DungeonChessBattle.Core.Interfaces {
 
         void UpdateSkill(double delta);
         bool IsCoolingdown();
-        void SetSkill(IUnitState callSkillObject, IUnitState targetObject, Vector3? targetPos, IEnumerable<IUnitState> testObjects);
+        void SetSkill(IUnitState callSkillObject, IUnitState? targetObject, Vector3? targetPos, IEnumerable<IUnitState> testObjects);
         void SpellBroked();
         bool CallSkillSpelling();
     }

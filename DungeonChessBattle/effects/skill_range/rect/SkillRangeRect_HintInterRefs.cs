@@ -1,11 +1,12 @@
-using System;
 using Godot;
 
 namespace DungeonChessBattle;
 
 public partial class SkillRangeRect_HintInterRefs : Node {
     [Export]
-    public MeshInstance3D DecalRef { get; set; } = null!;
+    public MeshInstance3D? DecalRef {
+        get; private set;
+    }
 
     public override void _Ready() {
         if (DecalRef == null) {

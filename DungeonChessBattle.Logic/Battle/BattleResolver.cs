@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
@@ -27,6 +26,8 @@ public class BattleResolver {
             if (testUnit.Camps.Any(c => caster.Camps.Contains(c)))
                 continue;
 
+            if (skill.RangeRes == null)
+                continue;
             bool isInRange = skill.RangeRes.IsInRange(caster, testUnit, skill.TargetPos);
             if (!isInRange)
                 continue;
@@ -39,6 +40,8 @@ public class BattleResolver {
     }
 
     public static void ApplySkillAddBuff(IUnitState target, SkillAddBuffModel skill) {
+        if (skill.Buff == null)
+            throw new System.InvalidOperationException("[BattleResolver] SkillAddBuffModel.Buff is null.");
         target.AddBuff(skill.Buff);
     }
 
