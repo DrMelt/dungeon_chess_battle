@@ -49,7 +49,6 @@ public partial class GameLobby : BaseGamePanel {
 
     private string? _selectedRoomId;
     private readonly Dictionary<string, RoomInfo> _roomInfoCache = [];
-    private Timer? _refreshTimer;
     private RoomCategory _selectedCategory = RoomCategory.Casual;
     private List<RoomListing>? _pendingRoomListings;
     private string? _cachedCreateRoomId;
@@ -87,14 +86,6 @@ public partial class GameLobby : BaseGamePanel {
 
         _logger.LogInformation("GameLobby ready");
 
-        // 启动定时刷新
-        _refreshTimer = new Timer {
-            WaitTime = 1.0,
-            OneShot = false,
-            Autostart = true,
-        };
-        _refreshTimer.Timeout += OnRefreshRooms;
-        AddChild(_refreshTimer);
 
     }
 
@@ -383,8 +374,4 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     #endregion
-
-    public override void _ExitTree() {
-        _refreshTimer?.Stop();
-    }
 }

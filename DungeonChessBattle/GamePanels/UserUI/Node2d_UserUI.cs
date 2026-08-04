@@ -40,7 +40,7 @@ public partial class Node2d_UserUI : Control {
             GD.PrintErr("[Node2d_UserUI] userInterfaceRes is not assigned!");
             return;
         }
-        userInterfaceRes.FocusOnUnitChangedEvent += UpdateSkillList;
+        userInterfaceRes.FocusOnUnitChanged += UpdateSkillList;
         if (userInterfaceRes.FocusOnUnit != null)
             UpdateSkillList(userInterfaceRes.FocusOnUnit);
     }

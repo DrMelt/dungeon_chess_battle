@@ -6,24 +6,24 @@
 [ext_resource type="Script" uid="uid://bvm0whqi2x4t4" path="res://GameAssets/Scene/EffectHints.cs" id="3_eaknj"]
 [ext_resource type="Script" uid="uid://cokgopgwe63ml" path="res://GamePanels/UserUI/UserOperationInterfaceInfo.cs" id="3_n8f6c"]
 [ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://pre_demo/scenes/scripts/FocusOnOutline.cs" id="4_qxep0"]
-[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://ui_units/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
-[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://ui_units/skill_list/skills_list.tscn" id="10_sfuu4"]
+[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://InGameUI/state_bar/state_bar_2d/state_bar_2d.tscn" id="5_0fpm5"]
+[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://InGameUI/skill_list/skills_list.tscn" id="10_sfuu4"]
 [ext_resource type="Script" uid="uid://bsd32rvj6xnep" path="res://GamePanels/UserUI/Node2d_UserUI.cs" id="11_4e7mo"]
-[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://ui_units/user_interface/res_user_interface.tres" id="11_34gv2"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://InGameUI/user_interface/res_user_interface.tres" id="11_34gv2"]
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="12_sph05"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="13_0by77"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="14_42c4a"]
-[ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://ui_units/state_info/took_damage_info.tscn" id="14_roldv"]
-[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://ui_units/LabelDungeonTime.cs" id="18_ctxme"]
-[ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://ui_units/state_bar/state_bar_mark/StateBarMark.cs" id="19_ctxme"]
-[ext_resource type="PackedScene" uid="uid://bmraovrwblgf1" path="res://ui_units/state_bar/state_bar_mark/state_bar_mark_2d.tscn" id="20_uvuxq"]
-[ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://ui_units/state_bar/state_bar_list/state_bar_list.tscn" id="22_j0gmm"]
-[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="22_roldv"]
-[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://ui_units/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
-[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://ui_units/state_change_info/StateChangeInfoInterRefs.cs" id="23_0gsne_inter"]
-[ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://ui_units/state_info/buff_change_info.tscn" id="23_roldv"]
+[ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://InGameUI/state_info/took_damage_info.tscn" id="14_roldv"]
+[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://InGameUI/LabelDungeonTime.cs" id="18_ctxme"]
+[ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://InGameUI/state_bar/state_bar_mark/StateBarMark.cs" id="19_ctxme"]
+[ext_resource type="PackedScene" uid="uid://bmraovrwblgf1" path="res://InGameUI/state_bar/state_bar_mark/state_bar_mark_2d.tscn" id="20_uvuxq"]
+[ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://InGameUI/state_bar/state_bar_list/state_bar_list.tscn" id="22_j0gmm"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://InGameUI/user_ui_settings/res_user_ui_settings.tres" id="22_roldv"]
+[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://InGameUI/state_change_info/StateChangeInfo.cs" id="23_0gsne"]
+[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://InGameUI/state_change_info/StateChangeInfoInterRefs.cs" id="23_0gsne_inter"]
+[ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://InGameUI/state_info/buff_change_info.tscn" id="23_roldv"]
 [ext_resource type="PackedScene" uid="uid://duxpr0xqbx" path="res://GamePanels/ServerManagement/server_management_panel.tscn" id="27_server"]
-[ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://ui_units/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
+[ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://InGameUI/ui_info/panel_ui_info.tscn" id="29_h3qe1"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="30_42c4a"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
@@ -170,8 +170,8 @@ mouse_filter = 1
 layout_mode = 1
 anchors_preset = 0
 script = ExtResource("19_ctxme")
-unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 stateBarSimple2d_PKD = ExtResource("20_uvuxq")
+unitsInScene_Show_Ref = NodePath("../../../UnitsInScene_Show")
 
 [node name="StateBar_List" parent="Interface/Game_UserUI" unique_id=318767437 instance=ExtResource("22_j0gmm")]
 layout_mode = 0

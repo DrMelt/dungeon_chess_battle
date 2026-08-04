@@ -1,8 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://cqa42iddtybum"]
+[gd_scene format=3 uid="uid://cqa42iddtybum"]
 
 [ext_resource type="Texture2D" uid="uid://bqsyuvsy3u8fd" path="res://effects/target_mark/target_mark_white.png" id="1_ehvke"]
 [ext_resource type="Script" uid="uid://jhy8a4dd3ple" path="res://effects/target_mark/Node3dTargetMark.cs" id="1_mdwx6"]
-[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://ui_units/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://InGameUI/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
 [ext_resource type="Script" uid="uid://c6d2rrkc3xgv3" path="res://effects/target_mark/Node3dTargetMarkInterRefs.cs" id="4_interrefs"]
 
 [node name="Node3D_Target_Mark" type="Node3D"]

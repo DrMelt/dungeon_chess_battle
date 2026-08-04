@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://dnewunitselectpanel"]
+[gd_scene format=3 uid="uid://3gcu0g60a82n"]
 
-[ext_resource type="Script" uid="uid://placeholder_unitselectpanel_cs" path="res://GamePanels/UnitSelectPanel/UnitSelectPanel.cs" id="1_panel_cs"]
-[ext_resource type="Script" uid="uid://placeholder_unitselectpanel_irfs_cs" path="res://GamePanels/UnitSelectPanel/UnitSelectPanelInterRefs.cs" id="2_irfs_cs"]
+[ext_resource type="Script" uid="uid://dmkp3hidywhil" path="res://GamePanels/UnitSelectPanel/UnitSelectPanel.cs" id="1_panel_cs"]
+[ext_resource type="Script" uid="uid://bxhauc1nkud8k" path="res://GamePanels/UnitSelectPanel/UnitSelectPanelInterRefs.cs" id="2_irfs_cs"]
 [ext_resource type="PackedScene" uid="uid://bf6aeputrgi3c" path="res://GamePanels/UnitCard/unit_card.tscn" id="3_card_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
@@ -50,7 +50,7 @@ grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("1_panel_cs")
 
-[node name="UnitSelectPanelInterRefs" type="Node" parent="." unique_id=1518603764 node_paths=PackedStringArray("TitleLabel", "UnitCardGrid", "BackButton", "UnitCardScene")]
+[node name="UnitSelectPanelInterRefs" type="Node" parent="." unique_id=1518603764 node_paths=PackedStringArray("TitleLabel", "UnitCardGrid", "BackButton")]
 script = ExtResource("2_irfs_cs")
 TitleLabel = NodePath("../Panel/MarginContainer/VBoxContainer/TitleLabel")
 UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer")
@@ -95,9 +95,9 @@ size_flags_vertical = 3
 
 [node name="GridContainer" type="GridContainer" parent="Panel/MarginContainer/VBoxContainer/ScrollContainer" unique_id=378871723]
 layout_mode = 2
-columns = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
+columns = 3
 
 [node name="BackButton" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=205196458]
 layout_mode = 2

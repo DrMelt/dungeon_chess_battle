@@ -87,9 +87,9 @@ public partial class MainMenu : BaseGamePanel {
             return;
         }
 
-        // 使用默认用户名（playerId 前8位）作为 fallback
         if (string.IsNullOrWhiteSpace(playerName)) {
-            playerName = ServiceLocator.ClientService.PlayerId[..8];
+            UpdateStatus("请输入用户名");
+            return;
         }
 
         // 在连接前设置身份信息

@@ -318,6 +318,12 @@ public class GameServer {
         if (!TryGetRoomParams(peer, root, MessageType.PrepareStartBattleResponse, out string roomId, out string playerId))
             return;
 
+        string? playerName = root.TryGetProperty(MessageProperty.PlayerName, out var pn) ? pn.GetString() : null;
+        if (string.IsNullOrWhiteSpace(playerName)) {
+            SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
+            return;
+        }
+
         if (!_lobby.RoomExists(roomId)) {
             _logger.LogWarning("[Game] start_battle: room '{RoomId}' not found.", roomId);
             SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
@@ -326,15 +332,14 @@ public class GameServer {
 
         // 创建 RoomEntityServer 并迁移单位
         var server = _lobby.StartRoomBattle(roomId);
-        string displayName = GetDisplayName(root, playerId);
-        server.RegisterPlayer(playerId, displayName);
+        server.RegisterPlayer(playerId, playerName);
 
         // 发送重定向（含端口号）
         SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, server.Port));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), player='{Player}' ({PlayerId}) redirected.",
-                roomId, server.Port, displayName, playerId);
+                roomId, server.Port, playerName, playerId);
     }
 
     // ── 重连（战斗中断线后使用） ──────────────────────────
@@ -343,6 +348,12 @@ public class GameServer {
         if (!ValidateServerPassword(peer, root, MessageType.ReconnectRoomResponse, null)
             || !TryGetRoomParams(peer, root, MessageType.ReconnectRoomResponse, out string roomId, out string playerId))
             return;
+
+        string? playerName = root.TryGetProperty(MessageProperty.PlayerName, out var pn) ? pn.GetString() : null;
+        if (string.IsNullOrWhiteSpace(playerName)) {
+            SendToPeer(peer, MessageWriter.WriteReconnectRoomResponse(roomId, false, "Player name is required."));
+            return;
+        }
 
         string? roomPassword = root.TryGetProperty(MessageProperty.Password, out var pp) ? pp.GetString() : null;
         string? actualRoomPassword = string.IsNullOrEmpty(roomPassword) ? null : roomPassword;
@@ -366,17 +377,13 @@ public class GameServer {
             return;
         }
 
-        string? playerName = root.TryGetProperty(MessageProperty.PlayerName, out var np) ? np.GetString() : null;
-        if (!string.IsNullOrEmpty(playerName))
-            server.UpdatePlayerName(playerId, playerName);
-
-        string displayName = GetDisplayName(root, playerId);
-        server.RegisterPlayer(playerId, displayName);
+        server.UpdatePlayerName(playerId, playerName);
+        server.RegisterPlayer(playerId, playerName);
         SendToPeer(peer, MessageWriter.WriteJoinRoomRedirect(roomId, server.Port));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
-                playerName ?? "?", playerId, roomId, server.Port);
+                playerName, playerId, roomId, server.Port);
     }
 
     // ── 广播辅助 ──────────────────────────────────────────
