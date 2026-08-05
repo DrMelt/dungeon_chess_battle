@@ -22,7 +22,6 @@ public static class MessageWriter {
     private static readonly JsonEncodedText PasswordKey = JsonEncodedText.Encode("password");
     private static readonly JsonEncodedText ServerPasswordKey = JsonEncodedText.Encode("serverPassword");
 
-    // ── 招募板字段 ──
     private static readonly JsonEncodedText ConfigKey = JsonEncodedText.Encode("config");
     private static readonly JsonEncodedText TitleKey = JsonEncodedText.Encode("title");
     private static readonly JsonEncodedText DescriptionKey = JsonEncodedText.Encode("description");
@@ -75,7 +74,7 @@ public static class MessageWriter {
     /// <summary>
     /// 写入创建单位请求：{ "type":"create_unit", "roomId":..., "unitName":..., "camp":... }
     /// </summary>
-    public static byte[] WriteCreateUnit(string roomId, string unitName, byte camp) {
+    public static byte[] WriteCreateUnit(string roomId, string unitName, string camp) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -83,7 +82,7 @@ public static class MessageWriter {
         writer.WriteString(TypeKey, MessageType.CreateUnit);
         writer.WriteString(RoomIdKey, roomId);
         writer.WriteString(UnitNameKey, unitName);
-        writer.WriteNumber(CampKey, camp);
+        writer.WriteString(CampKey, camp);
         writer.WriteEndObject();
 
         writer.Flush();
@@ -186,8 +185,6 @@ public static class MessageWriter {
         return WriteResponse(MessageType.JoinRoomRedirect, roomId, true, port: roomPort);
     }
 
-    // ── 招募板消息 ──
-
     /// <summary>
     /// 写入创建房间请求（含招募板配置）：
     /// { "type":"create_room", "roomId":..., "playerName":..., "playerId":..., "password"?:...,
@@ -256,12 +253,10 @@ public static class MessageWriter {
         return buf.WrittenSpan.ToArray();
     }
 
-    // ── 准备阶段消息（大厅 JSON 协议）──
-
     /// <summary>
     /// 写入添加单位请求：{ "type":"prepare_add_unit", "roomId":..., "unitName":..., "camp":... }
     /// </summary>
-    public static byte[] WritePrepareAddUnit(string roomId, string unitName, byte camp) {
+    public static byte[] WritePrepareAddUnit(string roomId, string unitName, string camp) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -269,7 +264,7 @@ public static class MessageWriter {
         writer.WriteString(TypeKey, MessageType.PrepareAddUnit);
         writer.WriteString(RoomIdKey, roomId);
         writer.WriteString(UnitNameKey, unitName);
-        writer.WriteNumber(CampKey, camp);
+        writer.WriteString(CampKey, camp);
         writer.WriteEndObject();
 
         writer.Flush();
@@ -312,7 +307,7 @@ public static class MessageWriter {
     /// 写入准备阶段单位列表通知：
     /// { "type":"prepare_unit_list", "roomId":..., "units":[{"unitName":..., "camp":...}, ...] }
     /// </summary>
-    public static byte[] WritePrepareUnitList(string roomId, IEnumerable<(string UnitName, byte Camp)> units) {
+    public static byte[] WritePrepareUnitList(string roomId, IEnumerable<(string UnitName, string Camp)> units) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -324,7 +319,7 @@ public static class MessageWriter {
         foreach (var (unitName, camp) in units) {
             writer.WriteStartObject();
             writer.WriteString(UnitNameKey, unitName);
-            writer.WriteNumber(CampKey, camp);
+            writer.WriteString(CampKey, camp);
             writer.WriteEndObject();
         }
         writer.WriteEndArray();

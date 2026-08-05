@@ -18,14 +18,19 @@ public struct SyncSkillRequest : ISpanSerializable {
     /// <summary>伤害量（正）或治疗量（负）。纯 Buff 类技能为 0</summary>
     public float DamageOrCureValue;
 
-    /// <summary>伤害类型（仅 IsDamage=true 时有效），对应 Enum_DamageType 转 byte</summary>
+    /// <summary>伤害类型（仅 IsDamage=true 时有效），对应 DamageType 转 byte</summary>
     public byte DamageType;
 
     /// <summary>true 为伤害技能，false 为治疗/Buff 技能</summary>
     public bool IsDamage;
 
+    /// <summary>序列化后的最大字节数。</summary>
     public readonly int MaxSize => 2 + 2 + 2 + 4 + 1 + 1;
 
+    /// <summary>
+    /// 序列化到网络缓冲区。
+    /// </summary>
+    /// <param name="writer">序列化写入器。</param>
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(CasterUnitNetId);
         writer.Put(TargetUnitNetId);
@@ -35,6 +40,10 @@ public struct SyncSkillRequest : ISpanSerializable {
         writer.Put(IsDamage);
     }
 
+    /// <summary>
+    /// 从网络缓冲区反序列化。
+    /// </summary>
+    /// <param name="reader">序列化读取器。</param>
     public void Deserialize(ref SpanReader reader) {
         CasterUnitNetId = reader.GetUShort();
         TargetUnitNetId = reader.GetUShort();

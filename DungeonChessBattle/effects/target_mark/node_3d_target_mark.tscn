@@ -19,5 +19,5 @@ cull_mask = 1
 [node name="Node3dTargetMarkInterRefs" type="Node" parent="."]
 script = ExtResource("4_interrefs")
 TargetDecalRef = NodePath("../Decal_Target_Mark")
-UserUISettingsRes = ExtResource("3_savtm")
+PlayerUISettingsRes = ExtResource("3_savtm")
 DefultColor = Color(0.678431, 0.607843, 0.141176, 1)

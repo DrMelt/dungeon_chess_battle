@@ -15,7 +15,7 @@ offset_bottom = 88.0
 mouse_filter = 1
 icon = ExtResource("1_xjo8s")
 script = ExtResource("2_rvfo7")
-_userInterfaceRes = ExtResource("3_m5lm5")
+_playerInterfaceRes = ExtResource("3_m5lm5")
 _labelCooldownTimeRef = NodePath("Label_CooldownTime")
 
 [node name="Label_CooldownTime" type="Label" parent="." unique_id=1426610171]

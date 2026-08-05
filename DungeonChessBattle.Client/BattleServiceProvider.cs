@@ -57,7 +57,12 @@ public class BattleServiceProvider {
 /// 战斗模式枚举。
 /// </summary>
 public enum BattleMode {
+    /// <summary>未初始化。</summary>
     Uninitialized,
+
+    /// <summary>本地模式（单人离线）。</summary>
     Local,
+
+    /// <summary>网络模式（多人联网）。</summary>
     Network,
 }

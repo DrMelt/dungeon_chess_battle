@@ -10,25 +10,33 @@ namespace DungeonChessBattle;
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
 public partial class MainMenu : BaseGamePanel {
+    /// <summary>日志记录器。</summary>
     private readonly ILogger<MainMenu> _logger = ServiceLocator.GetLogger<MainMenu>();
 
+    /// <summary>服务器连接成功信号。</summary>
     [Signal]
     public delegate void ServerConnectedEventHandler();
 
     #region References
 
+    /// <summary>游戏大厅界面引用，连接成功后切换显示。</summary>
     [Export]
     private GameLobby? _gameLobby;
 
+    /// <summary>服务器管理面板引用。</summary>
     [Export]
     private ServerManagementPanel? _serverMgmtPanel;
 
+    /// <summary>导出引用集合节点。</summary>
     public MainMenuInterRefs? InterRefs {
         get; private set;
     }
 
     #endregion
 
+    /// <summary>
+    /// 节点就绪：获取引用集合、绑定按钮事件、订阅后台服务事件并初始化本地模式。
+    /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
         if (InterRefs is null) {
@@ -72,6 +80,9 @@ public partial class MainMenu : BaseGamePanel {
 
     #region Button Handlers
 
+    /// <summary>
+    /// 点击连接按钮：校验输入并调用客户端服务连接服务器。
+    /// </summary>
     private void OnConnectPressed() {
         string host = InterRefs?.HostInput?.Text?.Trim() ?? "";
         string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
@@ -103,6 +114,9 @@ public partial class MainMenu : BaseGamePanel {
         ServiceLocator.ClientService.Connect(host, port);
     }
 
+    /// <summary>
+    /// 点击服务器管理按钮，切换到服务器管理面板。
+    /// </summary>
     private void OnServerManagePressed() {
         NavigateTo(_serverMgmtPanel);
     }
@@ -111,12 +125,24 @@ public partial class MainMenu : BaseGamePanel {
 
     #region Service Event Handlers
 
+    /// <summary>
+    /// 连接状态变更回调（可能来自后台线程），延迟到 Godot 主线程处理。
+    /// </summary>
+    /// <param name="host">服务器地址。</param>
+    /// <param name="port">服务器端口。</param>
+    /// <param name="connected">是否已连接。</param>
     private void OnConnectionChanged(string host, int port, bool connected) {
         // 使用 CallDeferred 确保 UI 操作在 Godot 主线程执行
         // （ConnectionChanged 可能从后台线程 GameClient-Update 触发）
         CallDeferred(nameof(DeferredConnectionChanged), host, port, connected);
     }
 
+    /// <summary>
+    /// 在主线程处理连接状态变更：连接成功切换到游戏大厅，断开则恢复按钮。
+    /// </summary>
+    /// <param name="host">服务器地址。</param>
+    /// <param name="port">服务器端口。</param>
+    /// <param name="connected">是否已连接。</param>
     private void DeferredConnectionChanged(string host, int port, bool connected) {
         if (connected) {
             if (_logger.IsEnabled(LogLevel.Information))
@@ -151,12 +177,19 @@ public partial class MainMenu : BaseGamePanel {
         }
     }
 
+    /// <summary>
+    /// 更新状态栏文字。
+    /// </summary>
+    /// <param name="message">要显示的状态信息。</param>
     private void UpdateStatus(string message) {
         InterRefs?.StatusLabel?.Text = message;
     }
 
     #endregion
 
+    /// <summary>
+    /// 节点退出场景树时取消订阅连接状态事件。
+    /// </summary>
     public override void _ExitTree() {
         ServiceLocator.ClientService.ConnectionChanged -= OnConnectionChanged;
     }

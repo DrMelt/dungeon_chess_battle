@@ -7,16 +7,23 @@ namespace DungeonChessBattle.Logic.Battle;
 /// PhaseChanged 改为 BattleStarted / BattleEnded 事件。
 /// </summary>
 public class BattleManager {
+    /// <summary>当前战斗阶段。</summary>
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
 
-    /// <summary>战斗已运行的秒数</summary>
+    /// <summary>战斗已运行的秒数。</summary>
     public float ElapsedTime {
         get; private set;
     }
 
+    /// <summary>战斗开始时触发。</summary>
     public event Action? BattleStarted;
+
+    /// <summary>战斗结束时触发。</summary>
     public event Action? BattleEnded;
 
+    /// <summary>
+    /// 开始战斗（从等待/结束阶段切换到进行中并清零计时）。
+    /// </summary>
     public void StartBattle() {
         if (CurrentPhase == BattlePhase.Running)
             return;
@@ -38,6 +45,9 @@ public class BattleManager {
         ElapsedTime += deltaTime;
     }
 
+    /// <summary>
+    /// 结束战斗（切换到完成阶段）。
+    /// </summary>
     public void EndBattle() {
         if (CurrentPhase == BattlePhase.Finished)
             return;

@@ -142,6 +142,7 @@ layout_mode = 2
 size_flags_vertical = 1
 theme_override_font_sizes/font_size = 14
 text = "选择一个房间查看详情"
+autowrap_mode = 3
 
 [node name="JoinButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=481936520]
 layout_mode = 2

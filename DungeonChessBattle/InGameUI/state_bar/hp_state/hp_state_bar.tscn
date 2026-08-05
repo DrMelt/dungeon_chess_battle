@@ -15,7 +15,7 @@ script = ExtResource("1_x7igp")
 
 [node name="HP_StateBarInterRefs" type="Node" parent="." unique_id=203956991 node_paths=PackedStringArray("ProgressBarRef", "LabelPercentRef", "LabelCurrentValueRef", "LabelObjectNameRef")]
 script = ExtResource("4_hpstatebar_interrefs")
-UserUISettingsRef = ExtResource("2_tflsb")
+PlayerUISettingsRef = ExtResource("2_tflsb")
 ProgressBarRef = NodePath("../VBoxContainer/ProgressBar")
 LabelPercentRef = NodePath("../VBoxContainer/Control/MarginContainer/Label_Percent")
 LabelCurrentValueRef = NodePath("../VBoxContainer/Control/MarginContainer/Label_CurrentValue")

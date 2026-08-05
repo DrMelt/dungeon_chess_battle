@@ -11,27 +11,40 @@ namespace DungeonChessBattle.Client;
 /// 子类重写 OnNetworkReceive、OnPeerConnected、OnPeerDisconnected 实现具体协议。
 /// </summary>
 public abstract class NetworkClientBase : INetEventListener {
+    /// <summary>底层 LiteNetLib 网络管理器。</summary>
     protected readonly NetManager _netClient;
+    /// <summary>当前连接的服务端 peer；未连接时为 null。</summary>
     protected NetPeer? _serverPeer;
+    /// <summary>日志记录器。</summary>
     protected readonly ILogger _logger;
 
+    /// <summary>默认连接密钥。</summary>
     public const string ConnectionKey = "DungeonChessBattle";
+    /// <summary>默认服务端端口。</summary>
     protected const int DefaultPort = 10170;
 
-    // 待投递的事件队列（网络线程入队，Update() 线程出队，需线程安全）
+    /// <summary>待投递的事件队列（网络线程入队，Update() 线程出队，需线程安全）。</summary>
     protected readonly System.Collections.Concurrent.ConcurrentQueue<Action> _pendingEventInvocations = new();
 
-    // 连接生命周期事件
+    /// <summary>完全连接成功事件。</summary>
     public event Action? OnFullyConnected;
+    /// <summary>完全断开连接事件。</summary>
     public event Action? OnFullyDisconnected;
 
+    /// <summary>当前是否已连接到服务端。</summary>
     public bool IsConnected => _serverPeer != null;
 
+    /// <param name="logger">日志记录器。</param>
     protected NetworkClientBase(ILogger logger) {
         _logger = logger;
         _netClient = new NetManager(this);
     }
 
+    /// <summary>
+    /// 使用默认连接密钥连接到指定主机。
+    /// </summary>
+    /// <param name="host">目标主机地址。</param>
+    /// <param name="port">目标端口，默认使用 <see cref="DefaultPort"/>。</param>
     public virtual void Connect(string host, int port = DefaultPort) {
         Connect(host, port, ConnectionKey);
     }
@@ -67,6 +80,9 @@ public abstract class NetworkClientBase : INetEventListener {
         _serverPeer = null;
     }
 
+    /// <summary>
+    /// 断开与服务端的连接并停止网络监听。
+    /// </summary>
     public virtual void Disconnect() {
         OnDisconnectCleanup();
         _netClient.Stop();
@@ -77,6 +93,11 @@ public abstract class NetworkClientBase : INetEventListener {
         _serverPeer = null;
     }
 
+    /// <summary>
+    /// 驱动网络事件轮询与待投递事件队列处理。
+    /// 应由主循环每帧调用。
+    /// </summary>
+    /// <param name="delta">距上一帧的秒数。</param>
     public virtual void Update(float delta) {
         _ = delta;
         _netClient.PollEvents();
@@ -131,12 +152,16 @@ public abstract class NetworkClientBase : INetEventListener {
     void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency) {
     }
 
-    // ── 子类必须重写 ──
+    /// <summary>子类实现的网络接收入口。</summary>
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery) {
         var data = reader.GetRemainingBytes();
         OnNetworkReceiveInternal(data);
     }
 
+    /// <summary>
+    /// 子类实现的网络数据接收入口。
+    /// </summary>
+    /// <param name="data">接收到的原始字节数据。</param>
     protected abstract void OnNetworkReceiveInternal(ReadOnlySpan<byte> data);
 
     #endregion

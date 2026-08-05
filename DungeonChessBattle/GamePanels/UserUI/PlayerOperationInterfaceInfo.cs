@@ -4,49 +4,54 @@ namespace DungeonChessBattle;
 
 /// <summary>
 /// 3D 交互桥接 View + ViewModel 层入口（MVVM 模式）。
-/// 连接 Camera3D、Node2d_UserUI、EffectHints，
+/// 连接 Camera3D、PlayerUIRoot、EffectHints，
 /// 封装 UI 交互状态和命令，作为 MainScene 与 UI 系统之间的唯一触点。
 /// </summary>
-public partial class UserOperationInterfaceInfo : Node {
+public partial class PlayerOperationInterfaceInfo : Node {
     #region Exports
 
+    /// <summary>场景 3D 相机引用。</summary>
     [Export]
-    Camera3D? camera3DRef;
+    private Camera3D? camera3DRef;
 
+    /// <summary>玩家 UI 根容器（View 层）引用。</summary>
     [Export]
-    Node2d_UserUI? node2dUiRef;
+    private PlayerUIRoot? playerUiRef;
 
+    /// <summary>玩家界面资源引用。</summary>
     [Export]
-    UserInterfaceRes? userInterfaceRes;
+    private PlayerInterfaceRes? playerInterfaceRes;
 
+    /// <summary>技能效果提示引用。</summary>
     [ExportGroup("Intrinsic Parameter")]
     [Export]
-    EffectHints? effectHintsRef;
+    private EffectHints? effectHintsRef;
 
     #endregion
 
     #region ViewModel State
 
     /// <summary>场景单位集合引用</summary>
-    public UnitsInScene_Show? UnitsInScene {
+    public UnitsInSceneView? UnitsInScene {
         get; set;
     }
-
-    private bool _isWaitingSkillTarget;
-    private bool _isWaitingMoveTarget;
 
     #endregion
 
     #region Bindable Properties (ViewModel)
 
     /// <summary>当前是否在等待技能目标选择</summary>
-    public bool IsWaitingSkillTarget => _isWaitingSkillTarget;
+    public bool IsWaitingSkillTarget {
+        get; private set;
+    }
 
     /// <summary>当前是否在等待移动目标选择</summary>
-    public bool IsWaitingMoveTarget => _isWaitingMoveTarget;
+    public bool IsWaitingMoveTarget {
+        get; private set;
+    }
 
     /// <summary>当前是否在等待任何目标选择</summary>
-    public bool IsWaitingTarget => _isWaitingSkillTarget || _isWaitingMoveTarget;
+    public bool IsWaitingTarget => IsWaitingSkillTarget || IsWaitingMoveTarget;
 
     /// <summary>战斗输入是否被 UI 阻塞（等待目标选择中）</summary>
     public bool IsBlockingInput => IsWaitingTarget;
@@ -55,7 +60,7 @@ public partial class UserOperationInterfaceInfo : Node {
 
     #region Signals
 
-    /// <summary>战斗绑定完成信号（供 View 层 Node2d_UserUI 订阅）</summary>
+    /// <summary>战斗绑定完成信号（供 View 层 PlayerUIRoot 订阅）</summary>
     [Signal]
     public delegate void BattleBoundEventHandler();
 
@@ -78,8 +83,8 @@ public partial class UserOperationInterfaceInfo : Node {
 
     /// <summary>退出战斗：清理 UI 绑定状态</summary>
     public void UnbindFromBattle() {
-        _isWaitingSkillTarget = false;
-        _isWaitingMoveTarget = false;
+        IsWaitingSkillTarget = false;
+        IsWaitingMoveTarget = false;
         EmitSignal(SignalName.BattleUnbound);
     }
 
@@ -88,17 +93,19 @@ public partial class UserOperationInterfaceInfo : Node {
     #region Commands (ViewModel)
 
     /// <summary>View 层通知 VM 正在等待技能目标选择</summary>
+    /// <param name="waiting">是否进入等待技能目标状态。</param>
     public void NotifyWaitingSkillTarget(bool waiting) {
         var wasWaiting = IsWaitingTarget;
-        _isWaitingSkillTarget = waiting;
+        IsWaitingSkillTarget = waiting;
         if (wasWaiting != IsWaitingTarget)
             EmitSignal(SignalName.WaitingTargetChanged, IsWaitingTarget);
     }
 
     /// <summary>View 层通知 VM 正在等待移动目标选择</summary>
+    /// <param name="waiting">是否进入等待移动目标状态。</param>
     public void NotifyWaitingMoveTarget(bool waiting) {
         var wasWaiting = IsWaitingTarget;
-        _isWaitingMoveTarget = waiting;
+        IsWaitingMoveTarget = waiting;
         if (wasWaiting != IsWaitingTarget)
             EmitSignal(SignalName.WaitingTargetChanged, IsWaitingTarget);
     }
@@ -106,8 +113,8 @@ public partial class UserOperationInterfaceInfo : Node {
     /// <summary>取消所有等待状态</summary>
     public void CancelAllWaiting() {
         var wasWaiting = IsWaitingTarget;
-        _isWaitingSkillTarget = false;
-        _isWaitingMoveTarget = false;
+        IsWaitingSkillTarget = false;
+        IsWaitingMoveTarget = false;
         if (wasWaiting)
             EmitSignal(SignalName.WaitingTargetChanged, false);
     }
@@ -116,9 +123,12 @@ public partial class UserOperationInterfaceInfo : Node {
 
     #region Godot Lifecycle
 
+    /// <summary>
+    /// 节点就绪：将 ViewModel 注入到 PlayerUIRoot（View 根容器）。
+    /// </summary>
     public override void _Ready() {
-        // 将 VM（self）注入到 Node2d_UserUI（View 根容器）
-        node2dUiRef?.SetViewModel(this);
+        // 将 VM（self）注入到 PlayerUIRoot（View 根容器）
+        playerUiRef?.SetViewModel(this);
     }
 
     #endregion

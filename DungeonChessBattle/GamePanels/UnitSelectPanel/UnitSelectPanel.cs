@@ -9,9 +9,11 @@ namespace DungeonChessBattle;
 /// 选择后发出 UnitSelected 信号并自动返回 RoomPreparation。
 /// </summary>
 public partial class UnitSelectPanel : BaseGamePanel {
+    /// <summary>单位被选中时发出的信号，参数为单位配置键。</summary>
     [Signal]
     public delegate void UnitSelectedEventHandler(string unitConfigKey);
 
+    /// <summary>导出引用集合节点。</summary>
     private UnitSelectPanelInterRefs? _refs;
 
     /// <summary>
@@ -21,6 +23,9 @@ public partial class UnitSelectPanel : BaseGamePanel {
         ["WhiteMage"] = ("White Mage", GameConfigDB.UnitWhiteMage),
     };
 
+    /// <summary>
+    /// 节点就绪：获取引用集合并绑定返回按钮事件。
+    /// </summary>
     public override void _Ready() {
         _refs = GetNode<UnitSelectPanelInterRefs>("UnitSelectPanelInterRefs");
         if (_refs is null) {
@@ -31,6 +36,9 @@ public partial class UnitSelectPanel : BaseGamePanel {
         _refs.BackButton?.Pressed += GoBack;
     }
 
+    /// <summary>
+    /// 面板打开时填充单位网格。
+    /// </summary>
     protected override void OnPanelOpened() {
         PopulateUnitGrid();
     }
@@ -55,6 +63,10 @@ public partial class UnitSelectPanel : BaseGamePanel {
         }
     }
 
+    /// <summary>
+    /// 单位卡片选中回调：发出选中信号并关闭面板。
+    /// </summary>
+    /// <param name="unitConfigKey">单位配置键。</param>
     private void OnCardSelected(string unitConfigKey) {
         EmitSignal(SignalName.UnitSelected, unitConfigKey);
         ClosePanel();

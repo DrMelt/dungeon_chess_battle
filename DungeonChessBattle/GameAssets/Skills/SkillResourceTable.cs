@@ -16,28 +16,23 @@ namespace DungeonChessBattle.GameAssets.Skills;
 /// </summary>
 [GlobalClass]
 public partial class SkillResourceTable : Resource {
-    // ─── 懒加载单例 ───
-
-    private static SkillResourceTable? _instance;
     private static SkillResourceTable Instance {
         get {
-            if (_instance != null)
-                return _instance;
+            if (field != null)
+                return field;
 
-            _instance = GD.Load<SkillResourceTable>(
+            field = GD.Load<SkillResourceTable>(
                 "res://GameAssets/Skills/res_skill_resource_table.tres");
-            _instance.Initialize();
-            return _instance;
+            field.Initialize();
+            return field;
         }
     }
 
-    // ─── Export：在 Godot 编辑器中拖拽技能资源 ───
-
+    /// <summary>在 Godot 编辑器中拖拽的全部技能资源。</summary>
     [Export]
     public Godot.Collections.Array<UnitSkillBaseGodot> SkillResources { get; set; } = [];
 
-    // ─── 运行时数据结构 ───
-
+    /// <summary>运行时查找字典：SkillConfig → 技能资源副本。</summary>
     private readonly Dictionary<SkillConfig, UnitSkillBaseGodot> _lookup = [];
     private bool _initialized;
 
@@ -60,8 +55,6 @@ public partial class SkillResourceTable : Resource {
 
         _initialized = true;
     }
-
-    // ─── 公共 API ───
 
     /// <summary>
     /// 通过 SkillConfig 查找并创建对应的 Godot 技能资源实例。

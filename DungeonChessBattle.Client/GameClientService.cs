@@ -21,8 +21,6 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     private volatile bool _connected;
 
     // 两个持久客户端实例
-    private readonly LobbyClient _lobbyClient = new(loggerFactory.CreateLogger<LobbyClient>());
-    private readonly RoomBattleClient _roomClient = new(loggerFactory.CreateLogger<RoomBattleClient>());
 
     // 当前活跃的客户端引用
     private NetworkClientBase? _activeClient;
@@ -32,22 +30,16 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
     // 加入房间时暂存的 roomId（房间端口连接成功后通过 OnRoomJoined 通知 UI）
     private string? _pendingJoinRoomId;
-
-    private string _host = "";
-    private int _port;
     private long _connectStartTimestamp;
     private const double TickInterval = 0.05; // 20 Hz
     private const double ConnectTimeoutSeconds = 10.0;
 
+    /// <summary>默认大厅端口。</summary>
     public const int DefaultPort = 10170;
 
-    // ── 身份与会话缓存 ────────────────────────────────────
+    // 身份与会话缓存
 
     /// <summary>客户端生成的持久 playerId（整个会话不变）</summary>
-    private readonly string _playerId = Guid.NewGuid().ToString("N");
-
-    /// <summary>玩家显示名</summary>
-    private string _playerName = "Player";
 
     /// <summary>服务器密码（null 表示无密码开发模式）</summary>
     private string? _serverPassword;
@@ -61,45 +53,61 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     /// <summary>当前房间密码（用于重连验证）</summary>
     private string? _cachedRoomPassword;
 
-    // ── 公开属性 ──────────────────────────────────────────
+    // 公开属性
 
+    /// <summary>是否已连接到服务器（大厅或房间）。</summary>
     public bool IsConnected => _connected;
 
     /// <summary>
     /// 当前活跃的客户端接口（大厅客户端或房间客户端或本地服务）。
     /// </summary>
     public IClientBattleService? Client =>
-        _connected ? _roomClient : _localService;
+        _connected ? RoomClient : _localService;
 
     /// <summary>
     /// 大厅客户端（持久实例，用于发送 JSON 命令和订阅事件）。
     /// </summary>
-    public LobbyClient LobbyClient => _lobbyClient;
+    public LobbyClient LobbyClient { get; } = new(loggerFactory.CreateLogger<LobbyClient>());
 
     /// <summary>
     /// 房间客户端（持久实例，用于 LES Entity 同步）。
     /// </summary>
-    public RoomBattleClient RoomClient => _roomClient;
+    public RoomBattleClient RoomClient { get; } = new(loggerFactory.CreateLogger<RoomBattleClient>());
 
-    public string Host => _host;
-    public int Port => _port;
-    public string PlayerId => _playerId;
-    public string PlayerName => _playerName;
+    /// <summary>服务器主机地址。</summary>
+    public string Host { get; private set; } = "";
 
+    /// <summary>当前监听端口。</summary>
+    public int Port {
+        get; private set;
+    }
+
+    /// <summary>客户端持久玩家 ID。</summary>
+    public string PlayerId { get; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>玩家显示名。</summary>
+    public string PlayerName { get; private set; } = "Player";
+
+    /// <summary>连接状态变化事件。参数：主机、端口、是否已连接。</summary>
     public event Action<string, int, bool>? ConnectionChanged;
 
-    // ── 配置方法（在 Connect 前调用）─────────────────────
+    // 配置方法（在 Connect 前调用）
 
     /// <summary>
     /// 设置玩家身份信息。在 Connect 前调用。
     /// </summary>
     public void Configure(string playerName, string? serverPassword = null) {
-        _playerName = playerName;
+        PlayerName = playerName;
         _serverPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
     }
 
-    // ── 连接管理 ──────────────────────────────────────────
+    // 连接管理
 
+    /// <summary>
+    /// 连接服务器大厅（默认大厅端口）。
+    /// </summary>
+    /// <param name="host">服务器主机地址。</param>
+    /// <param name="port">大厅端口。</param>
     public void Connect(string host, int port = DefaultPort) {
         if (_connected) {
             _logger.LogWarning("已连接到服务器");
@@ -107,16 +115,16 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         }
 
         try {
-            _host = host;
-            _port = port;
+            Host = host;
+            Port = port;
 
             WirePersistentEvents();
 
             // 使用服务器密码作为 ConnectionKey（无密码时使用默认值）
             string connectionKey = _serverPassword ?? NetworkClientBase.ConnectionKey;
-            _lobbyClient.Connect(host, port, connectionKey);
+            LobbyClient.Connect(host, port, connectionKey);
 
-            _activeClient = _lobbyClient;
+            _activeClient = LobbyClient;
             _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
 
             StartUpdateLoop();
@@ -136,7 +144,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _cachedRoomId = roomId;
         _cachedRoomPassword = roomPassword;
 
-        _lobbyClient.RequestCreateRoom(roomId, _playerName, _playerId,
+        LobbyClient.RequestCreateRoom(roomId, PlayerName, PlayerId,
             roomPassword, config, _serverPassword);
     }
 
@@ -144,7 +152,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
     /// 请求房间列表（招募板）。
     /// </summary>
     public void RequestListRooms() {
-        _lobbyClient.RequestListRooms();
+        LobbyClient.RequestListRooms();
     }
 
     /// <summary>
@@ -155,12 +163,12 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _cachedRoomPassword = roomPassword;
 
         var msg = MessageWriter.WriteRoomRequestFull(
-            MessageType.JoinRoom, roomId, _playerName,
-            roomPassword, _playerId, _serverPassword);
-        _lobbyClient.SendCommand(msg);
+            MessageType.JoinRoom, roomId, PlayerName,
+            roomPassword, PlayerId, _serverPassword);
+        LobbyClient.SendCommand(msg);
     }
 
-    // ── 房间重定向处理 ───────────────────────────────────
+    // 房间重定向处理
 
     /// <summary>
     /// 重连到房间端口。大厅连接保持不断开。
@@ -173,16 +181,16 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
         _reconnecting = true;
         try {
-            _host = host;
-            _port = roomPort;
+            Host = host;
+            Port = roomPort;
             _cachedRoomPort = roomPort;
             _cachedRoomId = roomId;
             _connected = false;
             _pendingJoinRoomId = roomId;
 
             // 使用客户端持久 _playerId 作为连接密钥（服务端白名单验证）
-            _roomClient.Reconnect(host, roomPort, _playerId);
-            _activeClient = _roomClient;
+            RoomClient.Reconnect(host, roomPort, PlayerId);
+            _activeClient = RoomClient;
 
             _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         }
@@ -197,7 +205,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         }
     }
 
-    // ── 断线自动重连 ──────────────────────────────────────
+    // 断线自动重连
 
     /// <summary>
     /// 当房间连接意外断开时，尝试通过大厅重新获取重定向。
@@ -212,18 +220,18 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
         _reconnecting = true;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, _playerId);
+            _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, PlayerId);
 
-        if (!_lobbyClient.IsConnected) {
+        if (!LobbyClient.IsConnected) {
             // 事件驱动：等待大厅连接建立后再发送重连请求
             string connectionKey = _serverPassword ?? NetworkClientBase.ConnectionKey;
             void handler() {
-                _lobbyClient.OnFullyConnected -= handler;
+                LobbyClient.OnFullyConnected -= handler;
                 SendReconnectRequest();
             }
 
-            _lobbyClient.OnFullyConnected += handler;
-            _lobbyClient.Connect(_host, DefaultPort, connectionKey);
+            LobbyClient.OnFullyConnected += handler;
+            LobbyClient.Connect(Host, DefaultPort, connectionKey);
         }
         else {
             SendReconnectRequest(); // 大厅已连接，直接发送
@@ -237,23 +245,29 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         var cachedRoomId = _cachedRoomId ??
             throw new System.InvalidOperationException("cachedRoomId is not set before reconnect request.");
         var msg = MessageWriter.WriteReconnectRoom(
-            cachedRoomId, _playerId, _playerName,
+            cachedRoomId, PlayerId, PlayerName,
             _cachedRoomPassword, _serverPassword);
-        _lobbyClient.SendCommand(msg);
+        LobbyClient.SendCommand(msg);
     }
 
-    // ── 内部连接回调 ─────────────────────────────────────
+    // 内部连接回调
 
+    /// <summary>
+    /// 连接成功回调：清除超时计时并通知状态变更。
+    /// </summary>
     private void OnConnectionEstablished() {
         _connectStartTimestamp = 0;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("已连接到 {Host}:{Port}", _host, _port);
-        ConnectionChanged?.Invoke(_host, _port, true);
+            _logger.LogInformation("已连接到 {Host}:{Port}", Host, Port);
+        ConnectionChanged?.Invoke(Host, Port, true);
     }
 
+    /// <summary>
+    /// 连接断开回调：停止更新循环并通知状态变更。
+    /// </summary>
     private void OnConnectionLost() {
-        if (_lobbyClient.IsConnected || _roomClient.IsConnected) {
-            _connected = _lobbyClient.IsConnected || _roomClient.IsConnected;
+        if (LobbyClient.IsConnected || RoomClient.IsConnected) {
+            _connected = LobbyClient.IsConnected || RoomClient.IsConnected;
             return;
         }
 
@@ -269,20 +283,23 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             _updateThread = null;
         }
         _logger.LogInformation("连接已断开");
-        ConnectionChanged?.Invoke(_host, _port, false);
+        ConnectionChanged?.Invoke(Host, Port, false);
     }
 
+    /// <summary>
+    /// 断开全部连接并清理活动客户端状态。
+    /// </summary>
     public void Disconnect() {
         StopUpdateLoop();
 
         try {
-            _lobbyClient.Disconnect();
+            LobbyClient.Disconnect();
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "大厅客户端断开异常");
         }
         try {
-            _roomClient.Disconnect();
+            RoomClient.Disconnect();
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "房间客户端断开异常");
@@ -293,9 +310,12 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _cachedRoomId = null;
 
         _logger.LogInformation("连接已断开");
-        ConnectionChanged?.Invoke(_host, _port, false);
+        ConnectionChanged?.Invoke(Host, Port, false);
     }
 
+    /// <summary>
+    /// 初始化本地模式（单人离线），使用 GameLogicService 作为服务端与客户端。
+    /// </summary>
     public void InitLocalMode() {
         if (_connected) {
             _logger.LogInformation("已在网络模式，跳过本地初始化");
@@ -310,32 +330,36 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
     private bool _eventsWired;
 
+    /// <summary>
+    /// 绑定大厅与房间客户端的持久事件（幂等，仅执行一次）。
+    /// 包括连接建立/断开、重定向、重连成功与失败等处理。
+    /// </summary>
     private void WirePersistentEvents() {
         if (_eventsWired)
             return;
         _eventsWired = true;
 
-        // ── 大厅客户端 ──
-        _lobbyClient.OnFullyConnected += () => {
+        // 大厅客户端
+        LobbyClient.OnFullyConnected += () => {
             _connected = true;
             OnConnectionEstablished();
         };
-        _lobbyClient.OnFullyDisconnected += () => {
-            _connected = _roomClient.IsConnected;
+        LobbyClient.OnFullyDisconnected += () => {
+            _connected = RoomClient.IsConnected;
             OnConnectionLost();
         };
-        _lobbyClient.OnRedirectToRoom += (roomId, roomPort) => {
+        LobbyClient.OnRedirectToRoom += (roomId, roomPort) => {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("收到重定向: {RoomId} → {Host}:{Port}", roomId, _host, roomPort);
-            ReconnectToRoom(_host, roomPort, roomId);
+                _logger.LogInformation("收到重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
+            ReconnectToRoom(Host, roomPort, roomId);
         };
-        _lobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => {
+        LobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, _host, roomPort);
+                _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
             _cachedRoomPort = roomPort;
-            ReconnectToRoom(_host, roomPort, roomId);
+            ReconnectToRoom(Host, roomPort, roomId);
         };
-        _lobbyClient.OnReconnectFailed += (error) => {
+        LobbyClient.OnReconnectFailed += (error) => {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("重连失败: {Error}", error);
             _reconnecting = false;
@@ -343,8 +367,8 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             OnConnectionLost();
         };
 
-        // ── 房间客户端 ──
-        _roomClient.OnFullyConnected += () => {
+        // 房间客户端
+        RoomClient.OnFullyConnected += () => {
             _connected = true;
             _reconnecting = false;
             OnConnectionEstablished();
@@ -353,11 +377,11 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             var roomId = _pendingJoinRoomId;
             if (roomId != null) {
                 _pendingJoinRoomId = null;
-                _lobbyClient.TriggerRoomJoined(roomId);
+                LobbyClient.TriggerRoomJoined(roomId);
             }
         };
-        _roomClient.OnFullyDisconnected += () => {
-            _connected = _lobbyClient.IsConnected;
+        RoomClient.OnFullyDisconnected += () => {
+            _connected = LobbyClient.IsConnected;
 
             // 如果房间连接断开且不在重连中，尝试自动重连
             if (!_reconnecting && !string.IsNullOrEmpty(_cachedRoomId)) {
@@ -368,7 +392,7 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
                 OnConnectionLost();
             }
         };
-        _roomClient.OnReconnectSucceeded += (roomId) => {
+        RoomClient.OnReconnectSucceeded += (roomId) => {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("重连成功: {RoomId}", roomId);
         };
@@ -378,6 +402,9 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
 
     #region Update Loop
 
+    /// <summary>
+    /// 启动后台更新循环（若未运行）。
+    /// </summary>
     private void StartUpdateLoop() {
         if (_running)
             return;
@@ -390,6 +417,9 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _updateThread.Start();
     }
 
+    /// <summary>
+    /// 停止后台更新循环并等待线程退出。
+    /// </summary>
     private void StopUpdateLoop() {
         _running = false;
         if (_updateThread != null && Thread.CurrentThread != _updateThread) {
@@ -398,8 +428,11 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         _updateThread = null;
     }
 
+    /// <summary>
+    /// 连接超时处理：断开活动客户端并通知状态变更。
+    /// </summary>
     private void HandleConnectionTimeout() {
-        _logger.LogWarning("连接超时 ({Host}:{Port})", _host, _port);
+        _logger.LogWarning("连接超时 ({Host}:{Port})", Host, Port);
         _connectStartTimestamp = 0;
         _running = false;
         _updateThread = null;
@@ -412,9 +445,12 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
         }
         _activeClient = null;
 
-        ConnectionChanged?.Invoke(_host, _port, false);
+        ConnectionChanged?.Invoke(Host, Port, false);
     }
 
+    /// <summary>
+    /// 后台更新循环：按 20Hz 驱动大厅与房间客户端的帧更新，并监测连接超时。
+    /// </summary>
     private void RunUpdate() {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         double lastTick = 0;
@@ -426,8 +462,8 @@ public sealed class GameClientService(ILoggerFactory loggerFactory) {
             if (delta >= TickInterval) {
                 lastTick = now;
                 try {
-                    _lobbyClient.Update((float)delta);
-                    _roomClient.Update((float)delta);
+                    LobbyClient.Update((float)delta);
+                    RoomClient.Update((float)delta);
                 }
                 catch (Exception ex) {
                     _logger.LogWarning(ex, "客户端更新异常");

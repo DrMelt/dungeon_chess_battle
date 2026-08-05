@@ -11,8 +11,13 @@ using Godot;
 
 namespace DungeonChessBattle;
 
+/// <summary>
+/// Godot 单位状态资源，桥接 UnitConfig 配置与运行时 UnitModel 逻辑。
+/// 负责属性同步、技能施放、仇恨、Buff、伤害结算与状态更新。
+/// </summary>
 [GlobalClass]
 public partial class UnitState : Resource, IUnitState {
+    /// <summary>运行时单位数据模型，懒加载创建。</summary>
     private UnitModel? _model;
 
     /// <summary>
@@ -27,57 +32,84 @@ public partial class UnitState : Resource, IUnitState {
 
     #region Export
 
+    /// <summary>单位展示名称。</summary>
     [Export]
-    string _UnitStateName = "UnitStateName";
+    private string _UnitStateName = "UnitStateName";
+    /// <summary>单位展示名称（同步自导出字段）。</summary>
     public string UnitStateName {
         get => EnsureSynced().UnitStateName;
         set => EnsureSynced().UnitStateName = value;
     }
 
+    /// <summary>单位技能列表。</summary>
     [Export]
-    Godot.Collections.Array<UnitSkillBaseGodot>? _skillsList;
+    private Godot.Collections.Array<UnitSkillBaseGodot>? _skillsList;
+    /// <summary>单位技能列表（懒加载创建；未配置时从技能配置表自动构建）。</summary>
     public Godot.Collections.Array<UnitSkillBaseGodot> SkillsList => _skillsList ??= [];
 
 
+    /// <summary>单位身体半径。</summary>
     public float BodyRadius => EnsureSynced().BodyRadius;
 
+    /// <summary>单位所属阵营列表。</summary>
     [Export]
-    string[] _camps = [];
+    private string[] _camps = [];
+    /// <summary>单位所属阵营列表（同步自导出字段）。</summary>
     public List<string> Camps => EnsureSynced().Camps;
 
+    /// <summary>单位最大生命值。</summary>
     public float MaxHealth => EnsureSynced().MaxHealth;
 
+    /// <summary>单位当前生命值。</summary>
     [Export]
-    float _health = 1000;
+    private float _health = 1000;
+    /// <summary>单位当前生命值（同步自导出字段）。</summary>
     public float Health {
         get => EnsureSynced().Health;
         set => EnsureSynced().Health = value;
     }
 
+    /// <summary>单位护盾值（当前为静态占位，恒为 0）。</summary>
     public static float Shield => 0.0f;
 
+    /// <summary>生命值与护盾值总和。</summary>
     public float Health_Shield => Model.HealthShield;
+    /// <summary>当前生命值百分比（0~1）。</summary>
     public float Health_Percent => Model.HealthPercent;
+    /// <summary>生命值与护盾值总和百分比（0~1）。</summary>
     public float Health_Shield_Percent => Model.HealthShieldPercent;
 
+    /// <summary>治疗强度。</summary>
     public float CureIntensity => EnsureSynced().CureIntensity;
 
+    /// <summary>物理攻击基础值。</summary>
     public float PhysicalAttackBase => EnsureSynced().PhysicalAttackBase;
 
+    /// <summary>受到的物理伤害百分比修正。</summary>
     public float PhysicalTakePercent => EnsureSynced().PhysicalTakePercent;
 
+    /// <summary>魔法攻击基础值。</summary>
     public float MagicAttackBase => EnsureSynced().MagicAttackBase;
 
+    /// <summary>受到的魔法伤害百分比修正。</summary>
     public float MagicTakePercent => EnsureSynced().MagicTakePercent;
 
+    /// <summary>基础移动速度。</summary>
     public float BaseSpeed => EnsureSynced().BaseSpeed;
+    /// <summary>当前移动速度。</summary>
     public float MoveSpeed => Model.MoveSpeed;
 
+    /// <summary>单位世界位置。</summary>
     [ExportGroup("Runtime Parameters")]
     [Export]
-    Vector3 _position = Vector3.Zero;
+    private Vector3 _position = Vector3.Zero;
+    /// <summary>单位世界位置。</summary>
     public Vector3 Position => _position;
     System.Numerics.Vector3 IUnitState.Position => new(_position.X, _position.Y, _position.Z);
+    /// <summary>
+    /// 设置单位全局位置；位置变化时同步到运行模型并触发移动事件。
+    /// </summary>
+    /// <param name="position">新的世界坐标。</param>
     public void SetGlobalPosition(Vector3 position) {
         if (_position != position) {
             _position = position;
@@ -89,9 +121,15 @@ public partial class UnitState : Resource, IUnitState {
         SpellNewSkill(null);
     }
 
+    /// <summary>单位朝向方向。</summary>
     [Export]
-    Vector3 _lookAt_Dir = Vector3.Forward;
+    private Vector3 _lookAt_Dir = Vector3.Forward;
+    /// <summary>单位朝向方向。</summary>
     public Vector3 LookAt_Dir => _lookAt_Dir;
+    /// <summary>
+    /// 设置单位朝向方向；水平化并归一化后存储。
+    /// </summary>
+    /// <param name="lookAt_Dir">目标朝向方向向量。</param>
     public void SetLookAt_Dir(Vector3 lookAt_Dir) {
         lookAt_Dir.Y = 0;
         if (_lookAt_Dir != lookAt_Dir) {
@@ -99,34 +137,48 @@ public partial class UnitState : Resource, IUnitState {
         }
     }
 
+    /// <summary>所属场景单位集合资源。</summary>
     [Export]
-    UnitsInScene? unitsInSceneRes;
+    private UnitsInScene? unitsInSceneRes;
+    /// <summary>动作时间表资源。</summary>
     [Export]
-    MotionTimeTable? motionTimeTable;
+    private MotionTimeTable? motionTimeTable;
 
-    [ExportSubgroup("Spell")]
-    [Export]
-    UnitSkillBaseGodot? spellingSkill;
-    public UnitSkillBaseGodot? SpellingSkill => spellingSkill;
+    /// <summary>当前正在读条施放的技能。</summary>
+    [field: ExportSubgroup("Spell")]
+    [field: Export]
+    public UnitSkillBaseGodot? SpellingSkill {
+        get; private set;
+    }
 
+    /// <summary>公共冷却（GCD）剩余时间。</summary>
     [Export]
-    float gcdTime;
+    private float gcdTime;
 
+    /// <summary>仇恨值字典（单位名 → 仇恨值）。</summary>
     [ExportSubgroup("Hate")]
     [Export]
-    Godot.Collections.Dictionary<string, float>? _hates;
+    private Godot.Collections.Dictionary<string, float>? _hates;
     #endregion
 
     #region Events
 
-    public Action<float>? OnHealthChangedEnvent;
-    public Action<float>? OnMaxHealthChangedEnvent;
-    public Action<UnitState, float, Enum_DamageType>? OnTookDamageEvent;
+    /// <summary>生命值变化事件。</summary>
+    public Action<float>? OnHealthChangedEvent;
+    /// <summary>最大生命值变化事件。</summary>
+    public Action<float>? OnMaxHealthChangedEvent;
+    /// <summary>受击事件。</summary>
+    public Action<UnitState, float, DamageType>? OnTookDamageEvent;
+    /// <summary>Buff 添加事件。</summary>
     public Action<UnitState, BuffBaseGodot>? OnBuffAddedEvent;
+    /// <summary>Buff 移除事件。</summary>
     public Action<UnitState, BuffBaseGodot>? OnBuffRemovedEvent;
 
     #endregion
 
+    /// <summary>
+    /// 确保运行时模型已创建；未创建时依据 Config 懒加载生成并同步导出字段。
+    /// </summary>
     private UnitModel EnsureSynced() {
         if (_model != null)
             return _model;
@@ -158,19 +210,29 @@ public partial class UnitState : Resource, IUnitState {
         return _model;
     }
 
-    private void OnModelHealthChanged(float health) => OnHealthChangedEnvent?.Invoke(health);
-    private void OnModelMaxHealthChanged(float maxHealth) => OnMaxHealthChangedEnvent?.Invoke(maxHealth);
-    private void OnModelTookDamage(UnitModel model, float damage, Enum_DamageType type) => OnTookDamageEvent?.Invoke(this, damage, type);
+    /// <summary>模型生命值变化回调。</summary>
+    private void OnModelHealthChanged(float health) => OnHealthChangedEvent?.Invoke(health);
+    /// <summary>模型最大生命值变化回调。</summary>
+    private void OnModelMaxHealthChanged(float maxHealth) => OnMaxHealthChangedEvent?.Invoke(maxHealth);
+    /// <summary>模型受击回调。</summary>
+    private void OnModelTookDamage(UnitModel model, float damage, DamageType type) => OnTookDamageEvent?.Invoke(this, damage, type);
 
-    public void InvokeEnvents() {
-        OnHealthChangedEnvent?.Invoke(Health);
-        OnMaxHealthChangedEnvent?.Invoke(MaxHealth);
+    /// <summary>
+    /// 手动触发生命周期事件通知。
+    /// </summary>
+    public void InvokeEvents() {
+        OnHealthChangedEvent?.Invoke(Health);
+        OnMaxHealthChangedEvent?.Invoke(MaxHealth);
         // TODO: invoke other events
     }
 
     #region Skill
 
-    void UpdateSkillState(double deltaTime) {
+    /// <summary>
+    /// 更新技能冷却并驱动当前读条技能。
+    /// </summary>
+    /// <param name="deltaTime">距上一帧的秒数。</param>
+    private void UpdateSkillState(double deltaTime) {
         gcdTime -= (float)deltaTime;
         EnsureSynced();
 
@@ -181,22 +243,29 @@ public partial class UnitState : Resource, IUnitState {
         CallSpellingSkill();
     }
 
+    /// <summary>
+    /// 开始施放新技能：中断当前读条技能并替换为新技能。
+    /// </summary>
+    /// <param name="unitSkillBase">要施放的技能。</param>
     public void SpellNewSkill(IUnitSkill? unitSkillBase) {
-        spellingSkill?.SpellBroked();
+        SpellingSkill?.SpellBroked();
 
-        spellingSkill = unitSkillBase as UnitSkillBaseGodot;
+        SpellingSkill = unitSkillBase as UnitSkillBaseGodot;
         CallSpellingSkill();
     }
     void IUnitState.SpellNewSkill(IUnitSkill unitSkillBase) {
         SpellNewSkill(unitSkillBase);
     }
 
-    void CallSpellingSkill() {
-        if (spellingSkill == null) {
+    /// <summary>
+    /// 驱动当前读条技能：吟唱完成时设置 GCD 并结束施放。
+    /// </summary>
+    private void CallSpellingSkill() {
+        if (SpellingSkill == null) {
             return;
         }
-        if (spellingSkill.CallSkillSpelling()) {
-            gcdTime = spellingSkill.GCDTime;
+        if (SpellingSkill.CallSkillSpelling()) {
+            gcdTime = SpellingSkill.GCDTime;
             SpellNewSkill(null);
         }
     }
@@ -204,6 +273,10 @@ public partial class UnitState : Resource, IUnitState {
 
     #region Hate
 
+    /// <summary>
+    /// 获取仇恨值最高的单位名称。
+    /// </summary>
+    /// <returns>最高仇恨单位名，无则返回 null。</returns>
     public string? GetMaxHateUnitName() {
         return EnsureSynced().GetMaxHateUnitName();
     }
@@ -211,34 +284,43 @@ public partial class UnitState : Resource, IUnitState {
 
     #region BUFF
 
-    List<BuffBaseGodot> buffList = [];
-    public List<BuffBaseGodot> BuffList => buffList;
+    /// <summary>当前生效的 Buff 列表。</summary>
+    public List<BuffBaseGodot> BuffList { get; private set; } = [];
 
+    /// <summary>
+    /// 添加 Buff：已有同类型则叠加层数，否则新增并触发事件。
+    /// </summary>
+    /// <param name="buff">要添加的 Buff。</param>
     public void AddBuff(IBuff buff) {
         if (buff is not BuffBaseGodot godotBuff)
             return;
 
         EnsureSynced().AddBuff(godotBuff);
 
-        BuffBaseGodot? find = buffList.Find(b => b.BuffName == godotBuff.BuffName);
+        BuffBaseGodot? find = BuffList.Find(b => b.BuffName == godotBuff.BuffName);
         if (find != null) {
             find.AddSuperpositions(godotBuff);
         }
         else {
-            buffList.Add(godotBuff);
+            BuffList.Add(godotBuff);
             OnBuffAddedEvent?.Invoke(this, godotBuff);
         }
     }
 
+    /// <summary>
+    /// 移除 Buff 并触发移除事件。
+    /// </summary>
+    /// <param name="buff">要移除的 Buff。</param>
     public void RemoveBuff(IBuff buff) {
         if (buff is not BuffBaseGodot godotBuff)
             return;
 
         EnsureSynced().RemoveBuff(godotBuff);
-        buffList.RemoveAll(b => b.BuffName == godotBuff.BuffName);
+        BuffList.RemoveAll(b => b.BuffName == godotBuff.BuffName);
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 
+    /// <summary>战斗服务提供者引用（由场景初始化注入）。</summary>
     private BattleServiceProvider? _battleServiceProvider;
 
     /// <summary>
@@ -248,6 +330,10 @@ public partial class UnitState : Resource, IUnitState {
         _battleServiceProvider = provider;
     }
 
+    /// <summary>
+    /// 更新所有 Buff 计时；过期 Buff 自动移除并触发事件。
+    /// </summary>
+    /// <param name="deltaTime">距上次更新的秒数。</param>
     public void UpdateBuffList(double deltaTime) {
         if (_battleServiceProvider != null) {
             // roomId 当前不可用（UnitState 层缺少房间上下文），
@@ -259,7 +345,7 @@ public partial class UnitState : Resource, IUnitState {
         }
 
         List<BuffBaseGodot> tempList = [];
-        foreach (BuffBaseGodot buffBase in buffList) {
+        foreach (BuffBaseGodot buffBase in BuffList) {
             if (buffBase.IsAlive) {
                 tempList.Add(buffBase);
             }
@@ -268,39 +354,73 @@ public partial class UnitState : Resource, IUnitState {
             }
         }
 
-        buffList = tempList;
+        BuffList = tempList;
     }
     #endregion
 
     #region DAMAGE
 
-    public float TakeDamage(float damageAmount, Enum_DamageType damageType) {
+    /// <summary>
+    /// 受到伤害结算。
+    /// </summary>
+    /// <param name="damageAmount">原始伤害值。</param>
+    /// <param name="damageType">伤害类型。</param>
+    /// <returns>实际受到的伤害值。</returns>
+    public float TakeDamage(float damageAmount, DamageType damageType) {
         return EnsureSynced().TakeDamage(damageAmount, damageType);
     }
 
+    /// <summary>
+    /// 计算物理伤害实际值（含免伤修正）。
+    /// </summary>
+    /// <param name="physicalDamage">原始物理伤害。</param>
+    /// <returns>修正后的物理伤害。</returns>
     public float PhysicalDamageAmount(float physicalDamage) {
         return EnsureSynced().PhysicalDamageAmount(physicalDamage);
     }
 
+    /// <summary>
+    /// 计算魔法伤害实际值（含免伤修正）。
+    /// </summary>
+    /// <param name="magicDamage">原始魔法伤害。</param>
+    /// <returns>修正后的魔法伤害。</returns>
     public float MagicDamageAmount(float magicDamage) {
         return EnsureSynced().MagicDamageAmount(magicDamage);
     }
 
     #endregion
 
+    /// <summary>
+    /// 计算治疗效果实际值。
+    /// </summary>
+    /// <param name="curePotency">原始治疗量。</param>
+    /// <returns>实际治疗量。</returns>
     public float CureAmount(float curePotency) {
         return EnsureSynced().CureAmount(curePotency);
     }
 
+    /// <summary>
+    /// 直接恢复生命值。
+    /// </summary>
+    /// <param name="health">要恢复的生命值。</param>
+    /// <returns>实际恢复值。</returns>
     public float RestoreHealth(float health) {
         return EnsureSynced().RestoreHealth(health);
     }
 
     #region Update
 
+    /// <summary>
+    /// 每帧更新单位技能状态。
+    /// </summary>
+    /// <param name="delta">距上一帧的秒数。</param>
     internal void UpdateState(double delta) {
         UpdateSkillState(delta);
     }
+    /// <summary>
+    /// 按间隔更新单位 Buff 状态。
+    /// </summary>
+    /// <param name="delta">距上次更新的秒数。</param>
     internal void UpdateStateInterval(double delta) {
         UpdateBuffList(delta);
     }

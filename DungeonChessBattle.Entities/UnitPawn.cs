@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Core.Enums;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -10,44 +11,87 @@ namespace DungeonChessBattle.Entities;
 /// 逐步替代 UnitSyncEntity（回合制纯数据载体）。
 /// </summary>
 public class UnitPawn : PawnLogic {
-    // ── RPC ──────────────────────────────────────────────
     private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
 
-    // ── SyncVars ─────────────────────────────────────────
+    /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
 
+    /// <summary>单位位置（XZ 平面）。</summary>
     public SyncVar<Vector2> Position;
+
+    /// <summary>单位朝向角。</summary>
     public SyncVar<float> Rotation;
+
+    /// <summary>当前生命值。</summary>
     public SyncVar<float> Health;
+
+    /// <summary>最大生命值。</summary>
     public SyncVar<float> MaxHealth;
-    public SyncVar<byte> Camp;
+
+    /// <summary>阵营字符串标识（如 "Camp_A"、"Camp_B"）。</summary>
+    public readonly SyncString Camp = new();
+
+    /// <summary>单位状态（0=存活，1=死亡）。</summary>
     public SyncVar<byte> UnitState;
+
+    /// <summary>剩余全局冷却时间（秒）。</summary>
     public SyncVar<float> GcdRemaining;
+
+    /// <summary>物理攻击基础系数（伤害倍率）。</summary>
     public SyncVar<float> PhysicalAttackBase;
+
+    /// <summary>魔法攻击基础系数（伤害倍率）。</summary>
     public SyncVar<float> MagicAttackBase;
+
+    /// <summary>物理伤害承受系数（减免倍率）。</summary>
     public SyncVar<float> PhysicalTakePercent;
+
+    /// <summary>魔法伤害承受系数（减免倍率）。</summary>
     public SyncVar<float> MagicTakePercent;
+
+    /// <summary>治疗强度系数（治疗量倍率）。</summary>
     public SyncVar<float> CureIntensity;
+
+    /// <summary>基础移动速度。</summary>
     public SyncVar<float> BaseSpeed;
 
+    /// <summary>单位当前持有的 Buff 列表。</summary>
     public readonly SyncList<SyncBuffData> BuffsList = [];
+
+    /// <summary>单位拥有的技能类型 ID 列表（对应配置表）。</summary>
     public readonly SyncList<ushort> SkillIds = [];
+
+    /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
-    // ── 事件（客户端 UI 层监听） ──────────────────────────
+    /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
     public event Action<UnitPawn, float, float>? HealthChanged;
+
+    /// <summary>单位死亡事件。</summary>
     public event Action<UnitPawn>? UnitDied;
+
+    /// <summary>添加 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffAdded;
+
+    /// <summary>移除 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
 
+    /// <summary>技能施放请求事件。</summary>
     public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
 
+    /// <summary>
+    /// 初始化单位 Pawn 实体。
+    /// </summary>
+    /// <param name="entityParams">实体框架参数。</param>
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
+    /// <summary>
+    /// 实体构造完成回调：初始化单位默认属性值。
+    /// </summary>
     protected override void OnConstructed() {
         Health.Value = 1000f;
         MaxHealth.Value = 1000f;
-        Camp.Value = 0;
+        Camp.Value = string.Empty;
         UnitState.Value = 0;
         PhysicalAttackBase.Value = 1.0f;
         MagicAttackBase.Value = 1.0f;
@@ -57,6 +101,10 @@ public class UnitPawn : PawnLogic {
         BaseSpeed.Value = 2.0f;
     }
 
+    /// <summary>
+    /// 注册 RPC 动作：技能施放请求（在服务端执行）。
+    /// </summary>
+    /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {
         base.RegisterRPC(ref r);
         r.CreateRPCAction<UnitPawn, SyncSkillRequest>(
@@ -69,10 +117,18 @@ public class UnitPawn : PawnLogic {
         SkillCastRequested?.Invoke(this, req);
     }
 
+    /// <summary>
+    /// 客户端调用：请求施放技能。
+    /// </summary>
+    /// <param name="req">技能施放请求数据。</param>
     public void RequestCastSkill(SyncSkillRequest req) {
         ExecuteRPC(CastSkillRPC, req);
     }
 
+    /// <summary>
+    /// 服务端调用：设置生命值。生命值变化时触发事件，降至 0 时标记死亡。
+    /// </summary>
+    /// <param name="newHealth">新的生命值。</param>
     public void ServerSetHealth(float newHealth) {
         if (!IsServer)
             return;
@@ -87,6 +143,10 @@ public class UnitPawn : PawnLogic {
         }
     }
 
+    /// <summary>
+    /// 服务端调用：添加一个 Buff。可叠加类型的同名 Buff 已存在时叠加层数。
+    /// </summary>
+    /// <param name="buffData">要添加的 Buff 数据。</param>
     public void ServerAddBuff(SyncBuffData buffData) {
         if (!IsServer)
             return;
@@ -105,6 +165,10 @@ public class UnitPawn : PawnLogic {
         BuffAdded?.Invoke(this, buffData);
     }
 
+    /// <summary>
+    /// 服务端调用：按索引移除一个 Buff。
+    /// </summary>
+    /// <param name="index">Buff 在列表中的索引。</param>
     public void ServerRemoveBuffAt(int index) {
         if (!IsServer)
             return;
@@ -115,6 +179,11 @@ public class UnitPawn : PawnLogic {
         BuffRemoved?.Invoke(this, removed);
     }
 
+    /// <summary>
+    /// 服务端调用：更新指定 Buff 的剩余持续时间。
+    /// </summary>
+    /// <param name="index">Buff 在列表中的索引。</param>
+    /// <param name="newRemaining">新的剩余时间（秒）。</param>
     public void ServerUpdateBuffDuration(int index, float newRemaining) {
         if (!IsServer)
             return;
@@ -125,6 +194,11 @@ public class UnitPawn : PawnLogic {
         BuffsList[index] = buff;
     }
 
+    /// <summary>
+    /// 服务端调用：添加或累加对目标单位的仇恨值。
+    /// </summary>
+    /// <param name="targetUnitNetId">目标单位的 NetId。</param>
+    /// <param name="hateValue">要累加的仇恨值。</param>
     public void ServerAddHate(ushort targetUnitNetId, float hateValue) {
         if (!IsServer)
             return;
@@ -139,6 +213,11 @@ public class UnitPawn : PawnLogic {
         HatesList.Add(new SyncHateData { TargetUnitNetId = targetUnitNetId, HateValue = hateValue });
     }
 
+    /// <summary>
+    /// 按移动方向推进位置（移动向量超长时归一化）。
+    /// </summary>
+    /// <param name="moveDir">移动方向向量。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
     public void ApplyMovement(Vector2 moveDir, float deltaTime) {
         if (moveDir.LengthSquared() > 1f)
             moveDir = Vector2.Normalize(moveDir);
@@ -146,6 +225,10 @@ public class UnitPawn : PawnLogic {
         Position.Value += moveDir * BaseSpeed.Value * deltaTime;
     }
 
+    /// <summary>
+    /// 按帧递减剩余全局冷却时间。
+    /// </summary>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
     public void UpdateCooldowns(float deltaTime) {
         if (GcdRemaining.Value > 0)
             GcdRemaining.Value = Math.Max(0, GcdRemaining.Value - deltaTime);

@@ -17,25 +17,27 @@ public class GameConfigDB : IGameConfigDB {
     /// </summary>
     public static readonly GameConfigDB Instance = new();
 
-    // Buffs 放在 Skills 前面，让 Skills 初始化时编译器流分析能确认 BuffConfig 非 null
+    /// <summary>魔法持续伤害 Buff 配置。</summary>
     public static BuffDOTConfig BuffDotMagic {
         get;
     } = new() {
         Duration = 30.0,
         MaxSuperpositions = 1,
-        DamageType = Enum_DamageType.Magic,
+        DamageType = DamageType.Magic,
         DamagePerSec = 10.0f,
     };
 
-    public static BuffDOTConfig BuffDotPhyscial {
+    /// <summary>物理持续伤害 Buff 配置。</summary>
+    public static BuffDOTConfig BuffDotPhysical {
         get;
     } = new() {
         Duration = 15.0,
         MaxSuperpositions = 1,
-        DamageType = Enum_DamageType.Physcial,
+        DamageType = DamageType.Physical,
         DamagePerSec = 100.0f,
     };
 
+    /// <summary>持续治疗 Buff 配置。</summary>
     public static BuffHOTConfig BuffHot {
         get;
     } = new() {
@@ -44,7 +46,7 @@ public class GameConfigDB : IGameConfigDB {
         HealthPerSec = 100.0f,
     };
 
-    // Skills
+    /// <summary>魔法单体伤害技能配置。</summary>
     public static SkillDamageConfig SkillMagicDamage {
         get;
     } = new() {
@@ -55,9 +57,10 @@ public class GameConfigDB : IGameConfigDB {
         NeedPosTarget = false,
         SkillCanAdd = "Different",
         Damage = 140.0f,
-        DamageType = Enum_DamageType.Magic,
+        DamageType = DamageType.Magic,
     };
 
+    /// <summary>治疗技能配置。</summary>
     public static SkillCureConfig SkillCure {
         get;
     } = new() {
@@ -70,6 +73,7 @@ public class GameConfigDB : IGameConfigDB {
         CurePotency = 500.0f,
     };
 
+    /// <summary>添加魔法持续伤害 Buff 的技能配置。</summary>
     public static SkillAddBuffConfig SkillAddDotMagic {
         get;
     } = new() {
@@ -82,6 +86,7 @@ public class GameConfigDB : IGameConfigDB {
         BuffConfig = BuffDotMagic,
     };
 
+    /// <summary>添加持续治疗 Buff 的技能配置。</summary>
     public static SkillAddBuffConfig SkillAddHot {
         get;
     } = new() {
@@ -94,6 +99,7 @@ public class GameConfigDB : IGameConfigDB {
         BuffConfig = BuffHot,
     };
 
+    /// <summary>矩形范围物理伤害技能配置。</summary>
     public static SkillRangeDamageConfig SkillRectRangeDamage {
         get;
     } = new() {
@@ -102,13 +108,13 @@ public class GameConfigDB : IGameConfigDB {
         GCDTime = 3.0f,
         NeedPosTarget = true,
         Damage = 200.0f,
-        DamageType = Enum_DamageType.Physcial,
+        DamageType = DamageType.Physical,
         Range = new RectRangeConfig {
             FarClamp = 5.0f,
         },
     };
 
-    // Units
+    /// <summary>白法师单位配置。</summary>
     public static UnitConfig UnitWhiteMage {
         get;
     } = new() {
@@ -130,10 +136,8 @@ public class GameConfigDB : IGameConfigDB {
         ],
     };
 
-    // ── IGameConfigDB 显式实现，将调用委托给静态属性 ──
-
     BuffDOTConfig IGameConfigDB.BuffDotMagic => BuffDotMagic;
-    BuffDOTConfig IGameConfigDB.BuffDotPhyscial => BuffDotPhyscial;
+    BuffDOTConfig IGameConfigDB.BuffDotPhysical => BuffDotPhysical;
     BuffHOTConfig IGameConfigDB.BuffHot => BuffHot;
     SkillDamageConfig IGameConfigDB.SkillMagicDamage => SkillMagicDamage;
     SkillCureConfig IGameConfigDB.SkillCure => SkillCure;
@@ -146,8 +150,11 @@ public class GameConfigDB : IGameConfigDB {
     SkillModel IGameConfigDB.ToSkillModel(SkillConfig config) => ToSkillModel(config);
     BuffModel IGameConfigDB.ToBuffModel(BuffConfig config) => ToBuffModel(config);
 
-    // ── 配置 → 运行时 Model 转换 ──
-
+    /// <summary>
+    /// 将单位配置转换为运行时单位模型。
+    /// </summary>
+    /// <param name="config">单位配置。</param>
+    /// <returns>对应的 <see cref="UnitModel"/>。</returns>
     public static UnitModel ToUnitModel(UnitConfig config) {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -163,6 +170,11 @@ public class GameConfigDB : IGameConfigDB {
         };
     }
 
+    /// <summary>
+    /// 将技能配置转换为对应类型的运行时技能模型。
+    /// </summary>
+    /// <param name="config">技能配置。</param>
+    /// <returns>对应的 <see cref="SkillModel"/> 派生实例。</returns>
     public static SkillModel ToSkillModel(SkillConfig config) {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -192,11 +204,16 @@ public class GameConfigDB : IGameConfigDB {
         model.GCDTime = config.GCDTime;
         model.NeedUnitTarget = config.NeedUnitTarget;
         model.NeedPosTarget = config.NeedPosTarget;
-        model.SkillCanAdd = Enum.Parse<EnumSkillCanAdd>(config.SkillCanAdd);
+        model.SkillCanAdd = Enum.Parse<SkillCanAdd>(config.SkillCanAdd);
 
         return model;
     }
 
+    /// <summary>
+    /// 将 Buff 配置转换为对应类型的运行时 Buff 模型。
+    /// </summary>
+    /// <param name="config">Buff 配置。</param>
+    /// <returns>对应的 <see cref="BuffModel"/> 派生实例。</returns>
     public static BuffModel ToBuffModel(BuffConfig config) {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -219,17 +236,22 @@ public class GameConfigDB : IGameConfigDB {
         return model;
     }
 
-    private static IRangeRes ToRangeRes(RangeConfig config) {
+    /// <summary>
+    /// 将范围配置转换为对应的范围判定器。
+    /// </summary>
+    /// <param name="config">范围配置。</param>
+    /// <returns>对应的 <see cref="IRangeChecker"/> 实现。</returns>
+    private static IRangeChecker ToRangeRes(RangeConfig config) {
         ArgumentNullException.ThrowIfNull(config);
 
         return config switch {
-            CircularRangeConfig c => new CircularRangeRes {
+            CircularRangeConfig c => new CircularRangeChecker {
                 NearClamp = c.NearClamp,
                 FarClamp = c.FarClamp,
                 RadianFrom = c.RadianFrom,
                 RadianTo = c.RadianTo,
             },
-            RectRangeConfig r => new RectRangeRes {
+            RectRangeConfig r => new RectRangeChecker {
                 NearClamp = r.NearClamp,
                 FarClamp = r.FarClamp,
                 FromL = r.FromL,

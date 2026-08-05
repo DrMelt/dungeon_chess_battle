@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Server.Network;
 
 /// <summary>
 /// 大厅专用网络服务器。处理 create_room / join_room 等 JSON 消息，
-/// 不管理任何 LES Entity（房间内的 Entity 由 RoomEntityServer 各自托管）。
+/// 不管理任何 LES Entity（房间内的 Entity 由 BattleRoomServer 各自托管）。
 /// 客户端加入房间后会收到端口号，然后断开大厅连接、切入房间端口。
 /// 支持可选的服务器密码验证。
 /// </summary>
@@ -18,10 +18,17 @@ public class LobbyNetworkServer : INetEventListener {
     private const string DefaultConnectionKey = "DungeonChessBattle";
     private readonly string? _serverPassword;
 
+    /// <summary>自定义数据包接收事件。参数：来源 peer、原始字节数据。</summary>
     public event Action<NetPeer, ReadOnlySpan<byte>>? OnCustomPacket;
+    /// <summary>客户端连接事件。参数：peer ID。</summary>
     public event Action<int>? OnClientConnected;
+    /// <summary>客户端断开事件。参数：peer ID。</summary>
     public event Action<int>? OnClientDisconnected;
 
+    /// <summary>
+    /// 初始化大厅网络服务器。
+    /// </summary>
+    /// <param name="logger">日志记录器。</param>
     /// <param name="serverPassword">可选的服务器密码。为 null 或空时使用默认连接密钥（开发模式）。</param>
     public LobbyNetworkServer(ILogger<LobbyNetworkServer> logger, string? serverPassword = null) {
         _logger = logger;
@@ -29,21 +36,32 @@ public class LobbyNetworkServer : INetEventListener {
         _netManager = new NetManager(this);
     }
 
+    /// <summary>
+    /// 启动网络监听。
+    /// </summary>
+    /// <param name="port">监听端口，默认使用 <see cref="DefaultPort"/>。</param>
     public void Start(int port = DefaultPort) {
         _netManager.Start(port);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Lobby] Listening on port {Port}, Password={HasPassword}", port, _serverPassword != null);
     }
 
+    /// <summary>
+    /// 停止网络监听并释放资源。
+    /// </summary>
     public void Stop() {
         _netManager.Stop();
         _logger.LogInformation("[Lobby] Stopped");
     }
 
+    /// <summary>
+    /// 轮询处理网络事件，应由主循环每帧调用。
+    /// </summary>
     public void PollEvents() {
         _netManager.PollEvents();
     }
 
+    /// <summary>当前已连接的客户端数量。</summary>
     public int PeerCount => _netManager.ConnectedPeersCount;
 
     /// <summary>获取当前生效的连接密钥。</summary>

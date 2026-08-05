@@ -21,4 +21,4 @@ script = ExtResource("2_klhpx")
 unitShowRef = NodePath("..")
 
 [node name="Node3D_Target_Mark" parent="." instance=ExtResource("3_5d4ea")]
-userInterfaceRes = ExtResource("4_st1xp")
+playerInterfaceRes = ExtResource("4_st1xp")

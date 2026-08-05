@@ -14,26 +14,26 @@ namespace DungeonChessBattle.Client;
 /// </summary>
 public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger) {
 
-    // ── 房间操作事件 ──
+    /// <summary>成功加入房间事件。参数：房间 ID。</summary>
     public event Action<string>? OnRoomJoined;
+
+    /// <summary>成功创建房间事件。参数：房间 ID。</summary>
     public event Action<string>? OnRoomCreated;
 
-    /// <summary>大厅重定向到房间端口 (roomId, port)</summary>
+    /// <summary>大厅重定向到房间端口事件。参数：房间 ID、端口。</summary>
     public event Action<string, int>? OnRedirectToRoom;
 
-    /// <summary>重连失败事件</summary>
+    /// <summary>重连失败事件。参数：错误信息。</summary>
     public event Action<string>? OnReconnectFailed;
 
-    /// <summary>招募板房间列表接收事件</summary>
+    /// <summary>招募板房间列表接收事件。</summary>
     public event Action<List<RoomListing>>? OnRoomListReceived;
 
-    /// <summary>准备阶段战斗启动重定向事件 (roomId, port)</summary>
+    /// <summary>准备阶段战斗启动重定向事件。参数：房间 ID、端口。</summary>
     public event Action<string, int>? OnPrepareBattleRedirect;
 
-    /// <summary>准备阶段单位列表更新事件</summary>
-    public event Action<string, List<(string UnitName, byte Camp)>>? OnPrepareUnitListUpdated;
-
-    // ── 请求方法 ──
+    /// <summary>准备阶段单位列表更新事件。参数：房间 ID、单位列表。</summary>
+    public event Action<string, List<(string UnitName, string Camp)>>? OnPrepareUnitListUpdated;
 
     /// <summary>
     /// 请求创建房间（含招募板配置）。
@@ -57,6 +57,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         _pendingEventInvocations.Enqueue(() => OnRoomJoined?.Invoke(roomId));
     }
 
+    /// <summary>请求加入房间。</summary>
     public void RequestJoinRoom(string roomId) {
         SendCommand(MessageWriter.WriteRoomRequestFull(
             MessageType.JoinRoom, roomId, "", null, "", null));
@@ -65,7 +66,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     /// <summary>
     /// 请求添加准备阶段单位。
     /// </summary>
-    public void RequestPrepareAddUnit(string roomId, string unitName, byte camp) {
+    public void RequestPrepareAddUnit(string roomId, string unitName, string camp) {
         SendCommand(MessageWriter.WritePrepareAddUnit(roomId, unitName, camp));
     }
 
@@ -83,14 +84,14 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         SendCommand(MessageWriter.WritePrepareStartBattle(roomId));
     }
 
-    // ── OnNetworkReceive ──
-
+    /// <summary>收到网络数据时处理 JSON 包。</summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
         HandleCustomPacket(data);
     }
 
-    // ── JSON 协议处理 ──
-
+    /// <summary>
+    /// 解析并分发大厅 JSON 协议包。
+    /// </summary>
     private void HandleCustomPacket(ReadOnlySpan<byte> data) {
         try {
             string json = Encoding.UTF8.GetString(data);
@@ -137,6 +138,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
     }
 
+    /// <summary>处理加入房间响应。</summary>
     private void HandleJoinRoomResponse(JsonElement root) {
         bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
@@ -153,6 +155,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
     }
 
+    /// <summary>处理加入房间重定向（切到房间端口）。</summary>
     private void HandleRedirectToRoom(JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         int port = root.TryGetProperty(MessageProperty.Port, out var pp) && pp.TryGetInt32(out var p) ? p : 0;
@@ -168,6 +171,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
     }
 
+    /// <summary>处理创建房间响应。</summary>
     private void HandleCreateRoomResponse(JsonElement root) {
         bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
@@ -184,6 +188,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
     }
 
+    /// <summary>处理房间列表响应（招募板）。</summary>
     private void HandleListRoomsResponse(JsonElement root) {
         var rooms = new List<RoomListing>();
         if (root.TryGetProperty(MessageProperty.Rooms, out var arr) && arr.ValueKind == JsonValueKind.Array) {
@@ -211,6 +216,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
             _logger.LogInformation("[LobbyClient] Received listing of {Count} rooms.", rooms.Count);
     }
 
+    /// <summary>处理重连响应；失败时触发 OnReconnectFailed，成功走重定向流程。</summary>
     private void HandleReconnectRoomResponse(JsonElement root) {
         bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
         string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
@@ -224,6 +230,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         // 成功时会走已有的 HandleRedirectToRoom 流程（服务端返回重定向）
     }
 
+    /// <summary>处理准备阶段战斗启动重定向。</summary>
     private void HandlePrepareStartBattleResponse(JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         int port = root.TryGetProperty(MessageProperty.Port, out var pp) && pp.TryGetInt32(out var p) ? p : 0;
@@ -235,6 +242,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         }
     }
 
+    /// <summary>处理准备阶段单位添加/移除响应。</summary>
     private void HandlePrepareUnitResponse(JsonElement root, bool isAdd) {
         bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
@@ -243,14 +251,15 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
             _logger.LogDebug("[LobbyClient] Prepare {Action} unit in {RoomId}: succeeded", isAdd ? "add" : "remove", roomId);
     }
 
+    /// <summary>处理准备阶段单位列表广播。</summary>
     private void HandlePrepareUnitList(JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
-        var units = new List<(string UnitName, byte Camp)>();
+        var units = new List<(string UnitName, string Camp)>();
 
         if (root.TryGetProperty("units", out var arr) && arr.ValueKind == JsonValueKind.Array) {
             foreach (var item in arr.EnumerateArray()) {
                 string name = item.TryGetProperty(MessageProperty.UnitName, out var un) ? un.GetString() ?? "" : "";
-                byte camp = item.TryGetProperty(MessageProperty.Camp, out var cp) && cp.TryGetByte(out var cb) ? cb : (byte)1;
+                string camp = item.TryGetProperty(MessageProperty.Camp, out var cp) ? cp.GetString() ?? "" : "";
                 units.Add((name, camp));
             }
         }

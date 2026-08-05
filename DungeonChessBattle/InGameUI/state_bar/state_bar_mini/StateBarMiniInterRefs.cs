@@ -6,42 +6,41 @@ namespace DungeonChessBattle;
 /// StateBarMini 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateBarMiniInterRefs : Node {
+    /// <summary>Buff 图标容器组件。</summary>
     [Export]
     public ContainerBuffs? ContainerBuffsRef {
-        get => _containerBuffsRef;
-        set => _containerBuffsRef = value;
+        get; set;
     }
-    private ContainerBuffs? _containerBuffsRef;
 
+    /// <summary>悬停高亮外框。</summary>
     [Export]
     public Panel? OutlineRef {
-        get => _outlineRef;
-        set => _outlineRef = value;
+        get; set;
     }
-    private Panel? _outlineRef;
 
+    /// <summary>血条状态组件。</summary>
     [Export]
     public HP_StateBar? HpStateBarRef {
-        get => _hpStateBarRef;
-        set => _hpStateBarRef = value;
+        get; set;
     }
-    private HP_StateBar? _hpStateBarRef;
 
+    /// <summary>施法进度条组件。</summary>
     [Export]
     public SkillProgressBar? SkillProgressBarRef {
-        get => _skillProgressBarRef;
-        set => _skillProgressBarRef = value;
+        get; set;
     }
-    private SkillProgressBar? _skillProgressBarRef;
 
+    /// <summary>
+    /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
+    /// </summary>
     public override void _Ready() {
-        if (_containerBuffsRef == null)
+        if (ContainerBuffsRef == null)
             GD.PrintErr("[StateBarMiniInterRefs] [Export] ContainerBuffsRef is not assigned!");
-        if (_outlineRef == null)
+        if (OutlineRef == null)
             GD.PrintErr("[StateBarMiniInterRefs] [Export] OutlineRef is not assigned!");
-        if (_hpStateBarRef == null)
+        if (HpStateBarRef == null)
             GD.PrintErr("[StateBarMiniInterRefs] [Export] HpStateBarRef is not assigned!");
-        if (_skillProgressBarRef == null)
+        if (SkillProgressBarRef == null)
             GD.PrintErr("[StateBarMiniInterRefs] [Export] SkillProgressBarRef is not assigned!");
     }
 }

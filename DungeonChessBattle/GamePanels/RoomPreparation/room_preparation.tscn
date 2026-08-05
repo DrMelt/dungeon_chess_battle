@@ -60,18 +60,18 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "SelectUnitButton", "UnitSelectPanel", "UnitCardGrid", "StartBattleButton", "UnitListLabel", "BackButton", "InfoLabel", "TitleLabel")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "SelectUnitButton", "UnitSelectPanel", "StartBattleButton", "UnitListLabel", "BackButton", "InfoLabel", "TitleLabel")]
 script = ExtResource("4_irfs")
 RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomNameLabel")
 StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/StatusLabel")
 UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitGrid")
-StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
 SelectUnitButton = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
 UnitSelectPanel = NodePath("../UnitSelectPanel")
-UnitCardScene = ExtResource("5_n634y")
+StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
 UnitListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitListLabel")
+UnitCardScene = ExtResource("5_n634y")
 BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/BackButton")
-InfoLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/InfoLabel")
+InfoLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer/InfoLabel")
 TitleLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/TitleLabel")
 
 [node name="UnitSelectPanel" parent="." unique_id=-1190685729 instance=ExtResource("6_select_panel")]
@@ -149,10 +149,16 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="InfoLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer" unique_id=582914033]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer" unique_id=912386997]
 layout_mode = 2
-size_flags_vertical = 1
+
+[node name="InfoLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer" unique_id=582914033]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "InfoLabel"
+autowrap_mode = 3
 
 [node name="VSeparator" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=966985521]
 layout_mode = 2

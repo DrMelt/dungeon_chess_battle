@@ -14,19 +14,26 @@ namespace DungeonChessBattle;
 /// 战斗启动后服务端返回端口重定向，客户端切换到 RoomBattleClient 的 LES 连接。
 /// </summary>
 public partial class RoomPreparation : BaseGamePanel {
+    /// <summary>日志记录器。</summary>
     private readonly ILogger<RoomPreparation> _logger = ServiceLocator.GetLogger<RoomPreparation>();
 
+    /// <summary>本地模式请求开始战斗的信号，参数为房间 ID。</summary>
     [Signal]
     public delegate void BattleStartRequestedEventHandler(string roomId);
 
     #region Service & State
 
+    /// <summary>导出引用集合节点。</summary>
     public RoomPreparationInterRefs? InterRefs {
         get; private set;
     }
+    /// <summary>当前房间 ID。</summary>
     private string _roomId = "";
-    private string _selectedCamp = "Camp_A";
+    /// <summary>当前选择的阵营。</summary>
+    private string _selectedCamp = CampConstants.CampA;
+    /// <summary>当前选中的单位配置键。</summary>
     private string? _selectedUnitKey;
+    /// <summary>已添加的单位显示名称列表。</summary>
     private readonly System.Collections.Generic.List<string> _units = [];
 
     // 可用单位配置（configKey → displayName & unitConfig）
@@ -36,6 +43,9 @@ public partial class RoomPreparation : BaseGamePanel {
 
     #endregion
 
+    /// <summary>
+    /// 节点就绪：绑定按钮与单位选择事件，订阅准备阶段单位列表推送。
+    /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<RoomPreparationInterRefs>("RoomPreparationInterRefs");
         if (InterRefs is null) {
@@ -113,18 +123,25 @@ public partial class RoomPreparation : BaseGamePanel {
         InterRefs?.StartBattleButton?.Disabled = true;
     }
 
+    /// <summary>
+    /// 单位选择面板选择回调，记录选中单位并添加到列表。
+    /// </summary>
+    /// <param name="unitConfigKey">单位配置键。</param>
     private void OnUnitSelectedFromPanel(string unitConfigKey) {
         _selectedUnitKey = unitConfigKey;
         InterRefs?.StatusLabel?.Text = $"已选择: {AvailableUnits[unitConfigKey].displayName}";
         AddUnit();
     }
 
+    /// <summary>
+    /// 添加当前选中单位：网络模式发送 JSON 请求，本地模式直接创建并刷新列表。
+    /// </summary>
     private void AddUnit() {
         if (string.IsNullOrEmpty(_selectedUnitKey))
             return;
 
         string displayName = AvailableUnits[_selectedUnitKey].displayName;
-        byte camp = _selectedCamp == "Camp_A" ? (byte)1 : (byte)2;
+        string camp = _selectedCamp;
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：通过大厅 LobbyClient JSON 协议发送
@@ -145,7 +162,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// <summary>
     /// 服务器推送的准备阶段单位列表更新回调。
     /// </summary>
-    private void OnPrepareUnitListUpdated(string eventRoomId, System.Collections.Generic.List<(string UnitName, byte Camp)> units) {
+    private void OnPrepareUnitListUpdated(string eventRoomId, System.Collections.Generic.List<(string UnitName, string Camp)> units) {
         if (eventRoomId != _roomId)
             return;
 
@@ -163,10 +180,16 @@ public partial class RoomPreparation : BaseGamePanel {
         InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_units.Count})";
     }
 
+    /// <summary>
+    /// 刷新单位列表文本显示。
+    /// </summary>
     private void UpdateUnitList() {
         InterRefs?.UnitListLabel?.Text = "已选单位:\n" + (_units.Count > 0 ? string.Join("\n", _units) : "(空)");
     }
 
+    /// <summary>
+    /// 点击开始战斗按钮：校验单位非空后，网络模式发送请求，本地模式发出信号。
+    /// </summary>
     private void OnStartBattleClicked() {
         if (_units.Count == 0) {
             InterRefs?.StatusLabel?.Text = "请先添加单位！";
@@ -188,6 +211,11 @@ public partial class RoomPreparation : BaseGamePanel {
         Visible = false;
     }
 
+    /// <summary>
+    /// 将房间类别枚举转换为中文显示名。
+    /// </summary>
+    /// <param name="cat">房间类别。</param>
+    /// <returns>对应的中文名称。</returns>
     private static string CategoryDisplayName(RoomCategory cat) => cat switch {
         RoomCategory.Casual => "休闲",
         RoomCategory.Competitive => "竞技",

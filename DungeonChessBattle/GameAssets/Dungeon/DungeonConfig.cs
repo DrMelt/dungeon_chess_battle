@@ -3,11 +3,18 @@ using System;
 
 namespace DungeonChessBattle;
 
+/// <summary>
+/// 地牢配置资源，提供地牢环境场景的实例化入口。
+/// </summary>
 [GlobalClass]
 public partial class DungeonConfig : Resource {
+    /// <summary>地牢环境使用的场景资源。</summary>
     [Export]
-    PackedScene? dungeonEnvPKS;
+    private PackedScene? dungeonEnvPKS;
 
+    /// <summary>
+    /// 实例化地牢环境节点；未配置场景时抛出异常。
+    /// </summary>
     public DungeonEnv DungeonEnvRef {
         get {
             if (dungeonEnvPKS == null)

@@ -1,3 +1,4 @@
+using DungeonChessBattle.Core.Enums;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -8,30 +9,46 @@ namespace DungeonChessBattle.Entities;
 /// 战斗房间的网络同步 Entity。纯数据载体。
 /// </summary>
 public class BattleRoomEntity : EntityLogic {
+    /// <summary>房间唯一 ID。</summary>
     public readonly SyncString RoomId = new();
-    public SyncVar<byte> BattlePhase;
-    public SyncVar<bool> IsFinished;
-    public SyncVar<byte> WinnerCamp;
 
-    // ── RPC ──────────────────────────────────────────────
+    /// <summary>战斗阶段（对应 BattlePhase 枚举的 byte 值）。</summary>
+    public SyncVar<byte> BattlePhase;
+
+    /// <summary>战斗是否已结束。</summary>
+    public SyncVar<bool> IsFinished;
+
+    /// <summary>胜方阵营字符串标识（如 "Camp_A"、"Camp_B"，空=未知/无胜方）。</summary>
+    public readonly SyncString WinnerCamp = new();
+
     private static RemoteCallSerializable<SyncCreateUnitRequest> CreateUnitRPC;
     private static RemoteCall StartBattleRPC;
 
-    // ── 实例事件（每个房间独立订阅） ────────────────────
     /// <summary>客户端请求创建单位。参数：房间实体、创建请求数据</summary>
     public event Action<BattleRoomEntity, SyncCreateUnitRequest>? CreateUnitRequested;
 
     /// <summary>客户端请求开始战斗。参数：房间实体</summary>
     public event Action<BattleRoomEntity>? StartBattleRequested;
 
+    /// <summary>
+    /// 初始化战斗房间实体。
+    /// </summary>
+    /// <param name="entityParams">实体框架参数。</param>
     public BattleRoomEntity(EntityParams entityParams) : base(entityParams) { }
 
+    /// <summary>
+    /// 实体构造完成回调：初始化默认战斗状态。
+    /// </summary>
     protected override void OnConstructed() {
         BattlePhase.Value = 0;
         IsFinished.Value = false;
-        WinnerCamp.Value = 0;
+        WinnerCamp.Value = string.Empty;
     }
 
+    /// <summary>
+    /// 注册 RPC 动作：创建单位请求与开始战斗请求（均在服务端执行）。
+    /// </summary>
+    /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {
         base.RegisterRPC(ref r);
         r.CreateRPCAction<BattleRoomEntity, SyncCreateUnitRequest>(

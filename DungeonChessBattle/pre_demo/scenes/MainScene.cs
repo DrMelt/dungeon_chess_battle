@@ -17,6 +17,7 @@ namespace DungeonChessBattle;
 public partial class MainScene : Node {
     #region Signals
 
+    /// <summary>战斗结束信号。</summary>
     [Signal]
     public delegate void BattleEndedEventHandler();
 
@@ -31,10 +32,10 @@ public partial class MainScene : Node {
     private GameLobby? _gameLobby;
 
     [Export]
-    private UnitsInScene_Show? _unitsShow;
+    private UnitsInSceneView? _unitsShow;
 
     [Export]
-    private UserOperationInterfaceInfo? _userOperationInterfaceInfo;
+    private PlayerOperationInterfaceInfo? _playerOperationInterfaceInfo;
 
     [Export]
     private PackedScene? _unitShowScene;
@@ -58,6 +59,9 @@ public partial class MainScene : Node {
 
     #endregion
 
+    /// <summary>
+    /// 节点就绪：校验导出引用、订阅战斗开始信号并显示主菜单。
+    /// </summary>
     public override void _Ready() {
         ValidateExports();
 
@@ -77,8 +81,8 @@ public partial class MainScene : Node {
             GD.PrintErr("[MainScene] [Export] _gameLobby is not assigned!");
         if (_unitsShow == null)
             GD.PrintErr("[MainScene] [Export] _unitsShow is not assigned!");
-        if (_userOperationInterfaceInfo == null)
-            GD.PrintErr("[MainScene] [Export] _userOperationInterfaceInfo is not assigned!");
+        if (_playerOperationInterfaceInfo == null)
+            GD.PrintErr("[MainScene] [Export] _playerOperationInterfaceInfo is not assigned!");
         if (_unitShowScene == null)
             GD.PrintErr("[MainScene] [Export] _unitShowScene is not assigned!");
     }
@@ -107,7 +111,7 @@ public partial class MainScene : Node {
         InitializeUnitsFromCache();
 
         // 绑定 UI（通过 VM 触发 View 初始化）
-        _userOperationInterfaceInfo?.BindToBattle();
+        _playerOperationInterfaceInfo?.BindToBattle();
 
         _gameLobby?.Visible = false;
         _inBattle = true;
@@ -128,7 +132,7 @@ public partial class MainScene : Node {
         ClearUnits();
 
         // 解绑 UI
-        _userOperationInterfaceInfo?.UnbindFromBattle();
+        _playerOperationInterfaceInfo?.UnbindFromBattle();
 
         _battleService = null;
         _roomId = "";
@@ -142,7 +146,7 @@ public partial class MainScene : Node {
     }
 
     /// <summary>接口事件：服务端确认单位创建（网络模式异步，本地模式同步）。</summary>
-    private void OnServiceUnitCreated(string eventRoomId, string unitName, byte camp) {
+    private void OnServiceUnitCreated(string eventRoomId, string unitName, string camp) {
         if (eventRoomId != _roomId)
             return;
         GD.Print($"[MainScene] Unit created via service: {unitName} (camp={camp})");
@@ -210,6 +214,10 @@ public partial class MainScene : Node {
     // 帧循环：输入 + 位置同步
     // =============================================================
 
+    /// <summary>
+    /// 每帧处理战斗输入收集并提交到战斗服务。
+    /// </summary>
+    /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         if (!_inBattle || _battleService == null)
             return;
@@ -219,6 +227,10 @@ public partial class MainScene : Node {
         _battleService.SubmitPlayerInput(_moveDir.X, _moveDir.Y, _skillFlags, _aimPos.X, _aimPos.Y);
     }
 
+    /// <summary>
+    /// 每物理帧同步实体位置到 3D 场景。
+    /// </summary>
+    /// <param name="delta">距上一物理帧的秒数。</param>
     public override void _PhysicsProcess(double delta) {
         if (!_inBattle || _battleService == null)
             return;
@@ -228,7 +240,7 @@ public partial class MainScene : Node {
 
     private void CollectPlayerInput() {
         // UI 阻塞时跳过战斗输入收集（等待技能/移动目标选择中）
-        if (_userOperationInterfaceInfo?.IsBlockingInput == true)
+        if (_playerOperationInterfaceInfo?.IsBlockingInput == true)
             return;
 
         _moveDir = Input.GetVector("Move_Left", "Move_Right", "Move_Up", "Move_Down");
@@ -298,6 +310,9 @@ public partial class MainScene : Node {
     private void OnBuffRemoved(string unitName, BuffEventData buff) {
     }
 
+    /// <summary>
+    /// 节点退出场景树：取消战斗服务事件订阅。
+    /// </summary>
     public override void _ExitTree() {
         if (_battleService != null) {
             _battleService.BattlePhaseChanged -= OnBattlePhase;

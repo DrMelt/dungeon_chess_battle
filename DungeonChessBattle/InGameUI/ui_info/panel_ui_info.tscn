@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://k4ex0wiw2tif"]
 
-[ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://InGameUI/ui_info/Panel_UI_Info.cs" id="1_n541s"]
+[ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://InGameUI/ui_info/SkillInfoPanel.cs" id="1_n541s"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://InGameUI/user_interface/res_user_interface.tres" id="2_ixeth"]
 
-[node name="Panel_UI_Info" type="Control" unique_id=875853006 node_paths=PackedStringArray("skillNameLabel", "skillDescriptionLabel")]
+[node name="SkillInfoPanel" type="Control" unique_id=875853006 node_paths=PackedStringArray("skillNameLabel", "skillDescriptionLabel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_n541s")
-userInterfaceRes = ExtResource("2_ixeth")
+playerInterfaceRes = ExtResource("2_ixeth")
 skillNameLabel = NodePath("PanelContainer/MarginContainer/VBoxContainer/Label_Skill_Name")
 skillDescriptionLabel = NodePath("PanelContainer/MarginContainer/VBoxContainer/Label_Skill_Description")
 

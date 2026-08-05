@@ -9,6 +9,7 @@ namespace DungeonChessBattle;
 /// 打开时记录来源面板引用，关闭时自动返回来源面板。
 /// </summary>
 public partial class BaseGamePanel : Control {
+    /// <summary>来源面板引用，关闭当前面板时返回。</summary>
     private BaseGamePanel? _caller;
 
     /// <summary>

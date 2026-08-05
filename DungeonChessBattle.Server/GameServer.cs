@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Server;
 /// <summary>
 /// 游戏服务端主控类。
 /// 大厅端口 (10170) 处理 create_room / join_room / list_rooms / prepare_* / start_battle 等 JSON 消息。
-/// 准备阶段在大厅连接上完成（选单位等），战斗开始时才创建 RoomEntityServer 并重定向客户端。
+/// 准备阶段在大厅连接上完成（选单位等），战斗开始时才创建 BattleRoomServer 并重定向客户端。
 /// 支持服务器密码 + 房间密码两层访问控制。
 /// </summary>
 public class GameServer {
@@ -27,8 +27,14 @@ public class GameServer {
     private volatile bool _running;
     private Thread? _lobbyThread;
 
+    /// <summary>服务端是否正在运行。</summary>
     public bool IsRunning => _running;
 
+    /// <summary>
+    /// 初始化游戏服务端。
+    /// </summary>
+    /// <param name="loggerFactory">日志工厂。</param>
+    /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
     public GameServer(ILoggerFactory loggerFactory, string? serverPassword = null) {
         _logger = loggerFactory.CreateLogger<GameServer>();
         _serverPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
@@ -38,8 +44,10 @@ public class GameServer {
         _lobbyServer.OnCustomPacket += OnCustomPacket;
     }
 
-    // ── 生命周期 ──────────────────────────────────────────
-
+    /// <summary>
+    /// 异步启动服务端：启动大厅网络服务并开启后台轮询线程。
+    /// </summary>
+    /// <param name="lobbyPort">大厅监听端口。</param>
     public void StartAsync(int lobbyPort) {
         if (_running)
             return;
@@ -60,6 +68,10 @@ public class GameServer {
             _logger.LogInformation("[GameServer] Started, lobby port: {Port}, ServerPassword={HasPassword}", lobbyPort, _serverPassword != null);
     }
 
+    /// <summary>
+    /// 以控制台交互模式启动服务端（默认大厅端口 10170）。
+    /// 运行到用户输入命令后退出循环。
+    /// </summary>
     public void StartWithConsole() {
         if (_running)
             return;
@@ -89,6 +101,9 @@ public class GameServer {
         Stop();
     }
 
+    /// <summary>
+    /// 停止服务端：关闭轮询线程、房间与大厅网络。
+    /// </summary>
     public void Stop() {
         _running = false;
         _lobbyThread?.Join(TimeSpan.FromSeconds(3));
@@ -98,8 +113,9 @@ public class GameServer {
             _logger.LogInformation("Server stopped.");
     }
 
-    // ── 大厅 JSON 消息处理 ───────────────────────────────
-
+    /// <summary>
+    /// 处理大厅收到的自定义 JSON 消息，按消息类型分发。
+    /// </summary>
     private void OnCustomPacket(NetPeer peer, ReadOnlySpan<byte> data) {
         try {
             string json = Encoding.UTF8.GetString(data);
@@ -139,8 +155,9 @@ public class GameServer {
         }
     }
 
-    // ── 公共辅助方法 ──────────────────────────────────────
-
+    /// <summary>
+    /// 校验服务器密码；不匹配时发送失败响应。
+    /// </summary>
     private bool ValidateServerPassword(NetPeer peer, JsonElement root, string responseType, string? roomId) {
         string? serverPassword = root.TryGetProperty(MessageProperty.ServerPassword, out var sp) ? sp.GetString() : null;
         if (!string.IsNullOrEmpty(_serverPassword) && serverPassword != _serverPassword) {
@@ -168,8 +185,9 @@ public class GameServer {
         return playerName ?? $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
     }
 
-    // ── create_room：仅注册，不重定向 ──────────────────────
-
+    /// <summary>
+    /// 处理 create_room：注册房间（准备阶段不重定向）。
+    /// </summary>
     private void HandleCreateRoom(NetPeer peer, JsonElement root) {
         if (!ValidateServerPassword(peer, root, MessageType.CreateRoomResponse, null)
             || !TryGetRoomParams(peer, root, MessageType.CreateRoomResponse, out string roomId, out string playerId))
@@ -224,8 +242,9 @@ public class GameServer {
                 roomId, config.HostName, playerId, config.Title);
     }
 
-    // ── join_room：不重定向，只验证 ─────────────────────
-
+    /// <summary>
+    /// 处理 join_room：验证房间与密码（准备阶段不重定向）。
+    /// </summary>
     private void HandleJoinRoom(NetPeer peer, JsonElement root) {
         if (!ValidateServerPassword(peer, root, MessageType.JoinRoomResponse, null)
             || !TryGetRoomParams(peer, root, MessageType.JoinRoomResponse, out string roomId, out string playerId))
@@ -257,8 +276,9 @@ public class GameServer {
                 displayName, playerId, roomId);
     }
 
-    // ── list_rooms ───────────────────────────────────────
-
+    /// <summary>
+    /// 处理 list_rooms：返回招募板房间列表。
+    /// </summary>
     private void HandleListRooms(NetPeer peer) {
         try {
             var rooms = _lobby.GetRoomListings();
@@ -271,12 +291,13 @@ public class GameServer {
         }
     }
 
-    // ── 准备阶段：添加/移除单位 ──────────────────────────
-
+    /// <summary>
+    /// 处理 prepare_add_unit：为房间添加准备单位，并广播最新列表。
+    /// </summary>
     private void HandlePrepareAddUnit(NetPeer peer, JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         string? unitName = root.TryGetProperty(MessageProperty.UnitName, out var un) ? un.GetString() : null;
-        byte camp = root.TryGetProperty(MessageProperty.Camp, out var cp) && cp.TryGetByte(out var cb) ? cb : (byte)1;
+        string camp = root.TryGetProperty(MessageProperty.Camp, out var cp) ? cp.GetString() ?? CampConstants.CampA : CampConstants.CampA;
 
         if (string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(unitName)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "roomId and unitName required."));
@@ -294,10 +315,13 @@ public class GameServer {
         BroadcastPrepareUnitList(roomId);
     }
 
+    /// <summary>
+    /// 处理 prepare_remove_unit：从房间移除准备单位，成功时广播最新列表。
+    /// </summary>
     private void HandlePrepareRemoveUnit(NetPeer peer, JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
         string? unitName = root.TryGetProperty(MessageProperty.UnitName, out var un) ? un.GetString() : null;
-        byte camp = root.TryGetProperty(MessageProperty.Camp, out var cp) && cp.TryGetByte(out var cb) ? cb : (byte)1;
+        string camp = root.TryGetProperty(MessageProperty.Camp, out var cp) ? cp.GetString() ?? CampConstants.CampA : CampConstants.CampA;
 
         if (string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(unitName)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareRemoveUnit, roomId, false, "roomId and unitName required."));
@@ -312,8 +336,9 @@ public class GameServer {
             BroadcastPrepareUnitList(roomId);
     }
 
-    // ── prepare_start_battle：创建 RoomEntityServer + 重定向 ──
-
+    /// <summary>
+    /// 处理 prepare_start_battle：创建战斗房间服务器并返回重定向端口。
+    /// </summary>
     private void HandlePrepareStartBattle(NetPeer peer, JsonElement root) {
         if (!TryGetRoomParams(peer, root, MessageType.PrepareStartBattleResponse, out string roomId, out string playerId))
             return;
@@ -330,7 +355,7 @@ public class GameServer {
             return;
         }
 
-        // 创建 RoomEntityServer 并迁移单位
+        // 创建 BattleRoomServer 并迁移单位
         var server = _lobby.StartRoomBattle(roomId);
         server.RegisterPlayer(playerId, playerName);
 
@@ -342,8 +367,9 @@ public class GameServer {
                 roomId, server.Port, playerName, playerId);
     }
 
-    // ── 重连（战斗中断线后使用） ──────────────────────────
-
+    /// <summary>
+    /// 处理 reconnect_room：校验身份后将断线玩家重连到战斗房间。
+    /// </summary>
     private void HandleReconnectRoom(NetPeer peer, JsonElement root) {
         if (!ValidateServerPassword(peer, root, MessageType.ReconnectRoomResponse, null)
             || !TryGetRoomParams(peer, root, MessageType.ReconnectRoomResponse, out string roomId, out string playerId))
@@ -386,8 +412,6 @@ public class GameServer {
                 playerName, playerId, roomId, server.Port);
     }
 
-    // ── 广播辅助 ──────────────────────────────────────────
-
     /// <summary>
     /// 将房间当前准备单位列表广播给该房间所有 peer。
     /// </summary>
@@ -404,8 +428,9 @@ public class GameServer {
                 peers.Count, roomId, units.Count);
     }
 
-    // ── 辅助 ──────────────────────────────────────────────
-
+    /// <summary>
+    /// 可靠有序地发送消息给指定 peer。
+    /// </summary>
     private static void SendToPeer(NetPeer peer, byte[] messageBytes) {
         peer.Send(messageBytes, DeliveryMethod.ReliableOrdered);
     }

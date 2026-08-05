@@ -19,8 +19,8 @@ script = ExtResource("1_yhj07")
 
 [node name="StateBar2d_FocusInterRefs" type="Node" parent="." unique_id=560142546 node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
 script = ExtResource("8_sb2d_interrefs")
-UserInterfaceRes = ExtResource("9_ui_res")
-UserUISettingsRef = ExtResource("2_nayus")
+PlayerInterfaceRes = ExtResource("9_ui_res")
+PlayerUISettingsRef = ExtResource("2_nayus")
 HboxContainerBuffsRef = NodePath("../VBoxContainer/HBoxContainer_Buffs")
 PanelFocusStateRef = NodePath("../VBoxContainer/HBoxContainer/HP_StateBar")
 PanelSkillProgressBarRef = NodePath("../VBoxContainer/HBoxContainer/Panel_Skill_ProgressBar")

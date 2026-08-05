@@ -14,6 +14,7 @@ namespace DungeonChessBattle;
 /// 服务从 ServiceLocator 获取，不再由外部注入。
 /// </summary>
 public partial class GameLobby : BaseGamePanel {
+    /// <summary>日志记录器。</summary>
     private readonly ILogger<GameLobby> _logger = ServiceLocator.GetLogger<GameLobby>();
 
     #region Signals
@@ -28,6 +29,7 @@ public partial class GameLobby : BaseGamePanel {
 
     #region References
 
+    /// <summary>房间准备界面引用。</summary>
     [Export]
     private RoomPreparation? _roomPreparation;
 
@@ -47,15 +49,24 @@ public partial class GameLobby : BaseGamePanel {
 
     #region State
 
+    /// <summary>当前选中的房间 ID。</summary>
     private string? _selectedRoomId;
+    /// <summary>房间 ID 到卡片节点的缓存。</summary>
     private readonly Dictionary<string, RoomInfo> _roomInfoCache = [];
+    /// <summary>当前筛选的房间类别。</summary>
     private RoomCategory _selectedCategory = RoomCategory.Casual;
+    /// <summary>缓存的服务端房间列表。</summary>
     private List<RoomListing>? _pendingRoomListings;
+    /// <summary>缓存创建房间时输入的房间名。</summary>
     private string? _cachedCreateRoomId;
+    /// <summary>当前选中房间的配置。</summary>
     private GameRoom? _selectedRoomConfig;
 
     #endregion
 
+    /// <summary>
+    /// 节点就绪：获取引用集合、连接按钮与准备界面信号，并订阅大厅客户端事件。
+    /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
         if (InterRefs is null) {
@@ -107,6 +118,9 @@ public partial class GameLobby : BaseGamePanel {
 
     #region Button Handlers
 
+    /// <summary>
+    /// 点击创建房间按钮：校验房间名后，网络模式发送创建请求，本地模式直接创建。
+    /// </summary>
     private void OnCreateRoom() {
         string roomName = InterRefs?.RoomNameInput?.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(roomName)) {
@@ -146,6 +160,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 公开方法：开始战斗（本地模式）。由 RoomPreparation 调用。
     /// 网络模式下 RoomPreparation 直接通过 LobbyClient.RequestPrepareStartBattle 发送。
     /// </summary>
+    /// <param name="roomId">房间 ID。</param>
     public void StartBattle(string roomId) {
         var clientService = ClientService;
         if (clientService == null) {
@@ -161,6 +176,9 @@ public partial class GameLobby : BaseGamePanel {
         EmitSignal(SignalName.BattleStarted, roomId);
     }
 
+    /// <summary>
+    /// 点击加入按钮：校验已选中房间后发送加入请求。
+    /// </summary>
     private void OnJoinRoom() {
         if (string.IsNullOrEmpty(_selectedRoomId)) {
             _logger.LogWarning("加入房间失败: 未选中房间");
@@ -187,6 +205,10 @@ public partial class GameLobby : BaseGamePanel {
         CallDeferred(nameof(OnCreatedDeferred), createdRoomId);
     }
 
+    /// <summary>
+    /// 主线程处理房间创建成功回调，构造配置并进入准备界面。
+    /// </summary>
+    /// <param name="roomId">创建成功的房间 ID。</param>
     private void OnCreatedDeferred(string roomId) {
         if (_roomPreparation != null) {
             // 构造简单的 GameRoom config（Title 用缓存的房间名）
@@ -212,6 +234,10 @@ public partial class GameLobby : BaseGamePanel {
         CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
     }
 
+    /// <summary>
+    /// 主线程处理加入房间成功回调，进入准备界面。
+    /// </summary>
+    /// <param name="joinedRoomId">加入成功的房间 ID。</param>
     private void OnJoinedDeferred(string joinedRoomId) {
         if (_roomPreparation != null) {
             // 使用缓存的选中房间配置，或构造默认配置
@@ -227,6 +253,9 @@ public partial class GameLobby : BaseGamePanel {
         }
     }
 
+    /// <summary>
+    /// 刷新房间列表：网络模式请求服务端，本地模式直接读取本地服务。
+    /// </summary>
     private void OnRefreshRooms() {
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：通过招募板协议请求房间列表
@@ -245,6 +274,9 @@ public partial class GameLobby : BaseGamePanel {
         }
     }
 
+    /// <summary>
+    /// 订阅大厅客户端的房间列表推送事件。
+    /// </summary>
     private void SubscribeRoomListEvent() {
         ServiceLocator.ClientService.LobbyClient.OnRoomListReceived += (listings) => {
             _pendingRoomListings = listings;
@@ -252,6 +284,9 @@ public partial class GameLobby : BaseGamePanel {
         };
     }
 
+    /// <summary>
+    /// 主线程处理房间列表推送，转换为 GameRoom 并刷新 UI。
+    /// </summary>
     private void OnRoomListingsReceivedDeferred() {
         var listings = _pendingRoomListings;
         _pendingRoomListings = null;
@@ -278,6 +313,10 @@ public partial class GameLobby : BaseGamePanel {
 
     #region Room List UI
 
+    /// <summary>
+    /// 刷新房间列表 UI：移除已消失的房间，添加或更新现存卡片。
+    /// </summary>
+    /// <param name="rooms">最新的房间列表。</param>
     private void RefreshRoomList(List<GameRoom> rooms) {
         if (InterRefs?.RoomListContainer == null)
             return;
@@ -317,6 +356,11 @@ public partial class GameLobby : BaseGamePanel {
         }
     }
 
+    /// <summary>
+    /// 实例化并初始化单个房间卡片。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <returns>创建好的房间卡片实例。</returns>
     private RoomInfo CreateRoomInfoCard(string roomId) {
         if (InterRefs?.RoomInfoScene is null)
             throw new System.InvalidOperationException("RoomInfoScene is not assigned.");
@@ -326,6 +370,10 @@ public partial class GameLobby : BaseGamePanel {
         return instance;
     }
 
+    /// <summary>
+    /// 房间卡片选中回调：更新选中高亮、详情面板并启用加入按钮。
+    /// </summary>
+    /// <param name="roomId">选中的房间 ID。</param>
     private void OnRoomSelected(string roomId) {
         // 取消上一个选中
         if (_selectedRoomId != null && _roomInfoCache.TryGetValue(_selectedRoomId, out var prev)) {
@@ -362,6 +410,11 @@ public partial class GameLobby : BaseGamePanel {
         InterRefs?.JoinButton?.Disabled = false;
     }
 
+    /// <summary>
+    /// 生成房间状态文字（等待中 / 已结束）。
+    /// </summary>
+    /// <param name="room">房间实例。</param>
+    /// <returns>状态文字。</returns>
     private static string GetRoomStatusText(GameRoom room) {
         if (room.IsActive) {
             int totalUnits = room.UnitsA.Count + room.UnitsB.Count;

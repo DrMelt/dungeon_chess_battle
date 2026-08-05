@@ -2,12 +2,20 @@ using Godot;
 
 namespace DungeonChessBattle;
 
+/// <summary>
+/// 状态标记容器，为场景中所有单位生成对应的 2D 状态标记。
+/// </summary>
 public partial class StateBarMark : Control {
+    /// <summary>场景单位集合引用。</summary>
     [Export]
-    UnitsInScene_Show? unitsInScene_Show_Ref;
+    private UnitsInSceneView? unitsInScene_Show_Ref;
+    /// <summary>2D 状态标记使用的场景资源。</summary>
     [Export]
-    PackedScene? stateBarSimple2d_PKD;
+    private PackedScene? stateBarSimple2d_PKD;
 
+    /// <summary>
+    /// 节点就绪：校验导出引用是否已赋值。
+    /// </summary>
     public override void _Ready() {
         if (unitsInScene_Show_Ref == null)
             GD.PrintErr("[StateBarMark] [Export] unitsInScene_Show_Ref is not assigned!");
@@ -15,6 +23,10 @@ public partial class StateBarMark : Control {
             GD.PrintErr("[StateBarMark] [Export] stateBarSimple2d_PKD is not assigned!");
     }
 
+    /// <summary>
+    /// 每帧清空并重建所有单位的状态标记。
+    /// </summary>
+    /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         if (unitsInScene_Show_Ref == null || stateBarSimple2d_PKD == null)
             return;

@@ -7,19 +7,30 @@ namespace DungeonChessBattle.Server;
 /// 提供 Start/Stop 操作和状态事件通知。
 /// GameServer 内部已有独立驱动线程，本类不创建额外线程。
 /// </summary>
-public sealed class GameServerService(ILogger<GameServerService> logger, ILoggerFactory loggerFactory) {
-    private readonly ILogger<GameServerService> _logger = logger;
+public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactory loggerFactory) {
+    private readonly ILogger<GameServerHost> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private GameServer? _server;
-    private int _port;
 
+    /// <summary>默认大厅端口。</summary>
     public const int DefaultPort = 10170;
 
+    /// <summary>服务器是否正在运行。</summary>
     public bool IsRunning => _server?.IsRunning ?? false;
-    public int Port => _port;
 
+    /// <summary>当前监听端口。</summary>
+    public int Port {
+        get; private set;
+    }
+
+    /// <summary>服务器状态变化事件。参数：是否运行、端口。</summary>
     public event Action<bool, int>? StatusChanged;
 
+    /// <summary>
+    /// 启动服务器。
+    /// </summary>
+    /// <param name="port">大厅监听端口。</param>
+    /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
     public void Start(int port = DefaultPort, string? serverPassword = null) {
         if (IsRunning) {
             _logger.LogWarning("服务器已在运行中");
@@ -28,7 +39,7 @@ public sealed class GameServerService(ILogger<GameServerService> logger, ILogger
 
         try {
             string? actualPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
-            _port = port;
+            Port = port;
             _server = new GameServer(_loggerFactory, actualPassword);
             _server.StartAsync(port);
 
@@ -38,12 +49,15 @@ public sealed class GameServerService(ILogger<GameServerService> logger, ILogger
         }
         catch (Exception ex) {
             _server = null;
-            _port = 0;
+            Port = 0;
             _logger.LogError(ex, "服务器启动失败");
             StatusChanged?.Invoke(false, 0);
         }
     }
 
+    /// <summary>
+    /// 停止服务器并触发状态通知。
+    /// </summary>
     public void Stop() {
         if (!IsRunning || _server is null) {
             _logger.LogWarning("服务器未在运行");
@@ -59,7 +73,7 @@ public sealed class GameServerService(ILogger<GameServerService> logger, ILogger
         }
         finally {
             _server = null;
-            _port = 0;
+            Port = 0;
             StatusChanged?.Invoke(false, 0);
         }
     }

@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// 大厅模块，负责房间服务器的生命周期管理（创建、注册、查找、销毁）。
-/// 准备阶段（选单位等）在大厅 JSON 协议上完成，战斗开始时才创建 RoomEntityServer。
+/// 准备阶段（选单位等）在大厅 JSON 协议上完成，战斗开始时才创建 BattleRoomServer。
 /// 线程安全：ConcurrentDictionary + 端口池仅大厅线程操作。
 /// 支持房间密码验证和招募板配置。
 /// </summary>
@@ -18,7 +18,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
 
     /// <summary>房间服务器注册表（线程安全）。准备阶段房间不在此表中。</summary>
-    private readonly ConcurrentDictionary<string, RoomEntityServer> _roomServers = new();
+    private readonly ConcurrentDictionary<string, BattleRoomServer> _roomServers = new();
 
     /// <summary>房间密码字典（线程安全）。null 表示无密码房间。</summary>
     private readonly ConcurrentDictionary<string, string?> _roomPasswords = new();
@@ -26,8 +26,8 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// <summary>房间配置注册表（招募板使用），用于存储 GameRoom 的招募板配置信息。</summary>
     private readonly ConcurrentDictionary<string, GameRoom> _roomConfigs = new();
 
-    /// <summary>准备阶段单位数据：roomId → List<(unitName, camp)></summary>
-    private readonly ConcurrentDictionary<string, List<(string UnitName, byte Camp)>> _prepareUnits = new();
+    /// <summary>准备阶段单位数据表：房间ID 映射到（单位名, 阵营字符串）列表。</summary>
+    private readonly ConcurrentDictionary<string, List<(string UnitName, string Camp)>> _prepareUnits = new();
 
     /// <summary>房间 → 该房间内的所有大厅 peer（用于准备阶段广播）</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, NetPeer>> _roomPeers = new();
@@ -37,21 +37,23 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     private readonly ConcurrentQueue<int> _portPool = new();
 
     /// <summary>当前所有房间服务器（快照）</summary>
-    public ICollection<RoomEntityServer> RoomServers => _roomServers.Values;
+    public ICollection<BattleRoomServer> RoomServers => _roomServers.Values;
 
-    // ── 端口管理 ──────────────────────────────────────────
-
+    /// <summary>
+    /// 从端口池获取或递增分配一个房间端口。
+    /// </summary>
     private int AllocatePort() {
         if (_portPool.TryDequeue(out int port))
             return port;
         return _nextPort++;
     }
 
+    /// <summary>
+    /// 回收房间端口到端口池。
+    /// </summary>
     private void RecyclePort(int port) {
         _portPool.Enqueue(port);
     }
-
-    // ── 房间管理（准备阶段：不创建 RoomEntityServer）────
 
     /// <summary>
     /// 注册房间（仅存储配置和密码，不创建独立服务器）。
@@ -73,12 +75,12 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     }
 
     /// <summary>
-    /// 开始战斗：创建 RoomEntityServer，迁移准备期单位数据，然后重定向客户端。
+    /// 开始战斗：创建 BattleRoomServer，迁移准备期单位数据，然后重定向客户端。
     /// </summary>
-    public RoomEntityServer StartRoomBattle(string roomId) {
-        // 分配端口并创建 RoomEntityServer
+    public BattleRoomServer StartRoomBattle(string roomId) {
+        // 分配端口并创建 BattleRoomServer
         int port = AllocatePort();
-        var server = new RoomEntityServer(port, roomId, _loggerFactory.CreateLogger<RoomEntityServer>());
+        var server = new BattleRoomServer(port, roomId, _loggerFactory.CreateLogger<BattleRoomServer>());
         server.Start();
 
         _roomServers[roomId] = server;
@@ -86,7 +88,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         // 迁移准备期单位数据到 LES
         if (_prepareUnits.TryGetValue(roomId, out var units)) {
             foreach (var (unitName, camp) in units) {
-                var spawnPos = camp == 1
+                var spawnPos = camp == CampConstants.CampA
                     ? new System.Numerics.Vector2(0, 0)
                     : new System.Numerics.Vector2(5, 0);
                 server.CreatePawnEntity(unitName, camp, spawnPos);
@@ -108,7 +110,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// <summary>
     /// 获取房间服务器（仅战斗中的房间有此数据）。
     /// </summary>
-    public RoomEntityServer? GetRoomServer(string roomId) {
+    public BattleRoomServer? GetRoomServer(string roomId) {
         _roomServers.TryGetValue(roomId, out var server);
         return server;
     }
@@ -128,12 +130,10 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         return config;
     }
 
-    // ── 准备阶段单位管理 ────────────────────────────────
-
     /// <summary>
     /// 在大厅准备阶段添加单位。
     /// </summary>
-    public bool AddPrepareUnit(string roomId, string unitName, byte camp) {
+    public bool AddPrepareUnit(string roomId, string unitName, string camp) {
         if (!_prepareUnits.TryGetValue(roomId, out var units))
             return false;
 
@@ -149,7 +149,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// <summary>
     /// 在大厅准备阶段移除单位。
     /// </summary>
-    public bool RemovePrepareUnit(string roomId, string unitName, byte camp) {
+    public bool RemovePrepareUnit(string roomId, string unitName, string camp) {
         if (!_prepareUnits.TryGetValue(roomId, out var units))
             return false;
 
@@ -165,13 +165,11 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// <summary>
     /// 获取准备阶段单位列表。
     /// </summary>
-    public List<(string UnitName, byte Camp)> GetPrepareUnits(string roomId) {
+    public List<(string UnitName, string Camp)> GetPrepareUnits(string roomId) {
         if (_prepareUnits.TryGetValue(roomId, out var units))
             return [.. units];
         return [];
     }
-
-    // ── 准备阶段 peer 管理 ───────────────────────────────
 
     /// <summary>
     /// 将大厅 peer 注册到房间（用于准备阶段的广播）。
@@ -203,8 +201,6 @@ public class GameLobby(ILoggerFactory loggerFactory) {
             return [.. peers.Values];
         return [];
     }
-
-    // ── 招募板 ────────────────────────────────────────────
 
     /// <summary>
     /// 获取所有有效房间的招募板列表，按创建时间倒序排列。
@@ -284,8 +280,9 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         }
     }
 
-    // ── CLI ───────────────────────────────────────────────
-
+    /// <summary>
+    /// 输出所有房间的基本信息（用于控制台命令 rooms）。
+    /// </summary>
     public void ListRooms() {
         foreach (var (id, config) in _roomConfigs) {
             bool isBattle = _roomServers.ContainsKey(id);
@@ -296,6 +293,11 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         }
     }
 
+    /// <summary>
+    /// 运行控制台交互循环，支持 help / status / rooms / exit 命令。
+    /// </summary>
+    /// <param name="getPeerCount">获取当前在线人数委托。</param>
+    /// <param name="getUptime">获取服务运行时长委托。</param>
     public void RunConsoleLoop(Func<int> getPeerCount, Func<TimeSpan> getUptime) {
         while (true) {
             Console.Write("> ");

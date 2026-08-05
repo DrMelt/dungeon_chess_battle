@@ -4,7 +4,11 @@ using Godot;
 
 namespace DungeonChessBattle;
 
+/// <summary>
+/// 物理持续伤害（DOT）Buff。
+/// </summary>
 [GlobalClass]
 public partial class Buff_DOT_Physcial : BuffBaseGodot {
-    protected override BuffConfig Config => GameConfigDB.BuffDotPhyscial;
+    /// <summary>指向物理 DOT 的 BuffConfig 配置。</summary>
+    protected override BuffConfig Config => GameConfigDB.BuffDotPhysical;
 }

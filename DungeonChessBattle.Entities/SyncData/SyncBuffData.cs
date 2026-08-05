@@ -30,8 +30,13 @@ public struct SyncBuffData : ISpanSerializable {
     /// <summary>伤害类型（仅 DOT 有效，HOT 和纯 Buff 忽略）</summary>
     public byte DamageType;
 
+    /// <summary>序列化后的最大字节数。</summary>
     public readonly int MaxSize => 2 + 4 + 4 + 4 + 2 + 2 + 2 + 1; // 21 bytes
 
+    /// <summary>
+    /// 序列化到网络缓冲区。
+    /// </summary>
+    /// <param name="writer">序列化写入器。</param>
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(BuffTypeId);
         writer.Put(RemainingDuration);
@@ -43,6 +48,10 @@ public struct SyncBuffData : ISpanSerializable {
         writer.Put(DamageType);
     }
 
+    /// <summary>
+    /// 从网络缓冲区反序列化。
+    /// </summary>
+    /// <param name="reader">序列化读取器。</param>
     public void Deserialize(ref SpanReader reader) {
         BuffTypeId = reader.GetUShort();
         RemainingDuration = reader.GetFloat();

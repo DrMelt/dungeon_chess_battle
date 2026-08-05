@@ -6,9 +6,16 @@ namespace DungeonChessBattle.Entities;
 /// Entity 类型注册表。必须使用枚举类型来注册 Entity。
 /// </summary>
 public enum EntityClassId : ushort {
+    /// <summary>战斗房间实体。</summary>
     BattleRoom = 1,
+
+    /// <summary>房间内玩家实体。</summary>
     PlayerRoom = 2,
+
+    /// <summary>单位人工输入控制器。</summary>
     UnitController = 3,
+
+    /// <summary>单位 Pawn 实体。</summary>
     UnitPawn = 4,
 }
 
@@ -18,6 +25,10 @@ public enum EntityClassId : ushort {
 public static class EntityTypesRegistry {
     private static EntityTypesMap<EntityClassId>? _map;
 
+    /// <summary>
+    /// 获取（或按需创建）Entity 类型映射表。
+    /// </summary>
+    /// <returns>已注册全部实体类型的映射表。</returns>
     public static EntityTypesMap<EntityClassId> GetOrCreateMap() {
         if (_map != null)
             return _map;

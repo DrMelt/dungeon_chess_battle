@@ -6,51 +6,49 @@ namespace DungeonChessBattle;
 /// StateBar 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateBarInterRefs : Node {
+    /// <summary>玩家 UI 设置资源，用于获取阵营颜色。</summary>
     [Export]
-    public UserUISettings? UserUISettingsRef {
-        get => _userUISettingsRef;
-        set => _userUISettingsRef = value;
+    public PlayerUISettings? PlayerUISettingsRef {
+        get; set;
     }
-    private UserUISettings? _userUISettingsRef;
 
+    /// <summary>血条网格实例。</summary>
     [Export]
     public MeshInstance3D? StateBarRef {
-        get => _stateBarRef;
-        set => _stateBarRef = value;
+        get; set;
     }
-    private MeshInstance3D? _stateBarRef;
 
+    /// <summary>生命/护盾百分比 3D 标签。</summary>
     [Export]
     public Label3D? Label3DPercentRef {
-        get => _label3DPercentRef;
-        set => _label3DPercentRef = value;
+        get; set;
     }
-    private Label3D? _label3DPercentRef;
 
+    /// <summary>生命/护盾数值 3D 标签。</summary>
     [Export]
     public Label3D? Label3DCurrentValueRef {
-        get => _label3DCurrentValueRef;
-        set => _label3DCurrentValueRef = value;
+        get; set;
     }
-    private Label3D? _label3DCurrentValueRef;
 
+    /// <summary>单位名称 3D 标签。</summary>
     [Export]
     public Label3D? Label3DNameRef {
-        get => _label3DNameRef;
-        set => _label3DNameRef = value;
+        get; set;
     }
-    private Label3D? _label3DNameRef;
 
+    /// <summary>
+    /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
+    /// </summary>
     public override void _Ready() {
-        if (_userUISettingsRef == null)
-            GD.PrintErr("[StateBarInterRefs] [Export] UserUISettingsRef is not assigned!");
-        if (_stateBarRef == null)
+        if (PlayerUISettingsRef == null)
+            GD.PrintErr("[StateBarInterRefs] [Export] PlayerUISettingsRef is not assigned!");
+        if (StateBarRef == null)
             GD.PrintErr("[StateBarInterRefs] [Export] StateBarRef is not assigned!");
-        if (_label3DPercentRef == null)
+        if (Label3DPercentRef == null)
             GD.PrintErr("[StateBarInterRefs] [Export] Label3DPercentRef is not assigned!");
-        if (_label3DCurrentValueRef == null)
+        if (Label3DCurrentValueRef == null)
             GD.PrintErr("[StateBarInterRefs] [Export] Label3DCurrentValueRef is not assigned!");
-        if (_label3DNameRef == null)
+        if (Label3DNameRef == null)
             GD.PrintErr("[StateBarInterRefs] [Export] Label3DNameRef is not assigned!");
     }
 }

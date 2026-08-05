@@ -2,11 +2,39 @@ using System.Numerics;
 
 namespace DungeonChessBattle.Core.Math;
 
+/// <summary>
+/// 技能范围判定与几何计算工具。
+/// 使用 XZ 平面（俯视）坐标进行距离与角度判定。
+/// </summary>
 public class Utility {
+    /// <summary>
+    /// 判断检测点是否处于以锚点为圆心、正对方向为基准的扇形环带内（3D XZ 平面重载）。
+    /// </summary>
+    /// <param name="checkedPos">被检测点坐标。</param>
+    /// <param name="pinPos">锚点（扇形圆心）坐标。</param>
+    /// <param name="pinDir">扇形朝向向量。</param>
+    /// <param name="nearClamp">近端半径。</param>
+    /// <param name="farClamp">远端半径。</param>
+    /// <param name="radianFrom">扇形起始角（弧度，以朝向为 0）。</param>
+    /// <param name="radianTo">扇形结束角（弧度，以朝向为 0）。</param>
+    /// <param name="bodyRadius">被检测目标的碰撞半径。</param>
+    /// <returns>检测点位于扇形环带内返回 true。</returns>
     public static bool IsInRange_Circular(Vector3 checkedPos, Vector3 pinPos, Vector3 pinDir, float nearClamp, float farClamp, float radianFrom = -MathF.PI, float radianTo = MathF.PI, float bodyRadius = 0f) {
         return IsInRange_Circular(new Vector2(checkedPos.X, checkedPos.Z), new Vector2(pinPos.X, pinPos.Z), new Vector2(pinDir.X, pinDir.Z), nearClamp, farClamp, radianFrom, radianTo, bodyRadius);
     }
 
+    /// <summary>
+    /// 判断检测点是否处于以锚点为圆心、正对方向为基准的扇形环带内（2D 重载）。
+    /// </summary>
+    /// <param name="checkedPos">被检测点坐标。</param>
+    /// <param name="pinPos">锚点（扇形圆心）坐标。</param>
+    /// <param name="pinDir">扇形朝向向量。</param>
+    /// <param name="nearClamp">近端半径。</param>
+    /// <param name="farClamp">远端半径。</param>
+    /// <param name="radianFrom">扇形起始角（弧度，以朝向为 0）。</param>
+    /// <param name="radianTo">扇形结束角（弧度，以朝向为 0）。</param>
+    /// <param name="bodyRadius">被检测目标的碰撞半径。</param>
+    /// <returns>检测点位于扇形环带内返回 true。</returns>
     public static bool IsInRange_Circular(Vector2 checkedPos, Vector2 pinPos, Vector2 pinDir, float nearClamp, float farClamp, float radianFrom = -MathF.PI, float radianTo = MathF.PI, float bodyRadius = 0f) {
         pinDir = Vector2.Normalize(pinDir);
 
@@ -38,10 +66,34 @@ public class Utility {
         return false;
     }
 
+    /// <summary>
+    /// 判断检测点是否处于以锚点为起点、正对方向为基准的矩形区域内（3D XZ 平面重载）。
+    /// </summary>
+    /// <param name="checkedPos">被检测点坐标。</param>
+    /// <param name="pinPos">锚点（矩形区域起点）坐标。</param>
+    /// <param name="pinDir">矩形区域朝向向量。</param>
+    /// <param name="nearClamp">近端沿朝向的边界。</param>
+    /// <param name="farClamp">远端沿朝向的边界。</param>
+    /// <param name="fromL">左侧横向边界。</param>
+    /// <param name="toR">右侧横向边界。</param>
+    /// <param name="bodyRadius">被检测目标的碰撞半径。</param>
+    /// <returns>检测点位于矩形区域内返回 true。</returns>
     public static bool IsInRange_Rect(Vector3 checkedPos, Vector3 pinPos, Vector3 pinDir, float nearClamp, float farClamp, float fromL, float toR, float bodyRadius = 0f) {
         return IsInRange_Rect(new Vector2(checkedPos.X, checkedPos.Z), new Vector2(pinPos.X, pinPos.Z), new Vector2(pinDir.X, pinDir.Z), nearClamp, farClamp, fromL, toR, bodyRadius);
     }
 
+    /// <summary>
+    /// 判断检测点是否处于以锚点为起点、正对方向为基准的矩形区域内（2D 重载）。
+    /// </summary>
+    /// <param name="checkedPos">被检测点坐标。</param>
+    /// <param name="pinPos">锚点（矩形区域起点）坐标。</param>
+    /// <param name="pinDir">矩形区域朝向向量。</param>
+    /// <param name="nearClamp">近端沿朝向的边界。</param>
+    /// <param name="farClamp">远端沿朝向的边界。</param>
+    /// <param name="fromLeft">左侧横向边界。</param>
+    /// <param name="toRight">右侧横向边界。</param>
+    /// <param name="bodyRadius">被检测目标的碰撞半径。</param>
+    /// <returns>检测点位于矩形区域内返回 true。</returns>
     public static bool IsInRange_Rect(Vector2 checkedPos, Vector2 pinPos, Vector2 pinDir, float nearClamp, float farClamp, float fromLeft, float toRight, float bodyRadius = 0f) {
         pinDir = Vector2.Normalize(pinDir);
         Vector2 toCheck = checkedPos - pinPos;

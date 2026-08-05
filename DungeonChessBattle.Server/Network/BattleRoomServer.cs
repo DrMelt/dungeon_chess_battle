@@ -23,10 +23,9 @@ namespace DungeonChessBattle.Server.Network;
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：通过 playerId 白名单验证连接请求，保留断连玩家的 Entity。
 /// </summary>
-public class RoomEntityServer : INetEventListener {
+public class BattleRoomServer : INetEventListener {
     private readonly NetManager _netManager;
-    private readonly ServerEntityManager _entityManager;
-    private readonly ILogger<RoomEntityServer> _logger;
+    private readonly ILogger<BattleRoomServer> _logger;
     private const string DefaultConnectionKey = "DungeonChessBattle";
     private const byte PacketHeader = 0xDC;
     private const double TickInterval = 0.02; // 50 Hz
@@ -38,13 +37,11 @@ public class RoomEntityServer : INetEventListener {
     private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
     private double _lastTickTime;
 
-    // ── 玩家会话（P2-5：7 个独立字典合并为 2 个） ──────
     /// <summary>playerId → PlayerSession 聚合映射（线程安全）</summary>
     private readonly ConcurrentDictionary<string, PlayerSession> _sessions = new();
     /// <summary>peer.Id → playerId 反向索引（断开时快速查找）</summary>
     private readonly ConcurrentDictionary<int, string> _peerToPlayerId = new();
 
-    // ── 连接验证 ─────────────────────────────────────────
     /// <summary>合法 playerId 白名单（活跃 + 宽限期内）。也可用 _sessions.Keys 替代，保留独立集合以加速 OnConnectionRequest 热路径。</summary>
     private readonly ConcurrentDictionary<string, byte> _validPlayerIds = new();
     /// <summary>已接受的连接密钥队列（OnConnectionRequest 入队，OnPeerConnected 出队）。
@@ -54,7 +51,6 @@ public class RoomEntityServer : INetEventListener {
     /// 保留 ConcurrentQueue 以保证线程安全。</summary>
     private readonly ConcurrentQueue<string> _acceptedKeys = new();
 
-    // ── 房间数据所有权（从 GameLobby 迁移） ──────────────
     /// <summary>本房间的所有 UnitPawn</summary>
     private readonly List<UnitPawn> _roomPawns = [];
 
@@ -67,22 +63,34 @@ public class RoomEntityServer : INetEventListener {
     /// <summary>本房间的战斗管理器</summary>
     private BattleManager? _battle;
 
-    // ── 公开属性 ─────────────────────────────────────────
-    public ServerEntityManager EntityManager => _entityManager;
+    /// <summary>实体管理器。</summary>
+    public ServerEntityManager EntityManager {
+        get;
+    }
+
+    /// <summary>监听端口。</summary>
     public int Port {
         get;
     }
+
+    /// <summary>房间标识。</summary>
     public string RoomId {
         get;
     }
+
+    /// <summary>当前连接数。</summary>
     public int PeerCount => _netManager.ConnectedPeersCount;
+
     /// <summary>仅用于调试/测试，不应在运行时由外部线程访问</summary>
     internal UnitPawn[] GetPawnsSnapshot() => [.. _roomPawns];
 
     /// <summary>房间服务器是否正在运行</summary>
     public bool IsRunning => _running;
 
+    /// <summary>客户端连接事件。参数：peer ID。</summary>
     public event Action<int>? OnClientConnected;
+
+    /// <summary>客户端断开事件。参数：peer ID。</summary>
     public event Action<int>? OnClientDisconnected;
 
     /// <summary>玩家彻底离开房间事件（超出宽限期后触发）</summary>
@@ -91,13 +99,13 @@ public class RoomEntityServer : INetEventListener {
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
     /// <param name="logger">日志器</param>
-    public RoomEntityServer(int port, string roomId, ILogger<RoomEntityServer> logger) {
+    public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger) {
         Port = port;
         RoomId = roomId;
         _logger = logger;
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
-        _entityManager = new ServerEntityManager(
+        EntityManager = new ServerEntityManager(
             typesMap,
             PacketHeader,
             framesPerSecond: 60,
@@ -106,13 +114,14 @@ public class RoomEntityServer : INetEventListener {
         _netManager = new NetManager(this);
     }
 
-    // ── 生命周期 ─────────────────────────────────────────
-
+    /// <summary>
+    /// 启动房间服务器：创建 BattleRoomEntity 与 Logic 房间，并启动独立线程主循环。
+    /// </summary>
     public void Start() {
         _netManager.Start(Port);
 
         // 在房间 SEM 中创建 BattleRoomEntity，并订阅其实例事件
-        _roomEntity = _entityManager.AddEntity<BattleRoomEntity>(e => {
+        _roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
 
@@ -135,6 +144,9 @@ public class RoomEntityServer : INetEventListener {
                 RoomId, Port, _loopThread.Name);
     }
 
+    /// <summary>
+    /// 停止房间服务器：取消订阅事件、清理重连数据并关闭网络。
+    /// </summary>
     public void Stop() {
         _running = false;
 
@@ -160,8 +172,9 @@ public class RoomEntityServer : INetEventListener {
             _logger.LogInformation("[RoomServer] Room '{RoomId}' stopped on port {Port}", RoomId, Port);
     }
 
-    // ── 主循环（独立线程） ───────────────────────────────
-
+    /// <summary>
+    /// 房间服务器主循环（独立线程）：轮询网络事件并以固定间隔驱动实体同步与战斗逻辑。
+    /// </summary>
     private void RunLoop() {
         while (_running) {
             try {
@@ -175,7 +188,7 @@ public class RoomEntityServer : INetEventListener {
                     _lastTickTime = now;
 
                     // 2. Entity 同步
-                    _entityManager.Update();
+                    EntityManager.Update();
 
                     // 3. 战斗 Tick + Buff 更新
                     if (_battle?.CurrentPhase == BattlePhase.Running) {
@@ -219,8 +232,6 @@ public class RoomEntityServer : INetEventListener {
         _netManager.PollEvents();
     }
 
-    // ── 公开方法（供 GameServer 大厅层调用） ─────────────
-
     /// <summary>
     /// 大厅层预注册玩家到白名单。客户端真正连接房间端口前调用。
     /// </summary>
@@ -251,8 +262,6 @@ public class RoomEntityServer : INetEventListener {
             _sessions[playerId] = new PlayerSession(playerId, playerName);
         }
     }
-
-    // ── INetEventListener ─────────────────────────────────
 
     void INetEventListener.OnConnectionRequest(ConnectionRequest request) {
         string incomingKey = request.Data.GetString();
@@ -296,7 +305,7 @@ public class RoomEntityServer : INetEventListener {
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
         if (peer.Tag is LiteNetLibNetPeer lesPeer)
-            _entityManager.RemovePlayer(lesPeer);
+            EntityManager.RemovePlayer(lesPeer);
 
         // 查找该 peer 对应的 playerId（通过反向索引）
         _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
@@ -331,7 +340,7 @@ public class RoomEntityServer : INetEventListener {
         var data = reader.GetRemainingBytes();
         if (data.Length > 0 && data[0] == PacketHeader) {
             if (peer.Tag is LiteNetLibNetPeer lesPeer)
-                _entityManager.Deserialize(lesPeer, data);
+                EntityManager.Deserialize(lesPeer, data);
         }
         // 房间端口不处理 JSON 自定义包（所有逻辑走 LES RPC）
     }
@@ -341,14 +350,12 @@ public class RoomEntityServer : INetEventListener {
     void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency) {
     }
 
-    // ── 玩家连接处理 ─────────────────────────────────────
-
     /// <summary>
     /// 处理新玩家首次连接：创建 PlayerSession + PlayerRoomEntity。
     /// </summary>
     private void HandleNewPlayerConnect(NetPeer peer, string? connectionKey) {
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
-        var netPlayer = _entityManager.AddPlayer(lesPeer);
+        var netPlayer = EntityManager.AddPlayer(lesPeer);
 
         // 确定 playerId（优先使用连接密钥中的 playerId）
         string effectivePlayerId = (connectionKey != null && connectionKey != DefaultConnectionKey)
@@ -364,12 +371,12 @@ public class RoomEntityServer : INetEventListener {
         string displayId = session.DisplayId;
 
         // 创建 PlayerRoomEntity
-        var playerEntity = _entityManager.AddEntity<PlayerRoomEntity>(e => {
+        var playerEntity = EntityManager.AddEntity<PlayerRoomEntity>(e => {
             e.PlayerName.Value = playerName;
             e.DisplayId.Value = displayId;
             e.PlayerState.Value = (byte)PlayerConnectionState.Connected;
             e.IsReady.Value = false;
-            e.Camp.Value = 0;
+            e.Camp.Value = string.Empty;
         });
 
         if (playerEntity != null) {
@@ -403,7 +410,7 @@ public class RoomEntityServer : INetEventListener {
 
         // 重建网络层绑定
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
-        var netPlayer = _entityManager.AddPlayer(lesPeer);
+        var netPlayer = EntityManager.AddPlayer(lesPeer);
         session.PeerId = peer.Id;
         session.NetPlayer = netPlayer;
         _peerToPlayerId[peer.Id] = playerId;
@@ -427,7 +434,7 @@ public class RoomEntityServer : INetEventListener {
 
         // 从 LES 框架移除旧玩家
         if (session.NetPlayer != null)
-            _entityManager.RemovePlayer(session.NetPlayer);
+            EntityManager.RemovePlayer(session.NetPlayer);
 
         _peerToPlayerId.TryRemove(oldPeerId, out _);
         session.NetPlayer = null;
@@ -437,8 +444,6 @@ public class RoomEntityServer : INetEventListener {
             _logger.LogDebug("[RoomServer:{RoomId}] Old peer {OldPeerId} disconnected for playerId '{PlayerId}' (replaced by new).",
                 RoomId, oldPeerId, playerId);
     }
-
-    // ── 断连清理 ──────────────────────────────────────────
 
     /// <summary>
     /// 检查并清理超出宽限期的断连玩家。
@@ -474,13 +479,11 @@ public class RoomEntityServer : INetEventListener {
         PlayerRemoved?.Invoke(RoomId, playerId);
     }
 
-    // ── Pawn 管理 ────────────────────────────────────────
-
     /// <summary>
     /// 在本房间的 SEM 中创建 UnitPawn 实体。
     /// </summary>
-    public UnitPawn CreatePawnEntity(string unitName, byte camp, Vector2 spawnPos) {
-        var entity = _entityManager.AddEntity<UnitPawn>(e => {
+    public UnitPawn CreatePawnEntity(string unitName, string camp, Vector2 spawnPos) {
+        var entity = EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitName.Value = unitName;
             e.Camp.Value = camp;
             e.Position.Value = spawnPos;
@@ -504,8 +507,6 @@ public class RoomEntityServer : INetEventListener {
         return _roomPawns.Find(p => p.Id == netId);
     }
 
-    // ── 战斗管理 ──────────────────────────────────────────
-
     /// <summary>
     /// 在本房间启动战斗。
     /// </summary>
@@ -524,10 +525,11 @@ public class RoomEntityServer : INetEventListener {
     /// </summary>
     public BattleRoomEntity? GetRoomEntity() => _roomEntity;
 
-    // ── RPC 事件处理（实例事件，仅本房间） ─────────────────
-
+    /// <summary>
+    /// RPC：客户端请求创建单位。
+    /// </summary>
     private void OnCreateUnitRequested(BattleRoomEntity roomEntity, SyncCreateUnitRequest req) {
-        var spawnPos = req.Camp == 1
+        var spawnPos = req.Camp == CampConstants.CampA
             ? new Vector2(0, 0)
             : new Vector2(5, 0);
 
@@ -538,6 +540,9 @@ public class RoomEntityServer : INetEventListener {
                 RoomId, req.UnitName, req.Camp);
     }
 
+    /// <summary>
+    /// RPC：客户端请求开始战斗。
+    /// </summary>
     private void OnStartBattleRequested(BattleRoomEntity roomEntity) {
         StartBattle();
         if (_logger.IsEnabled(LogLevel.Information))
@@ -571,7 +576,7 @@ public class RoomEntityServer : INetEventListener {
         if (req.IsDamage) {
             var skill = new SkillDamageModel {
                 Damage = req.DamageOrCureValue,
-                DamageType = (Enum_DamageType)req.DamageType
+                DamageType = (DamageType)req.DamageType
             };
             GameLogicService.CastSkill(_battle, casterModel, targetModel, skill);
         }
@@ -587,8 +592,9 @@ public class RoomEntityServer : INetEventListener {
                 RoomId, casterPawn.UnitName.Value, targetPawn.UnitName.Value, oldTargetHealth, targetPawn.Health.Value);
     }
 
-    // ── 内部辅助 ──────────────────────────────────────────
-
+    /// <summary>
+    /// 战斗开始时更新房间实体阶段状态。
+    /// </summary>
     private void OnBattleStarted() {
         if (_roomEntity != null) {
             _roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
@@ -596,6 +602,9 @@ public class RoomEntityServer : INetEventListener {
         }
     }
 
+    /// <summary>
+    /// 战斗结束时更新房间实体阶段与胜方阵营状态。
+    /// </summary>
     private void OnBattleEnded() {
         if (_roomEntity != null) {
             _roomEntity.BattlePhase.Value = (byte)BattlePhase.Finished;
@@ -603,12 +612,16 @@ public class RoomEntityServer : INetEventListener {
 
             var gameRoom = _logicService.GetRoom(RoomId);
             if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
-                _roomEntity.WinnerCamp.Value = (byte)(
-                    BattleResolver.HasAliveUnits(gameRoom.UnitsA) ? 1u : 2u);
+                _roomEntity.WinnerCamp.Value = BattleResolver.HasAliveUnits(gameRoom.UnitsA)
+                    ? CampConstants.CampA
+                    : CampConstants.CampB;
             }
         }
     }
 
+    /// <summary>
+    /// 检查战斗是否已结束，结束时通知战斗管理器。
+    /// </summary>
     private void CheckBattleEnded() {
         if (_battle?.CurrentPhase != BattlePhase.Running)
             return;

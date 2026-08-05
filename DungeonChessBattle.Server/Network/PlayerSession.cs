@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Server.Network;
 
 /// <summary>
 /// 聚合单个玩家在房间内的所有关联状态。
-/// 将原本散落在 RoomEntityServer 中的 7 个独立字典统一为一个聚合对象，
+/// 将原本散落在 BattleRoomServer 中的 7 个独立字典统一为一个聚合对象，
 /// 通过 playerId 索引的 ConcurrentDictionary 实现线程安全访问。
 /// </summary>
 internal sealed class PlayerSession(string playerId, string playerName) {

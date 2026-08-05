@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
     <WarningsAsErrors>nullable</WarningsAsErrors>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 </Project>

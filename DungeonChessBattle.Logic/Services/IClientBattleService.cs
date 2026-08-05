@@ -9,9 +9,8 @@ namespace DungeonChessBattle.Logic.Services;
 /// 所有方法使用 roomId 作为上下文标识，不暴露 BattleManager。
 /// </summary>
 public interface IClientBattleService {
-    // ── 事件（UI 层订阅） ──
-    /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(byte)</summary>
-    event Action<string, string, byte>? OnUnitCreated;
+    /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)</summary>
+    event Action<string, string, string>? OnUnitCreated;
 
     /// <summary>战斗阶段变化事件。参数：房间ID、战斗阶段</summary>
     event Action<string, BattlePhase>? BattlePhaseChanged;
@@ -28,20 +27,56 @@ public interface IClientBattleService {
     /// <summary>单位移除 Buff 事件。参数：单位名称、Buff 数据</summary>
     event Action<string, BuffEventData>? UnitBuffRemoved;
 
-    // 房间管理
+    /// <summary>
+    /// 按 ID 获取房间。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <returns>对应的房间；不存在时返回 null。</returns>
     GameRoom? GetRoom(string roomId);
-    IEnumerable<GameRoom> GetAllRooms();
-    GameRoom CreateRoom(string roomId);
-    IUnitState CreateUnit(string roomId, string unitName, byte camp);
 
-    // 技能（客户端发起）
+    /// <summary>获取全部房间。</summary>
+    IEnumerable<GameRoom> GetAllRooms();
+
+    /// <summary>
+    /// 创建房间。
+    /// </summary>
+    /// <param name="roomId">房间唯一 ID。</param>
+    /// <returns>新建的房间。</returns>
+    GameRoom CreateRoom(string roomId);
+
+    /// <summary>
+    /// 在指定房间创建单位。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitName">单位名称。</param>
+    /// <param name="camp">阵营字符串标识（如 "Camp_A"、"Camp_B"）。</param>
+    /// <returns>创建的单位状态。</returns>
+    IUnitState CreateUnit(string roomId, string unitName, string camp);
+
+    /// <summary>
+    /// 对目标施放技能（客户端发起）。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="caster">施法单位。</param>
+    /// <param name="target">目标单位。</param>
+    /// <param name="skill">技能模型。</param>
+    /// <param name="allUnits">所有可命中的检测单位（范围伤害技能需要）。</param>
     void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
         IReadOnlyList<IUnitState>? allUnits = null);
 
-    // Buff 更新（服务端权威结算后下推；本地模式由 Logic 层直接处理）
+    /// <summary>
+    /// 按帧推进单位集合的 Buff 状态（服务端权威结算后下推；本地模式由 Logic 层直接处理）。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="units">要更新的单位集合。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
     void UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime);
 
-    // 胜负判定
+    /// <summary>
+    /// 判断指定房间的战斗是否已结束。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <returns>已结束返回 true。</returns>
     bool CheckBattleEnded(string roomId);
 
     /// <summary>请求开始战斗。网络模式通过 RPC 发送，本地模式直接调用内部逻辑。</summary>
