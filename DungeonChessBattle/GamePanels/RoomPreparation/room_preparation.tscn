@@ -74,10 +74,6 @@ UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VB
 UnitSelectPanel = NodePath("../UnitSelectPanel")
 UnitCardScene = ExtResource("5_n634y")
 
-[node name="UnitSelectPanel" parent="." unique_id=-1190685729 instance=ExtResource("6_select_panel")]
-visible = false
-layout_mode = 1
-
 [node name="Panel" type="Panel" parent="." unique_id=690445033]
 layout_mode = 1
 anchors_preset = -1
@@ -202,3 +198,8 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_start_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "开始战斗"
+
+[node name="UnitSelectPanel" parent="." unique_id=-1190685729 instance=ExtResource("6_select_panel")]
+visible = false
+layout_mode = 1
+mouse_filter = 1

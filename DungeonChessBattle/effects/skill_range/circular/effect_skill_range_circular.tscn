@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://82y4rbnu1uyx" path="res://effects/skill_range/circular/SkillRangeCircular_Hint.cs" id="1_tx0d2"]
 [ext_resource type="Shader" uid="uid://cyc28jqvii3bm" path="res://effects/skill_range/circular/circular_region.tres" id="2_8013p"]
-[ext_resource type="Script" uid="uid://ripkwd2x3tlk" path="res://effects/skill_range/circular/SkillRangeCircular_HintInterRefs.cs" id="3_interrefs"]
+[ext_resource type="Script" uid="uid://dnlyu6ubdk8n3" path="res://effects/skill_range/circular/SkillRangeCircular_HintInterRefs.cs" id="3_interrefs"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dowf7"]
 resource_local_to_scene = true

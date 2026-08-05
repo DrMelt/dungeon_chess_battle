@@ -54,8 +54,8 @@ public partial class RoomPreparation : BaseGamePanel {
         }
 
         InterRefs?.SelectUnitButton?.Pressed += () => {
-            if (InterRefs?.UnitSelectPanel is not null)
-                NavigateTo(InterRefs.UnitSelectPanel);
+            // UnitSelectPanel 为本面板的子节点覆盖层，直接打开而不隐藏本面板
+            InterRefs?.UnitSelectPanel?.OpenPanelFrom();
         };
         InterRefs?.BackButton?.Pressed += GoBack;
         var startBtn = InterRefs?.StartBattleButton;
