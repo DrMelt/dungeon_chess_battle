@@ -91,8 +91,8 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     /// <summary>
     /// 请求开始战斗（仅房主可发起，需其他玩家已全部准备）。
     /// </summary>
-    public void RequestPrepareStartBattle(string roomId, string playerName) {
-        SendCommand(MessageWriter.WritePrepareStartBattle(roomId, playerName));
+    public void RequestPrepareStartBattle(string roomId, string playerName, string playerId) {
+        SendCommand(MessageWriter.WritePrepareStartBattle(roomId, playerName, playerId));
     }
 
     /// <summary>

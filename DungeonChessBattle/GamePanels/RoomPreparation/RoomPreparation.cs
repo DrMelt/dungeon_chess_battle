@@ -394,7 +394,8 @@ public partial class RoomPreparation : BaseGamePanel {
 
         if (ServiceLocator.ClientService.IsConnected) {
             // 网络模式：通过大厅 LobbyClient JSON 协议发送 prepare_start_battle
-            ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle(_roomId, ServiceLocator.ClientService.PlayerName);
+            ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle(
+                _roomId, ServiceLocator.ClientService.PlayerName, ServiceLocator.ClientService.PlayerId);
         }
         else {
             // 本地模式：通过信号通知 GameLobby

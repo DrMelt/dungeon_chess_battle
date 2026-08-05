@@ -19,6 +19,3 @@ HBoxContainerRef = NodePath("../HBoxContainer_Skills")
 layout_mode = 1
 offset_right = 88.0
 offset_bottom = 88.0
-
-[node name="Button_SkillBase" parent="HBoxContainer_Skills" unique_id=147950882 instance=ExtResource("2_cw1qh")]
-layout_mode = 2

@@ -23,6 +23,9 @@ public partial class ButtonSkillBase : Button {
     /// <summary>绑定的技能（由 Init 注入）。</summary>
     private UnitSkillBaseGodot? _bindingSkill;
 
+    /// <summary>是否已完成 Init 初始化（未初始化时隐藏，防止悬停误触）。</summary>
+    public bool IsInitialized => _bindingSkill != null;
+
     /// <summary>绑定的技能对象。</summary>
     public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
 
@@ -52,6 +55,13 @@ public partial class ButtonSkillBase : Button {
     /// <summary>初始化按钮：校验导出并注册鼠标悬浮 UI 判定。</summary>
     public override void _Ready() {
         ValidateExports();
+
+        // 未调用 Init 的预置按钮（如场景中残留实例）隐藏自身，避免悬停时访问未初始化技能
+        if (!IsInitialized) {
+            Visible = false;
+            MouseDefaultCursorShape = CursorShape.Arrow;
+            return;
+        }
 
         var uiRes = _playerInterfaceRes;
         MouseEntered += () => {

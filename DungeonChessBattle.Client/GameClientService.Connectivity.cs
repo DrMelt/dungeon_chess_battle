@@ -8,6 +8,9 @@ namespace DungeonChessBattle.Client;
 /// 连接事件回调、后台更新循环与超时处理。
 /// </summary>
 public sealed partial class GameClientService {
+    /// <summary>战斗启动重定向时暂存的 roomId（区别于加入房间重定向 _pendingJoinRoomId）。</summary>
+    private string? _pendingBattleRoomId;
+
     // 房间重定向处理
 
     /// <summary>
@@ -15,7 +18,11 @@ public sealed partial class GameClientService {
     /// 由大厅重定向触发，用于切换到物理隔离的房间 SEM。
     /// 使用客户端持久 _playerId 作为连接密钥（P0-1：playerId 不从服务端回传）。
     /// </summary>
-    private void ReconnectToRoom(string host, int roomPort, string roomId) {
+    /// <param name="host">服务器主机地址。</param>
+    /// <param name="roomPort">房间端口。</param>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="isBattleStart">是否为战斗启动重定向（区别于加入房间重定向）。</param>
+    private void ReconnectToRoom(string host, int roomPort, string roomId, bool isBattleStart = false) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("重连至房间端口: {Host}:{Port}, RoomId={RoomId}", host, roomPort, roomId);
 
@@ -26,7 +33,16 @@ public sealed partial class GameClientService {
             _cachedRoomPort = roomPort;
             _cachedRoomId = roomId;
             _connected = false;
-            _pendingJoinRoomId = roomId;
+            if (isBattleStart) {
+                // 战斗启动重定向：连接成功后触发 OnBattleStarted，而非 OnRoomJoined
+                _pendingBattleRoomId = roomId;
+                _pendingJoinRoomId = null;
+            }
+            else {
+                // 加入房间重定向：连接成功后桥接 OnRoomJoined
+                _pendingJoinRoomId = roomId;
+                _pendingBattleRoomId = null;
+            }
 
             // 使用客户端持久 _playerId 作为连接密钥（服务端白名单验证）
             RoomClient.Reconnect(host, roomPort, PlayerId);

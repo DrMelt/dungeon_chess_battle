@@ -48,7 +48,7 @@ public partial class SkillInfoPanel : Control {
         bool isShow = false;
 
         if (control != null) {
-            if (control is ButtonSkillBase mouseOnButtonSkill) {
+            if (control is ButtonSkillBase { IsInitialized: true } mouseOnButtonSkill) {
                 skillNameLabel?.Text = mouseOnButtonSkill.BindSkill.SkillName;
                 skillDescriptionLabel?.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
                 isShow = true;

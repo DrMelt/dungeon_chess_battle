@@ -150,6 +150,7 @@ public partial class GameServer {
         string hostDisplayName = GetDisplayName(root, playerId);
         _lobby.SetRoomHost(roomId, hostDisplayName);
         _lobby.RegisterRoomPlayer(roomId, hostDisplayName, peer);
+        _lobby.RegisterRoomPlayerId(roomId, hostDisplayName, playerId);
 
         // 准备阶段：不重定向，只返回成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
@@ -191,6 +192,7 @@ public partial class GameServer {
         string displayName = GetDisplayName(root, playerId);
         // 登记玩家为房间准备成员（默认未准备）
         _lobby.RegisterRoomPlayer(roomId, displayName, peer);
+        _lobby.RegisterRoomPlayerId(roomId, displayName, playerId);
 
         // 准备阶段加入：不重定向，直接成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, true));
@@ -319,14 +321,31 @@ public partial class GameServer {
 
         // 创建 BattleRoomServer 并迁移单位
         var server = _lobby.StartRoomBattle(roomId);
-        server.RegisterPlayer(playerId, playerName);
 
-        // 发送重定向（含端口号）
-        SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, server.Port));
+        // 用服务端权威数据将房间内所有玩家注册进白名单（不只房主，供非房主重连）
+        var roomPlayerIds = _lobby.GetRoomPlayerIds(roomId);
+        var (_, _, roomPlayers) = _lobby.GetRoomState(roomId);
+        int registeredCount = 0;
+        foreach (var (memberName, _) in roomPlayers) {
+            if (roomPlayerIds.TryGetValue(memberName, out var memberPlayerId) && !string.IsNullOrEmpty(memberPlayerId)) {
+                server.RegisterPlayer(memberPlayerId, memberName);
+                registeredCount++;
+            }
+        }
+        // 兜底：发起者自身 playerId 应已包含在房主登记中，缺失时补注册
+        if (!roomPlayerIds.ContainsKey(playerName) && !string.IsNullOrEmpty(playerId)) {
+            server.RegisterPlayer(playerId, playerName);
+            registeredCount++;
+        }
+
+        // 向房间内所有玩家广播重定向（含端口号），确保非房主也能进入战斗
+        var redirectMsg = MessageWriter.WritePrepareStartBattleResponse(roomId, server.Port);
+        foreach (var p in _lobby.GetRoomPeers(roomId))
+            SendToPeer(p, redirectMsg);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), player='{Player}' ({PlayerId}) redirected.",
-                roomId, server.Port, playerName, playerId);
+            _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), registered={RegisteredCount}/{PlayerCount} players.",
+                roomId, server.Port, registeredCount, roomPlayers.Count);
     }
 
     /// <summary>

@@ -295,9 +295,9 @@ public static class MessageWriter {
     }
 
     /// <summary>
-    /// 写入开始战斗请求：{ "type":"prepare_start_battle", "roomId":..., "playerName":... }
+    /// 写入开始战斗请求：{ "type":"prepare_start_battle", "roomId":..., "playerName":..., "playerId":... }
     /// </summary>
-    public static byte[] WritePrepareStartBattle(string roomId, string playerName) {
+    public static byte[] WritePrepareStartBattle(string roomId, string playerName, string playerId) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -305,6 +305,7 @@ public static class MessageWriter {
         writer.WriteString(TypeKey, MessageType.PrepareStartBattle);
         writer.WriteString(RoomIdKey, roomId);
         writer.WriteString(PlayerNameKey, playerName);
+        writer.WriteString(PlayerIdKey, playerId);
         writer.WriteEndObject();
 
         writer.Flush();

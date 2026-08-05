@@ -57,10 +57,11 @@ shader_parameter/outline_width = 0.002
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
 bg_color = Color(0, 0, 0, 1)
 
-[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_unitsShow", "_playerOperationInterfaceInfo")]
+[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_mainMenu", "_gameLobby", "_frontUI", "_unitsShow", "_playerOperationInterfaceInfo")]
 script = ExtResource("34_main")
 _mainMenu = NodePath("Interface/FrontUI/MainMenu")
 _gameLobby = NodePath("Interface/FrontUI/GameLobby")
+_frontUI = NodePath("Interface/FrontUI")
 _unitsShow = NodePath("UnitsInSceneView")
 _playerOperationInterfaceInfo = NodePath("Interface/PlayerOperationInterface_Info")
 _unitShowScene = ExtResource("35_unit_show")

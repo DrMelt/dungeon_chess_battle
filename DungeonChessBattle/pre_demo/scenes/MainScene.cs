@@ -6,6 +6,7 @@ using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Services;
+using DungeonChessBattle.GamePanels;
 
 namespace DungeonChessBattle;
 
@@ -32,6 +33,9 @@ public partial class MainScene : Node {
     private GameLobby? _gameLobby;
 
     [Export]
+    private Control? _frontUI;
+
+    [Export]
     private UnitsInSceneView? _unitsShow;
 
     [Export]
@@ -46,6 +50,9 @@ public partial class MainScene : Node {
 
     /// <summary>战斗服务（接口类型，通过 ServiceLocator 获取）。唯一服务引用。</summary>
     private IClientBattleService? _battleService;
+
+    /// <summary>前端屏幕状态机，统一仲裁 FrontUI 容器显隐与屏幕态。</summary>
+    private ScreenStateMachine? _screenMachine = null;
 
     private string _roomId = "";
     private bool _inBattle;
@@ -68,6 +75,9 @@ public partial class MainScene : Node {
         // 连接 GameLobby 的 BattleStarted 信号
         _gameLobby?.BattleStarted += OnBattleStarted;
 
+        // 构造屏幕状态机（FrontUI 容器在战斗中整体隐藏）
+        _screenMachine = new ScreenStateMachine(_frontUI, _gameLobby);
+
         // 默认显示主菜单
         _mainMenu?.OpenPanelFrom();
 
@@ -79,6 +89,8 @@ public partial class MainScene : Node {
             GD.PrintErr("[MainScene] [Export] _mainMenu is not assigned!");
         if (_gameLobby == null)
             GD.PrintErr("[MainScene] [Export] _gameLobby is not assigned!");
+        if (_frontUI == null)
+            GD.PrintErr("[MainScene] [Export] _frontUI is not assigned!");
         if (_unitsShow == null)
             GD.PrintErr("[MainScene] [Export] _unitsShow is not assigned!");
         if (_playerOperationInterfaceInfo == null)
@@ -113,7 +125,8 @@ public partial class MainScene : Node {
         // 绑定 UI（通过 VM 触发 View 初始化）
         _playerOperationInterfaceInfo?.BindToBattle();
 
-        _gameLobby?.Visible = false;
+        // 隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
+        _screenMachine?.EnterBattle();
         _inBattle = true;
 
         GD.Print("[MainScene] Entered battle.");
@@ -139,7 +152,8 @@ public partial class MainScene : Node {
         _unitShows.Clear();
         _inBattle = false;
 
-        _gameLobby?.Visible = true;
+        // 恢复前厅 UI（FrontUI 容器 + 大厅面板）
+        _screenMachine?.ExitBattle();
 
         EmitSignal(SignalName.BattleEnded);
         GD.Print("[MainScene] Exited battle.");

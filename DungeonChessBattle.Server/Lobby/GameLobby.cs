@@ -41,6 +41,9 @@ public class GameLobby(ILoggerFactory loggerFactory) {
     /// <summary>房间内玩家的 peer 归属表：peerId → (房间ID, 玩家名)，用于断线清理与身份校验。</summary>
     private readonly ConcurrentDictionary<int, (string RoomId, string PlayerName)> _peerPlayers = new();
 
+    /// <summary>房间内玩家的 playerId 映射表：房间ID → (玩家名 → playerId)，用于战斗启动时注册白名单。</summary>
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> _roomPlayerIds = new();
+
     // 端口池：从 10171 开始递增分配（10170 留给大厅）
     private int _nextPort = 10171;
     private readonly ConcurrentQueue<int> _portPool = new();
@@ -77,6 +80,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         _prepareUnits[roomId] = [];
         _roomPeers[roomId] = [];
         _roomReadyStates[roomId] = [];
+        _roomPlayerIds[roomId] = [];
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Lobby] Room '{RoomId}' registered (prepare), HasPassword={HasPwd}, Title={Title}",
@@ -102,6 +106,30 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         var states = _roomReadyStates.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, bool>());
         states.TryAdd(playerName, false);
         _peerPlayers[peer.Id] = (roomId, playerName);
+    }
+
+    /// <summary>
+    /// 登记房间内玩家的 playerId（用于战斗启动时注册白名单）。
+    /// 房间成员身份以 displayName 为键，playerId 由客户端 create/join 请求携带。
+    /// </summary>
+    public void RegisterRoomPlayerId(string roomId, string playerName, string playerId) {
+        if (string.IsNullOrEmpty(playerId))
+            return;
+
+        var ids = _roomPlayerIds.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, string>());
+        ids[playerName] = playerId;
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[Lobby] Room '{RoomId}' player '{PlayerName}' playerId registered.", roomId, playerName);
+    }
+
+    /// <summary>
+    /// 获取房间内所有玩家的 (玩家名 → playerId) 映射快照。
+    /// </summary>
+    public Dictionary<string, string> GetRoomPlayerIds(string roomId) {
+        if (_roomPlayerIds.TryGetValue(roomId, out var ids))
+            return new Dictionary<string, string>(ids);
+        return [];
     }
 
     /// <summary>
@@ -370,6 +398,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         _roomPeers.TryRemove(roomId, out _);
         _roomHosts.TryRemove(roomId, out _);
         _roomReadyStates.TryRemove(roomId, out _);
+        _roomPlayerIds.TryRemove(roomId, out _);
         // 清理 peerPlayers 中属于该房间的条目
         foreach (var kv in _peerPlayers) {
             if (kv.Value.RoomId == roomId)
@@ -396,6 +425,7 @@ public class GameLobby(ILoggerFactory loggerFactory) {
         _roomPeers.Clear();
         _roomHosts.Clear();
         _roomReadyStates.Clear();
+        _roomPlayerIds.Clear();
         _peerPlayers.Clear();
         while (!_roomServers.IsEmpty) {
             foreach (var (roomId, server) in _roomServers) {

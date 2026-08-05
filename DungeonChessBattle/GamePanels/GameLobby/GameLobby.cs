@@ -96,6 +96,9 @@ public partial class GameLobby : BaseGamePanel {
         ServiceLocator.ClientService.LobbyClient.OnRoomCreated += OnRoomCreatedHandler;
         SubscribeRoomListEvent();
 
+        // 网络模式：服务端确认战斗启动（房间端口连接成功后）→ 桥接 BattleStarted 信号
+        ServiceLocator.ClientService.OnBattleStarted += OnNetworkBattleStarted;
+
         _logger.LogInformation("GameLobby ready");
 
 
@@ -155,6 +158,17 @@ public partial class GameLobby : BaseGamePanel {
                 _logger.LogError("创建房间失败: 无可用服务");
             }
         }
+    }
+
+    /// <summary>
+    /// 网络模式：服务端确认战斗启动后由 GameClientService 触发，
+    /// 桥接为 BattleStarted 信号，复用本地模式进入战斗的同一事件链。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    private void OnNetworkBattleStarted(string roomId) {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("网络战斗启动: {RoomId}", roomId);
+        EmitSignal(SignalName.BattleStarted, roomId);
     }
 
     /// <summary>

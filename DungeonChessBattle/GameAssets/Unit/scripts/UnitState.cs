@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Client;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using DungeonChessBattle.GameAssets.Skills;
@@ -320,29 +319,12 @@ public partial class UnitState : Resource, IUnitState {
         OnBuffRemovedEvent?.Invoke(this, godotBuff);
     }
 
-    /// <summary>战斗服务提供者引用（由场景初始化注入）。</summary>
-    private BattleServiceProvider? _battleServiceProvider;
-
-    /// <summary>
-    /// 设置战斗服务提供者实例，由 Godot 场景初始化时调用。
-    /// </summary>
-    public void SetBattleServiceProvider(BattleServiceProvider? provider) {
-        _battleServiceProvider = provider;
-    }
-
     /// <summary>
     /// 更新所有 Buff 计时；过期 Buff 自动移除并触发事件。
     /// </summary>
     /// <param name="deltaTime">距上次更新的秒数。</param>
     public void UpdateBuffList(double deltaTime) {
-        if (_battleServiceProvider != null) {
-            // roomId 当前不可用（UnitState 层缺少房间上下文），
-            // 但 IClientBattleService.UpdateBuffs 的两个实现均忽略 roomId 参数。
-            _battleServiceProvider.ClientService.UpdateBuffs("", [EnsureSynced()], deltaTime);
-        }
-        else {
-            EnsureSynced().UpdateBuffList(deltaTime);
-        }
+        EnsureSynced().UpdateBuffList(deltaTime);
 
         List<BuffBaseGodot> tempList = [];
         foreach (BuffBaseGodot buffBase in BuffList) {

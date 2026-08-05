@@ -88,6 +88,9 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     /// <summary>连接状态变化事件。参数：主机、端口、是否已连接。</summary>
     public event Action<string, int, bool>? ConnectionChanged;
 
+    /// <summary>战斗启动事件（网络模式：房间端口连接成功后触发）。参数：房间 ID。</summary>
+    public event Action<string>? OnBattleStarted;
+
     // 配置方法（在 Connect 前调用）
 
     /// <summary>
@@ -232,7 +235,7 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
             _cachedRoomPort = roomPort;
-            ReconnectToRoom(Host, roomPort, roomId);
+            ReconnectToRoom(Host, roomPort, roomId, isBattleStart: true);
         };
         LobbyClient.OnReconnectFailed += (error) => {
             if (_logger.IsEnabled(LogLevel.Warning))
@@ -247,6 +250,14 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
             _connected = true;
             _reconnecting = false;
             OnConnectionEstablished();
+
+            // 战斗启动重定向：通知 UI 层 OnBattleStarted（不触发 OnRoomJoined）
+            var battleRoomId = _pendingBattleRoomId;
+            if (battleRoomId != null) {
+                _pendingBattleRoomId = null;
+                OnBattleStarted?.Invoke(battleRoomId);
+                return;
+            }
 
             // 桥接：从重定向进入房间后，通知 UI 层 OnRoomJoined
             var roomId = _pendingJoinRoomId;
