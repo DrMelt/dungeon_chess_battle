@@ -248,5 +248,4 @@ anchor_bottom = 0.9
 _roomPreparation = NodePath("../RoomPreparation")
 
 [node name="RoomPreparation" parent="Interface/FrontUI" unique_id=416023587 instance=ExtResource("31_room")]
-visible = false
 layout_mode = 1

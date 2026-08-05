@@ -60,19 +60,19 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitCardGrid", "SelectUnitButton", "UnitSelectPanel", "StartBattleButton", "UnitListLabel", "BackButton", "InfoLabel", "TitleLabel")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitListLabel", "InfoLabel", "TitleLabel", "SelectUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
 script = ExtResource("4_irfs")
 RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomNameLabel")
 StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/StatusLabel")
-UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitGrid")
-SelectUnitButton = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
-UnitSelectPanel = NodePath("../UnitSelectPanel")
-StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
 UnitListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitListLabel")
-UnitCardScene = ExtResource("5_n634y")
-BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/BackButton")
 InfoLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer/InfoLabel")
 TitleLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/TitleLabel")
+SelectUnitButton = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
+StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
+BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/BackButton")
+UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitGrid")
+UnitSelectPanel = NodePath("../UnitSelectPanel")
+UnitCardScene = ExtResource("5_n634y")
 
 [node name="UnitSelectPanel" parent="." unique_id=-1190685729 instance=ExtResource("6_select_panel")]
 visible = false

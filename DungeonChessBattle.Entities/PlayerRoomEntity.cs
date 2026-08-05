@@ -12,9 +12,6 @@ public class PlayerRoomEntity : EntityLogic {
     /// <summary>玩家名称。</summary>
     public readonly SyncString PlayerName = new();
 
-    /// <summary>公开可见的短标识（playerId 前 8 位），完整 playerId 仅存于服务端私有字典。</summary>
-    public readonly SyncString DisplayId = new();
-
     /// <summary>连接状态（对应 PlayerConnectionState 枚举的 byte 值）。</summary>
     public SyncVar<byte> PlayerState;
 
@@ -40,7 +37,6 @@ public class PlayerRoomEntity : EntityLogic {
     /// </summary>
     protected override void OnConstructed() {
         PlayerName.Value = "Player";
-        DisplayId.Value = string.Empty;
         PlayerState.Value = (byte)Core.Enums.PlayerConnectionState.Connected;
         IsReady.Value = false;
         Camp.Value = string.Empty;

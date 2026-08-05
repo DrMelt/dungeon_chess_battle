@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;
@@ -100,6 +101,10 @@ public partial class MainMenu : BaseGamePanel {
 
         if (string.IsNullOrWhiteSpace(playerName)) {
             UpdateStatus("请输入用户名");
+            return;
+        }
+        if (playerName.Length > EntityConstants.MaxPlayerNameLength) {
+            UpdateStatus($"用户名不能超过 {EntityConstants.MaxPlayerNameLength} 个字符");
             return;
         }
 

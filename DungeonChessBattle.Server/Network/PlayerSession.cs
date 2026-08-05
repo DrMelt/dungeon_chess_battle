@@ -19,9 +19,6 @@ internal sealed class PlayerSession(string playerId, string playerName) {
         get; set;
     } = playerName;
 
-    /// <summary>公开短标识（playerId 前 8 位）</summary>
-    public string DisplayId => PlayerId.Length >= 8 ? PlayerId[..8] : PlayerId;
-
     /// <summary>当前关联的 LiteNetLib peer Id（0 表示未连接）</summary>
     public int PeerId {
         get; set;

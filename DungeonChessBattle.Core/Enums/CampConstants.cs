@@ -14,4 +14,12 @@ public static class CampConstants {
 
     /// <summary>Boss 阵营标识（字符串值 "Camp_BOSS"）。</summary>
     public const string CampBoss = "Camp_BOSS";
+
+    /// <summary>
+    /// 判断字符串是否为合法阵营标识。
+    /// </summary>
+    /// <param name="camp">要校验的阵营字符串。</param>
+    /// <returns>合法返回 true。</returns>
+    public static bool IsValidCamp(string? camp) =>
+        camp is CampA or CampB or CampBoss;
 }
