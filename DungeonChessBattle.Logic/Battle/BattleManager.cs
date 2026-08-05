@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Logic.Battle;
 /// 实时化战斗管理器。不再有回合概念，由 Tick(deltaTime) 驱动每帧逻辑。
 /// PhaseChanged 改为 BattleStarted / BattleEnded 事件。
 /// </summary>
-public class BattleManager {
+public class BattleManager : IBattle {
     /// <summary>当前战斗阶段。</summary>
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
 

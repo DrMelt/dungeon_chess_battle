@@ -5,12 +5,17 @@ namespace DungeonChessBattle.Core.Models;
 
 /// <summary>
 /// 游戏房间数据模型，承载两个阵营的单位列表与战斗状态及招募板信息。
+/// 边界约定：招募板字段（Title/DungeonName/Description/Category/MaxPlayers/CurrentPlayers/Password/Status）
+/// 由服务端 Store 层（IGameStateStore）读写；战斗字段（UnitsA/UnitsB/IsActive）
+/// 由 Logic 层（RoomManager）独占所有权。双方不交叉修改，仅靠约定约束。
 /// </summary>
 public class GameRoom(string roomId) {
     /// <summary>房间唯一 ID。</summary>
     public string RoomId {
         get;
     } = roomId;
+
+    // ─── 招募板字段（Store 层所有权） ───
 
     /// <summary>招募板展示的房间标题。</summary>
     public string Title {
@@ -64,6 +69,8 @@ public class GameRoom(string roomId) {
     public RoomStatus Status {
         get; set;
     } = RoomStatus.Waiting;
+
+    // ─── 战斗字段（Logic 层独占所有权） ───
 
     /// <summary>A 方单位列表（战斗）。</summary>
     public List<IUnitState> UnitsA { get; } = [];

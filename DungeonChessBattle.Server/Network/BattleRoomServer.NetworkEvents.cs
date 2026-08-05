@@ -14,8 +14,8 @@ public partial class BattleRoomServer {
     void INetEventListener.OnConnectionRequest(ConnectionRequest request) {
         string incomingKey = request.Data.GetString();
 
-        // 验证：playerId 在白名单中 或 使用默认连接密钥（向后兼容/调试模式）
-        if (incomingKey == DefaultConnectionKey || _validPlayerIds.ContainsKey(incomingKey)) {
+        // 验证：playerId 在白名单中 或 使用服务器连接密钥（向后兼容/调试模式）
+        if (incomingKey == _connectionKey || _validPlayerIds.ContainsKey(incomingKey)) {
             _acceptedKeys.Enqueue(incomingKey);
             request.Accept();
         }
@@ -31,7 +31,7 @@ public partial class BattleRoomServer {
         _acceptedKeys.TryDequeue(out string? connectionKey);
 
         // P1 修复：同一 playerId 已有活跃连接时，关闭旧连接接受新连接
-        if (connectionKey != null && connectionKey != DefaultConnectionKey
+        if (connectionKey != null && connectionKey != _connectionKey
             && _sessions.TryGetValue(connectionKey, out var existingSession)
             && existingSession.Entity != null) {
             if (existingSession.Entity.PlayerState.Value == (byte)PlayerConnectionState.Connected) {

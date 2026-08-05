@@ -1,3 +1,4 @@
+using DungeonChessBattle.Server.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
@@ -6,6 +7,7 @@ namespace DungeonChessBattle.Server;
 /// 游戏服务器门面，包装 GameServer 实例。
 /// 提供 Start/Stop 操作和状态事件通知。
 /// GameServer 内部已有独立驱动线程，本类不创建额外线程。
+/// 服务器配置由 <see cref="ServerConfig"/> 唯一来源注入。
 /// </summary>
 public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactory loggerFactory) {
     private readonly ILogger<GameServerHost> _logger = logger;
@@ -13,7 +15,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     private GameServer? _server;
 
     /// <summary>默认大厅端口。</summary>
-    public const int DefaultPort = 10170;
+    public const int DefaultPort = ServerConfig.DefaultPort;
 
     /// <summary>服务器是否正在运行。</summary>
     public bool IsRunning => _server?.IsRunning ?? false;
@@ -38,10 +40,12 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
         }
 
         try {
-            string? actualPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
-            Port = port;
-            _server = new GameServer(_loggerFactory, actualPassword);
-            _server.StartAsync(port);
+            var config = ServerConfig.FromEnvironment(serverPassword) with {
+                LobbyPort = port
+            };
+            Port = config.LobbyPort;
+            _server = new GameServer(_loggerFactory, config);
+            _server.StartAsync();
 
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("服务器已启动，监听端口 {Port}", port);

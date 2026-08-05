@@ -2,23 +2,28 @@ using System.Diagnostics;
 using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.Network;
+using DungeonChessBattle.Server.Settings;
+using DungeonChessBattle.Server.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
 
 /// <summary>
 /// 游戏服务端主控类。
-/// 大厅端口 (10170) 处理 create_room / join_room / list_rooms / prepare_* / start_battle 等 JSON 消息。
+/// 大厅端口处理 create_room / join_room / list_rooms / prepare_* / start_battle 等 JSON 消息。
 /// 准备阶段在大厅连接上完成（选单位等），战斗开始时才创建 BattleRoomServer 并重定向客户端。
 /// 支持服务器密码 + 房间密码两层访问控制。
+/// 配置由 <see cref="ServerConfig"/> 唯一来源注入；大厅级状态数据由 <see cref="IGameStateStore"/> 持有，
+/// 战斗房间生命周期由 GameLobby 协调。
 /// 消息分发与各 Handle* 处理见 GameServer.MessageHandlers。
 /// </summary>
 public partial class GameServer {
     private readonly LobbyNetworkServer _lobbyServer;
     private readonly GameLobby _lobby;
+    private readonly InMemoryGameStateStore _stateStore;
+    private readonly ServerConfig _config;
     private readonly ILogger<GameServer> _logger;
     private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
-    private readonly string? _serverPassword;
 
     private volatile bool _running;
     private Thread? _lobbyThread;
@@ -30,12 +35,13 @@ public partial class GameServer {
     /// 初始化游戏服务端。
     /// </summary>
     /// <param name="loggerFactory">日志工厂。</param>
-    /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
-    public GameServer(ILoggerFactory loggerFactory, string? serverPassword = null) {
+    /// <param name="config">服务器配置（端口、密钥、密码）。</param>
+    public GameServer(ILoggerFactory loggerFactory, ServerConfig config) {
         _logger = loggerFactory.CreateLogger<GameServer>();
-        _serverPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
-        _lobbyServer = new LobbyNetworkServer(loggerFactory.CreateLogger<LobbyNetworkServer>(), _serverPassword);
-        _lobby = new GameLobby(loggerFactory);
+        _config = config;
+        _lobbyServer = new LobbyNetworkServer(loggerFactory.CreateLogger<LobbyNetworkServer>(), _config);
+        _stateStore = new InMemoryGameStateStore(loggerFactory);
+        _lobby = new GameLobby(loggerFactory, _stateStore, _config);
 
         _lobbyServer.OnCustomPacket += OnCustomPacket;
         _lobbyServer.OnClientDisconnected += OnLobbyPeerDisconnected;
@@ -45,7 +51,7 @@ public partial class GameServer {
     /// 大厅 peer 断线处理：清理该玩家所属房间的成员与准备状态，并向剩余玩家广播最新准备状态。
     /// </summary>
     private void OnLobbyPeerDisconnected(int peerId) {
-        string? roomId = _lobby.RemovePlayerFromRoom(peerId);
+        string? roomId = _stateStore.RemovePlayerByPeer(peerId);
         if (roomId == null)
             return;
 
@@ -56,11 +62,10 @@ public partial class GameServer {
     /// <summary>
     /// 异步启动服务端：启动大厅网络服务并开启后台轮询线程。
     /// </summary>
-    /// <param name="lobbyPort">大厅监听端口。</param>
-    public void StartAsync(int lobbyPort) {
+    public void StartAsync() {
         if (_running)
             return;
-        _lobbyServer.Start(lobbyPort);
+        _lobbyServer.Start(_config.LobbyPort);
         _running = true;
 
         _lobbyThread = new Thread(() => {
@@ -74,7 +79,8 @@ public partial class GameServer {
         _lobbyThread.Start();
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[GameServer] Started, lobby port: {Port}, ServerPassword={HasPassword}", lobbyPort, _serverPassword != null);
+            _logger.LogInformation("[GameServer] Started, lobby port: {Port}, ServerPassword={HasPassword}",
+                _config.LobbyPort, _config.ServerPassword != null);
     }
 
     /// <summary>
@@ -85,16 +91,11 @@ public partial class GameServer {
         if (_running)
             return;
 
-        var password = _serverPassword ?? Environment.GetEnvironmentVariable("DCB_SERVER_PASSWORD");
-        if (!string.IsNullOrEmpty(password) && _serverPassword == null) {
-            _logger.LogWarning("[GameServer] Server password from env but LobbyNetworkServer already created without it. Restart required.");
-        }
-
-        StartAsync(10170);
+        StartAsync();
         Console.WriteLine("══════════════════════════════════════════");
         Console.WriteLine("  DungeonChessBattle Server (Multi-Room)");
         Console.WriteLine("  Prepare phase stays in lobby.");
-        Console.WriteLine($"  Server password: {(_serverPassword != null ? "ENABLED" : "DISABLED")}");
+        Console.WriteLine($"  Server password: {(_config.ServerPassword != null ? "ENABLED" : "DISABLED")}");
         Console.WriteLine("  Type 'help' for commands.");
         Console.WriteLine("══════════════════════════════════════════");
 

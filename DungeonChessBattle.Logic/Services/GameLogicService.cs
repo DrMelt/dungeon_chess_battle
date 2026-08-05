@@ -9,6 +9,7 @@ namespace DungeonChessBattle.Logic.Services;
 /// <summary>
 /// Logic 层对外门面服务，同时实现 IServerBattleService 和 IClientBattleService。
 /// 组合 RoomManager 和 BattleResolver，提供房间管理、战斗流程、技能结算等全部业务操作。
+/// 战斗流程对外仅暴露 <see cref="IBattle"/> 抽象接口；技能结算/Buff 推进不携带战斗管理器参数。
 /// </summary>
 public class GameLogicService : IServerBattleService, IClientBattleService {
     private readonly RoomManager _roomManager = new();
@@ -88,9 +89,9 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     /// 在指定房间开始战斗。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <returns>房间对应的战斗管理器。</returns>
+    /// <returns>房间对应的战斗流程。</returns>
     /// <exception cref="InvalidOperationException">房间不存在时抛出。</exception>
-    public BattleManager StartBattleInRoom(string roomId) {
+    public IBattle StartBattleInRoom(string roomId) {
         _ = GetRoom(roomId)
             ?? throw new InvalidOperationException($"Room {roomId} not found.");
 
@@ -102,29 +103,33 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         return battle;
     }
 
-    /// <summary>IClientBattleService 的请求开始战斗入口。</summary>
-    void IClientBattleService.RequestStartBattle(string roomId) {
-        StartBattleInRoom(roomId);
+    /// <summary>
+    /// 按房间 ID 获取战斗流程实例。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <returns>对应的战斗流程；不存在时返回 null。</returns>
+    public IBattle? GetBattle(string roomId) => _roomManager.GetBattle(roomId);
+
+    /// <summary>
+    /// 按帧推进指定房间的战斗逻辑。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    public void TickBattle(string roomId, float deltaTime) {
+        _roomManager.GetBattle(roomId)?.Tick(deltaTime);
     }
-
-    BattleManager IServerBattleService.StartBattleInRoom(string roomId) {
-        return StartBattleInRoom(roomId);
-    }
-
-    BattleManager? IServerBattleService.GetBattle(string roomId) => _roomManager.GetBattle(roomId);
-
-    void IServerBattleService.TickBattle(BattleManager battle, float deltaTime) => battle.Tick(deltaTime);
 
     /// <summary>
     /// 结束指定战斗。
     /// </summary>
-    /// <param name="battle">要结束的战斗管理器。</param>
-    public static void EndBattle(BattleManager battle) {
+    /// <param name="battle">要结束的战斗流程。</param>
+    public void EndBattle(IBattle battle) {
         battle.EndBattle();
     }
 
-    void IServerBattleService.EndBattle(BattleManager battle) {
-        battle.EndBattle();
+    /// <summary>IClientBattleService 的请求开始战斗入口。</summary>
+    void IClientBattleService.RequestStartBattle(string roomId) {
+        StartBattleInRoom(roomId);
     }
 
     #endregion
@@ -134,31 +139,12 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     /// <summary>
     /// 对目标施放技能（支持伤害、治疗、范围伤害、施加 Buff）。
     /// </summary>
-    /// <param name="battle">战斗管理器（接口兼容保留参数，实际结算不依赖）。</param>
     /// <param name="caster">施法单位。</param>
     /// <param name="target">目标单位。</param>
     /// <param name="skill">技能模型。</param>
     /// <param name="allUnits">所有可命中的检测单位（范围伤害技能需要）。</param>
-    public static void CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
+    public void CastSkill(IUnitState caster, IUnitState target, SkillModel skill,
         IReadOnlyList<IUnitState>? allUnits = null) {
-        _ = battle; // 接口兼容保留参数，实际结算不依赖 BattleManager 引用
-        CastSkillInternal(caster, target, skill, allUnits);
-    }
-
-    void IServerBattleService.CastSkill(BattleManager battle, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits) {
-        CastSkillInternal(caster, target, skill, allUnits);
-    }
-
-    void IClientBattleService.CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits) {
-        _ = _roomManager.GetBattle(roomId)
-            ?? throw new InvalidOperationException($"No active battle in room {roomId}.");
-        CastSkillInternal(caster, target, skill, allUnits);
-    }
-
-    private static void CastSkillInternal(IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits) {
         switch (skill) {
             case SkillDamageModel damage:
                 BattleResolver.ApplySkillDamage(caster, target, damage);
@@ -176,44 +162,29 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         }
     }
 
+    void IClientBattleService.CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
+        IReadOnlyList<IUnitState>? allUnits) {
+        _ = _roomManager.GetBattle(roomId)
+            ?? throw new InvalidOperationException($"No active battle in room {roomId}.");
+        CastSkill(caster, target, skill, allUnits);
+    }
+
     #endregion
 
     #region Unit Lookup & Sync
 
     /// <summary>
-    /// 在所有房间中按名称查找单位模型。
+    /// 在指定房间中按名称查找单位模型。
     /// </summary>
+    /// <param name="roomId">房间 ID。</param>
     /// <param name="unitName">单位名称。</param>
     /// <returns>匹配的单位；未找到返回 null。</returns>
-    public IUnitState? FindUnitModel(string unitName) {
-        foreach (var room in _roomManager.GetAllRooms()) {
-            var unit = room.UnitsA.Concat(room.UnitsB)
-                .FirstOrDefault(u => u.UnitStateName == unitName);
-            if (unit != null)
-                return unit;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// 将外部同步单元的 Health 写入 Logic 内部的 IUnitState 集合。
-    /// </summary>
-    public static void SyncHealthFromExternal(GameRoom room,
-        IEnumerable<(string unitName, float health)> externalHealthValues) {
-        var map = room.UnitsA.Concat(room.UnitsB)
-            .ToDictionary(u => u.UnitStateName);
-        foreach (var (name, health) in externalHealthValues) {
-            if (map.TryGetValue(name, out var model))
-                model.Health = health;
-        }
-    }
-
-    /// <summary>
-    /// 返回 Logic 结算后的 IUnitState Health 变化，供外部实体层写入。
-    /// </summary>
-    public static IEnumerable<(string unitName, float health)> SyncHealthToExternal(GameRoom room) {
-        foreach (var unit in room.UnitsA.Concat(room.UnitsB))
-            yield return (unit.UnitStateName, unit.Health);
+    public IUnitState? FindUnitModel(string roomId, string unitName) {
+        var room = _roomManager.GetRoom(roomId);
+        if (room == null)
+            return null;
+        return room.UnitsA.Concat(room.UnitsB)
+            .FirstOrDefault(u => u.UnitStateName == unitName);
     }
 
     #endregion
@@ -223,26 +194,16 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
     /// <summary>
     /// 按帧推进单位集合的 Buff 状态。
     /// </summary>
-    /// <param name="battle">战斗管理器（接口兼容保留参数，实际结算不依赖）。</param>
     /// <param name="units">要更新的单位集合。</param>
     /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
-    public static void UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
-        _ = battle; // 接口兼容保留参数，实际结算不依赖 BattleManager 引用
-        UpdateBuffsInternal(units, deltaTime);
-    }
-
-    void IServerBattleService.UpdateBuffs(BattleManager battle, IEnumerable<IUnitState> units, double deltaTime) {
-        UpdateBuffsInternal(units, deltaTime);
-    }
-
-    void IClientBattleService.UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
-        UpdateBuffsInternal(units, deltaTime);
-    }
-
-    private static void UpdateBuffsInternal(IEnumerable<IUnitState> units, double deltaTime) {
+    public void UpdateBuffs(IEnumerable<IUnitState> units, double deltaTime) {
         foreach (var unit in units) {
             BattleResolver.UpdateUnitBuffs(unit, deltaTime);
         }
+    }
+
+    void IClientBattleService.UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
+        UpdateBuffs(units, deltaTime);
     }
 
     /// <summary>

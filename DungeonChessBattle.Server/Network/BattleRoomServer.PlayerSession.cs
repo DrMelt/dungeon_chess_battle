@@ -49,7 +49,7 @@ public partial class BattleRoomServer {
         var netPlayer = EntityManager.AddPlayer(lesPeer);
 
         // 确定 playerId（优先使用连接密钥中的 playerId）
-        string effectivePlayerId = (connectionKey != null && connectionKey != DefaultConnectionKey)
+        string effectivePlayerId = (connectionKey != null && connectionKey != _connectionKey)
             ? connectionKey
             : $"auto_{peer.Id}";
 

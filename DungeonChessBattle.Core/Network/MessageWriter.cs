@@ -5,9 +5,9 @@ using DungeonChessBattle.Core.Models;
 namespace DungeonChessBattle.Core.Network;
 
 /// <summary>
-/// 基于 Utf8JsonWriter 的无反射 JSON 消息序列化工具。
-/// 替代 JsonSerializer.Serialize(object) 的反射开销，适用于
-/// NativeAOT 和 Trimming 场景。
+/// Core.Network 命名空间承载客户端与服务端共享的 JSON 消息协议
+/// （MessageType/MessageWriter），属于跨切面的共享协议层，不属于领域模型。
+/// 依赖 System.Text.Json/System.Buffers 是其协议序列化性质所需。
 /// </summary>
 public static class MessageWriter {
     private static readonly JsonEncodedText TypeKey = JsonEncodedText.Encode("type");

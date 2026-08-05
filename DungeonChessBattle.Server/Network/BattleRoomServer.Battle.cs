@@ -50,7 +50,7 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 在本房间启动战斗。
     /// </summary>
-    public BattleManager StartBattle() {
+    public IBattle StartBattle() {
         if (_battle != null && _battle.CurrentPhase == BattlePhase.Running)
             return _battle;
 
@@ -108,8 +108,8 @@ public partial class BattleRoomServer {
             return;
         }
 
-        var casterModel = _logicService.FindUnitModel(casterPawn.UnitName.Value);
-        var targetModel = _logicService.FindUnitModel(targetPawn.UnitName.Value);
+        var casterModel = _logicService.FindUnitModel(RoomId, casterPawn.UnitName.Value);
+        var targetModel = _logicService.FindUnitModel(RoomId, targetPawn.UnitName.Value);
         if (casterModel == null || targetModel == null) {
             _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: unit model not found in Logic layer.", RoomId);
             return;
@@ -127,11 +127,11 @@ public partial class BattleRoomServer {
                 Damage = req.DamageOrCureValue,
                 DamageType = (DamageType)req.DamageType
             };
-            GameLogicService.CastSkill(_battle, casterModel, targetModel, skill);
+            _logicService.CastSkill(casterModel, targetModel, skill);
         }
         else {
             var skill = new SkillCureModel { CurePotency = -req.DamageOrCureValue };
-            GameLogicService.CastSkill(_battle, casterModel, targetModel, skill);
+            _logicService.CastSkill(casterModel, targetModel, skill);
         }
 
         targetPawn.ServerSetHealth(targetModel.Health);
@@ -177,7 +177,7 @@ public partial class BattleRoomServer {
 
         var gameRoom = _logicService.GetRoom(RoomId);
         if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
-            GameLogicService.EndBattle(_battle);
+            _logicService.EndBattle(_battle);
         }
     }
 }

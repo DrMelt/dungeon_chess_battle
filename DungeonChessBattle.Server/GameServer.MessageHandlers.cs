@@ -5,12 +5,14 @@ using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Server.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
 
 /// <summary>
 /// GameServer 的大厅 JSON 消息分发与各 Handle* 处理、广播与发送工具。
+/// 状态查询与写入统一经 <see cref="IGameStateStore"/>，不再直接触碰具体数据结构。
 /// </summary>
 public partial class GameServer {
     /// <summary>
@@ -66,7 +68,7 @@ public partial class GameServer {
     /// </summary>
     private bool ValidateServerPassword(NetPeer peer, JsonElement root, string responseType, string? roomId) {
         string? serverPassword = root.TryGetProperty(MessageProperty.ServerPassword, out var sp) ? sp.GetString() : null;
-        if (!string.IsNullOrEmpty(_serverPassword) && serverPassword != _serverPassword) {
+        if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword) {
             SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, false, "Invalid server password."));
             return false;
         }
@@ -104,7 +106,7 @@ public partial class GameServer {
             || !TryGetRoomParams(peer, root, MessageType.CreateRoomResponse, out string roomId, out string playerId))
             return;
 
-        if (_lobby.RoomExists(roomId)) {
+        if (_stateStore.RoomExists(roomId)) {
             _logger.LogWarning("[Game] Room '{RoomId}' already exists.", roomId);
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, false, "Room already exists."));
             return;
@@ -138,7 +140,7 @@ public partial class GameServer {
             };
         }
 
-        if (!_lobby.RegisterRoom(roomId, actualRoomPassword, config)) {
+        if (!_stateStore.TryRegisterRoom(roomId, actualRoomPassword, config)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, false, "Failed to register room."));
             return;
         }
@@ -148,9 +150,8 @@ public partial class GameServer {
 
         // 登记房主身份（服务端解析的 displayName，不信任客户端 config）
         string hostDisplayName = GetDisplayName(root, playerId);
-        _lobby.SetRoomHost(roomId, hostDisplayName);
-        _lobby.RegisterRoomPlayer(roomId, hostDisplayName, peer);
-        _lobby.RegisterRoomPlayerId(roomId, hostDisplayName, playerId);
+        _stateStore.SetRoomHost(roomId, hostDisplayName);
+        _stateStore.RegisterRoomPlayer(roomId, hostDisplayName, playerId, peer.Id);
 
         // 准备阶段：不重定向，只返回成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
@@ -172,7 +173,7 @@ public partial class GameServer {
             || !TryGetRoomParams(peer, root, MessageType.JoinRoomResponse, out string roomId, out string playerId))
             return;
 
-        if (!_lobby.RoomExists(roomId)) {
+        if (!_stateStore.RoomExists(roomId)) {
             _logger.LogWarning("[Game] join_room: room '{RoomId}' not found.", roomId);
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, false, "Room not found."));
             return;
@@ -180,19 +181,18 @@ public partial class GameServer {
 
         string? roomPassword = root.TryGetProperty(MessageProperty.Password, out var pp) ? pp.GetString() : null;
         string? actualRoomPassword = string.IsNullOrEmpty(roomPassword) ? null : roomPassword;
-        if (!_lobby.ValidateRoomPassword(roomId, actualRoomPassword)) {
+        if (!_stateStore.ValidateRoomPassword(roomId, actualRoomPassword)) {
             _logger.LogWarning("[Game] join_room: invalid password for room '{RoomId}'.", roomId);
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, false, "Invalid room password."));
             return;
         }
 
-        _lobby.UpdatePlayerCount(roomId, _lobby.GetRoomConfig(roomId)?.CurrentPlayers + 1 ?? 1);
+        _stateStore.UpdatePlayerCount(roomId, _stateStore.GetRoomConfig(roomId)?.CurrentPlayers + 1 ?? 1);
         _lobby.RegisterPeerToRoom(roomId, peer);
 
         string displayName = GetDisplayName(root, playerId);
-        // 登记玩家为房间准备成员（默认未准备）
-        _lobby.RegisterRoomPlayer(roomId, displayName, peer);
-        _lobby.RegisterRoomPlayerId(roomId, displayName, playerId);
+        // 登记玩家为房间准备成员（默认未准备，playerId 一并登记用于战斗白名单）
+        _stateStore.RegisterRoomPlayer(roomId, displayName, playerId, peer.Id);
 
         // 准备阶段加入：不重定向，直接成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, true));
@@ -213,7 +213,7 @@ public partial class GameServer {
     /// </summary>
     private void HandleListRooms(NetPeer peer) {
         try {
-            var rooms = _lobby.GetRoomListings();
+            var rooms = _stateStore.ListActiveRooms();
             SendToPeer(peer, MessageWriter.WriteListRoomsResponse(rooms));
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[Game] Sent listing of {Count} rooms.", rooms.Count);
@@ -242,13 +242,13 @@ public partial class GameServer {
         }
 
         // 单位归属用服务端权威玩家名（peer 归属表），不信任客户端提交
-        string? ownerName = _lobby.GetPlayerNameForPeer(peer.Id);
+        string? ownerName = _stateStore.GetPlayerNameForPeer(peer.Id);
         if (ownerName == null) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Player not in room."));
             return;
         }
 
-        if (!_lobby.AddPrepareUnit(roomId, unitName, camp, ownerName)) {
+        if (!_stateStore.AddPrepareUnit(roomId, unitName, camp, ownerName)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Room not found."));
             return;
         }
@@ -272,7 +272,7 @@ public partial class GameServer {
             return;
         }
 
-        bool removed = _lobby.RemovePrepareUnit(roomId, unitName, camp);
+        bool removed = _stateStore.RemovePrepareUnit(roomId, unitName, camp);
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareRemoveUnit, roomId, removed,
             removed ? null : "Unit not found."));
 
@@ -299,36 +299,36 @@ public partial class GameServer {
             return;
         }
 
-        if (!_lobby.RoomExists(roomId)) {
+        if (!_stateStore.RoomExists(roomId)) {
             _logger.LogWarning("[Game] start_battle: room '{RoomId}' not found.", roomId);
             SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
             return;
         }
 
         // 校验发起者必须是房主（基于 peer 归属表，不信任客户端提交的 playerName）
-        if (!_lobby.IsPeerRoomHost(peer.Id, roomId)) {
+        if (!_stateStore.IsPeerRoomHost(peer.Id, roomId)) {
             _logger.LogWarning("[Game] start_battle: peer {PeerId} is not the host of room '{RoomId}', rejected.", peer.Id, roomId);
             SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
             return;
         }
 
         // 校验除房主外所有玩家已准备
-        if (!_lobby.IsAllOthersReady(roomId)) {
+        if (!_stateStore.IsAllOthersReady(roomId)) {
             _logger.LogWarning("[Game] start_battle: room '{RoomId}' has not-ready players, rejected.", roomId);
             SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
             return;
         }
 
-        // 创建 BattleRoomServer 并迁移单位
+        // 创建 BattleRoomServer 并迁移单位（协调者职责）
         var server = _lobby.StartRoomBattle(roomId);
 
         // 用服务端权威数据将房间内所有玩家注册进白名单（不只房主，供非房主重连）
-        var roomPlayerIds = _lobby.GetRoomPlayerIds(roomId);
-        var (_, _, roomPlayers) = _lobby.GetRoomState(roomId);
+        var roomPlayerIds = _stateStore.GetRoomPlayerIds(roomId);
+        var roomState = _stateStore.GetRoomState(roomId);
         int registeredCount = 0;
-        foreach (var (memberName, _) in roomPlayers) {
-            if (roomPlayerIds.TryGetValue(memberName, out var memberPlayerId) && !string.IsNullOrEmpty(memberPlayerId)) {
-                server.RegisterPlayer(memberPlayerId, memberName);
+        foreach (var member in roomState.Players) {
+            if (roomPlayerIds.TryGetValue(member.PlayerName, out var memberPlayerId) && !string.IsNullOrEmpty(memberPlayerId)) {
+                server.RegisterPlayer(memberPlayerId, member.PlayerName);
                 registeredCount++;
             }
         }
@@ -345,7 +345,7 @@ public partial class GameServer {
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), registered={RegisteredCount}/{PlayerCount} players.",
-                roomId, server.Port, registeredCount, roomPlayers.Count);
+                roomId, server.Port, registeredCount, roomState.Players.Count);
     }
 
     /// <summary>
@@ -373,12 +373,12 @@ public partial class GameServer {
             return;
         }
 
-        if (!_lobby.RoomExists(roomId)) {
+        if (!_stateStore.RoomExists(roomId)) {
             SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, false, "Room not found."));
             return;
         }
 
-        _lobby.SetPlayerReady(roomId, playerName, ready);
+        _stateStore.SetPlayerReady(roomId, playerName, ready);
         SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, true));
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -409,7 +409,7 @@ public partial class GameServer {
 
         string? roomPassword = root.TryGetProperty(MessageProperty.Password, out var pp) ? pp.GetString() : null;
         string? actualRoomPassword = string.IsNullOrEmpty(roomPassword) ? null : roomPassword;
-        if (!_lobby.ValidateRoomPassword(roomId, actualRoomPassword)) {
+        if (!_stateStore.ValidateRoomPassword(roomId, actualRoomPassword)) {
             _logger.LogWarning("[Game] reconnect_room: invalid password for room '{RoomId}'.", roomId);
             SendToPeer(peer, MessageWriter.WriteReconnectRoomResponse(roomId, false, "Invalid room password."));
             return;
@@ -442,9 +442,10 @@ public partial class GameServer {
     /// 将房间当前准备单位列表广播给该房间所有 peer。
     /// </summary>
     private void BroadcastPrepareUnitList(string roomId) {
-        var units = _lobby.GetPrepareUnits(roomId);
+        var units = _stateStore.GetPrepareUnits(roomId);
         var peers = _lobby.GetRoomPeers(roomId);
-        var msg = MessageWriter.WritePrepareUnitList(roomId, units);
+        var msg = MessageWriter.WritePrepareUnitList(roomId,
+            units.Select(u => (u.UnitName, u.Camp, u.PlayerName)));
 
         foreach (var p in peers)
             SendToPeer(p, msg);
@@ -458,16 +459,17 @@ public partial class GameServer {
     /// 将房间当前准备状态广播给该房间所有 peer。
     /// </summary>
     private void BroadcastPrepareRoomState(string roomId) {
-        var (host, dungeonName, players) = _lobby.GetRoomState(roomId);
+        var state = _stateStore.GetRoomState(roomId);
         var peers = _lobby.GetRoomPeers(roomId);
-        var msg = MessageWriter.WritePrepareRoomState(roomId, host, dungeonName, players);
+        var msg = MessageWriter.WritePrepareRoomState(roomId, state.HostName, state.DungeonName,
+            state.Players.Select(p => (p.PlayerName, p.Ready)));
 
         foreach (var p in peers)
             SendToPeer(p, msg);
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[Game] Broadcast prepare room state to {PeerCount} peers in room '{RoomId}' ({PlayerCount} players)",
-                peers.Count, roomId, players.Count);
+                peers.Count, roomId, state.Players.Count);
     }
 
     /// <summary>

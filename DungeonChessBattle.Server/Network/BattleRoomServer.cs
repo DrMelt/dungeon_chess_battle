@@ -6,14 +6,16 @@ using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Server.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Network;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的 Logic 实例 (GameLogicService + RoomManager + BattleManager)，
-/// 并运行在独立线程中，实现物理级别的 Entity 同步隔离与房间数据所有权。
+/// 独立的 Logic 实例 (GameLogicService + RoomManager)，并运行在独立线程中，
+/// 实现物理级别的 Entity 同步隔离与房间数据所有权。
+/// 战斗流程面向 IBattle 抽象接口。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：通过 playerId 白名单验证连接请求，保留断连玩家的 Entity。
 /// 网络事件见 BattleRoomServer.NetworkEvents，玩家会话见 BattleRoomServer.PlayerSession，
@@ -22,7 +24,7 @@ namespace DungeonChessBattle.Server.Network;
 public partial class BattleRoomServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ILogger<BattleRoomServer> _logger;
-    private const string DefaultConnectionKey = "DungeonChessBattle";
+    private readonly string _connectionKey;
     private const byte PacketHeader = 0xDC;
     private const double TickInterval = 0.02; // 50 Hz
     private const double ReconnectGracePeriodSeconds = 30.0;
@@ -56,8 +58,8 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间独立的 Logic 实例（不再共享全局）</summary>
     private readonly GameLogicService _logicService = new();
 
-    /// <summary>本房间的战斗管理器</summary>
-    private BattleManager? _battle;
+    /// <summary>本房间的战斗流程（面向 IBattle 抽象接口）</summary>
+    private IBattle? _battle;
 
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
@@ -77,6 +79,9 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>当前连接数。</summary>
     public int PeerCount => _netManager.ConnectedPeersCount;
 
+    /// <summary>房间是否已无任何玩家会话（活跃 + 宽限期内均无）。</summary>
+    public bool IsRoomEmpty => _sessions.IsEmpty;
+
     /// <summary>仅用于调试/测试，不应在运行时由外部线程访问</summary>
     internal UnitPawn[] GetPawnsSnapshot() => [.. _roomPawns];
 
@@ -95,10 +100,12 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
     /// <param name="logger">日志器</param>
-    public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger) {
+    /// <param name="config">服务器配置（连接密钥）。</param>
+    public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger, ServerConfig config) {
         Port = port;
         RoomId = roomId;
         _logger = logger;
+        _connectionKey = config.ServerPassword ?? config.ConnectionKey;
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         EntityManager = new ServerEntityManager(
@@ -164,6 +171,9 @@ public partial class BattleRoomServer : INetEventListener {
         _loopThread?.Join(TimeSpan.FromSeconds(3));
         _netManager.Stop();
 
+        // 闭合 Logic 层生命周期：清理 RoomManager 中本房间的 GameRoom 与 BattleManager
+        _logicService.RemoveRoom(RoomId);
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomServer] Room '{RoomId}' stopped on port {Port}", RoomId, Port);
     }
@@ -192,7 +202,7 @@ public partial class BattleRoomServer : INetEventListener {
 
                         var gameRoom = _logicService.GetRoom(RoomId);
                         if (gameRoom != null)
-                            GameLogicService.UpdateBuffs(_battle, gameRoom.UnitsA.Concat(gameRoom.UnitsB), dt);
+                            _logicService.UpdateBuffs(gameRoom.UnitsA.Concat(gameRoom.UnitsB), dt);
                     }
 
                     // 4. Pawn 冷却更新 + Service→Entity Health 同步

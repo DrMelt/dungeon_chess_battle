@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using DungeonChessBattle.Server.Settings;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
@@ -9,14 +10,12 @@ namespace DungeonChessBattle.Server.Network;
 /// 大厅专用网络服务器。处理 create_room / join_room 等 JSON 消息，
 /// 不管理任何 LES Entity（房间内的 Entity 由 BattleRoomServer 各自托管）。
 /// 客户端加入房间后会收到端口号，然后断开大厅连接、切入房间端口。
-/// 支持可选的服务器密码验证。
+/// 连接密钥与端口由 <see cref="ServerConfig"/> 注入。
 /// </summary>
 public class LobbyNetworkServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ILogger<LobbyNetworkServer> _logger;
-    private const int DefaultPort = 10170;
-    private const string DefaultConnectionKey = "DungeonChessBattle";
-    private readonly string? _serverPassword;
+    private readonly ServerConfig _config;
 
     /// <summary>自定义数据包接收事件。参数：来源 peer、原始字节数据。</summary>
     public event Action<NetPeer, ReadOnlySpan<byte>>? OnCustomPacket;
@@ -29,21 +28,22 @@ public class LobbyNetworkServer : INetEventListener {
     /// 初始化大厅网络服务器。
     /// </summary>
     /// <param name="logger">日志记录器。</param>
-    /// <param name="serverPassword">可选的服务器密码。为 null 或空时使用默认连接密钥（开发模式）。</param>
-    public LobbyNetworkServer(ILogger<LobbyNetworkServer> logger, string? serverPassword = null) {
+    /// <param name="config">服务器配置（连接密钥含密码逻辑）。</param>
+    public LobbyNetworkServer(ILogger<LobbyNetworkServer> logger, ServerConfig config) {
         _logger = logger;
-        _serverPassword = string.IsNullOrEmpty(serverPassword) ? null : serverPassword;
+        _config = config;
         _netManager = new NetManager(this);
     }
 
     /// <summary>
     /// 启动网络监听。
     /// </summary>
-    /// <param name="port">监听端口，默认使用 <see cref="DefaultPort"/>。</param>
-    public void Start(int port = DefaultPort) {
-        _netManager.Start(port);
+    /// <param name="port">监听端口，默认使用配置中的大厅端口。</param>
+    public void Start(int? port = null) {
+        _netManager.Start(port ?? _config.LobbyPort);
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Lobby] Listening on port {Port}, Password={HasPassword}", port, _serverPassword != null);
+            _logger.LogInformation("[Lobby] Listening on port {Port}, Password={HasPassword}",
+                port ?? _config.LobbyPort, _config.ServerPassword != null);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public class LobbyNetworkServer : INetEventListener {
     public int PeerCount => _netManager.ConnectedPeersCount;
 
     /// <summary>获取当前生效的连接密钥。</summary>
-    public string EffectiveConnectionKey => _serverPassword ?? DefaultConnectionKey;
+    public string EffectiveConnectionKey => _config.ServerPassword ?? _config.ConnectionKey;
 
     void INetEventListener.OnConnectionRequest(ConnectionRequest request) {
         // 使用服务器密码验证连接。如果未设置密码，使用默认连接密钥。
