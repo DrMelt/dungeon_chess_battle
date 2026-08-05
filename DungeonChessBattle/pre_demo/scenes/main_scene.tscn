@@ -29,6 +29,7 @@
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
 [ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://pre_demo/scenes/MainScene.cs" id="34_main"]
 [ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_show.tscn" id="35_unit_show"]
+[ext_resource type="Script" uid="uid://rr4mpyfdgbxj" path="res://GameAssets/Services/GameClientDriver.cs" id="36_driver"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -63,6 +64,10 @@ _gameLobby = NodePath("Interface/FrontUI/GameLobby")
 _unitsShow = NodePath("UnitsInSceneView")
 _playerOperationInterfaceInfo = NodePath("Interface/PlayerOperationInterface_Info")
 _unitShowScene = ExtResource("35_unit_show")
+
+[node name="GameClientDriver" type="Node" parent="." unique_id=64894980]
+process_priority = -1
+script = ExtResource("36_driver")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
 

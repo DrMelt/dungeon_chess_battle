@@ -7,7 +7,8 @@ namespace DungeonChessBattle;
 
 /// <summary>
 /// 主界面脚本，提供连接服务器功能。
-/// 连接生命周期由 GameClientService 后台服务管理，本面板仅负责 UI 交互。
+/// 连接生命周期由 GameClientService 管理（Godot 主线程 GameClientDriver 每帧驱动），
+/// 本面板仅负责 UI 交互。
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
 public partial class MainMenu : BaseGamePanel {
@@ -36,7 +37,7 @@ public partial class MainMenu : BaseGamePanel {
     #endregion
 
     /// <summary>
-    /// 节点就绪：获取引用集合、绑定按钮事件、订阅后台服务事件并初始化本地模式。
+    /// 节点就绪：获取引用集合、绑定按钮事件、订阅客户端服务事件并初始化本地模式。
     /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
@@ -54,7 +55,7 @@ public partial class MainMenu : BaseGamePanel {
 
         _logger.LogInformation("MainMenu ready");
 
-        // 订阅后台服务事件
+        // 订阅客户端服务连接状态事件
         ServiceLocator.ClientService.ConnectionChanged += OnConnectionChanged;
 
         // 初始隐藏 GameLobby，显示自身
@@ -131,14 +132,13 @@ public partial class MainMenu : BaseGamePanel {
     #region Service Event Handlers
 
     /// <summary>
-    /// 连接状态变更回调（可能来自后台线程），延迟到 Godot 主线程处理。
+    /// 连接状态变更回调，延迟到帧末统一处理 UI。
     /// </summary>
     /// <param name="host">服务器地址。</param>
     /// <param name="port">服务器端口。</param>
     /// <param name="connected">是否已连接。</param>
     private void OnConnectionChanged(string host, int port, bool connected) {
-        // 使用 CallDeferred 确保 UI 操作在 Godot 主线程执行
-        // （ConnectionChanged 可能从后台线程 GameClient-Update 触发）
+        // 使用 CallDeferred 确保 UI 操作在 Godot 主线程安全阶段执行
         CallDeferred(nameof(DeferredConnectionChanged), host, port, connected);
     }
 

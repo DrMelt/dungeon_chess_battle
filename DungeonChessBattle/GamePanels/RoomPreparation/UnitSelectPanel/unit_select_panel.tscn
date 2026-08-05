@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://3gcu0g60a82n"]
 
-[ext_resource type="Script" uid="uid://dmkp3hidywhil" path="res://GamePanels/UnitSelectPanel/UnitSelectPanel.cs" id="1_panel_cs"]
-[ext_resource type="Script" uid="uid://bxhauc1nkud8k" path="res://GamePanels/UnitSelectPanel/UnitSelectPanelInterRefs.cs" id="2_irfs_cs"]
+[ext_resource type="Script" uid="uid://dmkp3hidywhil" path="res://GamePanels/RoomPreparation/UnitSelectPanel/UnitSelectPanel.cs" id="1_panel_cs"]
+[ext_resource type="Script" uid="uid://bxhauc1nkud8k" path="res://GamePanels/RoomPreparation/UnitSelectPanel/UnitSelectPanelInterRefs.cs" id="2_irfs_cs"]
 [ext_resource type="PackedScene" uid="uid://bf6aeputrgi3c" path="res://GamePanels/UnitCard/unit_card.tscn" id="3_card_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]

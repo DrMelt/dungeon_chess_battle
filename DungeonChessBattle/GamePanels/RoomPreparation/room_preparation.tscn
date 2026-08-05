@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://5edbbd7o8yn" path="res://GamePanels/RoomPreparation/RoomPreparation.cs" id="1_vmdyc"]
 [ext_resource type="Script" uid="uid://c5d647266fb6a" path="res://GamePanels/RoomPreparation/RoomPreparationInterRefs.cs" id="4_irfs"]
 [ext_resource type="PackedScene" uid="uid://bf6aeputrgi3c" path="res://GamePanels/UnitCard/unit_card.tscn" id="5_n634y"]
-[ext_resource type="PackedScene" uid="uid://3gcu0g60a82n" path="res://GamePanels/UnitSelectPanel/unit_select_panel.tscn" id="6_select_panel"]
+[ext_resource type="PackedScene" uid="uid://3gcu0g60a82n" path="res://GamePanels/RoomPreparation/UnitSelectPanel/unit_select_panel.tscn" id="6_select_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wcwia"]
 bg_color = Color(0.66656864, 0.6665687, 0.6665685, 1)

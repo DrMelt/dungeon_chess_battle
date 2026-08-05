@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Client;
 /// <summary>
 /// 网络客户端门面，持有大厅客户端和房间客户端两个持久实例。
 /// 两个实例互斥连接：大厅连接时通过 _lobbyClient，加入房间后切换到 _roomClient。
-/// 通过内部后台线程驱动帧更新，不依赖 Godot 节点生命周期。
+/// 帧更新由 Godot 主线程 GameClientDriver 节点每帧驱动（Update 方法），
+/// 不依赖后台线程（对齐 LiteEntitySystemUnityExample 的主线程驱动模式）。
 /// 支持本地模式回退。
 /// 支持大厅→房间端口的重定向重连（由 GameClientService 内部桥接 OnRoomJoined 事件）。
 /// 支持断线自动重连（通过缓存的 playerId + roomId 重新走大厅→房间流程）。
@@ -17,8 +18,6 @@ namespace DungeonChessBattle.Client;
 public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
     private GameLogicService? _localService;
-    private Thread? _updateThread;
-    private volatile bool _running;
     private volatile bool _connected;
 
     // 两个持久客户端实例
@@ -32,7 +31,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     // 加入房间时暂存的 roomId（房间端口连接成功后通过 OnRoomJoined 通知 UI）
     private string? _pendingJoinRoomId;
     private long _connectStartTimestamp;
-    private const double TickInterval = 0.05; // 20 Hz
     private const double ConnectTimeoutSeconds = 10.0;
 
     /// <summary>默认大厅端口。</summary>
@@ -125,8 +123,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
 
             _activeClient = LobbyClient;
             _connectStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-
-            StartUpdateLoop();
         }
         catch (Exception ex) {
             _activeClient = null;
@@ -171,8 +167,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     /// 断开全部连接并清理活动客户端状态。
     /// </summary>
     public void Disconnect() {
-        StopUpdateLoop();
-
         try {
             LobbyClient.Disconnect();
         }

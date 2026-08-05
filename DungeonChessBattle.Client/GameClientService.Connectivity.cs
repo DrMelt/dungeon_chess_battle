@@ -103,7 +103,8 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>
-    /// 连接断开回调：停止更新循环并通知状态变更。
+    /// 连接断开回调：通知状态变更。
+    /// 更新循环由 Godot 主线程 GameClientDriver 驱动，断开时无需停止后台线程。
     /// </summary>
     private void OnConnectionLost() {
         if (LobbyClient.IsConnected || RoomClient.IsConnected) {
@@ -117,42 +118,11 @@ public sealed partial class GameClientService {
             return;
         }
 
-        _running = false;
-        if (_updateThread != null && Thread.CurrentThread != _updateThread) {
-            _updateThread.Join(TimeSpan.FromSeconds(3));
-            _updateThread = null;
-        }
         _logger.LogInformation("连接已断开");
         ConnectionChanged?.Invoke(Host, Port, false);
     }
 
-    #region Update Loop
-
-    /// <summary>
-    /// 启动后台更新循环（若未运行）。
-    /// </summary>
-    private void StartUpdateLoop() {
-        if (_running)
-            return;
-
-        _running = true;
-        _updateThread = new Thread(RunUpdate) {
-            Name = "GameClient-Update",
-            IsBackground = true,
-        };
-        _updateThread.Start();
-    }
-
-    /// <summary>
-    /// 停止后台更新循环并等待线程退出。
-    /// </summary>
-    private void StopUpdateLoop() {
-        _running = false;
-        if (_updateThread != null && Thread.CurrentThread != _updateThread) {
-            _updateThread.Join(TimeSpan.FromSeconds(3));
-        }
-        _updateThread = null;
-    }
+    #region Update
 
     /// <summary>
     /// 连接超时处理：断开活动客户端并通知状态变更。
@@ -160,8 +130,6 @@ public sealed partial class GameClientService {
     private void HandleConnectionTimeout() {
         _logger.LogWarning("连接超时 ({Host}:{Port})", Host, Port);
         _connectStartTimestamp = 0;
-        _running = false;
-        _updateThread = null;
 
         try {
             _activeClient?.Disconnect();
@@ -175,36 +143,25 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>
-    /// 后台更新循环：按 20Hz 驱动大厅与房间客户端的帧更新，并监测连接超时。
+    /// 每帧驱动大厅与房间客户端的网络轮询与 LES 实体更新，并监测连接超时。
+    /// 由 Godot 主线程 GameClientDriver 节点在 _Process 中调用，
+    /// 顺序位于 MainScene 输入采集之前（ProcessPriority 保证）。
     /// </summary>
-    private void RunUpdate() {
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        double lastTick = 0;
+    /// <param name="delta">距上一帧的秒数。</param>
+    public void Update(float delta) {
+        try {
+            LobbyClient.Update(delta);
+            RoomClient.Update(delta);
+        }
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "客户端更新异常");
+        }
 
-        while (_running) {
-            double now = watch.Elapsed.TotalSeconds;
-            double delta = now - lastTick;
-
-            if (delta >= TickInterval) {
-                lastTick = now;
-                try {
-                    LobbyClient.Update((float)delta);
-                    RoomClient.Update((float)delta);
-                }
-                catch (Exception ex) {
-                    _logger.LogWarning(ex, "客户端更新异常");
-                }
-
-                if (!_connected && _connectStartTimestamp != 0) {
-                    double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_connectStartTimestamp).TotalSeconds;
-                    if (elapsed > ConnectTimeoutSeconds) {
-                        HandleConnectionTimeout();
-                        return;
-                    }
-                }
+        if (!_connected && _connectStartTimestamp != 0) {
+            double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_connectStartTimestamp).TotalSeconds;
+            if (elapsed > ConnectTimeoutSeconds) {
+                HandleConnectionTimeout();
             }
-
-            Thread.Sleep(1);
         }
     }
 
