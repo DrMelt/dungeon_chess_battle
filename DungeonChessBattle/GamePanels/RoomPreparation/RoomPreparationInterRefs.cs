@@ -6,20 +6,25 @@ namespace DungeonChessBattle;
 /// RoomPreparation 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class RoomPreparationInterRefs : Node {
-    /// <summary>房间名称副标题标签（房主 / 类别 / 人数）。</summary>
+    /// <summary>房间副标题：房主标签。</summary>
     [ExportGroup("Labels")]
     [Export]
-    public Label? RoomNameLabel {
+    public Label? HostLabel {
+        get; private set;
+    }
+    /// <summary>房间副标题：副本名标签。</summary>
+    [Export]
+    public Label? DungeonNameLabel {
+        get; private set;
+    }
+    /// <summary>房间副标题：人数标签。</summary>
+    [Export]
+    public Label? PlayersLabel {
         get; private set;
     }
     /// <summary>操作状态提示标签。</summary>
     [Export]
     public Label? StatusLabel {
-        get; private set;
-    }
-    /// <summary>已选单位文本列表标签。</summary>
-    [Export]
-    public Label? UnitListLabel {
         get; private set;
     }
     /// <summary>房间描述信息标签。</summary>
@@ -71,12 +76,14 @@ public partial class RoomPreparationInterRefs : Node {
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
     /// </summary>
     public override void _Ready() {
-        if (RoomNameLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] RoomNameLabel is not assigned!");
+        if (HostLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] HostLabel is not assigned!");
+        if (DungeonNameLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] DungeonNameLabel is not assigned!");
+        if (PlayersLabel == null)
+            GD.PrintErr("[RoomPreparationInterRefs] [Export] PlayersLabel is not assigned!");
         if (StatusLabel == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] StatusLabel is not assigned!");
-        if (UnitListLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitListLabel is not assigned!");
         if (InfoLabel == null)
             GD.PrintErr("[RoomPreparationInterRefs] [Export] InfoLabel is not assigned!");
         if (TitleLabel == null)

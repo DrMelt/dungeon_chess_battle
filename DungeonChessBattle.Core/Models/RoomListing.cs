@@ -13,6 +13,9 @@ public class RoomListing {
     /// <summary>房间标题。</summary>
     public string Title { get; init; } = string.Empty;
 
+    /// <summary>副本名。</summary>
+    public string DungeonName { get; init; } = string.Empty;
+
     /// <summary>房间分类。</summary>
     public RoomCategory Category {
         get; init;
@@ -55,6 +58,7 @@ public class RoomListing {
         return new RoomListing {
             RoomId = room.RoomId,
             Title = room.Title,
+            DungeonName = room.DungeonName,
             Category = room.Category,
             HostName = room.HostName,
             CurrentPlayers = room.CurrentPlayers,

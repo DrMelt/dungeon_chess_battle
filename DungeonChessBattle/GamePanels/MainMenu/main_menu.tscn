@@ -115,8 +115,6 @@ layout_mode = 2
 [node name="HostLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=378461503]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 14
 text = "服务器地址"
 horizontal_alignment = 1
 
@@ -132,8 +130,6 @@ layout_mode = 2
 [node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer/HBoxContainer2" unique_id=1352197184]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 14
 text = "端口"
 horizontal_alignment = 1
 
@@ -186,7 +182,7 @@ text = "连接服务器"
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=673463066]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_colors/font_color = Color(0.15487596, 0.154876, 0.1548759, 1)
 theme_override_font_sizes/font_size = 13
 text = "等待连接..."
 horizontal_alignment = 1

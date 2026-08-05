@@ -1,8 +1,8 @@
 [gd_resource type="Theme" format=3 uid="uid://ckondj30v66jg"]
 
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="1_1844t"]
-[ext_resource type="FontFile" uid="uid://kspuuvpx4tki" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Regular.ttf" id="1_a3fhg"]
 [ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="1_ry2yv"]
+[ext_resource type="FontFile" uid="uid://m3wiseb8garp" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Medium.ttf" id="3_a3fhg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1d1no"]
 bg_color = Color(0.35, 0.35, 0.35, 0.9)
@@ -76,20 +76,18 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
 [resource]
-default_font = ExtResource("1_a3fhg")
+default_font = ExtResource("3_a3fhg")
 Button/font_sizes/font_size = 14
 Button/fonts/font = ExtResource("1_ry2yv")
 Button/styles/disabled = SubResource("StyleBoxFlat_1d1no")
 Button/styles/hover = SubResource("StyleBoxFlat_i1grf")
 Button/styles/normal = SubResource("StyleBoxFlat_d5jpq")
 Button/styles/pressed = SubResource("StyleBoxFlat_2j2v5")
-Label/colors/font_color = Color(0, 0, 0, 0.8)
+Label/colors/font_color = Color(0, 0, 0, 0.92941177)
 Label/font_sizes/font_size = 14
-Label/fonts/font = ExtResource("1_a3fhg")
 LineEdit/colors/font_color = Color(0, 0, 0, 1)
 LineEdit/colors/font_placeholder_color = Color(0, 0, 0, 0.5176471)
 LineEdit/colors/font_uneditable_color = Color(0.09620453, 0.09620487, 0.096204616, 0.5019608)
-LineEdit/fonts/font = ExtResource("1_a3fhg")
 LineEdit/styles/normal = SubResource("StyleBoxFlat_a3fhg")
 LineEdit/styles/read_only = SubResource("StyleBoxFlat_ybtxp")
 MarginContainer/constants/margin_bottom = 12

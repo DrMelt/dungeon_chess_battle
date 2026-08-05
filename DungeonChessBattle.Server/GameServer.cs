@@ -38,6 +38,19 @@ public partial class GameServer {
         _lobby = new GameLobby(loggerFactory);
 
         _lobbyServer.OnCustomPacket += OnCustomPacket;
+        _lobbyServer.OnClientDisconnected += OnLobbyPeerDisconnected;
+    }
+
+    /// <summary>
+    /// 大厅 peer 断线处理：清理该玩家所属房间的成员与准备状态，并向剩余玩家广播最新准备状态。
+    /// </summary>
+    private void OnLobbyPeerDisconnected(int peerId) {
+        string? roomId = _lobby.RemovePlayerFromRoom(peerId);
+        if (roomId == null)
+            return;
+
+        _lobby.UnregisterPeerFromRoom(roomId, peerId);
+        BroadcastPrepareRoomState(roomId);
     }
 
     /// <summary>

@@ -1,6 +1,5 @@
+using DungeonChessBattle.GamePanels;
 using Godot;
-using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle;
 
@@ -15,13 +14,6 @@ public partial class UnitSelectPanel : BaseGamePanel {
 
     /// <summary>导出引用集合节点。</summary>
     private UnitSelectPanelInterRefs? _refs;
-
-    /// <summary>
-    /// 可用单位配置（configKey → displayName, UnitConfig）。
-    /// </summary>
-    private static readonly System.Collections.Generic.Dictionary<string, (string DisplayName, UnitConfig Config)> AvailableUnits = new() {
-        ["WhiteMage"] = ("White Mage", GameConfigDB.UnitWhiteMage),
-    };
 
     /// <summary>
     /// 节点就绪：获取引用集合并绑定返回按钮事件。
@@ -54,10 +46,9 @@ public partial class UnitSelectPanel : BaseGamePanel {
         foreach (Node child in _refs.UnitCardGrid.GetChildren())
             child.QueueFree();
 
-        foreach (var (key, (displayName, config)) in AvailableUnits) {
+        foreach (var entry in UnitCatalog.All) {
             var card = _refs.UnitCardScene.Instantiate<UnitCard>();
-            string stats = $"HP: {config.MaxHealth:F0}  SPD: {config.BaseSpeed:F1}";
-            card.Setup(key, displayName, stats);
+            card.SetupUnit(entry.ConfigKey, entry.DisplayName, entry.Config.MaxHealth);
             card.UnitSelected += OnCardSelected;
             _refs.UnitCardGrid.AddChild(card);
         }

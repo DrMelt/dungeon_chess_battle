@@ -17,6 +17,11 @@ public class GameRoom(string roomId) {
         get; set;
     } = string.Empty;
 
+    /// <summary>副本名。</summary>
+    public string DungeonName {
+        get; set;
+    } = string.Empty;
+
     /// <summary>招募板展示的房间描述。</summary>
     public string Description {
         get; set;

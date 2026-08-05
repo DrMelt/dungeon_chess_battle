@@ -42,6 +42,12 @@ public partial class GameServer {
                 case MessageType.PrepareStartBattle:
                     HandlePrepareStartBattle(peer, root);
                     break;
+                case MessageType.PrepareReady:
+                    HandlePrepareReady(peer, root);
+                    break;
+                case MessageType.PrepareUnready:
+                    HandlePrepareUnready(peer, root);
+                    break;
                 case MessageType.ReconnectRoom:
                     HandleReconnectRoom(peer, root);
                     break;
@@ -112,6 +118,7 @@ public partial class GameServer {
         if (root.TryGetProperty(MessageProperty.Config, out var configEl)) {
             config = new GameRoom(roomId) {
                 Title = configEl.TryGetProperty(MessageProperty.Title, out var t) ? t.GetString() ?? "" : "",
+                DungeonName = configEl.TryGetProperty(MessageProperty.DungeonName, out var dn) ? dn.GetString() ?? "" : "",
                 Description = configEl.TryGetProperty(MessageProperty.Description, out var d) ? d.GetString() ?? "" : "",
                 Category = configEl.TryGetProperty(MessageProperty.Category, out var c) && c.TryGetByte(out var cb)
                     ? (RoomCategory)cb : RoomCategory.Casual,
@@ -139,12 +146,21 @@ public partial class GameServer {
         // 注册创建者到房间 peer 列表
         _lobby.RegisterPeerToRoom(roomId, peer);
 
+        // 登记房主身份（服务端解析的 displayName，不信任客户端 config）
+        string hostDisplayName = GetDisplayName(root, playerId);
+        _lobby.SetRoomHost(roomId, hostDisplayName);
+        _lobby.RegisterRoomPlayer(roomId, hostDisplayName, peer);
+
         // 准备阶段：不重定向，只返回成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
 
+        // 向房主广播最新准备状态与单位列表（房主占位卡初始化，与 join_room 广播保持对称）
+        BroadcastPrepareRoomState(roomId);
+        BroadcastPrepareUnitList(roomId);
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}), Title={Title}.",
-                roomId, config.HostName, playerId, config.Title);
+                roomId, hostDisplayName, playerId, config.Title);
     }
 
     /// <summary>
@@ -172,10 +188,19 @@ public partial class GameServer {
         _lobby.UpdatePlayerCount(roomId, _lobby.GetRoomConfig(roomId)?.CurrentPlayers + 1 ?? 1);
         _lobby.RegisterPeerToRoom(roomId, peer);
 
+        string displayName = GetDisplayName(root, playerId);
+        // 登记玩家为房间准备成员（默认未准备）
+        _lobby.RegisterRoomPlayer(roomId, displayName, peer);
+
         // 准备阶段加入：不重定向，直接成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.JoinRoomResponse, roomId, true));
 
-        string displayName = GetDisplayName(root, playerId);
+        // 向房间内所有玩家广播最新准备状态（包含新加入玩家的默认未准备状态）
+        BroadcastPrepareRoomState(roomId);
+
+        // 向房间内所有玩家广播最新单位列表（新加入玩家立即获得已有职业选择）
+        BroadcastPrepareUnitList(roomId);
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Player '{Player}' ({PlayerId}) joined room '{RoomId}' (prepare).",
                 displayName, playerId, roomId);
@@ -214,7 +239,14 @@ public partial class GameServer {
             return;
         }
 
-        if (!_lobby.AddPrepareUnit(roomId, unitName, camp)) {
+        // 单位归属用服务端权威玩家名（peer 归属表），不信任客户端提交
+        string? ownerName = _lobby.GetPlayerNameForPeer(peer.Id);
+        if (ownerName == null) {
+            SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Player not in room."));
+            return;
+        }
+
+        if (!_lobby.AddPrepareUnit(roomId, unitName, camp, ownerName)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Room not found."));
             return;
         }
@@ -247,7 +279,8 @@ public partial class GameServer {
     }
 
     /// <summary>
-    /// 处理 prepare_start_battle：创建战斗房间服务器并返回重定向端口。
+    /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
+    /// 校验通过后创建战斗房间服务器并返回重定向端口。
     /// </summary>
     private void HandlePrepareStartBattle(NetPeer peer, JsonElement root) {
         if (!TryGetRoomParams(peer, root, MessageType.PrepareStartBattleResponse, out string roomId, out string playerId))
@@ -270,6 +303,20 @@ public partial class GameServer {
             return;
         }
 
+        // 校验发起者必须是房主（基于 peer 归属表，不信任客户端提交的 playerName）
+        if (!_lobby.IsPeerRoomHost(peer.Id, roomId)) {
+            _logger.LogWarning("[Game] start_battle: peer {PeerId} is not the host of room '{RoomId}', rejected.", peer.Id, roomId);
+            SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
+            return;
+        }
+
+        // 校验除房主外所有玩家已准备
+        if (!_lobby.IsAllOthersReady(roomId)) {
+            _logger.LogWarning("[Game] start_battle: room '{RoomId}' has not-ready players, rejected.", roomId);
+            SendToPeer(peer, MessageWriter.WritePrepareStartBattleResponse(roomId, 0));
+            return;
+        }
+
         // 创建 BattleRoomServer 并迁移单位
         var server = _lobby.StartRoomBattle(roomId);
         server.RegisterPlayer(playerId, playerName);
@@ -280,6 +327,47 @@ public partial class GameServer {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), player='{Player}' ({PlayerId}) redirected.",
                 roomId, server.Port, playerName, playerId);
+    }
+
+    /// <summary>
+    /// 处理 prepare_ready：非房主请求准备，更新状态并广播房间准备状态。
+    /// </summary>
+    private void HandlePrepareReady(NetPeer peer, JsonElement root) {
+        HandlePrepareReadyState(peer, root, true);
+    }
+
+    /// <summary>
+    /// 处理 prepare_unready：非房主请求取消准备，更新状态并广播房间准备状态。
+    /// </summary>
+    private void HandlePrepareUnready(NetPeer peer, JsonElement root) {
+        HandlePrepareReadyState(peer, root, false);
+    }
+
+    /// <summary>准备/取消准备的公共处理：校验房间与成员身份后更新状态并广播。</summary>
+    private void HandlePrepareReadyState(NetPeer peer, JsonElement root, bool ready) {
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+        string? playerName = root.TryGetProperty(MessageProperty.PlayerName, out var pn) ? pn.GetString() : null;
+        string responseType = ready ? MessageType.PrepareReady : MessageType.PrepareUnready;
+
+        if (string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(playerName)) {
+            SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, false, "roomId and playerName required."));
+            return;
+        }
+
+        if (!_lobby.RoomExists(roomId)) {
+            SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, false, "Room not found."));
+            return;
+        }
+
+        _lobby.SetPlayerReady(roomId, playerName, ready);
+        SendToPeer(peer, MessageWriter.WriteResponse(responseType, roomId, true));
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Player '{Player}' {Action} in room '{RoomId}'.",
+                playerName, ready ? "ready" : "unready", roomId);
+
+        // 广播最新准备状态给房间内所有玩家
+        BroadcastPrepareRoomState(roomId);
     }
 
     /// <summary>
@@ -345,6 +433,22 @@ public partial class GameServer {
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[Game] Broadcast prepare units to {PeerCount} peers in room '{RoomId}' ({UnitCount} units)",
                 peers.Count, roomId, units.Count);
+    }
+
+    /// <summary>
+    /// 将房间当前准备状态广播给该房间所有 peer。
+    /// </summary>
+    private void BroadcastPrepareRoomState(string roomId) {
+        var (host, dungeonName, players) = _lobby.GetRoomState(roomId);
+        var peers = _lobby.GetRoomPeers(roomId);
+        var msg = MessageWriter.WritePrepareRoomState(roomId, host, dungeonName, players);
+
+        foreach (var p in peers)
+            SendToPeer(p, msg);
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[Game] Broadcast prepare room state to {PeerCount} peers in room '{RoomId}' ({PlayerCount} players)",
+                peers.Count, roomId, players.Count);
     }
 
     /// <summary>

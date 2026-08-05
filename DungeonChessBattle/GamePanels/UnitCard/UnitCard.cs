@@ -18,16 +18,25 @@ public partial class UnitCard : Control {
     /// <summary>是否处于选中状态。</summary>
     private bool _isSelected;
 
-    /// <summary>未选中时的原始背景色。</summary>
-    private Color _normalBgColor;
-    /// <summary>选中状态下的背景色。</summary>
-    private static readonly Color SelectedBgColor = new(0.3f, 0.6f, 1.0f, 0.7f);
+    /// <summary>普通状态背景调制色（_Ready 缓存默认白色，供悬停/选中后恢复）。</summary>
+    private Color _normalTint;
+    /// <summary>悬停状态背景调制色：分量超过 1 以提亮底色。</summary>
+    private static readonly Color HoverTint = new(1.15f, 1.15f, 1.15f, 1f);
+    /// <summary>选中状态背景调制色：蓝色调。</summary>
+    private static readonly Color SelectedTint = new(0.55f, 0.85f, 1.0f, 1f);
 
     /// <summary>当前单位配置键。</summary>
     public string UnitConfigKey { get; private set; } = "";
 
+    /// <summary>暂存的职业显示名（_Ready 前写入，进入场景树后应用）。</summary>
+    private string _nameText = "";
+    /// <summary>暂存的 HP 数值文本（由 SetupUnit 格式化，仅承载 HP 数值）。</summary>
+    private string _hpValueText = "";
+    /// <summary>暂存的玩家名。</summary>
+    private string _userName = "";
+
     /// <summary>
-    /// 节点就绪：获取引用集合、缓存正常背景色并连接鼠标交互事件。
+    /// 节点就绪：获取引用集合、缓存正常背景色、应用暂存文本并连接鼠标交互事件。
     /// </summary>
     public override void _Ready() {
         _refs = GetNode<UnitCardInterRefs>("UnitCardInterRefs");
@@ -36,9 +45,9 @@ public partial class UnitCard : Control {
             return;
         }
 
-        if (_refs.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
-            _normalBgColor = flat.BgColor;
-        }
+        _normalTint = _refs.BgPanel?.SelfModulate ?? Colors.White;
+
+        ApplyTexts();
 
         GuiInput += OnGuiInput;
         MouseEntered += OnMouseEntered;
@@ -46,20 +55,48 @@ public partial class UnitCard : Control {
     }
 
     /// <summary>
-    /// 设置卡片显示的单位信息。
-    /// statsText 写入 HpValueLabel。
+    /// 设置卡片显示的单位信息。可在节点进入场景树前调用，进入后自动生效。
+    /// HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
     /// </summary>
-    public void Setup(string configKey, string displayName, string statsText) {
+    /// <param name="configKey">单位配置键。</param>
+    /// <param name="displayName">单位显示名。</param>
+    /// <param name="maxHealth">最大生命值。</param>
+    public void SetupUnit(string configKey, string displayName, float maxHealth) {
         UnitConfigKey = configKey;
-        _refs?.NameLabel?.Text = displayName;
-        _refs?.HpValueLabel?.Text = statsText;
+        _nameText = displayName;
+        _hpValueText = maxHealth.ToString("F0");
+        ApplyTexts();
     }
 
     /// <summary>
-    /// 设置用户名标签。
+    /// 设置用户名标签。可在节点进入场景树前调用。
     /// </summary>
     public void SetUserName(string userName) {
-        _refs?.UserNameLabel?.Text = userName;
+        _userName = userName;
+        ApplyTexts();
+    }
+
+    /// <summary>
+    /// 以未选择职业的占位状态显示卡片：仅展示所属玩家名。
+    /// </summary>
+    /// <param name="playerName">玩家名。</param>
+    public void SetPlaceholder(string playerName) {
+        UnitConfigKey = "";
+        _nameText = "未选择";
+        _hpValueText = "—";
+        _userName = playerName;
+        ApplyTexts();
+    }
+
+    /// <summary>
+    /// 将暂存文本应用到实际标签（引用未就绪时静默，_Ready 后再次调用）。
+    /// </summary>
+    private void ApplyTexts() {
+        if (_refs is null)
+            return;
+        _refs.NameLabel?.SetText(_nameText);
+        _refs.HpValueLabel?.SetText(_hpValueText);
+        _refs.UserNameLabel?.SetText(_userName);
     }
 
     /// <summary>
@@ -71,16 +108,13 @@ public partial class UnitCard : Control {
     }
 
     /// <summary>
-    /// 根据选中状态刷新背景高亮。
+    /// 根据选中状态刷新背景调制色：选中为蓝色调，否则恢复普通色。
     /// </summary>
     private void UpdateVisualState() {
-        if (_refs?.BgPanel?.GetThemeStylebox("panel") is not StyleBoxFlat flat)
+        if (_refs?.BgPanel is null)
             return;
 
-        if (_isSelected)
-            flat.BgColor = SelectedBgColor;
-        else
-            flat.BgColor = _normalBgColor;
+        _refs.BgPanel.SelfModulate = _isSelected ? SelectedTint : _normalTint;
     }
 
     /// <summary>
@@ -97,15 +131,14 @@ public partial class UnitCard : Control {
     }
 
     /// <summary>
-    /// 鼠标移入时轻微提亮背景色（未选中状态下）。
+    /// 鼠标移入时经调制提亮背景色（未选中状态下）。
     /// </summary>
     private void OnMouseEntered() {
         if (_isSelected)
             return;
 
-        if (_refs?.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
-            flat.BgColor = _normalBgColor.Lightened(0.15f);
-        }
+        if (_refs?.BgPanel is not null)
+            _refs.BgPanel.SelfModulate = HoverTint;
     }
 
     /// <summary>

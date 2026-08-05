@@ -4,18 +4,6 @@
 [ext_resource type="LabelSettings" uid="uid://c8a2qa4riuwj1" path="res://GamePanels/UnitCard/label_setting_unit_card.tres" id="2_4cdja"]
 [ext_resource type="Script" uid="uid://bwpdh3yyew2vg" path="res://GamePanels/UnitCard/UnitCardInterRefs.cs" id="3_irfs"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-bg_color = Color(0.25, 0.25, 0.25, 0.8)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [node name="UnitCard" type="Control" unique_id=1031006351]
 custom_minimum_size = Vector2(180, 100)
 layout_mode = 3
@@ -40,7 +28,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1625833439]
 layout_mode = 1
@@ -49,10 +36,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1873616673]
 layout_mode = 2

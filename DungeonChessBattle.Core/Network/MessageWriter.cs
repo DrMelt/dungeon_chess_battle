@@ -24,6 +24,7 @@ public static class MessageWriter {
 
     private static readonly JsonEncodedText ConfigKey = JsonEncodedText.Encode("config");
     private static readonly JsonEncodedText TitleKey = JsonEncodedText.Encode("title");
+    private static readonly JsonEncodedText DungeonNameKey = JsonEncodedText.Encode("dungeonName");
     private static readonly JsonEncodedText DescriptionKey = JsonEncodedText.Encode("description");
     private static readonly JsonEncodedText CategoryKey = JsonEncodedText.Encode("category");
     private static readonly JsonEncodedText HostNameKey = JsonEncodedText.Encode("hostName");
@@ -33,6 +34,9 @@ public static class MessageWriter {
     private static readonly JsonEncodedText CreatedAtKey = JsonEncodedText.Encode("createdAt");
     private static readonly JsonEncodedText StatusKey = JsonEncodedText.Encode("status");
     private static readonly JsonEncodedText RoomsKey = JsonEncodedText.Encode("rooms");
+    private static readonly JsonEncodedText PlayersKey = JsonEncodedText.Encode("players");
+    private static readonly JsonEncodedText ReadyKey = JsonEncodedText.Encode("ready");
+    private static readonly JsonEncodedText UnitsKey = JsonEncodedText.Encode("units");
 
     /// <summary>
     /// 写入响应消息：{ "type":..., "roomId":..., "success":bool[, "error":...] }
@@ -208,6 +212,7 @@ public static class MessageWriter {
         // config
         writer.WriteStartObject(ConfigKey);
         writer.WriteString(TitleKey, config.Title);
+        writer.WriteString(DungeonNameKey, config.DungeonName);
         writer.WriteString(DescriptionKey, config.Description);
         writer.WriteNumber(CategoryKey, (byte)config.Category);
         writer.WriteString(HostNameKey, config.HostName);
@@ -236,6 +241,7 @@ public static class MessageWriter {
             writer.WriteStartObject();
             writer.WriteString(RoomIdKey, room.RoomId);
             writer.WriteString(TitleKey, room.Title);
+            writer.WriteString(DungeonNameKey, room.DungeonName);
             writer.WriteNumber(CategoryKey, (byte)room.Category);
             writer.WriteString(HostNameKey, room.HostName);
             writer.WriteNumber(CurrentPlayersKey, room.CurrentPlayers);
@@ -289,10 +295,20 @@ public static class MessageWriter {
     }
 
     /// <summary>
-    /// 写入开始战斗请求：{ "type":"prepare_start_battle", "roomId":... }
+    /// 写入开始战斗请求：{ "type":"prepare_start_battle", "roomId":..., "playerName":... }
     /// </summary>
-    public static byte[] WritePrepareStartBattle(string roomId) {
-        return WriteRoomRequest(MessageType.PrepareStartBattle, roomId);
+    public static byte[] WritePrepareStartBattle(string roomId, string playerName) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.PrepareStartBattle);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(PlayerNameKey, playerName);
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
     }
 
     /// <summary>
@@ -305,9 +321,10 @@ public static class MessageWriter {
 
     /// <summary>
     /// 写入准备阶段单位列表通知：
-    /// { "type":"prepare_unit_list", "roomId":..., "units":[{"unitName":..., "camp":...}, ...] }
+    /// { "type":"prepare_unit_list", "roomId":..., "units":[{"unitName":..., "camp":..., "playerName":...}, ...] }
     /// </summary>
-    public static byte[] WritePrepareUnitList(string roomId, IEnumerable<(string UnitName, string Camp)> units) {
+    public static byte[] WritePrepareUnitList(string roomId,
+        IEnumerable<(string UnitName, string Camp, string PlayerName)> units) {
         var buf = new ArrayBufferWriter<byte>();
         using var writer = new Utf8JsonWriter(buf);
 
@@ -315,11 +332,71 @@ public static class MessageWriter {
         writer.WriteString(TypeKey, MessageType.PrepareUnitList);
         writer.WriteString(RoomIdKey, roomId);
 
-        writer.WriteStartArray("units");
-        foreach (var (unitName, camp) in units) {
+        writer.WriteStartArray(UnitsKey);
+        foreach (var (unitName, camp, playerName) in units) {
             writer.WriteStartObject();
             writer.WriteString(UnitNameKey, unitName);
             writer.WriteString(CampKey, camp);
+            writer.WriteString(PlayerNameKey, playerName);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入非房主准备请求：{ "type":"prepare_ready", "roomId":..., "playerName":... }
+    /// </summary>
+    public static byte[] WritePrepareReady(string roomId, string playerName) {
+        return WritePrepareReadyState(MessageType.PrepareReady, roomId, playerName);
+    }
+
+    /// <summary>
+    /// 写入非房主取消准备请求：{ "type":"prepare_unready", "roomId":..., "playerName":... }
+    /// </summary>
+    public static byte[] WritePrepareUnready(string roomId, string playerName) {
+        return WritePrepareReadyState(MessageType.PrepareUnready, roomId, playerName);
+    }
+
+    /// <summary>写入准备/取消准备请求的公共实现。</summary>
+    private static byte[] WritePrepareReadyState(string type, string roomId, string playerName) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, type);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(PlayerNameKey, playerName);
+        writer.WriteEndObject();
+
+        writer.Flush();
+        return buf.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// 写入房间准备状态广播：
+    /// { "type":"prepare_room_state", "roomId":..., "hostName":..., "dungeonName":..., "players":[{"playerName":..., "ready":bool}, ...] }
+    /// </summary>
+    public static byte[] WritePrepareRoomState(string roomId, string hostName, string dungeonName,
+        IEnumerable<(string PlayerName, bool Ready)> players) {
+        var buf = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buf);
+
+        writer.WriteStartObject();
+        writer.WriteString(TypeKey, MessageType.PrepareRoomState);
+        writer.WriteString(RoomIdKey, roomId);
+        writer.WriteString(HostNameKey, hostName);
+        writer.WriteString(DungeonNameKey, dungeonName);
+
+        writer.WriteStartArray(PlayersKey);
+        foreach (var (playerName, ready) in players) {
+            writer.WriteStartObject();
+            writer.WriteString(PlayerNameKey, playerName);
+            writer.WriteBoolean(ReadyKey, ready);
             writer.WriteEndObject();
         }
         writer.WriteEndArray();

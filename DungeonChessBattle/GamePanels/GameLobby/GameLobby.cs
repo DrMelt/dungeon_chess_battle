@@ -147,7 +147,7 @@ public partial class GameLobby : BaseGamePanel {
                     _logger.LogInformation("本地房间创建成功: {RoomName}", roomName);
                 if (_roomPreparation != null) {
                     var localConfig = clientService.GetRoom(roomName);
-                    _roomPreparation.EnterRoom(roomName, localConfig);
+                    _roomPreparation.EnterRoom(roomName, localConfig, isHost: true);
                     NavigateTo(_roomPreparation);
                 }
             }
@@ -220,7 +220,7 @@ public partial class GameLobby : BaseGamePanel {
                 CurrentPlayers = 1,
             };
             _cachedCreateRoomId = null;
-            _roomPreparation.EnterRoom(roomId, config);
+            _roomPreparation.EnterRoom(roomId, config, isHost: true);
             NavigateTo(_roomPreparation);
         }
     }
@@ -247,7 +247,7 @@ public partial class GameLobby : BaseGamePanel {
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
             };
-            _roomPreparation.EnterRoom(joinedRoomId, config);
+            _roomPreparation.EnterRoom(joinedRoomId, config, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
             NavigateTo(_roomPreparation);
@@ -297,6 +297,7 @@ public partial class GameLobby : BaseGamePanel {
         // 将 RoomListing 转换回 GameRoom 以适配现有 UI
         var rooms = listings.Select(l => new GameRoom(l.RoomId) {
             Title = l.Title,
+            DungeonName = l.DungeonName,
             Category = l.Category,
             HostName = l.HostName,
             CurrentPlayers = l.CurrentPlayers,

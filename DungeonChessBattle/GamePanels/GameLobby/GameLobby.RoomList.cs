@@ -92,6 +92,7 @@ public partial class GameLobby {
             if (listing != null) {
                 _selectedRoomConfig = new GameRoom(listing.RoomId) {
                     Title = listing.Title,
+                    DungeonName = listing.DungeonName,
                     Category = listing.Category,
                     HostName = listing.HostName,
                     CurrentPlayers = listing.CurrentPlayers,

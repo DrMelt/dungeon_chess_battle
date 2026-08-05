@@ -32,8 +32,19 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     /// <summary>准备阶段战斗启动重定向事件。参数：房间 ID、端口。</summary>
     public event Action<string, int>? OnPrepareBattleRedirect;
 
-    /// <summary>准备阶段单位列表更新事件。参数：房间 ID、单位列表。</summary>
-    public event Action<string, List<(string UnitName, string Camp)>>? OnPrepareUnitListUpdated;
+    /// <summary>准备阶段单位列表更新事件。参数：房间 ID、单位列表（含归属玩家名）。</summary>
+    public event Action<string, List<(string UnitName, string Camp, string PlayerName)>>? OnPrepareUnitListUpdated;
+
+    /// <summary>准备阶段房间准备状态更新事件。参数：房间 ID、房主名、副本名、玩家(名, 准备标志)列表。</summary>
+    public event Action<string, string, string, List<(string PlayerName, bool Ready)>>? OnPrepareRoomStateUpdated;
+
+    /// <summary>最近一次单位列表广播缓存（按房间 ID）。网络线程写入，用于解决"订阅晚于广播"的初始状态丢失。</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string,
+        List<(string UnitName, string Camp, string PlayerName)>> _recentUnitLists = new();
+
+    /// <summary>最近一次房间状态广播缓存（按房间 ID）。网络线程写入，用于解决"订阅晚于广播"的初始状态丢失。</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string,
+        (string HostName, string DungeonName, List<(string PlayerName, bool Ready)> Players)> _recentRoomStates = new();
 
     /// <summary>
     /// 请求创建房间（含招募板配置）。
@@ -78,10 +89,24 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     }
 
     /// <summary>
-    /// 请求开始战斗。
+    /// 请求开始战斗（仅房主可发起，需其他玩家已全部准备）。
     /// </summary>
-    public void RequestPrepareStartBattle(string roomId) {
-        SendCommand(MessageWriter.WritePrepareStartBattle(roomId));
+    public void RequestPrepareStartBattle(string roomId, string playerName) {
+        SendCommand(MessageWriter.WritePrepareStartBattle(roomId, playerName));
+    }
+
+    /// <summary>
+    /// 请求准备（非房主）。
+    /// </summary>
+    public void RequestPrepareReady(string roomId, string playerName) {
+        SendCommand(MessageWriter.WritePrepareReady(roomId, playerName));
+    }
+
+    /// <summary>
+    /// 请求取消准备（非房主）。
+    /// </summary>
+    public void RequestPrepareUnready(string roomId, string playerName) {
+        SendCommand(MessageWriter.WritePrepareUnready(roomId, playerName));
     }
 
     /// <summary>收到网络数据时处理 JSON 包。</summary>
@@ -123,6 +148,13 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
                     break;
                 case MessageType.PrepareUnitList:
                     HandlePrepareUnitList(root);
+                    break;
+                case MessageType.PrepareRoomState:
+                    HandlePrepareRoomState(root);
+                    break;
+                case MessageType.PrepareReady:
+                case MessageType.PrepareUnready:
+                    HandlePrepareReadyResponse(root);
                     break;
                 case MessageType.ReconnectRoomResponse:
                     HandleReconnectRoomResponse(root);
@@ -196,6 +228,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
                 rooms.Add(new RoomListing {
                     RoomId = item.TryGetProperty(MessageProperty.RoomId, out var rid) ? rid.GetString() ?? "" : "",
                     Title = item.TryGetProperty(MessageProperty.Title, out var t) ? t.GetString() ?? "" : "",
+                    DungeonName = item.TryGetProperty(MessageProperty.DungeonName, out var dn) ? dn.GetString() ?? "" : "",
                     Category = item.TryGetProperty(MessageProperty.Category, out var c) && c.TryGetByte(out var cb)
                         ? (RoomCategory)cb : RoomCategory.Casual,
                     HostName = item.TryGetProperty(MessageProperty.HostName, out var hn) ? hn.GetString() ?? "" : "",
@@ -254,17 +287,87 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
     /// <summary>处理准备阶段单位列表广播。</summary>
     private void HandlePrepareUnitList(JsonElement root) {
         string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
-        var units = new List<(string UnitName, string Camp)>();
+        var units = new List<(string UnitName, string Camp, string PlayerName)>();
 
-        if (root.TryGetProperty("units", out var arr) && arr.ValueKind == JsonValueKind.Array) {
+        if (root.TryGetProperty(MessageProperty.Units, out var arr) && arr.ValueKind == JsonValueKind.Array) {
             foreach (var item in arr.EnumerateArray()) {
                 string name = item.TryGetProperty(MessageProperty.UnitName, out var un) ? un.GetString() ?? "" : "";
                 string camp = item.TryGetProperty(MessageProperty.Camp, out var cp) ? cp.GetString() ?? "" : "";
-                units.Add((name, camp));
+                string playerName = item.TryGetProperty(MessageProperty.PlayerName, out var pn) ? pn.GetString() ?? "" : "";
+                units.Add((name, camp, playerName));
             }
         }
 
-        if (roomId != null)
+        if (roomId != null) {
+            // 缓存最近列表：EnterRoom 时重放，覆盖订阅晚于广播导致的初始丢失
+            _recentUnitLists[roomId] = units;
             _pendingEventInvocations.Enqueue(() => OnPrepareUnitListUpdated?.Invoke(roomId, units));
+        }
+    }
+
+    /// <summary>处理准备/取消准备的响应确认。</summary>
+    private void HandlePrepareReadyResponse(JsonElement root) {
+        bool success = root.TryGetProperty(MessageProperty.Success, out var sp) && sp.GetBoolean();
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+
+        if (success && _logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[LobbyClient] Prepare ready-state change in {RoomId}: succeeded", roomId);
+    }
+
+    /// <summary>处理准备阶段房间准备状态广播。</summary>
+    private void HandlePrepareRoomState(JsonElement root) {
+        string? roomId = root.TryGetProperty(MessageProperty.RoomId, out var rp) ? rp.GetString() : null;
+        string hostName = root.TryGetProperty(MessageProperty.HostName, out var hp) ? hp.GetString() ?? "" : "";
+        string dungeonName = root.TryGetProperty(MessageProperty.DungeonName, out var dn) ? dn.GetString() ?? "" : "";
+        var players = new List<(string PlayerName, bool Ready)>();
+
+        if (root.TryGetProperty(MessageProperty.Players, out var arr) && arr.ValueKind == JsonValueKind.Array) {
+            foreach (var item in arr.EnumerateArray()) {
+                string name = item.TryGetProperty(MessageProperty.PlayerName, out var pn) ? pn.GetString() ?? "" : "";
+                bool ready = item.TryGetProperty(MessageProperty.Ready, out var rp2) && rp2.GetBoolean();
+                players.Add((name, ready));
+            }
+        }
+
+        if (roomId != null) {
+            // 缓存最近状态：EnterRoom 时重放，覆盖订阅晚于广播导致的初始丢失
+            _recentRoomStates[roomId] = (hostName, dungeonName, players);
+            _pendingEventInvocations.Enqueue(() => OnPrepareRoomStateUpdated?.Invoke(roomId, hostName, dungeonName, players));
+        }
+    }
+
+    /// <summary>获取指定房间最近一次单位列表广播缓存（网络线程写入，EnterRoom 重放用）。</summary>
+    public bool TryGetRecentUnitList(string roomId,
+        out List<(string UnitName, string Camp, string PlayerName)> units) {
+        return _recentUnitLists.TryGetValue(roomId, out units!);
+    }
+
+    /// <summary>获取指定房间最近一次房间状态广播缓存（网络线程写入，EnterRoom 重放用）。</summary>
+    public bool TryGetRecentRoomState(string roomId, out string hostName, out string dungeonName,
+        out List<(string PlayerName, bool Ready)> players) {
+        if (_recentRoomStates.TryGetValue(roomId, out var state)) {
+            hostName = state.HostName;
+            dungeonName = state.DungeonName;
+            players = state.Players;
+            return true;
+        }
+        hostName = "";
+        dungeonName = "";
+        players = [];
+        return false;
+    }
+
+    /// <summary>断开连接时清理房间状态缓存，避免陈旧数据残留。</summary>
+    protected override void OnDisconnectCleanup() {
+        base.OnDisconnectCleanup();
+        _recentUnitLists.Clear();
+        _recentRoomStates.Clear();
+    }
+
+    /// <summary>重连时清理房间状态缓存，避免陈旧数据残留。</summary>
+    protected override void OnReconnectCleanup() {
+        base.OnReconnectCleanup();
+        _recentUnitLists.Clear();
+        _recentRoomStates.Clear();
     }
 }

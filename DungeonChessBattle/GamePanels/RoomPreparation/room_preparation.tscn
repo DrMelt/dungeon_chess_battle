@@ -60,30 +60,38 @@ mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("RoomNameLabel", "StatusLabel", "UnitListLabel", "InfoLabel", "TitleLabel", "SelectUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("HostLabel", "DungeonNameLabel", "PlayersLabel", "StatusLabel", "InfoLabel", "TitleLabel", "SelectUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
 script = ExtResource("4_irfs")
-RoomNameLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomNameLabel")
-StatusLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/StatusLabel")
-UnitListLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitListLabel")
-InfoLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer/InfoLabel")
-TitleLabel = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/TitleLabel")
-SelectUnitButton = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
-StartBattleButton = NodePath("../Panel/MarginContainer/VBoxContainer/StartBattleButton")
-BackButton = NodePath("../Panel/MarginContainer/VBoxContainer/BackButton")
-UnitCardGrid = NodePath("../Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitGrid")
-UnitSelectPanel = NodePath("../UnitSelectPanel")
+HostLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox/HostLabel")
+DungeonNameLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox/DungeonNameLabel")
+PlayersLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox/PlayersLabel")
+StatusLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/StatusLabel")
+InfoLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer/InfoLabel")
+TitleLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/TitleLabel")
+SelectUnitButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
+StartBattleButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/StartBattleButton")
+BackButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/BackButton")
+UnitCardGrid = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnitGrid")
+UnitSelectPanel = NodePath("../Panel/UnitSelectPanel")
 UnitCardScene = ExtResource("5_n634y")
 
-[node name="Panel" type="Panel" parent="." unique_id=690445033]
+[node name="Panel" type="Control" parent="." unique_id=573565416]
 layout_mode = 1
-anchors_preset = -1
 anchor_left = 0.05
 anchor_top = 0.05
 anchor_right = 0.95
 anchor_bottom = 0.95
 mouse_filter = 1
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=391204852]
+[node name="Panel" type="Panel" parent="Panel" unique_id=1810274406]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/Panel" unique_id=391204852]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -95,44 +103,57 @@ theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=715294105]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/Panel/MarginContainer" unique_id=715294105]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BackButton" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=374920168]
+[node name="BackButton" type="Button" parent="Panel/Panel/MarginContainer/VBoxContainer" unique_id=374920168]
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "< 返回"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer" unique_id=296608334]
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/Panel/MarginContainer/VBoxContainer" unique_id=296608334]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="RoomInfoVBox" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=122334620]
+[node name="RoomInfoVBox" type="VBoxContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=122334620]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=949127420]
+[node name="TitleLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=949127420]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "房间标题"
 horizontal_alignment = 1
 
-[node name="RoomNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=482913754]
+[node name="RoomInfoHBox" type="HBoxContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=482913754]
+layout_mode = 2
+alignment = 1
+
+[node name="HostLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox" unique_id=1704205544]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "房主 / 类别"
-horizontal_alignment = 1
+text = "房主: --"
 
-[node name="Panel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=1634079484]
+[node name="DungeonNameLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox" unique_id=1704205545]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "副本: --"
+
+[node name="PlayersLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/RoomInfoHBox" unique_id=1704205546]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "人数: 0/2"
+
+[node name="Panel" type="Panel" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox" unique_id=1634079484]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_wcwia")
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel" unique_id=1906063595]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel" unique_id=1906063595]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -145,10 +166,10 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer" unique_id=912386997]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer" unique_id=912386997]
 layout_mode = 2
 
-[node name="InfoLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer" unique_id=582914033]
+[node name="InfoLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer" unique_id=582914033]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -156,39 +177,32 @@ size_flags_vertical = 3
 text = "InfoLabel"
 autowrap_mode = 3
 
-[node name="VSeparator" type="VSeparator" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=966985521]
+[node name="VSeparator" type="VSeparator" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=966985521]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=26309085]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=26309085]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=131604837]
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=131604837]
 layout_mode = 2
 
-[node name="SelectUnitButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=541081573]
+[node name="SelectUnitButton" type="Button" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=541081573]
 layout_mode = 2
 text = "选择角色"
 
-[node name="StatusLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=593841209]
+[node name="StatusLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer" unique_id=593841209]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "请选择单位..."
 horizontal_alignment = 1
 
-[node name="UnitGrid" type="GridContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=1372585914]
+[node name="UnitGrid" type="GridContainer" parent="Panel/Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=1372585914]
 layout_mode = 2
 size_flags_vertical = 3
 columns = 3
 
-[node name="UnitListLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" unique_id=711857023]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "已选单位:
-(空)"
-horizontal_alignment = 1
-
-[node name="StartBattleButton" type="Button" parent="Panel/MarginContainer/VBoxContainer" unique_id=481936521]
+[node name="StartBattleButton" type="Button" parent="Panel/Panel/MarginContainer/VBoxContainer" unique_id=481936521]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 8
@@ -199,7 +213,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "开始战斗"
 
-[node name="UnitSelectPanel" parent="." unique_id=-1190685729 instance=ExtResource("6_select_panel")]
+[node name="UnitSelectPanel" parent="Panel" unique_id=-1190685729 instance=ExtResource("6_select_panel")]
 visible = false
 layout_mode = 1
 mouse_filter = 1

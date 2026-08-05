@@ -21,7 +21,7 @@ public partial class BattleRoomServer {
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomServer:{RoomId}] Connection rejected: invalid key from {RemoteEP}", RoomId, request.RemoteEndPoint);
+                _logger.LogWarning("[RoomServer:{RoomId}] Connection rejected: invalid key '{Key}' from {RemoteEP}", RoomId, incomingKey, request.RemoteEndPoint);
             request.Reject();
         }
     }

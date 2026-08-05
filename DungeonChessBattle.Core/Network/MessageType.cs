@@ -35,6 +35,15 @@ public static class MessageType {
     /// <summary>准备阶段：广播房间单位列表。</summary>
     public const string PrepareUnitList = "prepare_unit_list";
 
+    /// <summary>准备阶段：非房主请求准备。</summary>
+    public const string PrepareReady = "prepare_ready";
+
+    /// <summary>准备阶段：非房主请求取消准备。</summary>
+    public const string PrepareUnready = "prepare_unready";
+
+    /// <summary>准备阶段：服务端广播房间准备状态（房主与玩家准备列表）。</summary>
+    public const string PrepareRoomState = "prepare_room_state";
+
     /// <summary>创建房间响应。</summary>
     public const string CreateRoomResponse = "create_room_response";
 
@@ -94,8 +103,20 @@ public static class MessageProperty {
     /// <summary>服务器密码。</summary>
     public const string ServerPassword = "serverPassword";
 
+    /// <summary>玩家是否已准备。</summary>
+    public const string Ready = "ready";
+
+    /// <summary>房间玩家状态数组。</summary>
+    public const string Players = "players";
+
+    /// <summary>单位列表。</summary>
+    public const string Units = "units";
+
     /// <summary>房间标题。</summary>
     public const string Title = "title";
+
+    /// <summary>副本名。</summary>
+    public const string DungeonName = "dungeonName";
 
     /// <summary>房间描述。</summary>
     public const string Description = "description";
