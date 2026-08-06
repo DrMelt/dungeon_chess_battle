@@ -52,6 +52,8 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
 
     /// <summary>
     /// 按日志等级将消息输出到 Godot 控制台（错误走 PrintErr，警告走 PushWarning，其余 Print）。
+    /// 异常存在时输出完整 <c>ToString()</c>（含 Message 与全部 StackTrace），
+    /// 避免 Godot 控制台对单行调用只展示摘要而丢失定位信息。
     /// </summary>
     /// <typeparam name="TState">状态类型。</typeparam>
     /// <param name="logLevel">日志等级。</param>
@@ -65,6 +67,8 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
 
         string message = formatter(state, exception);
         string full = $"[{_categoryName}] {message}";
+        if (exception != null)
+            full += $"\n{exception}";
 
         switch (logLevel) {
             case LogLevel.Error:

@@ -159,11 +159,26 @@ public partial class MainScene : Node {
         GD.Print("[MainScene] Exited battle.");
     }
 
-    /// <summary>接口事件：服务端确认单位创建（网络模式异步，本地模式同步）。</summary>
+    /// <summary>
+    /// 接口事件：服务端确认单位创建（网络模式异步，本地模式同步）。
+    /// 网络模式下单位实体可能晚于 OnBattleStarted 到达，此路径实际生成 3D 单位；
+    /// 与 InitializeUnitsFromCache 的缓存兜底共用幂等入口，保证不重不漏。
+    /// </summary>
     private void OnServiceUnitCreated(string eventRoomId, string unitName, string camp) {
         if (eventRoomId != _roomId)
             return;
         GD.Print($"[MainScene] Unit created via service: {unitName} (camp={camp})");
+
+        // 从房间缓存取完整模型（含位置/属性），事件携带的 camp 不参与生成
+        if (_battleService == null)
+            return;
+        var room = _battleService.GetRoom(_roomId);
+        if (room == null)
+            return;
+        var unit = room.UnitsA.Concat(room.UnitsB)
+            .FirstOrDefault(u => u.UnitStateName == unitName);
+        if (unit != null)
+            TrySpawnUnit(unit);
     }
 
     // =============================================================
@@ -183,16 +198,35 @@ public partial class MainScene : Node {
         GD.Print($"[MainScene] Initializing units: CampA={room.UnitsA.Count}, CampB={room.UnitsB.Count}");
 
         foreach (var unit in room.UnitsA)
-            SpawnUnit(unit);
+            TrySpawnUnit(unit);
         foreach (var unit in room.UnitsB)
-            SpawnUnit(unit);
+            TrySpawnUnit(unit);
+    }
+
+    /// <summary>
+    /// 幂等生成单位视图：同名单位已存在时跳过。
+    /// 事件驱动路径（OnServiceUnitCreated）与缓存兜底路径（InitializeUnitsFromCache）共用，
+    /// 保证订阅前已存在实体与订阅后新建实体均被生成且不重复。
+    /// ⚠ 当前以 UnitStateName 为键，若未来支持同名单位（A/B 阵营各一），需改用 NetId 键。
+    /// </summary>
+    private void TrySpawnUnit(IUnitState unit) {
+        if (_unitShows.ContainsKey(unit.UnitStateName))
+            return;
+        SpawnUnit(unit);
     }
 
     private void SpawnUnit(IUnitState unit) {
         if (_unitsShow == null)
             return;
 
-        // 出生位置由 LES 同步，直接从 IUnitState.Position 获取
+        // 按显示名从唯一权威注册表取运行时资源工厂（unit_show.tscn 不携带单位资源）
+        var entry = UnitCatalog.GetByDisplayName(unit.UnitStateName);
+        if (entry == null) {
+            GD.PushWarning($"[MainScene] SpawnUnit: unit '{unit.UnitStateName}' not found in UnitCatalog.");
+            return;
+        }
+        var unitState = entry.StateFactory();
+
         Vector3 spawnPos = new(unit.Position.X, 0, unit.Position.Y);
 
         if (_unitShowScene == null)
@@ -201,12 +235,9 @@ public partial class MainScene : Node {
         if (unitShow == null)
             return;
 
-        var unitState = unitShow.UnitStateRec;
-        // IUnitState → UnitState (Godot Resource)
-        unitState.UnitStateName = unit.UnitStateName;
-        unitState.Camps.Clear();
-        unitState.Camps.AddRange(unit.Camps);
-        unitState.Health = unit.Health;
+        // 注入运行时资源（setter 先于挂载，_Ready 校验不会误报）
+        unitShow.UnitStateRec = unitState;
+        CopyRuntimeFields(unit, unitState);
 
         unitShow.SetUnitGlobalPosition(spawnPos);
         unitShow.SetUnitGlobalDir(Vector3.Forward);
@@ -215,6 +246,14 @@ public partial class MainScene : Node {
         _unitShows[unit.UnitStateName] = unitShow;
 
         GD.Print($"[MainScene] Spawned unit '{unit.UnitStateName}' at {spawnPos}");
+    }
+
+    /// <summary>将网络同步单位模型的运行时字段搬运到展示资源。</summary>
+    private static void CopyRuntimeFields(IUnitState source, UnitState target) {
+        target.UnitStateName = source.UnitStateName;
+        target.Camps.Clear();
+        target.Camps.AddRange(source.Camps);
+        target.Health = source.Health;
     }
 
     private void ClearUnits() {

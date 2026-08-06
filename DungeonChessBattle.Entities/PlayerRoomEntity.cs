@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core.Enums;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 
@@ -33,12 +32,13 @@ public class PlayerRoomEntity : EntityLogic {
     public PlayerRoomEntity(EntityParams entityParams) : base(entityParams) { }
 
     /// <summary>
-    /// 实体构造完成回调：初始化玩家默认状态。
+    /// 实体构造完成回调。
+    /// ⚠ LiteEntitySystem 1.2.2 语义：OnConstructed 在 AddEntity(initAction) 之后执行，
+    /// 会覆盖服务端注入值。此处仅保留纯内部默认状态；
+    /// 运行时注入字段（PlayerName/Camp/PlayerState/IsReady 等）禁止在此赋默认值。
     /// </summary>
     protected override void OnConstructed() {
-        PlayerName.Value = "Player";
-        PlayerState.Value = (byte)Core.Enums.PlayerConnectionState.Connected;
-        IsReady.Value = false;
-        Camp.Value = string.Empty;
+        // 所有字段均由服务端 AddEntity(initAction) 注入，此处不再设置任何默认值，
+        // 避免覆盖注入值（参见 UnitPawn.OnConstructed 注释）。
     }
 }

@@ -198,9 +198,9 @@ public partial class UnitState : Resource, IUnitState {
         _model.UnitStateName = _UnitStateName;
         _model.Camps = [.. _camps];
         _model.Health = _health;
-        if (_hates == null)
-            throw new InvalidOperationException(
-                $"Unit '{GetType().Name}' has null _hates dictionary. Check the .tres resource.");
+        // 兼容 .tres 与纯代码 new 两种构造路径：_hates 导出字段允许为 null，
+        // 懒初始化为空字典（此前硬抛仅适用于编辑器资源，代码构造会误炸）。
+        _hates ??= [];
         _model.Hates = new Dictionary<string, float>(_hates);
         _model.HealthChanged += OnModelHealthChanged;
         _model.MaxHealthChanged += OnModelMaxHealthChanged;

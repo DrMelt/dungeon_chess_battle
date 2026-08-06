@@ -38,6 +38,9 @@ public class BattleRoomEntity : EntityLogic {
 
     /// <summary>
     /// 实体构造完成回调：初始化默认战斗状态。
+    /// ⚠ LiteEntitySystem 1.2.2 语义：OnConstructed 在 AddEntity(initAction) 之后执行，
+    /// 会覆盖服务端注入值。此处仅保留纯内部默认状态；
+    /// 运行时注入字段（RoomId/WinnerCamp 等）禁止在此赋默认值。
     /// </summary>
     protected override void OnConstructed() {
         BattlePhase.Value = 0;

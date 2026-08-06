@@ -9,7 +9,7 @@ public partial class StateBarMark2dInterRefs : Node {
     /// <summary>单位血条状态组件。</summary>
     [Export]
     public HP_StateBar? PanelUnitStateBarRef {
-        get; set;
+        get; private set;
     }
 
     /// <summary>

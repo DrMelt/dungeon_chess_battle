@@ -4,17 +4,17 @@
 [ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://InGameUI/state_bar/hp_state/hp_state_bar.tscn" id="5_wjt61"]
 [ext_resource type="Script" uid="uid://b0dwcb0eg8ex3" path="res://InGameUI/state_bar/state_bar_mark/StateBarMark2dInterRefs.cs" id="6_statemark2d_interrefs"]
 
-[node name="StateBarSimple2d" type="Control"]
+[node name="StateBarSimple2d" type="Control" unique_id=1769225931]
 layout_mode = 3
 anchors_preset = 0
 scale = Vector2(0.5, 0.5)
 script = ExtResource("1_21cjg")
 
-[node name="StateBarMark2dInterRefs" type="Node" parent="."]
+[node name="StateBarMark2dInterRefs" type="Node" parent="." unique_id=254009468 node_paths=PackedStringArray("PanelUnitStateBarRef")]
 script = ExtResource("6_statemark2d_interrefs")
-PanelUnitStateBarRef = NodePath("../Panel_HP_State2")
+PanelUnitStateBarRef = NodePath("../Panel_HP_State")
 
-[node name="Panel_HP_State2" parent="." instance=ExtResource("5_wjt61")]
+[node name="Panel_HP_State" parent="." unique_id=391706062 instance=ExtResource("5_wjt61")]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

@@ -30,13 +30,17 @@ public partial class FocusOnOutline : Node {
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         // Update OutLine
-        if (playerInterfaceRes?.MouseOnUnit != null && outLineMeshInstance != null) {
-            outLineMeshInstance.GlobalTransform = playerInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.GlobalTransform;
-            outLineMeshInstance.Mesh = playerInterfaceRes.MouseOnUnit.UnitMeshInstanceRef.Mesh;
+        var focused = playerInterfaceRes?.MouseOnUnit;
+        var focusedMesh = focused?.IsInsideTree() == true
+            ? focused.UnitMeshInstanceRef
+            : null;
+
+        if (focused != null && focusedMesh != null && outLineMeshInstance != null) {
+            outLineMeshInstance.GlobalTransform = focusedMesh.GlobalTransform;
+            outLineMeshInstance.Mesh = focusedMesh.Mesh;
         }
         else {
             outLineMeshInstance?.Mesh = null;
         }
     }
-
 }

@@ -14,8 +14,7 @@ namespace DungeonChessBattle.Client;
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 (0xDC) 通信。
 /// 实现 IClientBattleService，管理 LES Entity（BattleRoomEntity、UnitPawn、PlayerRoomEntity）。
-/// 不包含大厅 JSON 协议。
-/// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary（P2-7 优化）。
+/// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
@@ -50,10 +49,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 
-#pragma warning disable CS0067 // 预留事件接口：重连成功后由上层订阅，当前版本暂未实现触发逻辑
+
     /// <summary>重连成功事件（客户端恢复连接后触发）</summary>
     public event Action<string>? OnReconnectSucceeded;
-#pragma warning restore CS0067
 
     // 本地玩家的 UnitController（在 OnPlayerEntityCreated 中查找并保存）
     private UnitController? _localController;

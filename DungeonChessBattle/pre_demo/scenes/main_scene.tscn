@@ -28,7 +28,7 @@
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="31_room"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="32_menu"]
 [ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://pre_demo/scenes/MainScene.cs" id="34_main"]
-[ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_show.tscn" id="35_unit_show"]
+[ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_game_show.tscn" id="35_unit_show"]
 [ext_resource type="Script" uid="uid://rr4mpyfdgbxj" path="res://GameAssets/Services/GameClientDriver.cs" id="36_driver"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]

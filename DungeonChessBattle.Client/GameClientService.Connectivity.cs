@@ -167,10 +167,16 @@ public sealed partial class GameClientService {
     public void Update(float delta) {
         try {
             LobbyClient.Update(delta);
+        }
+        catch (Exception ex) {
+            _logger.LogWarning(ex, "大厅客户端更新异常");
+        }
+
+        try {
             RoomClient.Update(delta);
         }
         catch (Exception ex) {
-            _logger.LogWarning(ex, "客户端更新异常");
+            _logger.LogWarning(ex, "房间客户端更新异常");
         }
 
         if (!_connected && _connectStartTimestamp != 0) {
