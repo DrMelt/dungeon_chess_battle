@@ -8,23 +8,18 @@ namespace DungeonChessBattle.Server.Network;
 
 /// <summary>
 /// BattleRoomServer 的玩家会话与断线重连管理。
+/// 断线模型：断开仅标记 Disconnected 状态并保留实体，玩家可随时重连；
+/// 房间销毁时由 <see cref="CleanupAllSessions"/> 统一销毁全部保留实体。
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 大厅层预注册玩家到白名单。客户端真正连接房间端口前调用。
+    /// 大厅层预注册玩家到房间（准备阶段调用）。白名单校验由 Store 实时查询承担，
+    /// 此处仅预留会话聚合。客户端真正连接房间端口前调用。
     /// </summary>
     public void RegisterPlayer(string playerId, string playerName) {
-        _validPlayerIds[playerId] = 1;
         _sessions.GetOrAdd(playerId, _ => new PlayerSession(playerId, playerName));
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) pre-registered.", RoomId, playerName, playerId);
-    }
-
-    /// <summary>
-    /// 大厅层查询玩家是否可重连（需在宽限期内）。
-    /// </summary>
-    public bool CanReconnect(string playerId) {
-        return _sessions.TryGetValue(playerId, out var session) && session.DisconnectTime != null;
     }
 
     /// <summary>
@@ -72,7 +67,6 @@ public partial class BattleRoomServer {
             session.PeerId = peer.Id;
             session.Entity = playerEntity;
             session.NetPlayer = netPlayer;
-            session.DisconnectTime = null;
             _peerToPlayerId[peer.Id] = effectivePlayerId;
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -82,7 +76,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理玩家重连：将新网络连接绑定到已有的 PlayerSession。
+    /// 处理玩家重连：将新网络连接绑定到已有的 PlayerSession（保留原实体与战斗状态）。
     /// </summary>
     private void HandlePlayerReconnect(NetPeer peer, string playerId) {
         if (!_sessions.TryGetValue(playerId, out var session) || session.Entity == null) {
@@ -90,9 +84,6 @@ public partial class BattleRoomServer {
             HandleNewPlayerConnect(peer, playerId);
             return;
         }
-
-        // 清除宽限期计时器
-        session.DisconnectTime = null;
 
         // 恢复连接状态
         session.Entity.PlayerState.Value = (byte)PlayerConnectionState.Connected;
@@ -113,7 +104,7 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 清理旧连接的所有映射（用于新连接替换旧连接场景）。
-    /// 不触发 OnPeerDisconnected 的宽限期逻辑，不修改 PlayerState。
+    /// 不触发 OnPeerDisconnected 的断线标记，不修改 PlayerState。
     /// </summary>
     private void ReplaceExistingConnection(string playerId) {
         if (!_sessions.TryGetValue(playerId, out var session))
@@ -135,36 +126,13 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 检查并清理超出宽限期的断连玩家。
+    /// 销毁全部保留实体（房间销毁时调用；由大厅线程经 Stop() 触发）。
     /// </summary>
-    private void CleanupExpiredPlayers() {
-        var now = DateTime.UtcNow;
-        var expiredIds = _sessions
-            .Where(kv => kv.Value.DisconnectTime.HasValue
-                && (now - kv.Value.DisconnectTime.Value).TotalSeconds > ReconnectGracePeriodSeconds)
-            .Select(kv => kv.Key)
-            .ToList();
-
-        foreach (var playerId in expiredIds) {
-            CleanupPlayer(playerId);
-        }
-    }
-
-    /// <summary>
-    /// 彻底清理指定玩家：从白名单移除，销毁 PlayerRoomEntity 和关联的 UnitPawn。
-    /// </summary>
-    private void CleanupPlayer(string playerId) {
-        _validPlayerIds.TryRemove(playerId, out _);
-
-        if (_sessions.TryRemove(playerId, out var session)) {
-            // 销毁 LES Entity（InternalEntity.Destroy），同步移除到所有客户端
+    private void CleanupAllSessions() {
+        foreach (var session in _sessions.Values) {
             session.Entity?.Destroy();
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) cleanup completed (timeout + entity destroyed).",
-                    RoomId, session.PlayerName, playerId);
         }
-
-        // 通知外部（GameLobby 可据此判断是否需要销毁空房间）
-        PlayerRemoved?.Invoke(RoomId, playerId);
+        _sessions.Clear();
+        _peerToPlayerId.Clear();
     }
 }

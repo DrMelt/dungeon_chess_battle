@@ -106,12 +106,6 @@ public partial class GameServer {
             || !TryGetRoomParams(peer, root, MessageType.CreateRoomResponse, out string roomId, out string playerId))
             return;
 
-        if (_stateStore.RoomExists(roomId)) {
-            _logger.LogWarning("[Game] Room '{RoomId}' already exists.", roomId);
-            SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, false, "Room already exists."));
-            return;
-        }
-
         string? roomPassword = root.TryGetProperty(MessageProperty.Password, out var pp) ? pp.GetString() : null;
         string? actualRoomPassword = string.IsNullOrEmpty(roomPassword) ? null : roomPassword;
 
@@ -140,18 +134,18 @@ public partial class GameServer {
             };
         }
 
-        if (!_stateStore.TryRegisterRoom(roomId, actualRoomPassword, config)) {
+        // 房主 displayName 由服务端权威解析（不信任客户端 config 中的 HostName）
+        string hostDisplayName = GetDisplayName(root, playerId);
+
+        // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + peer 归属 + playerId
+        if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, config,
+                hostDisplayName, playerId, peer.Id)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, false, "Failed to register room."));
             return;
         }
 
         // 注册创建者到房间 peer 列表
         _lobby.RegisterPeerToRoom(roomId, peer);
-
-        // 登记房主身份（服务端解析的 displayName，不信任客户端 config）
-        string hostDisplayName = GetDisplayName(root, playerId);
-        _stateStore.SetRoomHost(roomId, hostDisplayName);
-        _stateStore.RegisterRoomPlayer(roomId, hostDisplayName, playerId, peer.Id);
 
         // 准备阶段：不重定向，只返回成功
         SendToPeer(peer, MessageWriter.WriteResponse(MessageType.CreateRoomResponse, roomId, true));
@@ -187,7 +181,8 @@ public partial class GameServer {
             return;
         }
 
-        _stateStore.UpdatePlayerCount(roomId, _stateStore.GetRoomConfig(roomId)?.CurrentPlayers + 1 ?? 1);
+        // 原子自增玩家数（避免并发 join 时读改写丢失更新）
+        _stateStore.IncrementPlayerCount(roomId);
         _lobby.RegisterPeerToRoom(roomId, peer);
 
         string displayName = GetDisplayName(root, playerId);
@@ -319,24 +314,9 @@ public partial class GameServer {
             return;
         }
 
-        // 创建 BattleRoomServer 并迁移单位（协调者职责）
+        // 创建 BattleRoomServer：初始化（根实体与单位迁移）由房间线程从 Store 自取完成，
+        // 连接资格由 Store 成员表实时查询——此处不再向服务器预注册白名单
         var server = _lobby.StartRoomBattle(roomId);
-
-        // 用服务端权威数据将房间内所有玩家注册进白名单（不只房主，供非房主重连）
-        var roomPlayerIds = _stateStore.GetRoomPlayerIds(roomId);
-        var roomState = _stateStore.GetRoomState(roomId);
-        int registeredCount = 0;
-        foreach (var member in roomState.Players) {
-            if (roomPlayerIds.TryGetValue(member.PlayerName, out var memberPlayerId) && !string.IsNullOrEmpty(memberPlayerId)) {
-                server.RegisterPlayer(memberPlayerId, member.PlayerName);
-                registeredCount++;
-            }
-        }
-        // 兜底：发起者自身 playerId 应已包含在房主登记中，缺失时补注册
-        if (!roomPlayerIds.ContainsKey(playerName) && !string.IsNullOrEmpty(playerId)) {
-            server.RegisterPlayer(playerId, playerName);
-            registeredCount++;
-        }
 
         // 向房间内所有玩家广播重定向（含端口号），确保非房主也能进入战斗
         var redirectMsg = MessageWriter.WritePrepareStartBattleResponse(roomId, server.Port);
@@ -344,8 +324,8 @@ public partial class GameServer {
             SendToPeer(p, redirectMsg);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Room '{RoomId}' battle started (port {Port}), registered={RegisteredCount}/{PlayerCount} players.",
-                roomId, server.Port, registeredCount, roomState.Players.Count);
+            _logger.LogInformation("[Game] Room '{RoomId}' battle started on port {Port}.",
+                roomId, server.Port);
     }
 
     /// <summary>
@@ -418,14 +398,7 @@ public partial class GameServer {
         var server = _lobby.GetRoomServer(roomId);
         if (server == null) {
             _logger.LogWarning("[Game] reconnect_room: room '{RoomId}' not in battle.", roomId);
-            SendToPeer(peer, MessageWriter.WriteReconnectRoomResponse(roomId, false, "Room not in battle or expired."));
-            return;
-        }
-
-        if (!server.CanReconnect(playerId)) {
-            _logger.LogWarning("[Game] reconnect_room: player '{PlayerId}' not eligible for reconnect in room '{RoomId}'.",
-                playerId, roomId);
-            SendToPeer(peer, MessageWriter.WriteReconnectRoomResponse(roomId, false, "Reconnect timeout or player not in room."));
+            SendToPeer(peer, MessageWriter.WriteReconnectRoomResponse(roomId, false, "Room not in battle."));
             return;
         }
 

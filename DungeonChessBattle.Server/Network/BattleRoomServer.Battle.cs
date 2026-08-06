@@ -10,11 +10,41 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Server.Network;
 
 /// <summary>
-/// BattleRoomServer 的单位实体创建、战斗管理与 RPC 处理。
+/// BattleRoomServer 的初始化（从 Store 自取数据）、单位实体创建、战斗管理与 RPC 处理。
+/// 本 partial 的所有方法仅在房间线程执行。
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 在本房间的 SEM 中创建 UnitPawn 实体。
+    /// 房间线程首帧初始化：创建根实体、订阅实体事件、创建 Logic 房间、
+    /// 从 Store 迁移准备期单位。此后 EntityManager 不再被其他线程触碰。
+    /// </summary>
+    private void InitializeFromStore() {
+        // 在房间 SEM 中创建 BattleRoomEntity，并订阅其实例事件
+        _roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
+            e.RoomId.Value = RoomId;
+        }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
+
+        _roomEntity.CreateUnitRequested += OnCreateUnitRequested;
+        _roomEntity.StartBattleRequested += OnStartBattleRequested;
+
+        // 创建 Logic 层房间
+        _logicService.CreateRoom(RoomId);
+
+        // 从 Store 迁移准备期单位
+        var units = _stateStore.GetPrepareUnits(RoomId);
+        foreach (var selection in units) {
+            var spawnPos = selection.Camp == CampConstants.CampA
+                ? new Vector2(0, 0)
+                : new Vector2(5, 0);
+            CreatePawnEntity(selection.UnitName, selection.Camp, spawnPos);
+        }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[RoomServer:{RoomId}] Initialized from store: {UnitCount} units migrated.", RoomId, units.Count);
+    }
+
+    /// <summary>
+    /// 在本房间的 SEM 中创建 UnitPawn 实体。仅房间线程调用。
     /// </summary>
     public UnitPawn CreatePawnEntity(string unitName, string camp, Vector2 spawnPos) {
         // 兜底防御（上游网络入口已校验，这里仅防未来新增路径绕过校验）
@@ -50,20 +80,14 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 在本房间启动战斗。
     /// </summary>
-    public IBattle StartBattle() {
+    public void StartBattle() {
         if (_battle != null && _battle.CurrentPhase == BattlePhase.Running)
-            return _battle;
+            return;
 
         _battle = _logicService.StartBattleInRoom(RoomId);
         _battle.BattleStarted += OnBattleStarted;
         _battle.BattleEnded += OnBattleEnded;
-        return _battle;
     }
-
-    /// <summary>
-    /// 获取本房间的 BattleRoomEntity。
-    /// </summary>
-    public BattleRoomEntity? GetRoomEntity() => _roomEntity;
 
     /// <summary>
     /// RPC：客户端请求创建单位。

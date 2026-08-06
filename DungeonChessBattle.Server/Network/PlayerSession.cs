@@ -38,9 +38,4 @@ internal sealed class PlayerSession(string playerId, string playerName) {
     public UnitController? Controller {
         get; set;
     }
-
-    /// <summary>断连时间戳（null 表示当前已连接）</summary>
-    public DateTime? DisconnectTime {
-        get; set;
-    }
 }

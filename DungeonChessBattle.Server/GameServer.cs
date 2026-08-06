@@ -20,7 +20,7 @@ namespace DungeonChessBattle.Server;
 public partial class GameServer {
     private readonly LobbyNetworkServer _lobbyServer;
     private readonly GameLobby _lobby;
-    private readonly InMemoryGameStateStore _stateStore;
+    private readonly IGameStateStore _stateStore;
     private readonly ServerConfig _config;
     private readonly ILogger<GameServer> _logger;
     private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
@@ -36,11 +36,12 @@ public partial class GameServer {
     /// </summary>
     /// <param name="loggerFactory">日志工厂。</param>
     /// <param name="config">服务器配置（端口、密钥、密码）。</param>
-    public GameServer(ILoggerFactory loggerFactory, ServerConfig config) {
+    /// <param name="stateStore">大厅级状态存储（存储引擎由装配层注入，可替换）。</param>
+    public GameServer(ILoggerFactory loggerFactory, ServerConfig config, IGameStateStore stateStore) {
         _logger = loggerFactory.CreateLogger<GameServer>();
         _config = config;
+        _stateStore = stateStore;
         _lobbyServer = new LobbyNetworkServer(loggerFactory.CreateLogger<LobbyNetworkServer>(), _config);
-        _stateStore = new InMemoryGameStateStore(loggerFactory);
         _lobby = new GameLobby(loggerFactory, _stateStore, _config);
 
         _lobbyServer.OnCustomPacket += OnCustomPacket;
@@ -71,6 +72,8 @@ public partial class GameServer {
         _lobbyThread = new Thread(() => {
             while (_running) {
                 _lobbyServer.PollEvents();
+                // 消费空房间投递队列：房间销毁动作收敛到大厅线程执行
+                _lobby.ProcessPendingRoomCleanups();
                 Thread.Sleep(1);
             }
         }) {

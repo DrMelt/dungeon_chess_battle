@@ -1,4 +1,5 @@
 using DungeonChessBattle.Server.Settings;
+using DungeonChessBattle.Server.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
@@ -13,6 +14,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     private readonly ILogger<GameServerHost> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private GameServer? _server;
+    private InMemoryGameStateStore? _stateStore;
 
     /// <summary>默认大厅端口。</summary>
     public const int DefaultPort = ServerConfig.DefaultPort;
@@ -44,7 +46,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 LobbyPort = port
             };
             Port = config.LobbyPort;
-            _server = new GameServer(_loggerFactory, config);
+            _stateStore = new InMemoryGameStateStore(_loggerFactory);
+            _server = new GameServer(_loggerFactory, config, _stateStore);
             _server.StartAsync();
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -53,6 +56,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
         }
         catch (Exception ex) {
             _server = null;
+            _stateStore?.Dispose();
+            _stateStore = null;
             Port = 0;
             _logger.LogError(ex, "服务器启动失败");
             StatusChanged?.Invoke(false, 0);
@@ -77,6 +82,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
         }
         finally {
             _server = null;
+            _stateStore?.Dispose();
+            _stateStore = null;
             Port = 0;
             StatusChanged?.Invoke(false, 0);
         }
