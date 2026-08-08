@@ -9,10 +9,8 @@ namespace DungeonChessBattle.Core.Interfaces {
         /// <summary>单位当前世界坐标。</summary>
         Vector3 Position {
             get;
+            set;
         }
-
-        /// <summary>设置单位世界坐标；位置变化时由实现触发移动相关事件。</summary>
-        void SetPosition(Vector3 position);
 
         /// <summary>当前移动速度。</summary>
         float MoveSpeed {

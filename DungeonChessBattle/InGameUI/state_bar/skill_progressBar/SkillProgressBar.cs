@@ -1,10 +1,12 @@
+using DungeonChessBattle.Entities;
+using DungeonChessBattle.GameAssets.Skills;
 using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 技能施法进度条，展示当前正在施放的技能名称、剩余时间与进度。
+/// 技能施法进度条，直读 Pawn.SkillCasting / SkillCastRemaining 展示当前施法技能名称、剩余时间与进度。
 /// </summary>
 public partial class SkillProgressBar : Control, IUIUpdate {
     /// <summary>导出引用集合节点。</summary>
@@ -20,21 +22,30 @@ public partial class SkillProgressBar : Control, IUIUpdate {
     }
 
     /// <summary>
-    /// 根据单位施法状态刷新进度条；无施法时隐藏。
+    /// 根据单位 Pawn 刷新施法进度条；无施法时隐藏。
     /// </summary>
-    /// <param name="unitShow">目标单位状态。</param>
-    public void UpdateUI_WithUnit(UnitState unitShow) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn) {
         if (InterRefs == null)
             return;
-        var spellingSkill = unitShow.SpellingSkill;
-        if (spellingSkill != null) {
-            Visible = true;
-            InterRefs.LabelSkillNameRef?.Text = spellingSkill.SkillName;
-            InterRefs.LabelRemainingTimeRef?.Text = (spellingSkill.SkillSpellTime - spellingSkill.SkillSpelledTime).ToString("F1");
-            InterRefs.ProgressBarRef?.Value = spellingSkill.SkillSpelledTime / spellingSkill.SkillSpellTime;
-        }
-        else {
+
+        var castingId = pawn.SkillCasting.Value;
+        if (castingId == 0) {
             Visible = false;
+            return;
         }
+
+        var skill = SkillResourceTable.GetResourceBySkillId(castingId);
+        if (skill == null) {
+            Visible = false;
+            return;
+        }
+
+        Visible = true;
+        InterRefs.LabelSkillNameRef?.Text = skill.SkillName;
+        var remaining = pawn.SkillCastRemaining.Value;
+        InterRefs.LabelRemainingTimeRef?.Text = remaining.ToString("F1");
+        var total = Mathf.Max(skill.SkillSpellTime, 0.001f);
+        InterRefs.ProgressBarRef?.Value = Mathf.Clamp(1f - remaining / total, 0f, 1f);
     }
 }

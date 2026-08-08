@@ -59,6 +59,14 @@ public abstract class SkillModel : IUnitSkill {
         get; protected set;
     }
 
+    /// <summary>
+    /// 设置技能目标位置（供读条完成后的范围伤害结算使用，不触发施法状态机）。
+    /// </summary>
+    /// <param name="pos">目标位置。</param>
+    public void SetTargetPosition(Vector3 pos) {
+        TargetPos = pos;
+    }
+
     /// <summary>可被技能命中的所有检测单位。</summary>
     protected List<IUnitState> TestObjects { get; set; } = [];
 

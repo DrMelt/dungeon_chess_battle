@@ -6,6 +6,9 @@ namespace DungeonChessBattle.GameConfig.Data;
 /// Buff 配置基类，仅包含策划配表参数，不含运行时状态。
 /// </summary>
 public class BuffConfig {
+    /// <summary>Buff 全局唯一 ID（配置表标识，对应 SyncBuffData.BuffTypeId，0 为保留/无效值）。</summary>
+    public ushort Id { get; set; } = 0;
+
     /// <summary>持续时间（秒）。</summary>
     public double Duration { get; set; } = 60;
 

@@ -33,10 +33,11 @@ public partial class StateBar2d_Focus : Control {
 
             if (showUnit != null) {
                 Visible = true;
+                var pawn = showUnit.Pawn;
 
-                InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
-                InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(showUnit.UnitStateRec);
+                InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(pawn);
+                InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn);
+                InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(pawn);
             }
 
         }

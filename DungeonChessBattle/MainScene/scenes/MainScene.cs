@@ -103,7 +103,7 @@ public partial class MainScene : Node {
         if (_battleService != null) {
             _battleService.BattlePhaseChanged += OnBattlePhase;
 
-            _unitManager?.Bind(_battleService, roomId);
+            _unitManager?.Bind(_battleService, ServiceLocator.ClientService.RoomClient, roomId);
             _inputController?.Reset();
         }
 
@@ -153,17 +153,6 @@ public partial class MainScene : Node {
         _inputController?.Tick(_battleService);
     }
 
-    /// <summary>
-    /// 每物理帧同步实体位置到 3D 场景。
-    /// </summary>
-    /// <param name="delta">距上一物理帧的秒数。</param>
-    public override void _PhysicsProcess(double delta) {
-        if (!_inBattle || _battleService == null)
-            return;
-
-        _unitManager?.SyncPositions();
-    }
-
     // =============================================================
     // 战斗阶段
     // =============================================================
@@ -185,8 +174,6 @@ public partial class MainScene : Node {
     /// 节点退出场景树：取消战斗服务事件订阅。
     /// </summary>
     public override void _ExitTree() {
-        if (_battleService != null) {
-            _battleService.BattlePhaseChanged -= OnBattlePhase;
-        }
+        _battleService?.BattlePhaseChanged -= OnBattlePhase;
     }
 }

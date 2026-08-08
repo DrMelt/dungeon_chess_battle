@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// RoomBattleClient 的 LES 实体创建回调与本地模型构建工具。
+/// RoomBattleClient 的 LES 实体创建回调与本地 Pawn 查询工具。
+/// 展示层直读 UnitPawn（SyncVar），不再维护客户端 UnitModel 中转。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
@@ -14,7 +15,13 @@ public partial class RoomBattleClient {
         lock (_lock) {
             _roomEntity = entity;
             _currentRoomId = entity.RoomId.Value;
-            _roomPawns.Clear();
+            _persistentRoom ??= new GameRoom(entity.RoomId.Value);
+
+            // 回填服务端权威创建时间（>0 才覆盖，规避 OnConstructed 默认 0 的竞态时序）
+            if (entity.CreatedUnixTime.Value > 0) {
+                _persistentRoom.CreatedAt = DateTimeOffset
+                    .FromUnixTimeSeconds((long)entity.CreatedUnixTime.Value).UtcDateTime;
+            }
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -94,30 +101,16 @@ public partial class RoomBattleClient {
     };
 
     /// <summary>按单位名称查找本房间的 Pawn 实体。</summary>
-    private UnitPawn? FindPawnByName(string unitName) {
+    public UnitPawn? FindPawnByName(string unitName) {
         lock (_lock) {
             return _roomPawns.Find(p => p.UnitName.Value == unitName);
         }
     }
 
-    /// <summary>将 Pawn 实体的同步数值构建为本地单位模型。</summary>
-    private static UnitModel BuildModelFromPawn(UnitPawn p) {
-        var model = new UnitModel {
-            UnitStateName = p.UnitName.Value,
-            Health = p.Health.Value,
-            MaxHealth = p.MaxHealth.Value,
-            PhysicalAttackBase = p.PhysicalAttackBase.Value,
-            MagicAttackBase = p.MagicAttackBase.Value,
-            PhysicalTakePercent = p.PhysicalTakePercent.Value,
-            MagicTakePercent = p.MagicTakePercent.Value,
-            CureIntensity = p.CureIntensity.Value,
-            BaseSpeed = p.BaseSpeed.Value,
-            Camps = [p.Camp.Value],
-        };
-
-        // 同步服务端位置（XZ 平面 → 世界坐标）
-        var pos = p.Position.Value;
-        model.SetPosition(new System.Numerics.Vector3(pos.X, 0f, pos.Y));
-        return model;
+    /// <summary>获取本房间全部 Pawn 实体的只读快照（展示层枚举数据源）。</summary>
+    public System.Collections.Generic.IReadOnlyList<UnitPawn> GetPawns() {
+        lock (_lock) {
+            return [.. _roomPawns];
+        }
     }
 }

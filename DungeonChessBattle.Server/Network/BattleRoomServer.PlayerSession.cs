@@ -41,8 +41,9 @@ public partial class BattleRoomServer {
     /// 处理新玩家首次连接：创建 PlayerSession + PlayerRoomEntity。
     /// </summary>
     private void HandleNewPlayerConnect(NetPeer peer, string? connectionKey) {
-        _logger.LogInformation("[RoomServer:{RoomId}] New player connect: peer={PeerId}, connectionKey={Key}",
-            RoomId, peer.Id, connectionKey ?? "(null)");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[RoomServer:{RoomId}] New player connect: peer={PeerId}, connectionKey={Key}",
+                RoomId, peer.Id, connectionKey ?? "(null)");
 
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var netPlayer = EntityManager.AddPlayer(lesPeer);

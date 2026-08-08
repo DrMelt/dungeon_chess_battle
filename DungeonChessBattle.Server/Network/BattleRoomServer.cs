@@ -3,7 +3,10 @@ using System.Diagnostics;
 using LiteNetLib;
 using LiteEntitySystem;
 using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Core.Interfaces;
+using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Settings;
@@ -227,7 +230,7 @@ public partial class BattleRoomServer : INetEventListener {
 
                         var gameRoom = _logicService.GetRoom(RoomId);
                         if (gameRoom != null)
-                            _logicService.UpdateBuffs(gameRoom.UnitsA.Concat(gameRoom.UnitsB), dt);
+                            _logicService.UpdateBuffs(gameRoom.Units, dt);
                     }
 
                     // 4. Pawn 冷却更新 + Logic 模型回写到 Pawn（Health / Position）
@@ -246,8 +249,8 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>
-    /// 每帧递减 Pawn 冷却，并将 Logic 层模型的最新状态回写到网络 Pawn（健康值、位置）。
-    /// 仅房间线程调用。
+    /// 每帧推进读条 + 递减 Pawn 冷却，并将 Logic 层模型的最新状态回写到网络 Pawn
+    /// （健康值、位置、朝向、读条状态）。仅房间线程调用。
     /// </summary>
     /// <param name="dt">距上一帧的间隔时间（秒）。</param>
     private void SyncLogicModelToPawns(float dt) {
@@ -255,10 +258,16 @@ public partial class BattleRoomServer : INetEventListener {
         if (gameRoom == null)
             return;
 
+        // 推进读条：Logic 层权威递减，完成时结算并返回完成读条的单位
+        var finishedSpells = _logicService.TickSpells(RoomId, dt);
+
+        // 推进 Logic 层冷却（GCD + 个体技能冷却）
+        _logicService.TickCooldowns(RoomId, dt);
+
         foreach (var pawn in _roomPawns) {
             pawn.UpdateCooldowns(dt);
 
-            var model = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
+            var model = gameRoom.Units
                 .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
             if (model == null)
                 continue;
@@ -269,11 +278,72 @@ public partial class BattleRoomServer : INetEventListener {
             var modelPos = model.Position;
             var pawnPos = new System.Numerics.Vector2(modelPos.X, modelPos.Z);
             if (System.Numerics.Vector2.DistanceSquared(pawn.Position.Value, pawnPos) > 0.0001f) {
-                _logger.LogInformation("[RoomServer:{RoomId}] SyncPos: {Unit} = ({X}, {Z})",
-                    RoomId, pawn.UnitName.Value, modelPos.X, modelPos.Z);
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("[RoomServer:{RoomId}] SyncPos: {Unit} = ({X}, {Z})",
+                        RoomId, pawn.UnitName.Value, modelPos.X, modelPos.Z);
                 pawn.Position.Value = pawnPos;
             }
+
+            // 回写朝向方向向量（模型 LookAtDir 的 XZ 平面投影）
+            var lookAt = model.LookAtDir;
+            var dir = new System.Numerics.Vector2(lookAt.X, lookAt.Z);
+            if (System.Numerics.Vector2.DistanceSquared(pawn.Direction.Value, dir) > 0.0001f)
+                pawn.Direction.Value = dir;
+
+            // 回写冷却状态：GCD + 技能个体冷却（仅 Logic UnitModel 有真实冷却）
+            if (model is DungeonChessBattle.Core.Models.UnitModel unitModel) {
+                if (MathF.Abs(pawn.GcdRemaining.Value - unitModel.GcdTime) > 0.0001f)
+                    pawn.GcdRemaining.Value = Math.Max(0f, unitModel.GcdTime);
+                pawn.ServerSetSkillCooldowns(unitModel.SkillCooldowns);
+                pawn.ServerSyncBuffList(MapModelBuffs(unitModel.BuffList));
+            }
+
+            // 回写读条状态：读条已完成并结算的单位清空；否则更新剩余时间
+            if (finishedSpells.Contains(pawn.UnitName.Value)) {
+                pawn.ServerEndSpell();
+            }
+            else if (model.SpellingSkillId != 0) {
+                if (pawn.SkillCasting.Value != model.SpellingSkillId)
+                    pawn.ServerBeginSpell(model.SpellingSkillId, model.SpellRemaining);
+                else
+                    pawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
+            }
         }
+    }
+
+    /// <summary>
+    /// 将 Logic 层的 Buff 列表映射为同步 Buff 数据快照（服务端权威回写）。
+    /// </summary>
+    /// <param name="buffs">Logic 层 Buff 模型列表。</param>
+    /// <returns>同步 Buff 数据列表。</returns>
+    private static List<SyncBuffData> MapModelBuffs(IEnumerable<IBuff> buffs) {
+        var result = new List<SyncBuffData>();
+        foreach (var buff in buffs) {
+            if (buff is not BuffModel model)
+                continue;
+
+            var data = new SyncBuffData {
+                BuffTypeId = model.BuffTypeId,
+                RemainingDuration = (float)model.Duration,
+                StackCount = (ushort)model.Superpositions,
+                MaxStackCount = (ushort)model.MaxSuperpositions,
+            };
+
+            switch (model) {
+                case BuffDOTModel dot:
+                    data.TickInterval = 1f;
+                    data.TickValue = dot.DamagePerSec;
+                    data.DamageType = (byte)dot.DamageType;
+                    break;
+                case BuffHOTModel hot:
+                    data.TickInterval = 1f;
+                    data.TickValue = -hot.HealthPerSec; // 负值表示治疗
+                    break;
+            }
+
+            result.Add(data);
+        }
+        return result;
     }
 
     /// <summary>仅房间线程内部调用，禁止外部并发调用（LiteNetLib.PollEvents 非线程安全）</summary>

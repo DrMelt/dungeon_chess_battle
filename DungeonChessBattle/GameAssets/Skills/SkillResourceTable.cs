@@ -76,6 +76,23 @@ public partial class SkillResourceTable : Resource {
     }
 
     /// <summary>
+    /// 通过技能全局 ID 查找并创建对应的 Godot 技能资源实例。
+    /// </summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <returns>UnitSkillBaseGodot 子类的新副本；未找到返回 null。</returns>
+    public static UnitSkillBaseGodot? GetResourceBySkillId(ushort skillId) {
+        var config = GameConfig.GameConfigDB.GetSkillById(skillId);
+        if (config == null)
+            return null;
+        try {
+            return LoadResource(config);
+        }
+        catch (KeyNotFoundException) {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 启动时自检：验证所有 UnitConfig 中引用的技能都在资源表中有注册。
     /// 在游戏启动时调用一次，效果等同于编译期检查。
     /// </summary>

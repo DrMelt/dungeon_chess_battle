@@ -7,6 +7,9 @@ namespace DungeonChessBattle.Core.Models;
 /// 提供持续时间计时、叠加逻辑，并在每帧通过 ActionDuration/ActionEnd 虚方法派发持续效果与结束效果。
 /// </summary>
 public class BuffModel : IBuff {
+    /// <summary>Buff 全局唯一 ID（对应配置表与 SyncBuffData.BuffTypeId）。</summary>
+    public ushort BuffTypeId { get; set; } = 0;
+
     /// <summary>Buff 名称，作为叠加判定的唯一标识。</summary>
     public string BuffName { get; set; } = "";
 

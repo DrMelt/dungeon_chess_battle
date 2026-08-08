@@ -4,6 +4,9 @@ namespace DungeonChessBattle.GameConfig.Data;
 /// 技能配置基类，仅包含策划配表参数，不含运行时状态
 /// </summary>
 public class SkillConfig {
+    /// <summary>技能全局唯一 ID（配置表标识，0 为保留/无效值）。</summary>
+    public ushort Id { get; set; } = 0;
+
     /// <summary>技能读条时间（秒）。</summary>
     public float SkillSpellTime { get; set; } = 2.0f;
 

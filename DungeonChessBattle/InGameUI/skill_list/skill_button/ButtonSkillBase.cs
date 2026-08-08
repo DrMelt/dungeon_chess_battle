@@ -1,10 +1,11 @@
 using System;
+using DungeonChessBattle.Entities;
 using Godot;
 
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 技能按钮：绑定一个技能并在点击时委托给技能列表面板处理释放。
+/// 技能按钮：绑定一个技能与施法单位 Pawn，点击时委托给技能列表面板发起施法 RPC。
 /// 冷却期间显示灰色遮罩与剩余秒数。
 /// </summary>
 public partial class ButtonSkillBase : Button {
@@ -29,9 +30,9 @@ public partial class ButtonSkillBase : Button {
     /// <summary>绑定的技能对象。</summary>
     public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
 
-    /// <summary>绑定技能所属的单位。</summary>
-    public UnitState BindUnitState {
-        get => field ?? throw new InvalidOperationException("BindUnitState has not been initialized.");
+    /// <summary>绑定技能所属的施法单位 Pawn。</summary>
+    public UnitPawn BindPawn {
+        get => field ?? throw new InvalidOperationException("BindPawn has not been initialized.");
         private set;
     }
 
@@ -39,14 +40,14 @@ public partial class ButtonSkillBase : Button {
     private SkillsList? _skillsListRef;
 
     /// <summary>
-    /// 初始化按钮与技能、单位及技能列表面板的绑定，并设置技能图标。
+    /// 初始化按钮与技能、施法单位 Pawn 及技能列表面板的绑定，并设置技能图标。
     /// </summary>
     /// <param name="bindSkill">要绑定的技能。</param>
-    /// <param name="bindUnitState">技能所属的单位。</param>
+    /// <param name="bindPawn">技能所属的施法单位 Pawn。</param>
     /// <param name="skillsListRef">技能列表面板引用。</param>
-    public void Init(UnitSkillBaseGodot bindSkill, UnitState bindUnitState, SkillsList skillsListRef) {
+    public void Init(UnitSkillBaseGodot bindSkill, UnitPawn bindPawn, SkillsList skillsListRef) {
         _bindingSkill = bindSkill;
-        BindUnitState = bindUnitState;
+        BindPawn = bindPawn;
         _skillsListRef = skillsListRef;
 
         Icon = bindSkill.Icon;
@@ -86,21 +87,40 @@ public partial class ButtonSkillBase : Button {
         _skillsListRef?.OnSkillButtonPressed(this);
     }
 
-    /// <summary>每帧更新冷却 UI（灰色遮罩与剩余秒数）。</summary>
+    /// <summary>每帧更新冷却 UI（灰色遮罩与剩余秒数）。数据源为 Pawn 服务端权威冷却。</summary>
     public override void _Process(double delta) {
         if (_bindingSkill == null)
             return;
 
-        if (_bindingSkill.IsCoolingdown()) {
+        var pawn = IsInitialized ? BindPawn : null;
+        if (pawn == null)
+            return;
+
+        float remaining = GetSkillCooldownRemaining(pawn);
+        if (remaining > 0f) {
             SelfModulate = _coolingColor;
             if (_labelCooldownTimeRef != null) {
                 _labelCooldownTimeRef.Visible = true;
-                _labelCooldownTimeRef.Text = _bindingSkill.SkillCoolingTime.ToString("F1");
+                _labelCooldownTimeRef.Text = remaining.ToString("F1");
             }
         }
         else {
             SelfModulate = new Color(1, 1, 1, 1);
             _labelCooldownTimeRef?.Visible = false;
         }
+    }
+
+    /// <summary>
+    /// 计算该技能按钮当前的冷却剩余秒数（GCD 与个体技能冷却取较大者）。
+    /// </summary>
+    /// <param name="pawn">施法单位 Pawn。</param>
+    /// <returns>剩余冷却秒数；无冷却返回 0。</returns>
+    private float GetSkillCooldownRemaining(UnitPawn pawn) {
+        float remaining = pawn.GcdRemaining.Value;
+        foreach (var cd in pawn.SkillCooldowns) {
+            if (cd.SkillId == _bindingSkill!.SkillId && cd.Remaining > remaining)
+                remaining = cd.Remaining;
+        }
+        return remaining;
     }
 }

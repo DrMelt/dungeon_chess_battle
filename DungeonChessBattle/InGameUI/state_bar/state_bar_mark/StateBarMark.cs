@@ -1,3 +1,4 @@
+using DungeonChessBattle.Entities;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -36,14 +37,10 @@ public partial class StateBarMark : Control {
             child.QueueFree();
         }
 
-
-        Godot.Collections.Array<UnitState> units = unitsInScene_Show_Ref.UnitsArr;
-        foreach (UnitState unit in units) {
+        foreach (UnitPawn pawn in unitsInScene_Show_Ref.UnitsArr) {
             var stateBarSimple2d = stateBarSimple2d_PKD.Instantiate<StateBarMark2d>();
             AddChild(stateBarSimple2d);
-            stateBarSimple2d.UpdateUI_WithUnit(unit);
+            stateBarSimple2d.UpdateUI_WithUnit(pawn);
         }
-
-
     }
 }

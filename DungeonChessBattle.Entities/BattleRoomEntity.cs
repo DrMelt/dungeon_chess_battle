@@ -21,6 +21,9 @@ public class BattleRoomEntity : EntityLogic {
     /// <summary>胜方阵营字符串标识（如 "Camp_A"、"Camp_B"，空=未知/无胜方）。</summary>
     public readonly SyncString WinnerCamp = new();
 
+    /// <summary>房间创建时间（Unix 秒，UTC，服务端权威）。</summary>
+    public SyncVar<double> CreatedUnixTime;
+
     private static RemoteCallSerializable<SyncCreateUnitRequest> CreateUnitRPC;
     private static RemoteCall StartBattleRPC;
 
@@ -46,6 +49,7 @@ public class BattleRoomEntity : EntityLogic {
         BattlePhase.Value = 0;
         IsFinished.Value = false;
         WinnerCamp.Value = string.Empty;
+        CreatedUnixTime.Value = 0;
     }
 
     /// <summary>

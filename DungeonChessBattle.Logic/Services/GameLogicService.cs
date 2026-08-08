@@ -14,6 +14,9 @@ namespace DungeonChessBattle.Logic.Services;
 public class GameLogicService : IServerBattleService {
     private readonly RoomManager _roomManager = new();
 
+    /// <summary>技能解析器（服务端注入）：按技能配置 ID 构造对应技能模型。空委托时读条/技能不可用。</summary>
+    private Func<ushort, Core.Models.SkillModel?>? _skillResolver;
+
     /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)。</summary>
     public event Action<string, string, string>? OnUnitCreated;
 
@@ -71,10 +74,7 @@ public class GameLogicService : IServerBattleService {
             UnitStateName = unitName,
             Camps = [camp],
         };
-        if (camp == CampConstants.CampA)
-            room.UnitsA.Add(model);
-        else
-            room.UnitsB.Add(model);
+        room.Units.Add(model);
 
         // 触发 OnUnitCreated 事件
         OnUnitCreated?.Invoke(roomId, unitName, camp);
@@ -149,16 +149,150 @@ public class GameLogicService : IServerBattleService {
 
         var dir = System.Numerics.Vector2.Normalize(moveDir);
         var pos = unit.Position;
-        unit.SetPosition(new System.Numerics.Vector3(
+        unit.Position = new System.Numerics.Vector3(
             pos.X + dir.X * unit.MoveSpeed * deltaTime,
             0f,
-            pos.Z + dir.Y * unit.MoveSpeed * deltaTime));
+            pos.Z + dir.Y * unit.MoveSpeed * deltaTime);
         unit.LookAtDir = new System.Numerics.Vector3(dir.X, 0f, dir.Y);
     }
 
     #endregion
 
     #region Skill
+
+    /// <summary>
+    /// 注入技能解析器（由服务端在房间初始化时调用，服务端持有配置表）。
+    /// </summary>
+    /// <param name="resolver">按技能配置 ID 构造技能模型的委托。</param>
+    public void SetSkillResolver(Func<ushort, Core.Models.SkillModel?> resolver) {
+        _skillResolver = resolver;
+    }
+
+    /// <summary>
+    /// 服务端发起读条施法：先校验冷却（GCD + 个体技能冷却），通过后暂存技能与目标等待读条推进。
+    /// 读条时长为技能配置的 SkillSpellTime。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="casterName">施法单位名称。</param>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="targetName">目标单位名称（范围伤害技能传 null）。</param>
+    /// <param name="targetPos">位置目标（范围伤害技能使用）。</param>
+    /// <returns>冷却校验通过并成功发起读条返回 true。</returns>
+    public bool BeginSpell(string roomId, string casterName, ushort skillId, string? targetName,
+        System.Numerics.Vector3? targetPos = null) {
+        var caster = FindUnitModel(roomId, casterName);
+        if (caster is not Core.Models.UnitModel casterModel)
+            return false;
+
+        // 冷却校验：GCD 或该技能个体冷却中则拒绝
+        if (casterModel.IsSkillCooling(skillId))
+            return false;
+
+        float castTime = _skillResolver?.Invoke(skillId)?.SkillSpellTime ?? 0f;
+        casterModel.SpellingSkillId = skillId;
+        casterModel.SpellRemaining = castTime;
+        casterModel.SpellTargetName = targetName;
+        casterModel.SpellTargetPos = targetPos;
+        return true;
+    }
+
+    /// <summary>
+    /// 按帧推进房间内所有单位的读条：剩余时间递减，读条归零时结算技能。
+    /// 返回本帧完成读条并结算的单位（供服务端回写施法状态）。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    /// <returns>本帧读条完成的施法单位名称集合。</returns>
+    public IReadOnlyList<string> TickSpells(string roomId, float deltaTime) {
+        var room = _roomManager.GetRoom(roomId);
+        if (room == null)
+            return [];
+
+        var finished = new List<string>();
+        foreach (var unit in room.Units) {
+            if (unit is not Core.Models.UnitModel model)
+                continue;
+            if (model.SpellingSkillId == 0)
+                continue;
+
+            model.SpellRemaining -= deltaTime;
+            if (model.SpellRemaining <= 0f) {
+                ResolveSpell(roomId, model);
+                finished.Add(model.UnitStateName);
+            }
+        }
+        return finished;
+    }
+
+    /// <summary>
+    /// 按帧推进房间内所有单位的冷却（GCD + 个体技能冷却），不驱动施法状态机。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    public void TickCooldowns(string roomId, float deltaTime) {
+        var room = _roomManager.GetRoom(roomId);
+        if (room == null)
+            return;
+
+        foreach (var unit in room.Units) {
+            if (unit is Core.Models.UnitModel model)
+                model.ServerTickCooldowns(deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// 查询单位指定技能的剩余个体冷却秒数（服务端回写 Pawn 用）。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitName">单位名称。</param>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <returns>剩余冷却秒数；单位不存在或无冷却返回 0。</returns>
+    public float GetSkillCooldownRemaining(string roomId, string unitName, ushort skillId) {
+        var unit = FindUnitModel(roomId, unitName);
+        return unit is Core.Models.UnitModel model ? model.GetSkillCooldownRemaining(skillId) : 0f;
+    }
+
+    /// <summary>
+    /// 读条完成结算：按暂存的技能 ID 构造技能模型并对目标结算，随后清空施法状态。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="casterModel">施法单位模型。</param>
+    private void ResolveSpell(string roomId, Core.Models.UnitModel casterModel) {
+        var skillId = casterModel.SpellingSkillId;
+        var targetName = casterModel.SpellTargetName;
+        var targetPos = casterModel.SpellTargetPos;
+
+        // 清空施法状态（无论结算是否成功）
+        casterModel.SpellingSkillId = 0;
+        casterModel.SpellRemaining = 0f;
+        casterModel.SpellTargetName = null;
+        casterModel.SpellTargetPos = null;
+
+        var skill = _skillResolver?.Invoke(skillId);
+        if (skill == null)
+            return;
+
+        // 读条完成：写入个体技能冷却与全局冷却
+        casterModel.ServerSetSkillCooldown(skillId, skill.SkillCooldownTime);
+        casterModel.GcdTime = Math.Max(casterModel.GcdTime, skill.GCDTime);
+
+        if (skill is SkillRangeDamageModel rangeSkill) {
+            if (targetPos.HasValue)
+                rangeSkill.SetTargetPosition(targetPos.Value);
+            var allUnits = _roomManager.GetRoom(roomId)?.Units
+                .Cast<Core.Interfaces.IUnitState>().ToList();
+            if (allUnits != null)
+                BattleResolver.ApplySkillRangeDamage(casterModel, allUnits, rangeSkill);
+            return;
+        }
+
+        if (targetName == null)
+            return;
+        var target = FindUnitModel(roomId, targetName);
+        if (target == null)
+            return;
+        CastSkill(casterModel, target, skill);
+    }
 
     /// <summary>
     /// 对目标施放技能（支持伤害、治疗、范围伤害、施加 Buff）。
@@ -200,8 +334,7 @@ public class GameLogicService : IServerBattleService {
         var room = _roomManager.GetRoom(roomId);
         if (room == null)
             return null;
-        return room.UnitsA.Concat(room.UnitsB)
-            .FirstOrDefault(u => u.UnitStateName == unitName);
+        return room.Units.FirstOrDefault(u => u.UnitStateName == unitName);
     }
 
     #endregion
@@ -225,8 +358,10 @@ public class GameLogicService : IServerBattleService {
     /// <param name="room">房间数据。</param>
     /// <returns>已结束返回 true。</returns>
     public bool CheckBattleEnded(GameRoom room) {
-        bool aAlive = BattleResolver.HasAliveUnits(room.UnitsA);
-        bool bAlive = BattleResolver.HasAliveUnits(room.UnitsB);
+        bool aAlive = BattleResolver.HasAliveUnits(
+            room.Units.Where(u => u.Camps.Contains(CampConstants.CampA)));
+        bool bAlive = BattleResolver.HasAliveUnits(
+            room.Units.Where(u => u.Camps.Contains(CampConstants.CampB)));
         return !aAlive || !bAlive;
     }
 

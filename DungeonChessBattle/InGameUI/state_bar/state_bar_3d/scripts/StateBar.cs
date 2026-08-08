@@ -1,4 +1,4 @@
-using System.Linq;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
@@ -56,25 +56,28 @@ public partial class StateBar : Node3D, IUIUpdate {
     }
 
     /// <summary>
-    /// 根据单位状态刷新血条进度、阵营颜色、百分比、数值与名称。
+    /// 根据单位 Pawn 刷新血条进度、阵营颜色、百分比、数值与名称。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    public void UpdateUI_WithUnit(UnitState unitState) {
-        if (unitState == null || InterRefs == null) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn) {
+        if (pawn == null || InterRefs == null) {
             return;
         }
 
+        var maxHealth = Mathf.Max(pawn.MaxHealth.Value, 1f);
+        var healthPercent = Mathf.Clamp(pawn.Health.Value / maxHealth, 0f, 1f);
+
         if (stateBarMat != null) {
-            Color? campColor = InterRefs.PlayerUISettingsRef?.GetCampColor(unitState.Camps.FirstOrDefault() ?? "");
+            Color? campColor = InterRefs.PlayerUISettingsRef?.GetCampColor(pawn.Camp.Value);
             if (campColor != null) {
                 stateBarMat.SetShaderParameter("ParPin_01_Color", (Color)campColor);
             }
-            stateBarMat.SetShaderParameter("ParPin_01", unitState.Health_Percent);
+            stateBarMat.SetShaderParameter("ParPin_01", healthPercent);
         }
 
-        InterRefs.Label3DPercentRef?.Text = unitState.Health_Shield_Percent.ToString("P1");
-        InterRefs.Label3DCurrentValueRef?.Text = unitState.Health_Shield.ToString("F1");
-        InterRefs.Label3DNameRef?.Text = unitState.UnitStateName;
+        InterRefs.Label3DPercentRef?.Text = healthPercent.ToString("P1");
+        InterRefs.Label3DCurrentValueRef?.Text = pawn.Health.Value.ToString("F1");
+        InterRefs.Label3DNameRef?.Text = pawn.UnitName.Value;
     }
 
 }

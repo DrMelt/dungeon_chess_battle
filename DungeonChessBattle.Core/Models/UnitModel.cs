@@ -29,7 +29,7 @@ public class UnitModel : IUnitState {
     public float MaxHealth {
         get;
         set {
-            if (System.MathF.Abs(value - field) > 0.0001f) {
+            if (MathF.Abs(value - field) > 0.0001f) {
                 field = value;
                 MaxHealthChanged?.Invoke(field);
             }
@@ -42,7 +42,7 @@ public class UnitModel : IUnitState {
     public float Health {
         get => _health;
         set {
-            if (System.MathF.Abs(value - _health) > 0.0001f) {
+            if (MathF.Abs(value - _health) > 0.0001f) {
                 _health = value;
                 HealthChanged?.Invoke(_health);
             }
@@ -56,7 +56,7 @@ public class UnitModel : IUnitState {
     public float HealthShield => Health + Shield;
 
     /// <summary>剩余生命百分比（0~1）。</summary>
-    public float HealthPercent => Health / System.MathF.Max(MaxHealth, HealthShield);
+    public float HealthPercent => Health / MathF.Max(MaxHealth, HealthShield);
 
     /// <summary>生命 + 护盾与最大生命之比（0~1）。</summary>
     public float HealthShieldPercent => HealthShield / MaxHealth;
@@ -94,10 +94,18 @@ public class UnitModel : IUnitState {
     /// <summary>当前移动速度（等于基础速度）。</summary>
     public float MoveSpeed => BaseSpeed;
 
-    private Vector3 _position = Vector3.Zero;
 
     /// <summary>单位当前世界坐标。</summary>
-    public Vector3 Position => _position;
+    public Vector3 Position {
+        set {
+            if (field != value) {
+                field = value;
+                SpellNewSkill(null);
+                PositionChanged?.Invoke();
+            }
+        }
+        get;
+    } = Vector3.Zero;
 
     /// <summary>单位朝向向量。</summary>
     public Vector3 LookAtDir { get; set; } = new Vector3(0, 0, 1);
@@ -115,11 +123,34 @@ public class UnitModel : IUnitState {
         get; private set;
     }
 
+    /// <summary>服务端读条：当前施法技能配置 ID（0=无施法）。</summary>
+    public ushort SpellingSkillId {
+        get; set;
+    }
+
+    /// <summary>服务端读条：剩余读条时间（秒）。</summary>
+    public float SpellRemaining {
+        get; set;
+    }
+
+    /// <summary>服务端读条：施法目标单位名称（范围伤害技能为 null）。</summary>
+    public string? SpellTargetName {
+        get; set;
+    }
+
+    /// <summary>服务端读条：位置目标（范围伤害技能使用）。</summary>
+    public System.Numerics.Vector3? SpellTargetPos {
+        get; set;
+    }
+
     /// <summary>单位当前持有的 Buff 列表。</summary>
     public List<IBuff> BuffList { get; private set; } = [];
 
     /// <summary>仇恨表（单位名 → 仇恨值）。</summary>
     public Dictionary<string, float> Hates { get; set; } = [];
+
+    /// <summary>技能冷却表（技能配置 ID → 剩余冷却秒数）。仅服务端权威读写。</summary>
+    public Dictionary<ushort, float> SkillCooldowns { get; set; } = [];
 
     #endregion
 
@@ -140,18 +171,6 @@ public class UnitModel : IUnitState {
 
     /// <summary>位置变化事件。</summary>
     public event Action? PositionChanged;
-
-    /// <summary>
-    /// 设置单位位置；位置变化时打断当前施法并触发 <see cref="PositionChanged"/>。
-    /// </summary>
-    /// <param name="position">新的世界坐标。</param>
-    public void SetPosition(Vector3 position) {
-        if (_position != position) {
-            _position = position;
-            SpellNewSkill(null);
-            PositionChanged?.Invoke();
-        }
-    }
 
     void IUnitState.CopyStatsFrom(IUnitState source) {
         MaxHealth = source.MaxHealth;
@@ -186,12 +205,74 @@ public class UnitModel : IUnitState {
     /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
     public void UpdateSkillState(double deltaTime) {
         GcdTime -= (float)deltaTime;
+        if (GcdTime < 0f)
+            GcdTime = 0f;
+
+        // 递减个体技能冷却
+        if (SkillCooldowns.Count > 0) {
+            var active = new Dictionary<ushort, float>();
+            foreach (var kv in SkillCooldowns) {
+                var remaining = kv.Value - (float)deltaTime;
+                if (remaining > 0f)
+                    active[kv.Key] = remaining;
+            }
+            SkillCooldowns = active;
+        }
 
         foreach (var skill in SkillsList) {
             skill.UpdateSkill(deltaTime);
         }
 
         CallSpellingSkill();
+    }
+
+    /// <summary>
+    /// 查询指定技能是否处于冷却中（GCD 或个体技能冷却）。
+    /// </summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <returns>处于冷却返回 true。</returns>
+    public bool IsSkillCooling(ushort skillId) {
+        if (GcdTime > 0f)
+            return true;
+        return SkillCooldowns.TryGetValue(skillId, out var remaining) && remaining > 0f;
+    }
+
+    /// <summary>
+    /// 查询指定技能的剩余个体冷却秒数。
+    /// </summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <returns>剩余冷却秒数；未在冷却中返回 0。</returns>
+    public float GetSkillCooldownRemaining(ushort skillId) {
+        return SkillCooldowns.TryGetValue(skillId, out var remaining) ? MathF.Max(0f, remaining) : 0f;
+    }
+
+    /// <summary>服务端调用：为指定技能写入完整冷却时长。</summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="cooldown">冷却时长（秒）。</param>
+    public void ServerSetSkillCooldown(ushort skillId, float cooldown) {
+        if (cooldown > 0f)
+            SkillCooldowns[skillId] = cooldown;
+    }
+
+    /// <summary>
+    /// 服务端调用：按帧仅递减 GCD 与个体技能冷却，不驱动施法状态机。
+    /// 用于实时化读条（BeginSpell/TickSpells）流程，避免旧 IUnitSkill 状态机冲突。
+    /// </summary>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    public void ServerTickCooldowns(float deltaTime) {
+        GcdTime -= (float)deltaTime;
+        if (GcdTime < 0f)
+            GcdTime = 0f;
+
+        if (SkillCooldowns.Count > 0) {
+            var active = new Dictionary<ushort, float>();
+            foreach (var kv in SkillCooldowns) {
+                var remaining = kv.Value - (float)deltaTime;
+                if (remaining > 0f)
+                    active[kv.Key] = remaining;
+            }
+            SkillCooldowns = active;
+        }
     }
 
     /// <summary>

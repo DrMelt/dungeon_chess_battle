@@ -19,13 +19,15 @@ public partial class DungeonTimeLabel : Label {
     }
 
     /// <summary>
-    /// 每帧刷新显示当前战斗时间。
+    /// 每帧刷新显示当前战斗时间（从房间创建时刻起经过的秒数，分:秒格式）。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         if (unitsInSceneViewRef == null)
             return;
-        Text = "Time: " + unitsInSceneViewRef.UnitsInSceneRes.SceneTime.ToString("F0");
+
+        var totalSeconds = (int)unitsInSceneViewRef.UnitsInSceneRes.SceneTime;
+        Text = $"Time: {totalSeconds / 60:D2}:{totalSeconds % 60:D2}";
     }
 
 }

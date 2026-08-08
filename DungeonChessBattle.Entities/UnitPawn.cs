@@ -19,8 +19,11 @@ public class UnitPawn : PawnLogic {
     /// <summary>单位位置（XZ 平面）。</summary>
     public SyncVar<Vector2> Position;
 
-    /// <summary>单位朝向角。</summary>
-    public SyncVar<float> Rotation;
+    /// <summary>单位朝向方向向量（XZ 平面单位向量）。</summary>
+    public SyncVar<Vector2> Direction;
+
+    /// <summary>单位碰撞半径（技能范围判定用）。</summary>
+    public SyncVar<float> BodyRadius;
 
     /// <summary>当前生命值。</summary>
     public SyncVar<float> Health;
@@ -36,6 +39,15 @@ public class UnitPawn : PawnLogic {
 
     /// <summary>剩余全局冷却时间（秒）。</summary>
     public SyncVar<float> GcdRemaining;
+
+    /// <summary>技能个体冷却列表（服务端权威回写）。</summary>
+    public readonly SyncList<SyncSkillCooldown> SkillCooldowns = [];
+
+    /// <summary>当前施法技能 ID（0=无施法）。</summary>
+    public SyncVar<ushort> SkillCasting;
+
+    /// <summary>当前施法剩余读条时间（秒）。</summary>
+    public SyncVar<float> SkillCastRemaining;
 
     /// <summary>物理攻击基础系数（伤害倍率）。</summary>
     public SyncVar<float> PhysicalAttackBase;
@@ -70,6 +82,9 @@ public class UnitPawn : PawnLogic {
     /// <summary>单位死亡事件。</summary>
     public event Action<UnitPawn>? UnitDied;
 
+    /// <summary>单位受到伤害事件。参数：实体、实际伤害量、伤害类型。</summary>
+    public event Action<UnitPawn, float, DamageType>? TookDamage;
+
     /// <summary>添加 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffAdded;
 
@@ -98,6 +113,9 @@ public class UnitPawn : PawnLogic {
         Health.Value = 1000f;
         MaxHealth.Value = 1000f;
         UnitState.Value = 0;
+        BodyRadius.Value = 1.0f;
+        SkillCasting.Value = 0;
+        SkillCastRemaining.Value = 0f;
         PhysicalAttackBase.Value = 1.0f;
         MagicAttackBase.Value = 1.0f;
         PhysicalTakePercent.Value = 1.0f;
@@ -143,16 +161,28 @@ public class UnitPawn : PawnLogic {
     }
 
     /// <summary>
-    /// 服务端调用：设置生命值。生命值变化时触发事件，降至 0 时标记死亡。
+    /// 服务端调用：设置生命值（默认按物理伤害类型触发受击事件）。生命值变化时触发事件，降至 0 时标记死亡。
     /// </summary>
     /// <param name="newHealth">新的生命值。</param>
     public void ServerSetHealth(float newHealth) {
+        ServerSetHealth(newHealth, DamageType.Physical);
+    }
+
+    /// <summary>
+    /// 服务端调用：设置生命值并按伤害类型触发受击事件。生命值变化时触发事件，降至 0 时标记死亡。
+    /// </summary>
+    /// <param name="newHealth">新的生命值。</param>
+    /// <param name="damageType">导致本次生命值下降的伤害类型（治疗/无变化时忽略）。</param>
+    public void ServerSetHealth(float newHealth, DamageType damageType) {
         if (!IsServer)
             return;
         float oldHealth = Health.Value;
         Health.Value = Math.Clamp(newHealth, 0f, MaxHealth.Value);
         if (MathF.Abs(Health.Value - oldHealth) > 0.0001f) {
             HealthChanged?.Invoke(this, Health.Value, oldHealth);
+            if (Health.Value < oldHealth) {
+                TookDamage?.Invoke(this, oldHealth - Health.Value, damageType);
+            }
             if (Health.Value <= 0) {
                 UnitState.Value = 1;
                 UnitDied?.Invoke(this);
@@ -249,5 +279,67 @@ public class UnitPawn : PawnLogic {
     public void UpdateCooldowns(float deltaTime) {
         if (GcdRemaining.Value > 0)
             GcdRemaining.Value = Math.Max(0, GcdRemaining.Value - deltaTime);
+    }
+
+    /// <summary>
+    /// 服务端调用：回写该单位的技能个体冷却列表（全量覆盖）。
+    /// </summary>
+    /// <param name="cooldowns">技能冷却快照（技能 ID → 剩余秒数）。</param>
+    public void ServerSetSkillCooldowns(IReadOnlyDictionary<ushort, float> cooldowns) {
+        if (!IsServer)
+            return;
+        while (SkillCooldowns.Count > 0)
+            SkillCooldowns.RemoveAt(SkillCooldowns.Count - 1);
+        foreach (var kv in cooldowns) {
+            if (kv.Value > 0f)
+                SkillCooldowns.Add(new SyncSkillCooldown { SkillId = kv.Key, Remaining = kv.Value });
+        }
+    }
+
+    /// <summary>
+    /// 服务端调用：回写该单位的 Buff 列表（全量覆盖）。
+    /// </summary>
+    /// <param name="buffs">Buff 同步数据快照。</param>
+    public void ServerSyncBuffList(IReadOnlyList<SyncBuffData> buffs) {
+        if (!IsServer)
+            return;
+        while (BuffsList.Count > 0)
+            BuffsList.RemoveAt(BuffsList.Count - 1);
+        foreach (var buff in buffs)
+            BuffsList.Add(buff);
+    }
+
+    /// <summary>
+    /// 服务端调用：发起读条施法，设置当前施法技能 ID 与剩余读条时间。
+    /// </summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="castTime">技能读条总时长（秒）。</param>
+    public void ServerBeginSpell(ushort skillId, float castTime) {
+        if (!IsServer)
+            return;
+        SkillCasting.Value = skillId;
+        SkillCastRemaining.Value = Math.Max(0f, castTime);
+    }
+
+    /// <summary>
+    /// 服务端调用：按帧递减当前读条剩余时间，返回是否已读条完成。
+    /// </summary>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    /// <returns>读条归零（完成）返回 true。</returns>
+    public bool ServerTickSpell(float deltaTime) {
+        if (!IsServer || SkillCasting.Value == 0)
+            return false;
+        SkillCastRemaining.Value = Math.Max(0f, SkillCastRemaining.Value - deltaTime);
+        return SkillCastRemaining.Value <= 0f;
+    }
+
+    /// <summary>
+    /// 服务端调用：清空当前施法状态（读条完成或被打断）。
+    /// </summary>
+    public void ServerEndSpell() {
+        if (!IsServer)
+            return;
+        SkillCasting.Value = 0;
+        SkillCastRemaining.Value = 0f;
     }
 }

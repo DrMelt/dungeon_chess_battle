@@ -24,6 +24,9 @@ public partial class BuffBaseGodot : Resource, IBuff {
     [Export]
     public Texture2D? icon;
 
+    /// <summary>Buff 全局唯一 ID（对应配置表与 SyncBuffData.BuffTypeId）。</summary>
+    public ushort BuffTypeId => Config?.Id ?? 0;
+
     /// <summary>Buff 名称。</summary>
     [field: Export]
     public string BuffName { get; private set; } = "";

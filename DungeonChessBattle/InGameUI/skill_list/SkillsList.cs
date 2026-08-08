@@ -4,7 +4,8 @@ using System.Collections.Generic;
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 技能列表面板：展示单位全部技能按钮，并按技能目标类型（单位/位置/无目标）分发释放逻辑。
+/// 技能列表面板：展示单位全部技能按钮，并按技能目标类型（单位/位置/无目标）分发施法 RPC。
+/// 施法由服务端权威读条与结算，客户端仅发起请求。
 /// </summary>
 public partial class SkillsList : Control {
     /// <summary>节点引用容器。</summary>
@@ -12,7 +13,7 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
-    /// <summary>战斗单位管理器引用（用于获取可命中单位数组）。</summary>
+    /// <summary>战斗单位管理器引用（用于获取可命中单位数组与施法服务）。</summary>
     public BattleUnitManager? UnitsInGameRef {
         get; set;
     }
@@ -76,32 +77,35 @@ public partial class SkillsList : Control {
 
         foreach (UnitSkillBaseGodot skill in unitShow.SkillsList) {
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
-            buttonSkill.Init(skill, unitShow.UnitStateRec, this);
+            buttonSkill.Init(skill, unitShow.Pawn, this);
             hBox.AddChild(buttonSkill);
             _skillButtonList.Add(buttonSkill);
         }
     }
 
     /// <summary>
-    /// 技能按钮点击处理：按技能目标类型分发（单位目标 / 位置目标 / 无目标）。
+    /// 技能按钮点击处理：按技能目标类型分发（单位目标 / 位置目标 / 无目标），并发起施法 RPC。
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
         var skill = button.BindSkill;
-        var unitsArr = UnitsInGameRef?.UnitsArr;
+        var unitsManager = UnitsInGameRef;
+        var service = unitsManager?.BattleService;
+        if (service == null) {
+            button.ButtonPressed = false;
+            return;
+        }
+        var roomId = unitsManager?.RoomId ?? "";
+        var casterName = button.BindPawn.UnitName.Value;
 
-        // NeedUnitTarget：使用已锁定的 FocusOnUnit，同步释放
+        // NeedUnitTarget：使用已锁定的 FocusOnUnit，同步发起施法 RPC
         if (skill.NeedUnitTarget) {
             var targetUnit = PlayerInterfaceRes?.FocusOnUnit;
             if (targetUnit == null) {
                 button.ButtonPressed = false;
                 return;
             }
-            skill.SetSkill(
-                button.BindUnitState,
-                targetUnit.UnitStateRec,
-                null,
-                unitsArr ?? []);
+            service.CastSkill(roomId, casterName, targetUnit.Pawn.UnitName.Value, skill.SkillId);
             button.ButtonPressed = false;
             return;
         }
@@ -114,8 +118,8 @@ public partial class SkillsList : Control {
             return;
         }
 
-        // 无目标需求：同步释放
-        skill.SetSkill(button.BindUnitState, targetObject: null, targetPos: null, unitsArr ?? []);
+        // 无目标需求：同步发起施法 RPC
+        service.CastSkill(roomId, casterName, null, skill.SkillId);
         button.ButtonPressed = false;
     }
 
@@ -135,11 +139,15 @@ public partial class SkillsList : Control {
             if (targetPos != null) {
                 var v = targetPos.Value;
                 var skill = _waitingButton.BindSkill;
-                skill.SetSkill(
-                    _waitingButton.BindUnitState,
-                    targetObject: null,
-                    new System.Numerics.Vector3(v.X, v.Y, v.Z),
-                    UnitsInGameRef?.UnitsArr ?? []);
+                var unitsManager = UnitsInGameRef;
+                var service = unitsManager?.BattleService;
+                service?.CastSkill(
+                        unitsManager?.RoomId ?? "",
+                        _waitingButton.BindPawn.UnitName.Value,
+                        null,
+                        skill.SkillId,
+                        v.X,
+                        v.Z);
             }
             CancelWait();
         }

@@ -1,10 +1,12 @@
-using Godot;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.InGameUI.ui_interface;
+using Godot;
 
 namespace DungeonChessBattle;
 
 /// <summary>
-/// Buff 图标容器，根据单位状态动态创建/清理 Buff 图标。
+/// Buff 图标容器，根据单位 Pawn 同步的 Buff 列表动态创建/清理 Buff 图标。
+/// 数据源为 Pawn.BuffsList（SyncBuffData，服务端权威）。
 /// </summary>
 public partial class ContainerBuffs : Control, IUIUpdate {
     /// <summary>导出引用集合节点。</summary>
@@ -20,10 +22,10 @@ public partial class ContainerBuffs : Control, IUIUpdate {
     }
 
     /// <summary>
-    /// 根据单位状态刷新 Buff 图标列表。
+    /// 根据单位 Pawn 刷新 Buff 图标列表。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    public void UpdateUI_WithUnit(UnitState unitState) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn) {
         var buffContainer = InterRefs?.BuffContainer;
         if (buffContainer != null) {
             foreach (var child in buffContainer.GetChildren()) {
@@ -31,16 +33,17 @@ public partial class ContainerBuffs : Control, IUIUpdate {
             }
         }
 
-        if (unitState == null) {
+        if (pawn == null) {
             return;
         }
         if (InterRefs?.BuffIconPackedScene == null) {
             return;
         }
 
-        foreach (BuffBaseGodot buff in unitState.BuffList) {
+        // 为每个同步 Buff 数据创建图标占位（图标资源按 BuffTypeId 匹配待资源表补充）
+        foreach (var buffData in pawn.BuffsList) {
             TextureRectBuffIcon buffIcon = InterRefs.BuffIconPackedScene.Instantiate<TextureRectBuffIcon>();
-            buffIcon.SetBuffIcon(buff, unitState);
+            buffIcon.SetBuffIcon(buffData, pawn);
             buffContainer?.AddChild(buffIcon);
         }
     }

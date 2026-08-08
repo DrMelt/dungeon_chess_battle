@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BuffResourceTable" format=3 uid="uid://bbrt0bufres01"]
+
+[ext_resource type="Script" uid="uid://hm0y6073mjlh" path="res://GameAssets/Buffs/scripts/BuffBaseGodot.cs" id="1_buffbase"]
+[ext_resource type="Resource" uid="uid://d2uqaxajtlili" path="res://GameAssets/Buffs/res_buff_dot_magic.tres" id="2_dotmagic"]
+[ext_resource type="Resource" uid="uid://btx4sae0q273i" path="res://GameAssets/Buffs/res_buff_dot_physcial.tres" id="3_dotphys"]
+[ext_resource type="Resource" uid="uid://ctf8oxsujmq7w" path="res://GameAssets/Buffs/res_buff_hot.tres" id="4_hot"]
+[ext_resource type="Script" uid="uid://ndlxpy7t3nxv" path="res://GameAssets/Buffs/BuffResourceTable.cs" id="5_script"]
+
+[resource]
+script = ExtResource("5_script")
+BuffResources = Array[ExtResource("1_buffbase")]([ExtResource("2_dotmagic"), ExtResource("3_dotphys"), ExtResource("4_hot")])

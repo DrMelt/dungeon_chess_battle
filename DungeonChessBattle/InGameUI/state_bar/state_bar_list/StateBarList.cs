@@ -56,7 +56,7 @@ public partial class StateBarList : Control {
 
         var units = scene.UnitsArr;
         foreach (var unit in units) {
-            if (unit.Camps.Contains(InterRefs.ListOfCamp)) {
+            if (unit.Camp.Value == InterRefs.ListOfCamp) {
                 StateBarMini stateBarMini = NewStateBarMini;
 
                 InterRefs.VBoxContainerRef.AddChild(stateBarMini);

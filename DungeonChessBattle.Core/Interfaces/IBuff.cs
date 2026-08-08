@@ -3,6 +3,11 @@ namespace DungeonChessBattle.Core.Interfaces {
     /// Buff 接口，定义持续生效的增益/减益效果（如 HOT、DOT）。
     /// </summary>
     public interface IBuff {
+        /// <summary>Buff 全局唯一 ID（对应配置表与 SyncBuffData.BuffTypeId）。</summary>
+        ushort BuffTypeId {
+            get;
+        }
+
         /// <summary>Buff 名称，作为叠加判定的唯一标识。</summary>
         string BuffName {
             get;

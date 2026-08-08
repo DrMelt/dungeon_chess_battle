@@ -1,11 +1,13 @@
+using System;
+using System.Collections.Generic;
+using DungeonChessBattle.Entities;
 using Godot;
 using DungeonChessBattle.Core.Enums;
-using System;
 
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 状态变化信息管理器，订阅单位事件并在对应位置弹出受击/ Buff 增减提示。
+/// 状态变化信息管理器，订阅单位 Pawn 事件并在对应位置弹出受击/ Buff 增减提示。
 /// </summary>
 public partial class StateChangeInfo : Node {
     /// <summary>
@@ -39,7 +41,7 @@ public partial class StateChangeInfo : Node {
         ?? throw new InvalidOperationException("[StateChangeInfo] BuffChangeInfoPackedScene is not assigned or instantiation failed.");
 
     /// <summary>上一帧的单位列表，用于解绑已消失单位的订阅。</summary>
-    private Godot.Collections.Array<UnitState>? preUnits;
+    private List<UnitPawn>? preUnits;
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
@@ -66,75 +68,76 @@ public partial class StateChangeInfo : Node {
     private void OnUnitsInSceneChanged(UnitsInScene unitsInScene) {
         if (preUnits != null) {
             foreach (var unit in preUnits) {
-                {
-                    UnbindWithUnitState(unit);
-                }
+                UnbindWithUnitPawn(unit);
             }
         }
 
-        Godot.Collections.Array<UnitState> units = unitsInScene.UnitsArr;
+        List<UnitPawn> units = unitsInScene.UnitsArr;
         foreach (var unit in units) {
-            BindWithUnitState(unit);
+            BindWithUnitPawn(unit);
         }
         preUnits = units;
     }
 
     /// <summary>
-    /// 订阅单个单位的受击与 Buff 事件。
+    /// 订阅单个单位 Pawn 的受击与 Buff 事件。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    private void BindWithUnitState(UnitState unitState) {
-        unitState.OnBuffAddedEvent += OnUnitBuffAdded;
-        unitState.OnBuffRemovedEvent += OnUnitBuffRemoved;
-        unitState.OnTookDamageEvent += OnUnitTookDamage;
+    /// <param name="pawn">目标单位 Pawn。</param>
+    private void BindWithUnitPawn(UnitPawn pawn) {
+        pawn.BuffAdded += OnUnitBuffAdded;
+        pawn.BuffRemoved += OnUnitBuffRemoved;
+        pawn.TookDamage += OnUnitTookDamage;
     }
 
     /// <summary>
-    /// 取消订阅单个单位的事件。
+    /// 取消订阅单个单位 Pawn 的事件。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    private void UnbindWithUnitState(UnitState unitState) {
-        unitState.OnBuffAddedEvent -= OnUnitBuffAdded;
-        unitState.OnBuffRemovedEvent -= OnUnitBuffRemoved;
-        unitState.OnTookDamageEvent -= OnUnitTookDamage;
+    /// <param name="pawn">目标单位 Pawn。</param>
+    private void UnbindWithUnitPawn(UnitPawn pawn) {
+        pawn.BuffAdded -= OnUnitBuffAdded;
+        pawn.BuffRemoved -= OnUnitBuffRemoved;
+        pawn.TookDamage -= OnUnitTookDamage;
     }
 
     /// <summary>
     /// 单位获得 Buff 回调：在单位位置弹出添加提示。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    /// <param name="buff">被添加的 Buff。</param>
-    private void OnUnitBuffAdded(UnitState unitState, BuffBaseGodot buff) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    /// <param name="buff">被添加的同步 Buff 数据。</param>
+    private void OnUnitBuffAdded(UnitPawn pawn, Entities.SyncData.SyncBuffData buff) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         AddChild(buffChangeInfo);
         buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Added);
-        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, unitState.Position + Vector3.Up * 2.2f);
+        var pos = pawn.Position.Value;
+        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 
     /// <summary>
     /// 单位移除 Buff 回调：在单位位置弹出移除提示。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    /// <param name="buff">被移除的 Buff。</param>
-    private void OnUnitBuffRemoved(UnitState unitState, BuffBaseGodot buff) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    /// <param name="buff">被移除的同步 Buff 数据。</param>
+    private void OnUnitBuffRemoved(UnitPawn pawn, Entities.SyncData.SyncBuffData buff) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         AddChild(buffChangeInfo);
         buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Removed);
-        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, unitState.Position + Vector3.Up * 2.2f);
+        var pos = pawn.Position.Value;
+        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 
     /// <summary>
     /// 单位受击回调：在单位位置弹出受击伤害提示。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
+    /// <param name="pawn">目标单位 Pawn。</param>
     /// <param name="damage">伤害数值。</param>
     /// <param name="damageType">伤害类型。</param>
-    private void OnUnitTookDamage(UnitState unitState, float damage, DamageType damageType) {
+    private void OnUnitTookDamage(UnitPawn pawn, float damage, DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         AddChild(tookDamageInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
         tookDamageInfo.Init(damage, damageType, uiSettings);
-        tookDamageInfo.GlobalPosition = WorldToScreenPos(this, unitState.Position + Vector3.Up * 2.2f);
+        var pos = pawn.Position.Value;
+        tookDamageInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 }

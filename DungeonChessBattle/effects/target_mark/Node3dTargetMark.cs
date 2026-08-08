@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
@@ -53,21 +53,21 @@ public partial class Node3dTargetMark : Node3D, IUIUpdate {
     }
 
     /// <summary>
-    /// 根据单位状态更新目标标记：聚焦单位时显示其阵营颜色，否则使用默认颜色，并同步标记大小。
+    /// 根据单位 Pawn 更新目标标记：聚焦单位时显示其阵营颜色，否则使用默认颜色，并同步标记大小。
     /// </summary>
-    /// <param name="unitState">单位状态。</param>
-    public void UpdateUI_WithUnit(UnitState unitState) {
+    /// <param name="pawn">单位 Pawn。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn) {
         var interRefs = InterRefsOrThrow;
         var uiRes = interRefs.PlayerInterfaceRes
             ?? throw new InvalidOperationException("[Node3dTargetMark] PlayerInterfaceRes is not assigned.");
-        if (uiRes.FocusOnUnit != null && unitState == uiRes.FocusOnUnit.UnitStateRec) {
-            SetCampColor(unitState.Camps.FirstOrDefault() ?? "");
+        if (uiRes.FocusOnUnit != null && pawn == uiRes.FocusOnUnit.Pawn) {
+            SetCampColor(pawn.Camp.Value);
         }
         else {
             SetCampColor("");
         }
 
-        Scale = new Vector3(unitState.BodyRadius, 1, unitState.BodyRadius);
+        Scale = new Vector3(pawn.BodyRadius.Value, 1, pawn.BodyRadius.Value);
     }
 
     /// <summary>
@@ -82,6 +82,6 @@ public partial class Node3dTargetMark : Node3D, IUIUpdate {
     /// </summary>
     /// <param name="unitShow">被聚焦的单位显示对象。</param>
     internal void SetMark_Focus(UnitGameShow unitShow) {
-        SetCampColor(unitShow.UnitStateRec.Camps.FirstOrDefault() ?? "");
+        SetCampColor(unitShow.Pawn.Camp.Value);
     }
 }

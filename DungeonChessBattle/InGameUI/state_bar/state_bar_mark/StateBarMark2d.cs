@@ -1,3 +1,4 @@
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
 
@@ -22,12 +23,13 @@ public partial class StateBarMark2d : Control, IUIUpdate {
     /// <summary>
     /// 将单位头顶位置投影到屏幕坐标，并刷新状态条显示。
     /// </summary>
-    /// <param name="unitState">目标单位状态。</param>
-    public void UpdateUI_WithUnit(UnitState unitState) {
+    /// <param name="pawn">目标单位 Pawn。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn) {
         var camera3D = GetViewport().GetCamera3D();
-        var screenPos = camera3D.UnprojectPosition(unitState.Position + Vector3.Up * 2.2f);
+        var pos = pawn.Position.Value;
+        var screenPos = camera3D.UnprojectPosition(new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
         GlobalPosition = screenPos;
 
-        InterRefs?.PanelUnitStateBarRef?.UpdateUI_WithUnit(unitState);
+        InterRefs?.PanelUnitStateBarRef?.UpdateUI_WithUnit(pawn);
     }
 }

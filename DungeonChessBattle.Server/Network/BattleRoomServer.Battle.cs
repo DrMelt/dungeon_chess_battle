@@ -31,6 +31,20 @@ public partial class BattleRoomServer {
         // 创建 Logic 层房间
         _logicService.CreateRoom(RoomId);
 
+        // 注入技能解析器：按技能配置 ID 构造运行时技能模型（服务端持有配置表）
+        _logicService.SetSkillResolver(skillId => {
+            var config = GameConfigDB.GetSkillById(skillId);
+            return config != null ? GameConfigDB.ToSkillModel(config) : null;
+        });
+
+        // 注入服务端权威创建时间（需在 CreateRoom 之后：GetRoom 依赖房间已登记；
+        // 且不能在 AddEntity initAction 中注入——OnConstructed 会以默认值覆盖运行时值）
+        var gameRoom = _logicService.GetRoom(RoomId);
+        if (gameRoom != null && _roomEntity != null) {
+            _roomEntity.CreatedUnixTime.Value =
+                new DateTimeOffset(gameRoom.CreatedAt).ToUnixTimeSeconds();
+        }
+
         // 从 Store 迁移准备期单位
         var units = _stateStore.GetPrepareUnits(RoomId);
         foreach (var selection in units) {
@@ -72,7 +86,7 @@ public partial class BattleRoomServer {
         var configEntry = UnitRegistry.Instance.GetByDisplayName(unitName);
         if (configEntry != null)
             model.CopyStatsFrom(GameConfigDB.ToUnitModel(configEntry.Config));
-        model.SetPosition(new Vector3(spawnPos.X, 0f, spawnPos.Y));
+        model.Position = new Vector3(spawnPos.X, 0f, spawnPos.Y);
 
         return entity;
     }
@@ -135,8 +149,9 @@ public partial class BattleRoomServer {
     /// Logic 层为移动权威；Pawn 位置 SyncVar 仅作网络同步载体。
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
-        _logger.LogInformation("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
-            RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
+                RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
         _logicService.UpdatePlayerMovement(RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
 
         // Logic 层结算后回写 Pawn 位置（客户端渲染读 pawn.Position.Value）
@@ -148,46 +163,51 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理通过 UnitPawn 实例事件到达的技能施放请求。
+    /// 处理通过 UnitPawn 实例事件到达的技能施放请求：由瞬发结算改为发起读条。
+    /// 服务端设置施法状态（SkillCasting + SkillCastRemaining），读条由房间 tick 推进，
+    /// 完成时 Logic 结算并回写。
     /// </summary>
     private void OnPawnSkillCast(UnitPawn casterPawn, SyncSkillRequest req) {
-        var targetPawn = FindPawnById(req.TargetUnitNetId);
-        if (targetPawn == null) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: target pawn {TargetId} not found.", RoomId, req.TargetUnitNetId);
+        if (_battle == null || _battle.CurrentPhase != BattlePhase.Running) {
+            _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC dropped: battle not running.", RoomId);
             return;
         }
 
-        var casterModel = _logicService.FindUnitModel(RoomId, casterPawn.UnitName.Value);
-        var targetModel = _logicService.FindUnitModel(RoomId, targetPawn.UnitName.Value);
-        if (casterModel == null || targetModel == null) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: unit model not found in Logic layer.", RoomId);
-            return;
-        }
-
-        if (_battle == null) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: no active battle.", RoomId);
-            return;
-        }
-
-        float oldTargetHealth = targetModel.Health;
-
-        if (req.IsDamage) {
-            var skill = new SkillDamageModel {
-                Damage = req.DamageOrCureValue,
-                DamageType = (DamageType)req.DamageType
-            };
-            _logicService.CastSkill(casterModel, targetModel, skill);
+        // 发起读条：Logic 层按 SkillTypeId 解析技能时长并暂存目标（冷却校验在 BeginSpell 内）
+        string? targetName = null;
+        System.Numerics.Vector3? targetPos = null;
+        if (req.TargetUnitNetId != 0) {
+            var targetPawn = FindPawnById(req.TargetUnitNetId);
+            if (targetPawn == null) {
+                _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: target pawn {TargetId} not found.",
+                    RoomId, req.TargetUnitNetId);
+                return;
+            }
+            targetName = targetPawn.UnitName.Value;
         }
         else {
-            var skill = new SkillCureModel { CurePotency = -req.DamageOrCureValue };
-            _logicService.CastSkill(casterModel, targetModel, skill);
+            // 位置目标技能（范围伤害）：XZ 平面
+            targetPos = new System.Numerics.Vector3(req.TargetPosX, 0f, req.TargetPosZ);
         }
 
-        targetPawn.ServerSetHealth(targetModel.Health);
+        bool began = _logicService.BeginSpell(RoomId, casterPawn.UnitName.Value, req.SkillTypeId, targetName, targetPos);
+        if (!began) {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[RoomServer:{RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
+                    RoomId, casterPawn.UnitName.Value, req.SkillTypeId);
+            return;
+        }
+
+        // 回写 Pawn 施法状态（客户端渲染读 pawn.SkillCasting / SkillCastRemaining）
+        var casterModel = _logicService.FindUnitModel(RoomId, casterPawn.UnitName.Value);
+        if (casterModel is UnitModel model) {
+            casterPawn.ServerBeginSpell(model.SpellingSkillId,
+                Math.Max(0f, model.SpellRemaining));
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Skill result: {Caster} -> {Target}, HP: {OldHealth:F0} -> {NewHealth:F0}",
-                RoomId, casterPawn.UnitName.Value, targetPawn.UnitName.Value, oldTargetHealth, targetPawn.Health.Value);
+            _logger.LogInformation("[RoomServer:{RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
+                RoomId, casterPawn.UnitName.Value, targetName ?? "(position)", req.SkillTypeId);
     }
 
     /// <summary>
@@ -210,9 +230,10 @@ public partial class BattleRoomServer {
 
             var gameRoom = _logicService.GetRoom(RoomId);
             if (gameRoom != null && _logicService.CheckBattleEnded(gameRoom)) {
-                _roomEntity.WinnerCamp.Value = BattleResolver.HasAliveUnits(gameRoom.UnitsA)
-                    ? CampConstants.CampA
-                    : CampConstants.CampB;
+                _roomEntity.WinnerCamp.Value =
+                    gameRoom.Units.Any(u => u.Health > 0 && u.Camps.Contains(CampConstants.CampA))
+                        ? CampConstants.CampA
+                        : CampConstants.CampB;
             }
         }
     }

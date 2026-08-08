@@ -21,6 +21,7 @@ public class GameConfigDB : IGameConfigDB {
     public static BuffDOTConfig BuffDotMagic {
         get;
     } = new() {
+        Id = 1,
         Duration = 30.0,
         MaxSuperpositions = 1,
         DamageType = DamageType.Magic,
@@ -31,6 +32,7 @@ public class GameConfigDB : IGameConfigDB {
     public static BuffDOTConfig BuffDotPhysical {
         get;
     } = new() {
+        Id = 2,
         Duration = 15.0,
         MaxSuperpositions = 1,
         DamageType = DamageType.Physical,
@@ -41,6 +43,7 @@ public class GameConfigDB : IGameConfigDB {
     public static BuffHOTConfig BuffHot {
         get;
     } = new() {
+        Id = 3,
         Duration = 15.0,
         MaxSuperpositions = 1,
         HealthPerSec = 100.0f,
@@ -50,6 +53,7 @@ public class GameConfigDB : IGameConfigDB {
     public static SkillDamageConfig SkillMagicDamage {
         get;
     } = new() {
+        Id = 1,
         SkillSpellTime = 2.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
@@ -64,6 +68,7 @@ public class GameConfigDB : IGameConfigDB {
     public static SkillCureConfig SkillCure {
         get;
     } = new() {
+        Id = 2,
         SkillSpellTime = 0.5f,
         SkillCooldownTime = 0.5f,
         GCDTime = 2.0f,
@@ -77,6 +82,7 @@ public class GameConfigDB : IGameConfigDB {
     public static SkillAddBuffConfig SkillAddDotMagic {
         get;
     } = new() {
+        Id = 3,
         SkillSpellTime = 0.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
@@ -90,6 +96,7 @@ public class GameConfigDB : IGameConfigDB {
     public static SkillAddBuffConfig SkillAddHot {
         get;
     } = new() {
+        Id = 4,
         SkillSpellTime = 0.0f,
         SkillCooldownTime = 1.5f,
         GCDTime = 2.0f,
@@ -103,6 +110,7 @@ public class GameConfigDB : IGameConfigDB {
     public static SkillRangeDamageConfig SkillRectRangeDamage {
         get;
     } = new() {
+        Id = 5,
         SkillSpellTime = 2.0f,
         SkillCooldownTime = 3.0f,
         GCDTime = 3.0f,
@@ -149,6 +157,22 @@ public class GameConfigDB : IGameConfigDB {
     UnitModel IGameConfigDB.ToUnitModel(UnitConfig config) => ToUnitModel(config);
     SkillModel IGameConfigDB.ToSkillModel(SkillConfig config) => ToSkillModel(config);
     BuffModel IGameConfigDB.ToBuffModel(BuffConfig config) => ToBuffModel(config);
+
+    /// <summary>
+    /// 按技能全局 ID 查找技能配置。
+    /// </summary>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <returns>对应的技能配置；未找到返回 null。</returns>
+    public static SkillConfig? GetSkillById(ushort skillId) {
+        return skillId switch {
+            1 => SkillMagicDamage,
+            2 => SkillCure,
+            3 => SkillAddDotMagic,
+            4 => SkillAddHot,
+            5 => SkillRectRangeDamage,
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// 将单位配置转换为运行时单位模型。
@@ -232,6 +256,7 @@ public class GameConfigDB : IGameConfigDB {
 
         model.Duration = config.Duration;
         model.MaxSuperpositions = config.MaxSuperpositions;
+        model.BuffTypeId = config.Id;
 
         return model;
     }

@@ -1,4 +1,5 @@
 using Godot;
+using DungeonChessBattle.GameAssets.Buffs;
 
 namespace DungeonChessBattle;
 
@@ -54,8 +55,9 @@ public partial class SkillInfoPanel : Control {
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon buffIcon) {
-                skillNameLabel?.Text = buffIcon.BindingBuff.BuffName;
-                skillDescriptionLabel?.Text = buffIcon.BindingBuff.BuffDescription;
+                var buffRes = BuffResourceTable.GetResourceByBuffTypeId(buffIcon.BindingBuffData.BuffTypeId);
+                skillNameLabel?.Text = buffRes?.BuffName ?? $"Buff({buffIcon.BindingBuffData.BuffTypeId})";
+                skillDescriptionLabel?.Text = buffRes?.BuffDescription ?? string.Empty;
                 isShow = true;
             }
         }

@@ -4,9 +4,9 @@ using DungeonChessBattle.Core.Interfaces;
 namespace DungeonChessBattle.Core.Models;
 
 /// <summary>
-/// 游戏房间数据模型，承载两个阵营的单位列表与战斗状态及招募板信息。
+/// 游戏房间数据模型，承载单位的列表与战斗状态及招募板信息。
 /// 边界约定：招募板字段（Title/DungeonName/Description/Category/MaxPlayers/CurrentPlayers/Password/Status）
-/// 由服务端 Store 层（IGameStateStore）读写；战斗字段（UnitsA/UnitsB/IsActive）
+/// 由服务端 Store 层（IGameStateStore）读写；战斗字段（Units/IsActive）
 /// 由 Logic 层（RoomManager）独占所有权。双方不交叉修改，仅靠约定约束。
 /// </summary>
 public class GameRoom(string roomId) {
@@ -60,9 +60,14 @@ public class GameRoom(string roomId) {
     /// <summary>房间是否设置了密码。</summary>
     public bool HasPassword => !string.IsNullOrWhiteSpace(Password);
 
-    /// <summary>房间创建时间（UTC）。</summary>
+    /// <summary>
+    /// 房间创建时间（UTC）。
+    /// 服务端 Store 层在创建房间时初始化为权威时刻；
+    /// 客户端在进入战斗后从同步字段（BattleRoomEntity.CreatedUnixTime）回填，
+    /// 用于跨端一致的战斗计时起点。服务端与客户端均只写一次，不互相覆盖。
+    /// </summary>
     public DateTime CreatedAt {
-        get; init;
+        get; set;
     } = DateTime.UtcNow;
 
     /// <summary>房间状态（等待/进行中/已结束）。</summary>
@@ -72,11 +77,8 @@ public class GameRoom(string roomId) {
 
     // ─── 战斗字段（Logic 层独占所有权） ───
 
-    /// <summary>A 方单位列表（战斗）。</summary>
-    public List<IUnitState> UnitsA { get; } = [];
-
-    /// <summary>B 方单位列表（战斗）。</summary>
-    public List<IUnitState> UnitsB { get; } = [];
+    /// <summary>单位列表（战斗），阵营信息由 UnitModel.Camps 区分。</summary>
+    public List<UnitModel> Units { get; } = [];
 
     /// <summary>战斗是否进行中。</summary>
     public bool IsActive {

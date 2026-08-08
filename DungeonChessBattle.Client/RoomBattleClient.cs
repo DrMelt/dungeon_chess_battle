@@ -28,6 +28,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private string? _currentRoomId;
     private readonly Lock _lock = new();
 
+    /// <summary>持久房间（GetRoom 返回稳定引用，避免每帧快照重建）。</summary>
+    private GameRoom? _persistentRoom;
+
     /// <summary>单位生命值变化事件。参数：单位名称、新生命值、旧生命值。</summary>
     public event Action<string, float, float>? UnitHealthChanged;
 
@@ -64,6 +67,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
+            _persistentRoom = null;
         }
     }
 
@@ -78,6 +82,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
+            _persistentRoom = null;
         }
     }
 
@@ -141,26 +146,17 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
+            _persistentRoom = null;
         }
     }
 
     /// <summary>
-    /// 按房间 ID 组装房间数据（从本地缓存的 Pawn 实体构建）。
+    /// 按房间 ID 返回持久房间（仅承载房间元信息，如创建时间；单位数据由 Pawn 查询提供）。
     /// </summary>
     public GameRoom? GetRoom(string roomId) {
-        List<UnitPawn> pawnsSnapshot;
         lock (_lock) {
-            pawnsSnapshot = [.. _roomPawns];
+            return _persistentRoom;
         }
-        var room = new GameRoom(roomId);
-        foreach (var p in pawnsSnapshot) {
-            var model = BuildModelFromPawn(p);
-            if (p.Camp.Value == CampConstants.CampA)
-                room.UnitsA.Add(model);
-            else if (p.Camp.Value == CampConstants.CampB)
-                room.UnitsB.Add(model);
-        }
-        return room;
     }
 
     /// <summary>获取当前房间（客户端仅持有单房间）。</summary>
@@ -177,17 +173,18 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// </summary>
     public GameRoom CreateRoom(string roomId) {
         _currentRoomId = roomId;
-        var room = new GameRoom(roomId);
         lock (_lock) {
             _roomPawns.Clear();
+            _persistentRoom = new GameRoom(roomId);
         }
-        return room;
+        return _persistentRoom;
     }
 
     /// <summary>
-    /// 向服务端发送创建单位 RPC 请求，并返回本地临时单位模型。
+    /// 向服务端发送创建单位 RPC 请求。单位实体由服务端创建并回传（Pawn），
+    /// 客户端不维护本地 UnitModel，因此返回 null。
     /// </summary>
-    public IUnitState CreateUnit(string roomId, string unitName, string camp) {
+    public IUnitState? CreateUnit(string roomId, string unitName, string camp) {
         if (_roomEntity != null) {
             var req = new SyncCreateUnitRequest { UnitName = unitName, Camp = camp };
             _roomEntity.RequestCreateUnit(req);
@@ -196,36 +193,41 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("[RoomBattleClient] CreateUnit: room entity not found for {RoomId}", roomId);
         }
-
-        var model = new UnitModel { UnitStateName = unitName, Camps = [camp] };
-        return model;
+        return null;
     }
 
     /// <summary>
-    /// 通过 RPC 向服务端施放技能。
+    /// 通过 RPC 向服务端发起施法读条（服务端权威结算）。
     /// </summary>
-    public void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits = null) {
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="casterName">施法单位名称。</param>
+    /// <param name="targetName">目标单位名称（范围伤害技能传 null）。</param>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="targetPosX">位置目标 X（范围伤害技能使用）。</param>
+    /// <param name="targetPosZ">位置目标 Z（范围伤害技能使用）。</param>
+    public void CastSkill(string roomId, string casterName, string? targetName, ushort skillId,
+        float targetPosX = 0f, float targetPosZ = 0f) {
         if (_entityManager == null)
             return;
 
-        var casterPawn = FindPawnByName(caster.UnitStateName);
-        var targetPawn = FindPawnByName(target.UnitStateName);
-        if (casterPawn == null || targetPawn == null)
+        var casterPawn = FindPawnByName(casterName);
+        if (casterPawn == null)
             return;
 
-        bool isDamage = skill is SkillDamageModel;
-        float damageOrCure = isDamage
-            ? ((SkillDamageModel)skill).Damage
-            : -((SkillCureModel)skill).CurePotency;
-        byte damageType = (byte)(isDamage ? (byte)((SkillDamageModel)skill).DamageType : 0);
+        ushort targetNetId = 0;
+        if (!string.IsNullOrEmpty(targetName)) {
+            var targetPawn = FindPawnByName(targetName);
+            if (targetPawn == null)
+                return;
+            targetNetId = targetPawn.Id;
+        }
 
         var req = new SyncSkillRequest {
             CasterUnitNetId = casterPawn.Id,
-            TargetUnitNetId = targetPawn.Id,
-            IsDamage = isDamage,
-            DamageOrCureValue = damageOrCure,
-            DamageType = damageType,
+            TargetUnitNetId = targetNetId,
+            SkillTypeId = skillId,
+            TargetPosX = targetPosX,
+            TargetPosZ = targetPosZ,
         };
         casterPawn.RequestCastSkill(req);
     }
@@ -249,7 +251,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public void SubmitPlayerInput(System.Numerics.Vector2 moveDir, byte skillFlags, System.Numerics.Vector2 aimPos) {
         if (_localController != null) {
             _localController.SubmitInput(moveDir, skillFlags, aimPos);
-            if (moveDir != System.Numerics.Vector2.Zero) {
+            if (_logger.IsEnabled(LogLevel.Information) && moveDir != System.Numerics.Vector2.Zero) {
                 _logger.LogInformation("[RoomBattleClient] Input submitted: dir={MoveDir}",
                     moveDir);
             }

@@ -66,8 +66,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             CreatedAt = source.CreatedAt,
             Status = source.Status,
         };
-        copy.UnitsA.AddRange(source.UnitsA);
-        copy.UnitsB.AddRange(source.UnitsB);
+        copy.Units.AddRange(source.Units);
         return copy;
     }
 

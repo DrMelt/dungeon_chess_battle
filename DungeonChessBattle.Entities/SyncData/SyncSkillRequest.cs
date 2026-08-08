@@ -18,6 +18,12 @@ public struct SyncSkillRequest : ISpanSerializable {
     /// <summary>伤害量（正）或治疗量（负）。纯 Buff 类技能为 0</summary>
     public float DamageOrCureValue;
 
+    /// <summary>位置目标 X（范围伤害技能使用，XZ 平面）。</summary>
+    public float TargetPosX;
+
+    /// <summary>位置目标 Z（范围伤害技能使用，XZ 平面）。</summary>
+    public float TargetPosZ;
+
     /// <summary>伤害类型（仅 IsDamage=true 时有效），对应 DamageType 转 byte</summary>
     public byte DamageType;
 
@@ -25,7 +31,7 @@ public struct SyncSkillRequest : ISpanSerializable {
     public bool IsDamage;
 
     /// <summary>序列化后的最大字节数。</summary>
-    public readonly int MaxSize => 2 + 2 + 2 + 4 + 1 + 1;
+    public readonly int MaxSize => 2 + 2 + 2 + 4 + 4 + 4 + 1 + 1;
 
     /// <summary>
     /// 序列化到网络缓冲区。
@@ -36,6 +42,8 @@ public struct SyncSkillRequest : ISpanSerializable {
         writer.Put(TargetUnitNetId);
         writer.Put(SkillTypeId);
         writer.Put(DamageOrCureValue);
+        writer.Put(TargetPosX);
+        writer.Put(TargetPosZ);
         writer.Put(DamageType);
         writer.Put(IsDamage);
     }
@@ -49,6 +57,8 @@ public struct SyncSkillRequest : ISpanSerializable {
         TargetUnitNetId = reader.GetUShort();
         SkillTypeId = reader.GetUShort();
         DamageOrCureValue = reader.GetFloat();
+        TargetPosX = reader.GetFloat();
+        TargetPosZ = reader.GetFloat();
         DamageType = reader.GetByte();
         IsDamage = reader.GetBool();
     }

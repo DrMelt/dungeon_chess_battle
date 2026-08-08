@@ -13,7 +13,7 @@ public static class ServiceLocator {
     public const int DefaultPort = 10170;
 
     /// <summary>日志工厂实例（Godot 控制台 Provider）。</summary>
-    private static readonly ILoggerFactory LoggerFactoryInstance = Microsoft.Extensions.Logging.LoggerFactory.Create(builder => {
+    private static readonly ILoggerFactory LoggerFactoryInstance = LoggerFactory.Create(builder => {
         builder.AddProvider(new GodotLoggerProvider());
     });
 

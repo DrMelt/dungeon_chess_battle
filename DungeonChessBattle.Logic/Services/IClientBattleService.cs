@@ -50,19 +50,21 @@ public interface IClientBattleService {
     /// <param name="roomId">房间 ID。</param>
     /// <param name="unitName">单位名称。</param>
     /// <param name="camp">阵营字符串标识（如 "Camp_A"、"Camp_B"）。</param>
-    /// <returns>创建的单位状态。</returns>
-    IUnitState CreateUnit(string roomId, string unitName, string camp);
+    /// <returns>创建的单位状态；客户端实现返回 null（单位由 Pawn 实体承载）。</returns>
+    IUnitState? CreateUnit(string roomId, string unitName, string camp);
 
     /// <summary>
-    /// 对目标施放技能（客户端发起）。
+    /// 对目标施放技能（客户端发起）。通过 RPC 发送，服务端权威读条与结算。
+    /// 参数展开为值类型，避免接口层依赖 IUnitState/Entities。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="caster">施法单位。</param>
-    /// <param name="target">目标单位。</param>
-    /// <param name="skill">技能模型。</param>
-    /// <param name="allUnits">所有可命中的检测单位（范围伤害技能需要）。</param>
-    void CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits = null);
+    /// <param name="casterName">施法单位名称。</param>
+    /// <param name="targetName">目标单位名称（范围伤害技能传 null）。</param>
+    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="targetPosX">位置目标 X（范围伤害技能使用）。</param>
+    /// <param name="targetPosZ">位置目标 Z（范围伤害技能使用）。</param>
+    void CastSkill(string roomId, string casterName, string? targetName, ushort skillId,
+        float targetPosX = 0f, float targetPosZ = 0f);
 
     /// <summary>
     /// 按帧推进单位集合的 Buff 状态（服务端权威结算后下推）。

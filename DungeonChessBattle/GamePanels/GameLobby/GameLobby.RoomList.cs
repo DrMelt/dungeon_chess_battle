@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Godot;
+using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
+using Godot;
 
 namespace DungeonChessBattle;
 
@@ -116,9 +117,11 @@ public partial class GameLobby {
     /// <returns>状态文字。</returns>
     private static string GetRoomStatusText(GameRoom room) {
         if (room.IsActive) {
-            int totalUnits = room.UnitsA.Count + room.UnitsB.Count;
+            int totalUnits = room.Units.Count;
             if (totalUnits > 0) {
-                return $"等待中 ({room.UnitsA.Count}v{room.UnitsB.Count})";
+                int campA = room.Units.Count(u => u.Camps.Contains(CampConstants.CampA));
+                int campB = totalUnits - campA;
+                return $"等待中 ({campA}v{campB})";
             }
             return "等待中";
         }
