@@ -39,7 +39,7 @@ public interface IPlayerStateStore {
     string? RemovePlayerByPeer(int peerId);
 
     /// <summary>在大厅准备阶段添加单位。</summary>
-    bool AddPrepareUnit(string roomId, string unitName, string camp, string playerName);
+    bool AddPrepareUnit(string roomId, string unitName, string camp, string playerName, string playerId);
 
     /// <summary>在大厅准备阶段移除单位。</summary>
     bool RemovePrepareUnit(string roomId, string unitName, string camp);

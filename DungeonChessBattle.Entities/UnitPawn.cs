@@ -79,6 +79,9 @@ public class UnitPawn : PawnLogic {
     /// <summary>技能施放请求事件。</summary>
     public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
 
+    /// <summary>玩家输入事件。参数：实体、输入包、帧间隔。服务端逻辑层消费。</summary>
+    public event Action<UnitPawn, UnitInputPacket, float>? InputReceived;
+
     /// <summary>
     /// 初始化单位 Pawn 实体。
     /// </summary>
@@ -125,6 +128,18 @@ public class UnitPawn : PawnLogic {
     /// <param name="req">技能施放请求数据。</param>
     public void RequestCastSkill(SyncSkillRequest req) {
         ExecuteRPC(CastSkillRPC, req);
+    }
+
+    /// <summary>
+    /// 服务端调用：接收控制器转发的玩家输入。仅发布 <see cref="InputReceived"/> 事件，
+    /// 移动逻辑由 Logic 层消费（与 SkillCastRequested → Server → Logic 转发模式一致）。
+    /// </summary>
+    /// <param name="input">玩家输入包。</param>
+    /// <param name="deltaTime">距上一逻辑帧的间隔时间（秒）。</param>
+    public void ServerApplyInput(UnitInputPacket input, float deltaTime) {
+        if (!IsServer)
+            return;
+        InputReceived?.Invoke(this, input, deltaTime);
     }
 
     /// <summary>

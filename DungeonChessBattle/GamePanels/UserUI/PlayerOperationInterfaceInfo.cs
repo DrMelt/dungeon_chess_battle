@@ -29,15 +29,6 @@ public partial class PlayerOperationInterfaceInfo : Node {
 
     #endregion
 
-    #region ViewModel State
-
-    /// <summary>场景单位集合引用</summary>
-    public UnitsInSceneView? UnitsInScene {
-        get; set;
-    }
-
-    #endregion
-
     #region Bindable Properties (ViewModel)
 
     /// <summary>当前是否在等待技能目标选择</summary>
@@ -117,6 +108,81 @@ public partial class PlayerOperationInterfaceInfo : Node {
         IsWaitingMoveTarget = false;
         if (wasWaiting)
             EmitSignal(SignalName.WaitingTargetChanged, false);
+    }
+
+    #endregion
+
+    #region Mouse Interaction
+
+    /// <summary>单位选择射线最大距离。</summary>
+    private const float RaycastMaxDistance = 200f;
+
+    /// <summary>单位交互碰撞层（对应 UnitShowArea3D 的 collision_layer=2048）。</summary>
+    private const uint UnitCollisionLayer = 2048;
+
+    /// <summary>地面平面 Y 坐标（场景地面高度）。</summary>
+    private const float GroundPlaneY = 0f;
+
+    /// <summary>
+    /// 鼠标左键点击：选中或取消单位焦点。
+    /// 设置 FocusOnUnit 会触发 FocusOnUnitChanged 信号，
+    /// 由 PlayerUIRoot → SkillsList 链路生成技能按钮。
+    /// </summary>
+    public override void _UnhandledInput(InputEvent @event) {
+        if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
+            return;
+        if (playerInterfaceRes == null)
+            return;
+
+        var hit = RaycastUnitFromCamera();
+        playerInterfaceRes.FocusOnUnit = hit?.UnitShowRef;
+    }
+
+    /// <summary>
+    /// 每帧更新鼠标悬停单位与地面瞄准点。
+    /// MouseOnUnit 驱动 FocusOnOutline 轮廓高亮；
+    /// MouseGoundPosition 供位置型技能瞄准使用。
+    /// </summary>
+    public override void _Process(double delta) {
+        if (playerInterfaceRes == null || camera3DRef == null)
+            return;
+
+        var hit = RaycastUnitFromCamera();
+        playerInterfaceRes.MouseOnUnit = hit?.UnitShowRef;
+        playerInterfaceRes.MouseGoundPosition = RaycastGroundPosition();
+    }
+
+    /// <summary>从相机经鼠标位置发射线，命中单位交互层时返回对应的交互区域。</summary>
+    private UnitShowArea3D? RaycastUnitFromCamera() {
+        if (camera3DRef == null)
+            return null;
+
+        Vector2 mousePos = GetViewport().GetMousePosition();
+        Vector3 from = camera3DRef.ProjectRayOrigin(mousePos);
+        Vector3 to = from + camera3DRef.ProjectRayNormal(mousePos) * RaycastMaxDistance;
+
+        var query = PhysicsRayQueryParameters3D.Create(from, to, UnitCollisionLayer);
+        var result = camera3DRef.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (result.Count == 0)
+            return null;
+        return result["collider"].As<UnitShowArea3D>();
+    }
+
+    /// <summary>射线与地面平面（Y=0）的交点；无交点或朝下不交时返回 null。</summary>
+    private Vector3? RaycastGroundPosition() {
+        if (camera3DRef == null)
+            return null;
+
+        Vector2 mousePos = GetViewport().GetMousePosition();
+        Vector3 origin = camera3DRef.ProjectRayOrigin(mousePos);
+        Vector3 dir = camera3DRef.ProjectRayNormal(mousePos);
+
+        if (Mathf.Abs(dir.Y) < 1e-6f)
+            return null;
+        float t = (GroundPlaneY - origin.Y) / dir.Y;
+        if (t < 0f)
+            return null;
+        return origin + dir * t;
     }
 
     #endregion

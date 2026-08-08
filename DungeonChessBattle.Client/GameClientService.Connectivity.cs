@@ -99,7 +99,7 @@ public sealed partial class GameClientService {
     /// </summary>
     private void SendReconnectRequest() {
         var cachedRoomId = _cachedRoomId ??
-            throw new System.InvalidOperationException("cachedRoomId is not set before reconnect request.");
+            throw new InvalidOperationException("cachedRoomId is not set before reconnect request.");
         var msg = MessageWriter.WriteReconnectRoom(
             cachedRoomId, PlayerId, PlayerName,
             _cachedRoomPassword, _serverPassword);

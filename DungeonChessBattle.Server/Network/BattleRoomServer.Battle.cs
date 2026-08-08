@@ -3,6 +3,7 @@ using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
@@ -59,13 +60,19 @@ public partial class BattleRoomServer {
             e.Position.Value = spawnPos;
         }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{RoomId}'.");
 
-        // 订阅该 Pawn 的技能 RPC 事件
+        // 订阅该 Pawn 的技能 RPC 与玩家输入事件
         entity.SkillCastRequested += OnPawnSkillCast;
+        entity.InputReceived += OnPawnInput;
 
         _roomPawns.Add(entity);
 
-        // Logic 层创建单位
-        _logicService.CreateUnit(RoomId, unitName, camp);
+        // Logic 层创建单位：先从注册表取配置建模并注入运行时数值（BaseSpeed 等），
+        // 避免裸 UnitModel 速度恒为 0；再同步初始位置（与 Pawn 一致，避免回写时拉回原点）
+        var model = _logicService.CreateUnit(RoomId, unitName, camp);
+        var configEntry = UnitRegistry.Instance.GetByDisplayName(unitName);
+        if (configEntry != null)
+            model.CopyStatsFrom(GameConfigDB.ToUnitModel(configEntry.Config));
+        model.SetPosition(new Vector3(spawnPos.X, 0f, spawnPos.Y));
 
         return entity;
     }
@@ -120,6 +127,24 @@ public partial class BattleRoomServer {
         StartBattle();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomServer:{RoomId}] Battle started via RPC", RoomId);
+    }
+
+    /// <summary>
+    /// 处理通过 UnitPawn 实例事件到达的玩家输入：转发到 Logic 层结算移动，
+    /// 并将 Logic 层权威位置回写 Pawn（LES SyncVar），使客户端渲染可见。
+    /// Logic 层为移动权威；Pawn 位置 SyncVar 仅作网络同步载体。
+    /// </summary>
+    private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
+        _logger.LogInformation("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
+            RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
+        _logicService.UpdatePlayerMovement(RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
+
+        // Logic 层结算后回写 Pawn 位置（客户端渲染读 pawn.Position.Value）
+        var model = _logicService.FindUnitModel(RoomId, pawn.UnitName.Value);
+        if (model != null) {
+            var pos = model.Position;
+            pawn.Position.Value = new Vector2(pos.X, pos.Z);
+        }
     }
 
     /// <summary>

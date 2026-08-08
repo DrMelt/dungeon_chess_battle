@@ -34,8 +34,13 @@ internal sealed class PlayerSession(string playerId, string playerName) {
         get; set;
     }
 
-    /// <summary>玩家输入控制器（预留，由 LES 框架管理）</summary>
+    /// <summary>玩家输入控制器（由 LES 框架管理）</summary>
     public UnitController? Controller {
+        get; set;
+    }
+
+    /// <summary>玩家控制的单位 Pawn（用于调试与后续扩展）。</summary>
+    public UnitPawn? ControlledPawn {
         get; set;
     }
 }

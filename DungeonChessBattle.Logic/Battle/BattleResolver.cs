@@ -68,7 +68,7 @@ public class BattleResolver {
     /// <exception cref="InvalidOperationException">skill.Buff 为 null 时抛出。</exception>
     public static void ApplySkillAddBuff(IUnitState target, SkillAddBuffModel skill) {
         if (skill.Buff == null)
-            throw new System.InvalidOperationException("[BattleResolver] SkillAddBuffModel.Buff is null.");
+            throw new InvalidOperationException("[BattleResolver] SkillAddBuffModel.Buff is null.");
         target.AddBuff(skill.Buff);
     }
 

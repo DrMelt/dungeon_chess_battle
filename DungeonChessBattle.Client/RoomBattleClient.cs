@@ -49,11 +49,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 
-
-    /// <summary>重连成功事件（客户端恢复连接后触发）</summary>
-    public event Action<string>? OnReconnectSucceeded;
-
-    // 本地玩家的 UnitController（在 OnPlayerEntityCreated 中查找并保存）
+    // 本地玩家的 UnitController（在 OnUnitControllerCreated 回调中识别并缓存）
     private UnitController? _localController;
 
     /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
@@ -63,6 +59,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     protected override void OnReconnectCleanup() {
         base.OnReconnectCleanup();
         _entityManager = null;
+        _localController = null;
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
@@ -76,6 +73,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     protected override void OnDisconnectCleanup() {
         base.OnDisconnectCleanup();
         _entityManager = null;
+        _localController = null;
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
@@ -124,6 +122,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             .SubscribeToConstructed(OnPawnEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<PlayerRoomEntity>()
             .SubscribeToConstructed(OnPlayerEntityCreated, callOnExisting: true);
+        _entityManager.GetEntities<UnitController>()
+            .SubscribeToConstructed(OnUnitControllerCreated, callOnExisting: true);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] LES EntityManager created for peer {PeerId}", peer.Id);
@@ -136,6 +136,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <param name="info">断开信息。</param>
     protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
         _entityManager = null;
+        _localController = null;
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
@@ -246,7 +247,20 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// 框架自动进行 Delta 编码、UDP 发送、预测回滚。
     /// </summary>
     public void SubmitPlayerInput(System.Numerics.Vector2 moveDir, byte skillFlags, System.Numerics.Vector2 aimPos) {
-        _localController?.SubmitInput(moveDir, skillFlags, aimPos);
+        if (_localController != null) {
+            _localController.SubmitInput(moveDir, skillFlags, aimPos);
+            if (moveDir != System.Numerics.Vector2.Zero) {
+                _logger.LogInformation("[RoomBattleClient] Input submitted: dir={MoveDir}",
+                    moveDir);
+            }
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("[RoomBattleClient] Input submitted: dir={MoveDir}, flags={SkillFlags}, aim={AimPos}",
+                    moveDir, skillFlags, aimPos);
+        }
+        else if (_logger.IsEnabled(LogLevel.Warning) && (moveDir != System.Numerics.Vector2.Zero || skillFlags != 0)) {
+            _logger.LogWarning("[RoomBattleClient] Local controller not ready, input dropped: dir={MoveDir}, flags={SkillFlags}",
+                moveDir, skillFlags);
+        }
     }
 
     /// <summary>通过 RPC 请求开始战斗。</summary>

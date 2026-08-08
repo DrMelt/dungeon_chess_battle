@@ -12,8 +12,8 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
-    /// <summary>场景中所有单位视图引用（用于获取可命中单位数组）。</summary>
-    public UnitsInSceneView? UnitsInGameRef {
+    /// <summary>战斗单位管理器引用（用于获取可命中单位数组）。</summary>
+    public BattleUnitManager? UnitsInGameRef {
         get; set;
     }
 

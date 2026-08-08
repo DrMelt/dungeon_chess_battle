@@ -153,6 +153,18 @@ public class UnitModel : IUnitState {
         }
     }
 
+    void IUnitState.CopyStatsFrom(IUnitState source) {
+        MaxHealth = source.MaxHealth;
+        Health = source.Health;
+        CureIntensity = source.CureIntensity;
+        PhysicalAttackBase = source.PhysicalAttackBase;
+        PhysicalTakePercent = source.PhysicalTakePercent;
+        MagicAttackBase = source.MagicAttackBase;
+        MagicTakePercent = source.MagicTakePercent;
+        BaseSpeed = source.MoveSpeed;
+        BodyRadius = source.BodyRadius;
+    }
+
     /// <summary>
     /// 发起新技能施放：打断当前正在施放的技能，并驱动读条推进。
     /// 传入 null 时仅中断当前施法。

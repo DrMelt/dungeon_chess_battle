@@ -166,9 +166,11 @@ public partial class BattleRoomServer : INetEventListener {
             _roomEntity.StartBattleRequested -= OnStartBattleRequested;
         }
 
-        // 取消订阅所有 Pawn 的 SkillCast 事件
-        foreach (var pawn in _roomPawns)
+        // 取消订阅所有 Pawn 的 SkillCast 与输入事件
+        foreach (var pawn in _roomPawns) {
             pawn.SkillCastRequested -= OnPawnSkillCast;
+            pawn.InputReceived -= OnPawnInput;
+        }
 
         // 先等待房间线程退出，再销毁保留实体（避免大厅线程在房间线程
         // 仍运行 EntityManager.Update() 时并发销毁实体）
@@ -228,18 +230,8 @@ public partial class BattleRoomServer : INetEventListener {
                             _logicService.UpdateBuffs(gameRoom.UnitsA.Concat(gameRoom.UnitsB), dt);
                     }
 
-                    // 4. Pawn 冷却更新 + Service→Entity Health 同步
-                    foreach (var pawn in _roomPawns) {
-                        pawn.UpdateCooldowns((float)dt);
-
-                        var gameRoom = _logicService.GetRoom(RoomId);
-                        if (gameRoom != null) {
-                            var model = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
-                                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
-                            if (model != null && MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f)
-                                pawn.ServerSetHealth(model.Health);
-                        }
-                    }
+                    // 4. Pawn 冷却更新 + Logic 模型回写到 Pawn（Health / Position）
+                    SyncLogicModelToPawns((float)dt);
 
                     // 5. 战斗结束检查
                     CheckBattleEnded();
@@ -249,6 +241,37 @@ public partial class BattleRoomServer : INetEventListener {
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "[RoomServer:{RoomId}] Unhandled exception in RunLoop. Room continues.", RoomId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 每帧递减 Pawn 冷却，并将 Logic 层模型的最新状态回写到网络 Pawn（健康值、位置）。
+    /// 仅房间线程调用。
+    /// </summary>
+    /// <param name="dt">距上一帧的间隔时间（秒）。</param>
+    private void SyncLogicModelToPawns(float dt) {
+        var gameRoom = _logicService.GetRoom(RoomId);
+        if (gameRoom == null)
+            return;
+
+        foreach (var pawn in _roomPawns) {
+            pawn.UpdateCooldowns(dt);
+
+            var model = gameRoom.UnitsA.Concat(gameRoom.UnitsB)
+                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
+            if (model == null)
+                continue;
+
+            if (MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f)
+                pawn.ServerSetHealth(model.Health);
+
+            var modelPos = model.Position;
+            var pawnPos = new System.Numerics.Vector2(modelPos.X, modelPos.Z);
+            if (System.Numerics.Vector2.DistanceSquared(pawn.Position.Value, pawnPos) > 0.0001f) {
+                _logger.LogInformation("[RoomServer:{RoomId}] SyncPos: {Unit} = ({X}, {Z})",
+                    RoomId, pawn.UnitName.Value, modelPos.X, modelPos.Z);
+                pawn.Position.Value = pawnPos;
             }
         }
     }

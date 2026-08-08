@@ -37,7 +37,7 @@ public partial class MainMenu : BaseGamePanel {
     #endregion
 
     /// <summary>
-    /// 节点就绪：获取引用集合、绑定按钮事件、订阅客户端服务事件并初始化本地模式。
+    /// 节点就绪：获取引用集合、绑定按钮事件、订阅客户端服务事件。
     /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
@@ -63,9 +63,6 @@ public partial class MainMenu : BaseGamePanel {
 
         // 默认端口
         InterRefs?.PortInput?.Text = ServiceLocator.DefaultPort.ToString();
-
-        // 初始化本地模式（在没有网络连接时提供本地服务）
-        ServiceLocator.ClientService.InitLocalMode();
     }
 
     /// <summary>

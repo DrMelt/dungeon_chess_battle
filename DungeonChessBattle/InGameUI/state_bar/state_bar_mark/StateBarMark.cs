@@ -6,9 +6,9 @@ namespace DungeonChessBattle;
 /// 状态标记容器，为场景中所有单位生成对应的 2D 状态标记。
 /// </summary>
 public partial class StateBarMark : Control {
-    /// <summary>场景单位集合引用。</summary>
+    /// <summary>战斗单位管理器引用。</summary>
     [Export]
-    private UnitsInSceneView? unitsInScene_Show_Ref;
+    private BattleUnitManager? unitsInScene_Show_Ref;
     /// <summary>2D 状态标记使用的场景资源。</summary>
     [Export]
     private PackedScene? stateBarSimple2d_PKD;

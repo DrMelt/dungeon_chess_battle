@@ -105,6 +105,9 @@ public partial class UnitState : Resource, IUnitState {
     /// <summary>单位世界位置。</summary>
     public Vector3 Position => _position;
     System.Numerics.Vector3 IUnitState.Position => new(_position.X, _position.Y, _position.Z);
+    void IUnitState.SetPosition(System.Numerics.Vector3 position) {
+        SetGlobalPosition(new Vector3(position.X, position.Y, position.Z));
+    }
     /// <summary>
     /// 设置单位全局位置；位置变化时同步到运行模型并触发移动事件。
     /// </summary>
@@ -125,6 +128,23 @@ public partial class UnitState : Resource, IUnitState {
     private Vector3 _lookAt_Dir = Vector3.Forward;
     /// <summary>单位朝向方向。</summary>
     public Vector3 LookAt_Dir => _lookAt_Dir;
+    System.Numerics.Vector3 IUnitState.LookAtDir {
+        get => new(_lookAt_Dir.X, _lookAt_Dir.Y, _lookAt_Dir.Z);
+        set => SetLookAt_Dir(new Vector3(value.X, value.Y, value.Z));
+    }
+    void IUnitState.CopyStatsFrom(IUnitState source) {
+        var model = EnsureSynced();
+        model.MaxHealth = source.MaxHealth;
+        model.Health = source.Health;
+        model.CureIntensity = source.CureIntensity;
+        model.PhysicalAttackBase = source.PhysicalAttackBase;
+        model.PhysicalTakePercent = source.PhysicalTakePercent;
+        model.MagicAttackBase = source.MagicAttackBase;
+        model.MagicTakePercent = source.MagicTakePercent;
+        model.BaseSpeed = source.MoveSpeed;
+        model.BodyRadius = source.BodyRadius;
+        _health = model.Health;
+    }
     /// <summary>
     /// 设置单位朝向方向；水平化并归一化后存储。
     /// </summary>

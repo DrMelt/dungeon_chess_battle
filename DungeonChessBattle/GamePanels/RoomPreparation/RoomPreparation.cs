@@ -18,10 +18,6 @@ public partial class RoomPreparation : BaseGamePanel {
     /// <summary>日志记录器。</summary>
     private readonly ILogger<RoomPreparation> _logger = ServiceLocator.GetLogger<RoomPreparation>();
 
-    /// <summary>本地模式请求开始战斗的信号，参数为房间 ID。</summary>
-    [Signal]
-    public delegate void BattleStartRequestedEventHandler(string roomId);
-
     #region Service & State
 
     /// <summary>导出引用集合节点。</summary>
@@ -41,7 +37,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private bool _isHost;
     /// <summary>当前玩家是否为非房主且已点击准备。</summary>
     private bool _isReady;
-    /// <summary>除房主外其他玩家是否都已准备（房主视角）或本地模式固定 true。</summary>
+    /// <summary>除房主外其他玩家是否都已准备（房主视角）。</summary>
     private bool _othersReady = true;
 
     /// <summary>房主玩家名（副标题展示）。</summary>
@@ -94,7 +90,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
     /// <summary>
     /// 由 GameLobby 调用，设置房间信息并进入准备阶段。
-    /// 网络模式通过 LobbyClient JSON 协议操作单位与准备状态，本地模式通过 IClientBattleService。
+    /// 通过 LobbyClient JSON 协议操作单位与准备状态。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="config">房间配置（可为空）。</param>
@@ -103,8 +99,7 @@ public partial class RoomPreparation : BaseGamePanel {
         _roomId = roomId;
         _isHost = isHost;
         _isReady = false;
-        // 本地模式无其他玩家：默认视为其他玩家已全准备
-        _othersReady = !ServiceLocator.ClientService.IsConnected || isHost;
+        _othersReady = isHost;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("进入房间: {RoomId}, isHost={IsHost}", roomId, isHost);
 
@@ -146,31 +141,25 @@ public partial class RoomPreparation : BaseGamePanel {
                 InterRefs.StatusLabel.Text = "请选择单位...";
         }
 
-        if (ServiceLocator.ClientService.IsConnected) {
-            // 网络模式：先以本地视角保底一张自己的占位卡，避免广播延迟导致网格空白；
-            // 随后用最近一次广播缓存覆盖为权威数据（重放修复"订阅晚于广播"的初始状态丢失）。
-            _roomPlayers = [(ServiceLocator.ClientService.PlayerName, false)];
+        // 先以本地视角保底一张自己的占位卡，避免广播延迟导致网格空白；
+        // 随后用最近一次广播缓存覆盖为权威数据（重放修复"订阅晚于广播"的初始状态丢失）。
+        _roomPlayers = [(ServiceLocator.ClientService.PlayerName, false)];
 
-            if (ServiceLocator.ClientService.LobbyClient.TryGetRecentUnitList(_roomId, out var cachedUnits)) {
-                _units.Clear();
-                _playerUnitNames.Clear();
-                foreach (var (unitName, _, playerName) in cachedUnits) {
-                    _units.Add(unitName);
-                    _playerUnitNames[playerName] = unitName;
-                }
-            }
-
-            if (ServiceLocator.ClientService.LobbyClient.TryGetRecentRoomState(_roomId,
-                    out var cachedHostName, out var cachedDungeonName, out var cachedPlayers)) {
-                _roomPlayers = cachedPlayers;
-                _hostName = cachedHostName;
-                _dungeonName = cachedDungeonName;
-                UpdateRoomInfoLabels(cachedPlayers.Count);
+        if (ServiceLocator.ClientService.LobbyClient.TryGetRecentUnitList(_roomId, out var cachedUnits)) {
+            _units.Clear();
+            _playerUnitNames.Clear();
+            foreach (var (unitName, _, playerName) in cachedUnits) {
+                _units.Add(unitName);
+                _playerUnitNames[playerName] = unitName;
             }
         }
-        else {
-            // 本地模式：房间内仅自己，初始化一张未选择职业的卡片
-            _roomPlayers = [(ServiceLocator.ClientService.PlayerName, false)];
+
+        if (ServiceLocator.ClientService.LobbyClient.TryGetRecentRoomState(_roomId,
+                out var cachedHostName, out var cachedDungeonName, out var cachedPlayers)) {
+            _roomPlayers = cachedPlayers;
+            _hostName = cachedHostName;
+            _dungeonName = cachedDungeonName;
+            UpdateRoomInfoLabels(cachedPlayers.Count);
         }
 
         RefreshUnitGrid();
@@ -190,7 +179,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 添加当前选中单位：网络模式发送 JSON 请求，本地模式直接创建并刷新列表。
+    /// 添加当前选中单位：通过 LobbyClient JSON 协议发送。
     /// </summary>
     private void AddUnit() {
         if (string.IsNullOrEmpty(_selectedUnitKey))
@@ -202,18 +191,8 @@ public partial class RoomPreparation : BaseGamePanel {
         string displayName = entry.DisplayName;
         string camp = _selectedCamp;
 
-        if (ServiceLocator.ClientService.IsConnected) {
-            // 网络模式：通过大厅 LobbyClient JSON 协议发送
-            ServiceLocator.ClientService.LobbyClient.RequestPrepareAddUnit(_roomId, displayName, camp);
-        }
-        else {
-            // 本地模式：直接通过 IClientBattleService
-            var client = ServiceLocator.ClientService.Client;
-            client?.CreateUnit(_roomId, displayName, camp);
-            _units.Add(displayName);
-            _playerUnitNames[ServiceLocator.ClientService.PlayerName] = displayName;
-            RefreshUnitGrid();
-        }
+        // 通过大厅 LobbyClient JSON 协议发送
+        ServiceLocator.ClientService.LobbyClient.RequestPrepareAddUnit(_roomId, displayName, camp);
 
         InterRefs?.StatusLabel?.Text = $"请求创建 {displayName}...";
         RefreshStartButton();
@@ -262,9 +241,7 @@ public partial class RoomPreparation : BaseGamePanel {
         }
 
         // 计算除房主外其他玩家是否全部准备
-        _othersReady = !ServiceLocator.ClientService.IsConnected
-            || _isHost
-            || AllOthersReady(hostName, players);
+        _othersReady = _isHost || AllOthersReady(hostName, players);
 
         // 同步副标题展示（用服务端权威的房主名与副本名）
         _hostName = hostName;
@@ -359,7 +336,7 @@ public partial class RoomPreparation : BaseGamePanel {
         }
         else {
             startBtn.Text = _isReady ? "取消准备" : "准备";
-            startBtn.Disabled = _units.Count == 0 || !ServiceLocator.ClientService.IsConnected;
+            startBtn.Disabled = _units.Count == 0;
         }
     }
 
@@ -376,7 +353,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 房主点击开始战斗：校验单位与全员准备后，网络模式发送请求，本地模式发出信号。
+    /// 房主点击开始战斗：校验单位与全员准备后，通过 LobbyClient 发送请求。
     /// </summary>
     private void OnStartBattleAsHost() {
         if (_units.Count == 0) {
@@ -392,15 +369,9 @@ public partial class RoomPreparation : BaseGamePanel {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("请求开始战斗: {RoomId}, units={UnitCount}", _roomId, _units.Count);
 
-        if (ServiceLocator.ClientService.IsConnected) {
-            // 网络模式：通过大厅 LobbyClient JSON 协议发送 prepare_start_battle
-            ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle(
-                _roomId, ServiceLocator.ClientService.PlayerName, ServiceLocator.ClientService.PlayerId);
-        }
-        else {
-            // 本地模式：通过信号通知 GameLobby
-            EmitSignal(SignalName.BattleStartRequested, _roomId);
-        }
+        // 通过大厅 LobbyClient JSON 协议发送 prepare_start_battle
+        ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle(
+            _roomId, ServiceLocator.ClientService.PlayerName, ServiceLocator.ClientService.PlayerId);
 
         Visible = false;
     }

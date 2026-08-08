@@ -44,9 +44,7 @@ public partial class UnitGameShow : Node3D {
     /// </summary>
     /// <param name="globalPos">世界坐标位置。</param>
     public void SetUnitGlobalPosition(Vector3 globalPos) {
-        if (_unitStateRec == null)
-            return;
-        _unitStateRec.SetGlobalPosition(globalPos);
+        UnitStateRec.SetGlobalPosition(globalPos);
     }
 
     /// <summary>
@@ -54,19 +52,17 @@ public partial class UnitGameShow : Node3D {
     /// </summary>
     /// <param name="globalDir">世界朝向方向。</param>
     public void SetUnitGlobalDir(Vector3 globalDir) {
-        if (_unitStateRec == null)
-            return;
-        _unitStateRec.SetLookAt_Dir(globalDir);
+        UnitStateRec.SetLookAt_Dir(globalDir);
     }
+
 
     /// <summary>
     /// 每帧从单位状态同步位置与朝向。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     override public void _Process(double delta) {
-        if (_unitStateRec == null)
-            return;
-        GlobalPosition = _unitStateRec.Position;
-        LookAt(_unitStateRec.LookAt_Dir + _unitStateRec.Position);
+        GlobalPosition = UnitStateRec.Position;
+
+        LookAt(UnitStateRec.LookAt_Dir + UnitStateRec.Position);
     }
 }

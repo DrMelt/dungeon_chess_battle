@@ -7,11 +7,11 @@ using DungeonChessBattle.Logic.Rooms;
 namespace DungeonChessBattle.Logic.Services;
 
 /// <summary>
-/// Logic 层对外门面服务，同时实现 IServerBattleService 和 IClientBattleService。
+/// Logic 层对外门面服务，实现 IServerBattleService 供服务端使用。
 /// 组合 RoomManager 和 BattleResolver，提供房间管理、战斗流程、技能结算等全部业务操作。
 /// 战斗流程对外仅暴露 <see cref="IBattle"/> 抽象接口；技能结算/Buff 推进不携带战斗管理器参数。
 /// </summary>
-public class GameLogicService : IServerBattleService, IClientBattleService {
+public class GameLogicService : IServerBattleService {
     private readonly RoomManager _roomManager = new();
 
     /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)。</summary>
@@ -76,7 +76,7 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         else
             room.UnitsB.Add(model);
 
-        // 触发 OnUnitCreated 事件（本地模式同步回调）
+        // 触发 OnUnitCreated 事件
         OnUnitCreated?.Invoke(roomId, unitName, camp);
         return model;
     }
@@ -127,9 +127,33 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         battle.EndBattle();
     }
 
-    /// <summary>IClientBattleService 的请求开始战斗入口。</summary>
-    void IClientBattleService.RequestStartBattle(string roomId) {
-        StartBattleInRoom(roomId);
+    #endregion
+
+    #region Movement
+
+    /// <summary>
+    /// 按移动方向推进指定单位位置（XZ 平面，Y 恒为 0），并随移动方向更新朝向。
+    /// 移动方向超长时归一化。移动/速度规则统一在此层结算，Entities/Server 只做转发。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitName">单位名称。</param>
+    /// <param name="moveDir">移动方向向量（无需单位化）。</param>
+    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
+    public void UpdatePlayerMovement(string roomId, string unitName, System.Numerics.Vector2 moveDir, float deltaTime) {
+        if (moveDir == System.Numerics.Vector2.Zero || deltaTime <= 0f)
+            return;
+
+        var unit = FindUnitModel(roomId, unitName);
+        if (unit == null)
+            return;
+
+        var dir = System.Numerics.Vector2.Normalize(moveDir);
+        var pos = unit.Position;
+        unit.SetPosition(new System.Numerics.Vector3(
+            pos.X + dir.X * unit.MoveSpeed * deltaTime,
+            0f,
+            pos.Z + dir.Y * unit.MoveSpeed * deltaTime));
+        unit.LookAtDir = new System.Numerics.Vector3(dir.X, 0f, dir.Y);
     }
 
     #endregion
@@ -160,13 +184,6 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
                 BattleResolver.ApplySkillAddBuff(target, addBuff);
                 break;
         }
-    }
-
-    void IClientBattleService.CastSkill(string roomId, IUnitState caster, IUnitState target, SkillModel skill,
-        IReadOnlyList<IUnitState>? allUnits) {
-        _ = _roomManager.GetBattle(roomId)
-            ?? throw new InvalidOperationException($"No active battle in room {roomId}.");
-        CastSkill(caster, target, skill, allUnits);
     }
 
     #endregion
@@ -202,10 +219,6 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         }
     }
 
-    void IClientBattleService.UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
-        UpdateBuffs(units, deltaTime);
-    }
-
     /// <summary>
     /// 判断战斗是否已结束（任一阵营无存活单位）。
     /// </summary>
@@ -215,16 +228,6 @@ public class GameLogicService : IServerBattleService, IClientBattleService {
         bool aAlive = BattleResolver.HasAliveUnits(room.UnitsA);
         bool bAlive = BattleResolver.HasAliveUnits(room.UnitsB);
         return !aAlive || !bAlive;
-    }
-
-    bool IClientBattleService.CheckBattleEnded(string roomId) {
-        var room = GetRoom(roomId);
-        return room != null && CheckBattleEnded(room);
-    }
-
-    /// <summary>IClientBattleService 的输入提交入口。本地模式无输入系统，空实现。</summary>
-    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY) {
-        // 本地模式无输入系统
     }
 
     #endregion

@@ -58,17 +58,31 @@ public partial class RoomBattleClient {
                 unitName, pawn.Camp.Value, pawn.Position.Value);
     }
 
-    /// <summary>玩家实体创建回调：查找并缓存本地玩家的控制器。</summary>
+    /// <summary>玩家实体创建回调。</summary>
     private void OnPlayerEntityCreated(PlayerRoomEntity player) {
-        // 尝试查找并保存本地玩家的 UnitController（用于 SubmitPlayerInput）
-        if (_entityManager != null && _localController == null) {
-            _localController = _entityManager.GetPlayerController<UnitController>();
-            if (_localController != null && _logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomBattleClient] Local UnitController found for player: {PlayerName}", player.PlayerName.Value);
-        }
-
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] Player entity created: {PlayerName}", player.PlayerName.Value);
+    }
+
+    /// <summary>
+    /// 控制器实体构造回调：识别并缓存本地玩家的 UnitController（用于 SubmitPlayerInput）。
+    /// 客户端单房间单连接（OnlyForOwner 分发），收到控制器实体即属主控制器；
+    /// 不依赖 IsLocalControlled——该判断在构造回调时序上可能尚未同步完成，
+    /// 误判会导致 _localController 恒为 null、输入被静默丢弃（Position 恒为 0）。
+    /// </summary>
+    private void OnUnitControllerCreated(UnitController controller) {
+        var pawnName = controller.ControlledEntity?.UnitName.Value ?? "(null)";
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation(
+                "[RoomBattleClient] UnitController constructed: PawnName={PawnName}, IsLocalControlled={IsLocalControlled}, AlreadyBound={AlreadyBound}",
+                pawnName, controller.IsLocalControlled, _localController != null);
+
+        if (_localController != null)
+            return;
+
+        _localController = controller;
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[RoomBattleClient] Local UnitController bound: {PawnName}", pawnName);
     }
 
     /// <summary>将同步 Buff 数据映射为 UI 事件使用的轻量数据结构。</summary>
@@ -88,7 +102,7 @@ public partial class RoomBattleClient {
 
     /// <summary>将 Pawn 实体的同步数值构建为本地单位模型。</summary>
     private static UnitModel BuildModelFromPawn(UnitPawn p) {
-        return new UnitModel {
+        var model = new UnitModel {
             UnitStateName = p.UnitName.Value,
             Health = p.Health.Value,
             MaxHealth = p.MaxHealth.Value,
@@ -100,5 +114,10 @@ public partial class RoomBattleClient {
             BaseSpeed = p.BaseSpeed.Value,
             Camps = [p.Camp.Value],
         };
+
+        // 同步服务端位置（XZ 平面 → 世界坐标）
+        var pos = p.Position.Value;
+        model.SetPosition(new System.Numerics.Vector3(pos.X, 0f, pos.Y));
+        return model;
     }
 }

@@ -65,7 +65,7 @@ public interface IClientBattleService {
         IReadOnlyList<IUnitState>? allUnits = null);
 
     /// <summary>
-    /// 按帧推进单位集合的 Buff 状态（服务端权威结算后下推；本地模式由 Logic 层直接处理）。
+    /// 按帧推进单位集合的 Buff 状态（服务端权威结算后下推）。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="units">要更新的单位集合。</param>
@@ -79,7 +79,7 @@ public interface IClientBattleService {
     /// <returns>已结束返回 true。</returns>
     bool CheckBattleEnded(string roomId);
 
-    /// <summary>请求开始战斗。网络模式通过 RPC 发送，本地模式直接调用内部逻辑。</summary>
+    /// <summary>请求开始战斗。通过 RPC 发送。</summary>
     void RequestStartBattle(string roomId);
 
     /// <summary>提交玩家输入。参数展开为 float 避免接口层依赖 System.Numerics。</summary>

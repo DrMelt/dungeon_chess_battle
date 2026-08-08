@@ -243,7 +243,14 @@ public partial class GameServer {
             return;
         }
 
-        if (!_stateStore.AddPrepareUnit(roomId, unitName, camp, ownerName)) {
+        // 反查该玩家的持久 playerId（控制器绑定用权威键，与连接密钥一致）
+        string? ownerPlayerId = _stateStore.GetRoomPlayerIds(roomId).GetValueOrDefault(ownerName);
+        if (string.IsNullOrEmpty(ownerPlayerId)) {
+            SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Player identity not registered."));
+            return;
+        }
+
+        if (!_stateStore.AddPrepareUnit(roomId, unitName, camp, ownerName, ownerPlayerId)) {
             SendToPeer(peer, MessageWriter.WriteResponse(MessageType.PrepareAddUnit, roomId, false, "Room not found."));
             return;
         }

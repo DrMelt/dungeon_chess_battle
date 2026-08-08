@@ -1,6 +1,5 @@
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Core.Network;
-using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -10,14 +9,12 @@ namespace DungeonChessBattle.Client;
 /// 两个实例互斥连接：大厅连接时通过 _lobbyClient，加入房间后切换到 _roomClient。
 /// 帧更新由 Godot 主线程 GameClientDriver 节点每帧驱动（Update 方法），
 /// 不依赖后台线程（对齐 LiteEntitySystemUnityExample 的主线程驱动模式）。
-/// 支持本地模式回退。
 /// 支持大厅→房间端口的重定向重连（由 GameClientService 内部桥接 OnRoomJoined 事件）。
 /// 支持断线自动重连（通过缓存的 playerId + roomId 重新走大厅→房间流程）。
 /// 连接连续性管理见 GameClientService.Connectivity。
 /// </summary>
 public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
-    private GameLogicService? _localService;
     private volatile bool _connected;
 
     // 两个持久客户端实例
@@ -54,12 +51,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
 
     /// <summary>是否已连接到服务器（大厅或房间）。</summary>
     public bool IsConnected => _connected;
-
-    /// <summary>
-    /// 当前活跃的客户端接口（大厅客户端或房间客户端或本地服务）。
-    /// </summary>
-    public IClientBattleService? Client =>
-        _connected ? RoomClient : _localService;
 
     /// <summary>
     /// 大厅客户端（持久实例，用于发送 JSON 命令和订阅事件）。
@@ -191,19 +182,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
         ConnectionChanged?.Invoke(Host, Port, false);
     }
 
-    /// <summary>
-    /// 初始化本地模式（单人离线），使用 GameLogicService 作为服务端与客户端。
-    /// </summary>
-    public void InitLocalMode() {
-        if (_connected) {
-            _logger.LogInformation("已在网络模式，跳过本地初始化");
-            return;
-        }
-
-        _localService ??= new GameLogicService();
-        _logger.LogInformation("本地模式已初始化");
-    }
-
     #region 持久事件绑定
 
     private bool _eventsWired;
@@ -277,10 +255,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
             else {
                 OnConnectionLost();
             }
-        };
-        RoomClient.OnReconnectSucceeded += (roomId) => {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("重连成功: {RoomId}", roomId);
         };
     }
 

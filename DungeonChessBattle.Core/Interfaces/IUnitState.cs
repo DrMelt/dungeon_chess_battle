@@ -10,6 +10,28 @@ namespace DungeonChessBattle.Core.Interfaces {
         Vector3 Position {
             get;
         }
+
+        /// <summary>设置单位世界坐标；位置变化时由实现触发移动相关事件。</summary>
+        void SetPosition(Vector3 position);
+
+        /// <summary>当前移动速度。</summary>
+        float MoveSpeed {
+            get;
+        }
+
+        /// <summary>单位朝向向量。</summary>
+        Vector3 LookAtDir {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// 从配置源模型拷贝运行时数值（生命/速度/攻击/抗性系数等）。
+        /// 用于服务端按单位配置（UnitConfig）初始化 Logic 模型，避免逐字段硬编码。
+        /// </summary>
+        /// <param name="source">配置源模型。</param>
+        void CopyStatsFrom(IUnitState source);
+
         /// <summary>单位碰撞半径，用于技能范围判定。</summary>
         float BodyRadius {
             get;
@@ -27,14 +49,32 @@ namespace DungeonChessBattle.Core.Interfaces {
             get;
             set;
         }
+
+        /// <summary>最大生命值。</summary>
+        float MaxHealth {
+            get;
+        }
+
         /// <summary>物理攻击基础系数（伤害倍率）。</summary>
         float PhysicalAttackBase {
             get;
         }
+
+        /// <summary>物理伤害承受系数（减免倍率）。</summary>
+        float PhysicalTakePercent {
+            get;
+        }
+
         /// <summary>魔法攻击基础系数（伤害倍率）。</summary>
         float MagicAttackBase {
             get;
         }
+
+        /// <summary>魔法伤害承受系数（减免倍率）。</summary>
+        float MagicTakePercent {
+            get;
+        }
+
         /// <summary>治疗强度系数（治疗量倍率）。</summary>
         float CureIntensity {
             get;

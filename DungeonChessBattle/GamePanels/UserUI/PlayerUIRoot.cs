@@ -14,9 +14,9 @@ public partial class PlayerUIRoot : Control {
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
 
-    /// <summary>场景单位集合引用。</summary>
+    /// <summary>战斗单位管理器引用（持有场景单位集合资源）。</summary>
     [Export]
-    private UnitsInSceneView? unitsInSceneShowRef;
+    private BattleUnitManager? unitsInSceneShowRef;
 
     /// <summary>技能列表面板引用。</summary>
     [Export]
