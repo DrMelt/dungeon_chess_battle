@@ -3,6 +3,7 @@ using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Rooms;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Logic.Services;
 
@@ -11,11 +12,13 @@ namespace DungeonChessBattle.Logic.Services;
 /// 组合 RoomManager 和 BattleResolver，提供房间管理、战斗流程、技能结算等全部业务操作。
 /// 战斗流程对外仅暴露 <see cref="IBattle"/> 抽象接口；技能结算/Buff 推进不携带战斗管理器参数。
 /// </summary>
-public class GameLogicService : IServerBattleService {
+/// <param name="logger">日志器。</param>
+public class GameLogicService(ILogger<GameLogicService> logger) : IServerBattleService {
     private readonly RoomManager _roomManager = new();
+    private readonly ILogger<GameLogicService> _logger = logger;
 
     /// <summary>技能解析器（服务端注入）：按技能配置 ID 构造对应技能模型。空委托时读条/技能不可用。</summary>
-    private Func<ushort, Core.Models.SkillModel?>? _skillResolver;
+    private Func<ushort, SkillModel?>? _skillResolver;
 
     /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)。</summary>
     public event Action<string, string, string>? OnUnitCreated;
@@ -140,20 +143,21 @@ public class GameLogicService : IServerBattleService {
     /// <param name="moveDir">移动方向向量（无需单位化）。</param>
     /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
     public void UpdatePlayerMovement(string roomId, string unitName, System.Numerics.Vector2 moveDir, float deltaTime) {
-        if (moveDir == System.Numerics.Vector2.Zero || deltaTime <= 0f)
-            return;
 
         var unit = FindUnitModel(roomId, unitName);
-        if (unit == null)
+        if (unit == null) {
+            _logger.LogWarning("Move ignored: unit '{Unit}' not found in room '{Room}'.", unitName, roomId);
             return;
-
-        var dir = System.Numerics.Vector2.Normalize(moveDir);
+        }
         var pos = unit.Position;
         unit.Position = new System.Numerics.Vector3(
-            pos.X + dir.X * unit.MoveSpeed * deltaTime,
+            pos.X + moveDir.X * unit.MoveSpeed * deltaTime,
             0f,
-            pos.Z + dir.Y * unit.MoveSpeed * deltaTime);
-        unit.LookAtDir = new System.Numerics.Vector3(dir.X, 0f, dir.Y);
+            pos.Z + moveDir.Y * unit.MoveSpeed * deltaTime);
+
+        if (moveDir.LengthSquared() > 0.0001f) {
+            unit.LookAtDir = new System.Numerics.Vector3(moveDir.X, 0f, moveDir.Y);
+        }
     }
 
     #endregion
@@ -164,7 +168,7 @@ public class GameLogicService : IServerBattleService {
     /// 注入技能解析器（由服务端在房间初始化时调用，服务端持有配置表）。
     /// </summary>
     /// <param name="resolver">按技能配置 ID 构造技能模型的委托。</param>
-    public void SetSkillResolver(Func<ushort, Core.Models.SkillModel?> resolver) {
+    public void SetSkillResolver(Func<ushort, SkillModel?> resolver) {
         _skillResolver = resolver;
     }
 
@@ -181,7 +185,7 @@ public class GameLogicService : IServerBattleService {
     public bool BeginSpell(string roomId, string casterName, ushort skillId, string? targetName,
         System.Numerics.Vector3? targetPos = null) {
         var caster = FindUnitModel(roomId, casterName);
-        if (caster is not Core.Models.UnitModel casterModel)
+        if (caster is not UnitModel casterModel)
             return false;
 
         // 冷却校验：GCD 或该技能个体冷却中则拒绝
@@ -210,7 +214,7 @@ public class GameLogicService : IServerBattleService {
 
         var finished = new List<string>();
         foreach (var unit in room.Units) {
-            if (unit is not Core.Models.UnitModel model)
+            if (unit is not UnitModel model)
                 continue;
             if (model.SpellingSkillId == 0)
                 continue;
@@ -235,7 +239,7 @@ public class GameLogicService : IServerBattleService {
             return;
 
         foreach (var unit in room.Units) {
-            if (unit is Core.Models.UnitModel model)
+            if (unit is UnitModel model)
                 model.ServerTickCooldowns(deltaTime);
         }
     }
@@ -249,7 +253,7 @@ public class GameLogicService : IServerBattleService {
     /// <returns>剩余冷却秒数；单位不存在或无冷却返回 0。</returns>
     public float GetSkillCooldownRemaining(string roomId, string unitName, ushort skillId) {
         var unit = FindUnitModel(roomId, unitName);
-        return unit is Core.Models.UnitModel model ? model.GetSkillCooldownRemaining(skillId) : 0f;
+        return unit is UnitModel model ? model.GetSkillCooldownRemaining(skillId) : 0f;
     }
 
     /// <summary>
@@ -257,7 +261,7 @@ public class GameLogicService : IServerBattleService {
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="casterModel">施法单位模型。</param>
-    private void ResolveSpell(string roomId, Core.Models.UnitModel casterModel) {
+    private void ResolveSpell(string roomId, UnitModel casterModel) {
         var skillId = casterModel.SpellingSkillId;
         var targetName = casterModel.SpellTargetName;
         var targetPos = casterModel.SpellTargetPos;
@@ -280,7 +284,7 @@ public class GameLogicService : IServerBattleService {
             if (targetPos.HasValue)
                 rangeSkill.SetTargetPosition(targetPos.Value);
             var allUnits = _roomManager.GetRoom(roomId)?.Units
-                .Cast<Core.Interfaces.IUnitState>().ToList();
+                .Cast<IUnitState>().ToList();
             if (allUnits != null)
                 BattleResolver.ApplySkillRangeDamage(casterModel, allUnits, rangeSkill);
             return;
@@ -332,7 +336,7 @@ public class GameLogicService : IServerBattleService {
     /// <returns>匹配的单位；未找到返回 null。</returns>
     public IUnitState? FindUnitModel(string roomId, string unitName) {
         var room = _roomManager.GetRoom(roomId);
-        if (room == null)
+        if (room is null)
             return null;
         return room.Units.FirstOrDefault(u => u.UnitStateName == unitName);
     }

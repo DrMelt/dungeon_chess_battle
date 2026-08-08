@@ -24,21 +24,20 @@ public partial class UnitGameShow : Node3D {
     public Array<UnitSkillBaseGodot> SkillsList { get; set; } = [];
 
     /// <summary>导出引用集合节点。</summary>
-    public UnitGameShowInterRefs? InterRefs {
-        get; private set;
-    }
+    private UnitGameShowInterRefs? _interRefs;
+
 
     /// <summary>单位网格实例。</summary>
-    public MeshInstance3D? UnitMeshInstanceRef => InterRefs?.UnitMeshInstanceRef;
+    public MeshInstance3D? UnitMeshInstanceRef => _interRefs?.UnitMeshInstanceRef;
 
     /// <summary>单位点击交互区域。</summary>
-    public UnitShowArea3D? UnitShowAreaRef => InterRefs?.UnitShowAreaRef;
+    public UnitShowArea3D? UnitShowAreaRef => _interRefs?.UnitShowAreaRef;
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
     public override void _Ready() {
-        InterRefs = GetNode<UnitGameShowInterRefs>("UnitGameShowInterRefs");
+        _interRefs = GetNode<UnitGameShowInterRefs>("UnitGameShowInterRefs");
     }
 
     /// <summary>
@@ -62,12 +61,10 @@ public partial class UnitGameShow : Node3D {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     override public void _Process(double delta) {
-        if (_pawn == null)
-            return;
-        var pos = _pawn.Position.Value;
+        var pos = Pawn.Position.InterpolatedValue;
         GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
-        var dir = _pawn.Direction.Value;
+        var dir = Pawn.Direction.InterpolatedValue;
         if (dir.LengthSquared() > 0.0001f) {
             LookAt(GlobalPosition + new Vector3(dir.X, 0f, dir.Y));
         }

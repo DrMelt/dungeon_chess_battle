@@ -4,8 +4,6 @@ using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Logic.Battle;
-using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Network;
@@ -74,9 +72,9 @@ public partial class BattleRoomServer {
             e.Position.Value = spawnPos;
         }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{RoomId}'.");
 
-        // 订阅该 Pawn 的技能 RPC 与玩家输入事件
+        // 订阅该 Pawn 的技能 RPC 与玩家输入回调
         entity.SkillCastRequested += OnPawnSkillCast;
-        entity.InputReceived += OnPawnInput;
+        entity.InputHandler = OnPawnInput;
 
         _roomPawns.Add(entity);
 
@@ -156,9 +154,12 @@ public partial class BattleRoomServer {
 
         // Logic 层结算后回写 Pawn 位置（客户端渲染读 pawn.Position.Value）
         var model = _logicService.FindUnitModel(RoomId, pawn.UnitName.Value);
-        if (model != null) {
+        if (model is not null) {
             var pos = model.Position;
             pawn.Position.Value = new Vector2(pos.X, pos.Z);
+        }
+        else {
+            _logger.LogWarning("[RoomServer:{RoomId}] Unit model not found for input handling: {Unit}", RoomId, pawn.UnitName.Value);
         }
     }
 
@@ -175,7 +176,7 @@ public partial class BattleRoomServer {
 
         // 发起读条：Logic 层按 SkillTypeId 解析技能时长并暂存目标（冷却校验在 BeginSpell 内）
         string? targetName = null;
-        System.Numerics.Vector3? targetPos = null;
+        Vector3? targetPos = null;
         if (req.TargetUnitNetId != 0) {
             var targetPawn = FindPawnById(req.TargetUnitNetId);
             if (targetPawn == null) {
@@ -187,7 +188,7 @@ public partial class BattleRoomServer {
         }
         else {
             // 位置目标技能（范围伤害）：XZ 平面
-            targetPos = new System.Numerics.Vector3(req.TargetPosX, 0f, req.TargetPosZ);
+            targetPos = new Vector3(req.TargetPosX, 0f, req.TargetPosZ);
         }
 
         bool began = _logicService.BeginSpell(RoomId, casterPawn.UnitName.Value, req.SkillTypeId, targetName, targetPos);
@@ -201,8 +202,8 @@ public partial class BattleRoomServer {
         // 回写 Pawn 施法状态（客户端渲染读 pawn.SkillCasting / SkillCastRemaining）
         var casterModel = _logicService.FindUnitModel(RoomId, casterPawn.UnitName.Value);
         if (casterModel is UnitModel model) {
-            casterPawn.ServerBeginSpell(model.SpellingSkillId,
-                Math.Max(0f, model.SpellRemaining));
+            casterPawn.SkillCasting.Value = model.SpellingSkillId;
+            casterPawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
         }
 
         if (_logger.IsEnabled(LogLevel.Information))

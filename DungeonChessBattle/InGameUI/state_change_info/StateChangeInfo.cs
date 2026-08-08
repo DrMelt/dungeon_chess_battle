@@ -108,7 +108,7 @@ public partial class StateChangeInfo : Node {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         AddChild(buffChangeInfo);
         buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Added);
-        var pos = pawn.Position.Value;
+        var pos = pawn.Position.InterpolatedValue;
         buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 
@@ -121,7 +121,7 @@ public partial class StateChangeInfo : Node {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         AddChild(buffChangeInfo);
         buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Removed);
-        var pos = pawn.Position.Value;
+        var pos = pawn.Position.InterpolatedValue;
         buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 
@@ -137,7 +137,7 @@ public partial class StateChangeInfo : Node {
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
         tookDamageInfo.Init(damage, damageType, uiSettings);
-        var pos = pawn.Position.Value;
+        var pos = pawn.Position.InterpolatedValue;
         tookDamageInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 }

@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets.Skills;
 using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle;
 
@@ -18,6 +19,9 @@ namespace DungeonChessBattle;
 /// 由 MainScene 在进入/退出战斗时 Bind/Unbind。
 /// </summary>
 public partial class BattleUnitManager : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<BattleUnitManager> _logger = ServiceLocator.GetLogger<BattleUnitManager>();
+
     /// <summary>单位展示场景（unit_show.tscn）。</summary>
     [Export]
     private PackedScene? _unitShowScene;
@@ -26,7 +30,7 @@ public partial class BattleUnitManager : Node {
     public UnitsInScene UnitsInSceneRes { get; } = new();
 
     /// <summary>场景单位 Pawn 数组快照。</summary>
-    public System.Collections.Generic.List<UnitPawn> UnitsArr => UnitsInSceneRes.UnitsArr;
+    public List<UnitPawn> UnitsArr => UnitsInSceneRes.UnitsArr;
 
     /// <summary>当前战斗服务（Bind 时注入，用于事件订阅）。</summary>
     private IClientBattleService? _battleService;
@@ -44,7 +48,7 @@ public partial class BattleUnitManager : Node {
     private string _roomId = "";
 
     /// <summary>UnitStateName → UnitGameShow 映射。</summary>
-    private readonly System.Collections.Generic.Dictionary<string, UnitGameShow> _unitShows = [];
+    private readonly Dictionary<string, UnitGameShow> _unitShows = [];
 
     /// <summary>
     /// 进入战斗：注入服务与房间客户端，订阅单位事件并初始化缓存单位。
@@ -99,15 +103,18 @@ public partial class BattleUnitManager : Node {
     private void OnServiceUnitCreated(string eventRoomId, string unitName, string camp) {
         if (eventRoomId != _roomId)
             return;
-        GD.Print($"[MainScene] Unit created via service: {unitName} (camp={camp})");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[MainScene] Unit created via service: {UnitName} (camp={Camp})", unitName, camp);
         CallDeferred(nameof(SpawnUnitFromCache), unitName);
     }
 
     /// <summary>延迟生成单位（CallDeferred 入口）。</summary>
     private void SpawnUnitFromCache(string unitName) {
         var pawn = _roomClient?.FindPawnByName(unitName);
-        if (pawn != null)
+        if (pawn is not null)
             TrySpawnUnit(pawn);
+        else
+            _logger.LogWarning("[MainScene] Unit '{UnitName}' not found in pawn cache; entity may not have arrived yet", unitName);
     }
 
     /// <summary>
@@ -146,7 +153,8 @@ public partial class BattleUnitManager : Node {
         AddChild(unitShow);
         _unitShows[unitName] = unitShow;
 
-        GD.Print($"[MainScene] Spawned unit '{unitName}' at {pawn.Position.Value}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[MainScene] Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
     }
 
     private void InitializeUnitsFromPawns() {
@@ -154,7 +162,8 @@ public partial class BattleUnitManager : Node {
             return;
 
         var pawns = _roomClient.GetPawns();
-        GD.Print($"[MainScene] Initializing units: total={pawns.Count}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[MainScene] Initializing units: total={Total}", pawns.Count);
 
         foreach (var pawn in pawns)
             TrySpawnUnit(pawn);
@@ -176,7 +185,8 @@ public partial class BattleUnitManager : Node {
     private void OnUnitDied(string unitName) {
         if (_unitShows.TryGetValue(unitName, out var show)) {
             show.Visible = false;
-            GD.Print($"[MainScene] Unit died: {unitName}");
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[MainScene] Unit died: {UnitName}", unitName);
         }
     }
 

@@ -37,28 +37,22 @@ public partial class RoomBattleClient {
 
         // 订阅 UnitPawn 事件
         pawn.HealthChanged += (u, newHealth, oldHealth) =>
-            _pendingEventInvocations.Enqueue(() =>
-                UnitHealthChanged?.Invoke(u.UnitName.Value, newHealth, oldHealth));
+            UnitHealthChanged?.Invoke(u.UnitName.Value, newHealth, oldHealth);
         pawn.UnitDied += (u) =>
-            _pendingEventInvocations.Enqueue(() =>
-                UnitDied?.Invoke(u.UnitName.Value));
+            UnitDied?.Invoke(u.UnitName.Value);
         pawn.BuffAdded += (u, buff) => {
             var eventData = MapBuffData(buff);
-            _pendingEventInvocations.Enqueue(() =>
-                UnitBuffAdded?.Invoke(u.UnitName.Value, eventData));
+            UnitBuffAdded?.Invoke(u.UnitName.Value, eventData);
         };
         pawn.BuffRemoved += (u, buff) => {
             var eventData = MapBuffData(buff);
-            _pendingEventInvocations.Enqueue(() =>
-                UnitBuffRemoved?.Invoke(u.UnitName.Value, eventData));
+            UnitBuffRemoved?.Invoke(u.UnitName.Value, eventData);
         };
 
         // 触发 OnUnitCreated 事件（通知 UI 层）
         var roomId = _currentRoomId;
-        if (roomId != null) {
-            _pendingEventInvocations.Enqueue(() =>
-                OnUnitCreated?.Invoke(roomId, unitName, pawn.Camp.Value));
-        }
+        if (roomId != null)
+            OnUnitCreated?.Invoke(roomId, unitName, pawn.Camp.Value);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
@@ -108,7 +102,7 @@ public partial class RoomBattleClient {
     }
 
     /// <summary>获取本房间全部 Pawn 实体的只读快照（展示层枚举数据源）。</summary>
-    public System.Collections.Generic.IReadOnlyList<UnitPawn> GetPawns() {
+    public IReadOnlyList<UnitPawn> GetPawns() {
         lock (_lock) {
             return [.. _roomPawns];
         }

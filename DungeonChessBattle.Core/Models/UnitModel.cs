@@ -139,7 +139,7 @@ public class UnitModel : IUnitState {
     }
 
     /// <summary>服务端读条：位置目标（范围伤害技能使用）。</summary>
-    public System.Numerics.Vector3? SpellTargetPos {
+    public Vector3? SpellTargetPos {
         get; set;
     }
 

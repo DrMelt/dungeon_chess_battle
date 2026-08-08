@@ -68,7 +68,6 @@ _unitManager = NodePath("BattleUnitManager")
 _inputController = NodePath("BattleInputController")
 
 [node name="GameClientDriver" type="Node" parent="." unique_id=64894980]
-process_priority = -1
 script = ExtResource("3_m78bw")
 
 [node name="BattleUnitManager" type="Node" parent="." unique_id=1868664179]

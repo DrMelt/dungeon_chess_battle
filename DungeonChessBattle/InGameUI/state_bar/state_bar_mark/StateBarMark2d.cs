@@ -26,7 +26,7 @@ public partial class StateBarMark2d : Control, IUIUpdate {
     /// <param name="pawn">目标单位 Pawn。</param>
     public void UpdateUI_WithUnit(UnitPawn pawn) {
         var camera3D = GetViewport().GetCamera3D();
-        var pos = pawn.Position.Value;
+        var pos = pawn.Position.InterpolatedValue;
         var screenPos = camera3D.UnprojectPosition(new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
         GlobalPosition = screenPos;
 

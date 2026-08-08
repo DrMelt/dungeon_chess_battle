@@ -71,12 +71,17 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
             full += $"\n{exception}";
 
         switch (logLevel) {
-            case LogLevel.Error:
             case LogLevel.Critical:
-                GD.PrintErr(full);
+                GD.Print("[Critical] " + full);
+                break;
+            case LogLevel.Error:
+                GD.Print("[Error] " + full);
                 break;
             case LogLevel.Warning:
-                GD.PushWarning(full);
+                GD.Print("[Warning] " + full);
+                break;
+            case LogLevel.Information:
+                GD.Print("[Information] " + full);
                 break;
             default:
                 GD.Print(full);

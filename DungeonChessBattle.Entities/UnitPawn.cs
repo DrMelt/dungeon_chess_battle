@@ -17,9 +17,11 @@ public class UnitPawn : PawnLogic {
     public readonly SyncString UnitName = new();
 
     /// <summary>单位位置（XZ 平面）。</summary>
+    [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Position;
 
     /// <summary>单位朝向方向向量（XZ 平面单位向量）。</summary>
+    [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Direction;
 
     /// <summary>单位碰撞半径（技能范围判定用）。</summary>
@@ -76,6 +78,7 @@ public class UnitPawn : PawnLogic {
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
+#pragma warning disable CS0067 // 状态事件由 Server 桥接投影触发（跨程序集订阅，实体内仅声明）
     /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
     public event Action<UnitPawn, float, float>? HealthChanged;
 
@@ -90,39 +93,22 @@ public class UnitPawn : PawnLogic {
 
     /// <summary>移除 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
+#pragma warning restore CS0067
 
     /// <summary>技能施放请求事件。</summary>
     public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
 
-    /// <summary>玩家输入事件。参数：实体、输入包、帧间隔。服务端逻辑层消费。</summary>
-    public event Action<UnitPawn, UnitInputPacket, float>? InputReceived;
+    /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>
+    public Action<UnitPawn, UnitInputPacket, float>? InputHandler {
+        get;
+        set;
+    }
 
     /// <summary>
     /// 初始化单位 Pawn 实体。
     /// </summary>
     /// <param name="entityParams">实体框架参数。</param>
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
-
-    /// <summary>
-    /// 实体构造完成回调：初始化单位默认属性值。
-    /// ⚠ LiteEntitySystem 1.2.2 语义：OnConstructed 在 AddEntity(initAction) 之后执行，
-    /// 会覆盖服务端注入值。此处仅保留纯内部默认状态；
-    /// 运行时注入字段（UnitName/Camp/Position 等）禁止在此赋默认值。
-    /// </summary>
-    protected override void OnConstructed() {
-        Health.Value = 1000f;
-        MaxHealth.Value = 1000f;
-        UnitState.Value = 0;
-        BodyRadius.Value = 1.0f;
-        SkillCasting.Value = 0;
-        SkillCastRemaining.Value = 0f;
-        PhysicalAttackBase.Value = 1.0f;
-        MagicAttackBase.Value = 1.0f;
-        PhysicalTakePercent.Value = 1.0f;
-        MagicTakePercent.Value = 1.0f;
-        CureIntensity.Value = 1.0f;
-        BaseSpeed.Value = 2.0f;
-    }
 
     /// <summary>
     /// 注册 RPC 动作：技能施放请求（在服务端执行）。
@@ -149,7 +135,7 @@ public class UnitPawn : PawnLogic {
     }
 
     /// <summary>
-    /// 服务端调用：接收控制器转发的玩家输入。仅发布 <see cref="InputReceived"/> 事件，
+    /// 服务端调用：接收控制器转发的玩家输入。仅调用 <see cref="InputHandler"/> 委托，
     /// 移动逻辑由 Logic 层消费（与 SkillCastRequested → Server → Logic 转发模式一致）。
     /// </summary>
     /// <param name="input">玩家输入包。</param>
@@ -157,189 +143,7 @@ public class UnitPawn : PawnLogic {
     public void ServerApplyInput(UnitInputPacket input, float deltaTime) {
         if (!IsServer)
             return;
-        InputReceived?.Invoke(this, input, deltaTime);
-    }
 
-    /// <summary>
-    /// 服务端调用：设置生命值（默认按物理伤害类型触发受击事件）。生命值变化时触发事件，降至 0 时标记死亡。
-    /// </summary>
-    /// <param name="newHealth">新的生命值。</param>
-    public void ServerSetHealth(float newHealth) {
-        ServerSetHealth(newHealth, DamageType.Physical);
-    }
-
-    /// <summary>
-    /// 服务端调用：设置生命值并按伤害类型触发受击事件。生命值变化时触发事件，降至 0 时标记死亡。
-    /// </summary>
-    /// <param name="newHealth">新的生命值。</param>
-    /// <param name="damageType">导致本次生命值下降的伤害类型（治疗/无变化时忽略）。</param>
-    public void ServerSetHealth(float newHealth, DamageType damageType) {
-        if (!IsServer)
-            return;
-        float oldHealth = Health.Value;
-        Health.Value = Math.Clamp(newHealth, 0f, MaxHealth.Value);
-        if (MathF.Abs(Health.Value - oldHealth) > 0.0001f) {
-            HealthChanged?.Invoke(this, Health.Value, oldHealth);
-            if (Health.Value < oldHealth) {
-                TookDamage?.Invoke(this, oldHealth - Health.Value, damageType);
-            }
-            if (Health.Value <= 0) {
-                UnitState.Value = 1;
-                UnitDied?.Invoke(this);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 服务端调用：添加一个 Buff。可叠加类型的同名 Buff 已存在时叠加层数。
-    /// </summary>
-    /// <param name="buffData">要添加的 Buff 数据。</param>
-    public void ServerAddBuff(SyncBuffData buffData) {
-        if (!IsServer)
-            return;
-        if (buffData.IsStackable) {
-            for (int i = 0; i < BuffsList.Count; i++) {
-                var existing = BuffsList[i];
-                if (existing.BuffTypeId == buffData.BuffTypeId) {
-                    existing.StackCount = (ushort)Math.Min(existing.StackCount + 1, existing.MaxStackCount);
-                    existing.RemainingDuration = Math.Max(existing.RemainingDuration, buffData.RemainingDuration);
-                    BuffsList[i] = existing;
-                    return;
-                }
-            }
-        }
-        BuffsList.Add(buffData);
-        BuffAdded?.Invoke(this, buffData);
-    }
-
-    /// <summary>
-    /// 服务端调用：按索引移除一个 Buff。
-    /// </summary>
-    /// <param name="index">Buff 在列表中的索引。</param>
-    public void ServerRemoveBuffAt(int index) {
-        if (!IsServer)
-            return;
-        if (index < 0 || index >= BuffsList.Count)
-            return;
-        var removed = BuffsList[index];
-        BuffsList.RemoveAt(index);
-        BuffRemoved?.Invoke(this, removed);
-    }
-
-    /// <summary>
-    /// 服务端调用：更新指定 Buff 的剩余持续时间。
-    /// </summary>
-    /// <param name="index">Buff 在列表中的索引。</param>
-    /// <param name="newRemaining">新的剩余时间（秒）。</param>
-    public void ServerUpdateBuffDuration(int index, float newRemaining) {
-        if (!IsServer)
-            return;
-        if (index < 0 || index >= BuffsList.Count)
-            return;
-        var buff = BuffsList[index];
-        buff.RemainingDuration = newRemaining;
-        BuffsList[index] = buff;
-    }
-
-    /// <summary>
-    /// 服务端调用：添加或累加对目标单位的仇恨值。
-    /// </summary>
-    /// <param name="targetUnitNetId">目标单位的 NetId。</param>
-    /// <param name="hateValue">要累加的仇恨值。</param>
-    public void ServerAddHate(ushort targetUnitNetId, float hateValue) {
-        if (!IsServer)
-            return;
-        for (int i = 0; i < HatesList.Count; i++) {
-            var existing = HatesList[i];
-            if (existing.TargetUnitNetId == targetUnitNetId) {
-                existing.HateValue += hateValue;
-                HatesList[i] = existing;
-                return;
-            }
-        }
-        HatesList.Add(new SyncHateData { TargetUnitNetId = targetUnitNetId, HateValue = hateValue });
-    }
-
-    /// <summary>
-    /// 按移动方向推进位置（移动向量超长时归一化）。
-    /// </summary>
-    /// <param name="moveDir">移动方向向量。</param>
-    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
-    public void ApplyMovement(Vector2 moveDir, float deltaTime) {
-        if (moveDir.LengthSquared() > 1f)
-            moveDir = Vector2.Normalize(moveDir);
-
-        Position.Value += moveDir * BaseSpeed.Value * deltaTime;
-    }
-
-    /// <summary>
-    /// 按帧递减剩余全局冷却时间。
-    /// </summary>
-    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
-    public void UpdateCooldowns(float deltaTime) {
-        if (GcdRemaining.Value > 0)
-            GcdRemaining.Value = Math.Max(0, GcdRemaining.Value - deltaTime);
-    }
-
-    /// <summary>
-    /// 服务端调用：回写该单位的技能个体冷却列表（全量覆盖）。
-    /// </summary>
-    /// <param name="cooldowns">技能冷却快照（技能 ID → 剩余秒数）。</param>
-    public void ServerSetSkillCooldowns(IReadOnlyDictionary<ushort, float> cooldowns) {
-        if (!IsServer)
-            return;
-        while (SkillCooldowns.Count > 0)
-            SkillCooldowns.RemoveAt(SkillCooldowns.Count - 1);
-        foreach (var kv in cooldowns) {
-            if (kv.Value > 0f)
-                SkillCooldowns.Add(new SyncSkillCooldown { SkillId = kv.Key, Remaining = kv.Value });
-        }
-    }
-
-    /// <summary>
-    /// 服务端调用：回写该单位的 Buff 列表（全量覆盖）。
-    /// </summary>
-    /// <param name="buffs">Buff 同步数据快照。</param>
-    public void ServerSyncBuffList(IReadOnlyList<SyncBuffData> buffs) {
-        if (!IsServer)
-            return;
-        while (BuffsList.Count > 0)
-            BuffsList.RemoveAt(BuffsList.Count - 1);
-        foreach (var buff in buffs)
-            BuffsList.Add(buff);
-    }
-
-    /// <summary>
-    /// 服务端调用：发起读条施法，设置当前施法技能 ID 与剩余读条时间。
-    /// </summary>
-    /// <param name="skillId">技能配置 ID。</param>
-    /// <param name="castTime">技能读条总时长（秒）。</param>
-    public void ServerBeginSpell(ushort skillId, float castTime) {
-        if (!IsServer)
-            return;
-        SkillCasting.Value = skillId;
-        SkillCastRemaining.Value = Math.Max(0f, castTime);
-    }
-
-    /// <summary>
-    /// 服务端调用：按帧递减当前读条剩余时间，返回是否已读条完成。
-    /// </summary>
-    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
-    /// <returns>读条归零（完成）返回 true。</returns>
-    public bool ServerTickSpell(float deltaTime) {
-        if (!IsServer || SkillCasting.Value == 0)
-            return false;
-        SkillCastRemaining.Value = Math.Max(0f, SkillCastRemaining.Value - deltaTime);
-        return SkillCastRemaining.Value <= 0f;
-    }
-
-    /// <summary>
-    /// 服务端调用：清空当前施法状态（读条完成或被打断）。
-    /// </summary>
-    public void ServerEndSpell() {
-        if (!IsServer)
-            return;
-        SkillCasting.Value = 0;
-        SkillCastRemaining.Value = 0f;
+        InputHandler?.Invoke(this, input, deltaTime);
     }
 }

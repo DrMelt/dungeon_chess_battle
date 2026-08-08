@@ -65,7 +65,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
 
     /// <summary>由 GameClientService 内部调用，重定向后桥接 OnRoomJoined 事件。</summary>
     internal void TriggerRoomJoined(string roomId) {
-        _pendingEventInvocations.Enqueue(() => OnRoomJoined?.Invoke(roomId));
+        OnRoomJoined?.Invoke(roomId);
     }
 
     /// <summary>请求加入房间。</summary>
@@ -177,7 +177,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
 
         if (success && !string.IsNullOrEmpty(roomId)) {
-            _pendingEventInvocations.Enqueue(() => OnRoomJoined?.Invoke(roomId));
+            OnRoomJoined?.Invoke(roomId);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[LobbyClient] Join room succeeded: {RoomId}", roomId);
         }
@@ -195,7 +195,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         if (!string.IsNullOrEmpty(roomId) && port > 0) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[LobbyClient] Redirecting to room '{RoomId}' on port {Port}", roomId, port);
-            _pendingEventInvocations.Enqueue(() => OnRedirectToRoom?.Invoke(roomId, port));
+            OnRedirectToRoom?.Invoke(roomId, port);
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
@@ -210,7 +210,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         string? error = root.TryGetProperty(MessageProperty.Error, out var ep) ? ep.GetString() : null;
 
         if (success && !string.IsNullOrEmpty(roomId)) {
-            _pendingEventInvocations.Enqueue(() => OnRoomCreated?.Invoke(roomId));
+            OnRoomCreated?.Invoke(roomId);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[LobbyClient] Create room succeeded: {RoomId}", roomId);
         }
@@ -244,7 +244,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
                 });
             }
         }
-        _pendingEventInvocations.Enqueue(() => OnRoomListReceived?.Invoke(rooms));
+        OnRoomListReceived?.Invoke(rooms);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[LobbyClient] Received listing of {Count} rooms.", rooms.Count);
     }
@@ -258,7 +258,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
             string errorMsg = error ?? "Reconnect failed";
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("[LobbyClient] Reconnect failed: {Error}", errorMsg);
-            _pendingEventInvocations.Enqueue(() => OnReconnectFailed?.Invoke(errorMsg));
+            OnReconnectFailed?.Invoke(errorMsg);
         }
         // 成功时会走已有的 HandleRedirectToRoom 流程（服务端返回重定向）
     }
@@ -271,7 +271,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         if (!string.IsNullOrEmpty(roomId) && port > 0) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[LobbyClient] Prepare battle redirect to room '{RoomId}' on port {Port}", roomId, port);
-            _pendingEventInvocations.Enqueue(() => OnPrepareBattleRedirect?.Invoke(roomId, port));
+            OnPrepareBattleRedirect?.Invoke(roomId, port);
         }
     }
 
@@ -301,7 +301,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         if (roomId != null) {
             // 缓存最近列表：EnterRoom 时重放，覆盖订阅晚于广播导致的初始丢失
             _recentUnitLists[roomId] = units;
-            _pendingEventInvocations.Enqueue(() => OnPrepareUnitListUpdated?.Invoke(roomId, units));
+            OnPrepareUnitListUpdated?.Invoke(roomId, units);
         }
     }
 
@@ -332,7 +332,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : NetworkClientBase(logger
         if (roomId != null) {
             // 缓存最近状态：EnterRoom 时重放，覆盖订阅晚于广播导致的初始丢失
             _recentRoomStates[roomId] = (hostName, dungeonName, players);
-            _pendingEventInvocations.Enqueue(() => OnPrepareRoomStateUpdated?.Invoke(roomId, hostName, dungeonName, players));
+            OnPrepareRoomStateUpdated?.Invoke(roomId, hostName, dungeonName, players);
         }
     }
 

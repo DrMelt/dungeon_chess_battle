@@ -23,9 +23,6 @@ public abstract class NetworkClientBase : INetEventListener {
     /// <summary>默认服务端端口。</summary>
     protected const int DefaultPort = 10170;
 
-    /// <summary>待投递的事件队列（网络线程入队，Update() 线程出队，需线程安全）。</summary>
-    protected readonly System.Collections.Concurrent.ConcurrentQueue<Action> _pendingEventInvocations = new();
-
     /// <summary>完全连接成功事件。</summary>
     public event Action? OnFullyConnected;
     /// <summary>完全断开连接事件。</summary>
@@ -94,22 +91,17 @@ public abstract class NetworkClientBase : INetEventListener {
     }
 
     /// <summary>
-    /// 驱动网络事件轮询与待投递事件队列处理。
+    /// 驱动网络事件轮询。
     /// 应由主循环每帧调用。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public virtual void Update(float delta) {
-        _ = delta;
         _netClient.PollEvents();
-        OnAfterPollEvents();
-
-        while (_pendingEventInvocations.TryDequeue(out var action)) {
-            action();
-        }
+        OnAfterPollEvents(delta);
     }
 
     /// <summary>子类重写以在 PollEvents 后执行额外逻辑（如 EntityManager.Update）。</summary>
-    protected virtual void OnAfterPollEvents() {
+    protected virtual void OnAfterPollEvents(float delta) {
     }
 
     /// <summary>发送原始字节数据到服务端。</summary>

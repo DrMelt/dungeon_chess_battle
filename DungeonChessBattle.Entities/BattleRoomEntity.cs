@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core.Enums;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -13,7 +12,7 @@ public class BattleRoomEntity : EntityLogic {
     public readonly SyncString RoomId = new();
 
     /// <summary>战斗阶段（对应 BattlePhase 枚举的 byte 值）。</summary>
-    public SyncVar<byte> BattlePhase;
+    public SyncVar<ulong> BattlePhase;
 
     /// <summary>战斗是否已结束。</summary>
     public SyncVar<bool> IsFinished;

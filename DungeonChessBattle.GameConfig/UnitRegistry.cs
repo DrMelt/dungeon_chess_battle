@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;

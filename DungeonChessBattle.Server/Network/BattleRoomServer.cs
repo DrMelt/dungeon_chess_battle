@@ -64,7 +64,7 @@ public partial class BattleRoomServer : INetEventListener {
     private BattleRoomEntity? _roomEntity;
 
     /// <summary>本房间独立的 Logic 实例（不再共享全局）</summary>
-    private readonly GameLogicService _logicService = new();
+    private readonly GameLogicService _logicService;
 
     /// <summary>本房间的战斗流程（面向 IBattle 抽象接口）</summary>
     private IBattle? _battle;
@@ -108,15 +108,17 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
     /// <param name="logger">日志器</param>
+    /// <param name="logicLogger">Logic 层日志器。</param>
     /// <param name="config">服务器配置（连接密钥）。</param>
     /// <param name="stateStore">大厅级状态存储（房间线程用于自取初始化数据与成员校验）。</param>
     public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger,
-        ServerConfig config, IGameStateStore stateStore) {
+        ILogger<GameLogicService> logicLogger, ServerConfig config, IGameStateStore stateStore) {
         Port = port;
         RoomId = roomId;
         _logger = logger;
         _connectionKey = config.ServerPassword ?? config.ConnectionKey;
         _stateStore = stateStore;
+        _logicService = new(logicLogger);
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         EntityManager = new ServerEntityManager(
@@ -169,10 +171,10 @@ public partial class BattleRoomServer : INetEventListener {
             _roomEntity.StartBattleRequested -= OnStartBattleRequested;
         }
 
-        // 取消订阅所有 Pawn 的 SkillCast 与输入事件
+        // 取消订阅所有 Pawn 的 SkillCast 与输入回调
         foreach (var pawn in _roomPawns) {
             pawn.SkillCastRequested -= OnPawnSkillCast;
-            pawn.InputReceived -= OnPawnInput;
+            pawn.InputHandler = null;
         }
 
         // 先等待房间线程退出，再销毁保留实体（避免大厅线程在房间线程
@@ -229,8 +231,11 @@ public partial class BattleRoomServer : INetEventListener {
                         _battle.Tick((float)dt);
 
                         var gameRoom = _logicService.GetRoom(RoomId);
-                        if (gameRoom != null)
+                        if (gameRoom is not null)
                             _logicService.UpdateBuffs(gameRoom.Units, dt);
+                        else {
+                            _logger.LogWarning("[RoomServer:{RoomId}] GameRoom not found during battle tick.", RoomId);
+                        }
                     }
 
                     // 4. Pawn 冷却更新 + Logic 模型回写到 Pawn（Health / Position）
@@ -239,8 +244,9 @@ public partial class BattleRoomServer : INetEventListener {
                     // 5. 战斗结束检查
                     CheckBattleEnded();
                 }
-
-                Thread.Sleep(1);
+                else {
+                    Thread.Sleep(1);
+                }
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "[RoomServer:{RoomId}] Unhandled exception in RunLoop. Room continues.", RoomId);
@@ -265,15 +271,16 @@ public partial class BattleRoomServer : INetEventListener {
         _logicService.TickCooldowns(RoomId, dt);
 
         foreach (var pawn in _roomPawns) {
-            pawn.UpdateCooldowns(dt);
-
             var model = gameRoom.Units
                 .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
             if (model == null)
                 continue;
 
-            if (MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f)
-                pawn.ServerSetHealth(model.Health);
+            // 回写生命值（Logic 层权威含死亡判定，此处仅投影结果）
+            if (MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f) {
+                pawn.Health.Value = model.Health;
+                pawn.UnitState.Value = (byte)(model.Health <= 0f ? 1 : 0);
+            }
 
             var modelPos = model.Position;
             var pawnPos = new System.Numerics.Vector2(modelPos.X, modelPos.Z);
@@ -291,24 +298,42 @@ public partial class BattleRoomServer : INetEventListener {
                 pawn.Direction.Value = dir;
 
             // 回写冷却状态：GCD + 技能个体冷却（仅 Logic UnitModel 有真实冷却）
-            if (model is DungeonChessBattle.Core.Models.UnitModel unitModel) {
+            if (model is UnitModel unitModel) {
                 if (MathF.Abs(pawn.GcdRemaining.Value - unitModel.GcdTime) > 0.0001f)
                     pawn.GcdRemaining.Value = Math.Max(0f, unitModel.GcdTime);
-                pawn.ServerSetSkillCooldowns(unitModel.SkillCooldowns);
-                pawn.ServerSyncBuffList(MapModelBuffs(unitModel.BuffList));
+                ProjectSkillCooldowns(pawn, unitModel.SkillCooldowns);
+                ProjectBuffList(pawn, MapModelBuffs(unitModel.BuffList));
             }
 
             // 回写读条状态：读条已完成并结算的单位清空；否则更新剩余时间
             if (finishedSpells.Contains(pawn.UnitName.Value)) {
-                pawn.ServerEndSpell();
+                pawn.SkillCasting.Value = 0;
+                pawn.SkillCastRemaining.Value = 0f;
             }
             else if (model.SpellingSkillId != 0) {
                 if (pawn.SkillCasting.Value != model.SpellingSkillId)
-                    pawn.ServerBeginSpell(model.SpellingSkillId, model.SpellRemaining);
-                else
-                    pawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
+                    pawn.SkillCasting.Value = model.SpellingSkillId;
+                pawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
             }
         }
+    }
+
+    /// <summary>将 Logic 层技能冷却快照投影到 Pawn 的同步列表（全量覆盖）。</summary>
+    private static void ProjectSkillCooldowns(UnitPawn pawn, IReadOnlyDictionary<ushort, float> cooldowns) {
+        while (pawn.SkillCooldowns.Count > 0)
+            pawn.SkillCooldowns.RemoveAt(pawn.SkillCooldowns.Count - 1);
+        foreach (var kv in cooldowns) {
+            if (kv.Value > 0f)
+                pawn.SkillCooldowns.Add(new SyncSkillCooldown { SkillId = kv.Key, Remaining = kv.Value });
+        }
+    }
+
+    /// <summary>将 Logic 层 Buff 快照投影到 Pawn 的同步列表（全量覆盖）。</summary>
+    private static void ProjectBuffList(UnitPawn pawn, IReadOnlyList<SyncBuffData> buffs) {
+        while (pawn.BuffsList.Count > 0)
+            pawn.BuffsList.RemoveAt(pawn.BuffsList.Count - 1);
+        foreach (var buff in buffs)
+            pawn.BuffsList.Add(buff);
     }
 
     /// <summary>
@@ -346,8 +371,4 @@ public partial class BattleRoomServer : INetEventListener {
         return result;
     }
 
-    /// <summary>仅房间线程内部调用，禁止外部并发调用（LiteNetLib.PollEvents 非线程安全）</summary>
-    internal void PollEvents() {
-        _netManager.PollEvents();
-    }
 }

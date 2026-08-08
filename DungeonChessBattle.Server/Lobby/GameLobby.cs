@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
 using DungeonChessBattle.Server.Settings;
 using DungeonChessBattle.Server.Stores;
@@ -133,14 +133,17 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     public BattleRoomServer StartRoomBattle(string roomId) {
         // 分配端口并创建 BattleRoomServer
         int port = AllocatePort();
-        var server = new BattleRoomServer(port, roomId, _loggerFactory.CreateLogger<BattleRoomServer>(), _config, _stateStore);
+        var server = new BattleRoomServer(port, roomId,
+            _loggerFactory.CreateLogger<BattleRoomServer>(),
+            _loggerFactory.CreateLogger<GameLogicService>(),
+            _config, _stateStore);
         server.Start();
 
         // 房间全部活跃连接断开后自动销毁（闭合 RoomEmpty 事件链；仅入队）
         server.RoomEmpty += OnRoomEmptied;
 
         // 等待首帧初始化完成，保证客户端连入时根实体已就绪
-        if (!server.WaitUntilInitialized(TimeSpan.FromSeconds(5)))
+        if (!server.WaitUntilInitialized(TimeSpan.FromSeconds(10)))
             throw new InvalidOperationException($"Room '{roomId}' failed to initialize within timeout.");
 
         _roomServers[roomId] = server;

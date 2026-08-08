@@ -56,7 +56,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private UnitController? _localController;
 
     /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
-    private byte _lastKnownPhase;
+    private BattlePhase _lastKnownPhase;
 
     /// <summary>重连时清理实体缓存。</summary>
     protected override void OnReconnectCleanup() {
@@ -87,19 +87,18 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>轮询网络事件后更新实体并检测战斗阶段变化。</summary>
-    protected override void OnAfterPollEvents() {
+    protected override void OnAfterPollEvents(float delta) {
         _entityManager?.Update();
 
         // 检测 BattlePhase SyncVar 变化（LES 无公开 Changed 事件，通过轮询检测）
         if (_roomEntity != null) {
             var currentPhase = _roomEntity.BattlePhase.Value;
-            if (currentPhase != _lastKnownPhase) {
-                _lastKnownPhase = currentPhase;
-                var phase = (BattlePhase)currentPhase;
+            var phase = (BattlePhase)currentPhase;
+            if (phase != _lastKnownPhase) {
+                _lastKnownPhase = phase;
                 var roomId = _currentRoomId;
                 if (roomId != null)
-                    _pendingEventInvocations.Enqueue(() =>
-                        BattlePhaseChanged?.Invoke(roomId, phase));
+                    BattlePhaseChanged?.Invoke(roomId, phase);
             }
         }
     }

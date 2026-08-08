@@ -1,5 +1,3 @@
-using DungeonChessBattle.Core.Models;
-
 namespace DungeonChessBattle.Server.Stores;
 
 /// <summary>

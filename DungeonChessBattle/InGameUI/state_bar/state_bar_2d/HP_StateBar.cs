@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.InGameUI.ui_interface;
 using Godot;
