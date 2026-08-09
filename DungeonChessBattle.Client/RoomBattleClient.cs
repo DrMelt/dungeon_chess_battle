@@ -250,10 +250,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public void SubmitPlayerInput(System.Numerics.Vector2 moveDir, byte skillFlags, System.Numerics.Vector2 aimPos) {
         if (_localController != null) {
             _localController.SubmitInput(moveDir, skillFlags, aimPos);
-            if (_logger.IsEnabled(LogLevel.Information) && moveDir != System.Numerics.Vector2.Zero) {
-                _logger.LogInformation("[RoomBattleClient] Input submitted: dir={MoveDir}",
-                    moveDir);
-            }
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("[RoomBattleClient] Input submitted: dir={MoveDir}, flags={SkillFlags}, aim={AimPos}",
                     moveDir, skillFlags, aimPos);

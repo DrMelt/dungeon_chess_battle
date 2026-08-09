@@ -1,4 +1,5 @@
-using DungeonChessBattle.Client;
+﻿using DungeonChessBattle.Client;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.Server;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +17,16 @@ public static class ServiceLocator {
     private static readonly ILoggerFactory LoggerFactoryInstance = LoggerFactory.Create(builder => {
         builder.AddProvider(new GodotLoggerProvider());
     });
+
+    /// <summary>
+    /// 静态构造函数：静态字段初始化完成后即可安全读取 LoggerFactoryInstance，
+    /// 在此安装 LES 网络框架日志（Godot 控制台）。
+    /// 独立 .NET 服务端进程则在 Program.cs 中单独安装（Console）。
+    /// </summary>
+    static ServiceLocator() {
+        LiteEntitySystem.Logger.LoggerImpl = new LesNetworkLogger(
+            LoggerFactoryInstance.CreateLogger(nameof(LiteEntitySystem)));
+    }
 
     /// <summary>
     /// 获取指定类型的 ILogger 实例。供 Godot 端面板/实体使用，便于排查问题。

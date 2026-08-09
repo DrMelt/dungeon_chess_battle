@@ -1,3 +1,4 @@
+﻿using DungeonChessBattle.Entities;
 using DungeonChessBattle.Server;
 using DungeonChessBattle.Server.Settings;
 using DungeonChessBattle.Server.Stores;
@@ -10,6 +11,9 @@ using var loggerFactory = LoggerFactory.Create(builder => {
     builder.AddConsole();
     builder.SetMinimumLevel(LogLevel.Information);
 });
+
+// 让 LES 网络框架日志进入统一日志体系（Console），并早于任何 EntityManager 创建
+LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
 // 装配大厅级状态存储（当前为进程内实现，可替换为其他 IGameStateStore 引擎）
 using var stateStore = new InMemoryGameStateStore(loggerFactory);
