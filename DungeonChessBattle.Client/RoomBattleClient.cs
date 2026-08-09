@@ -87,7 +87,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>轮询网络事件后更新实体并检测战斗阶段变化。</summary>
-    protected override void OnAfterPollEvents(float delta) {
+    protected override void UpdateAfterPollEvents(float delta) {
         _entityManager?.Update();
 
         // 检测 BattlePhase SyncVar 变化（LES 无公开 Changed 事件，通过轮询检测）

@@ -4,6 +4,7 @@ using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Network;
@@ -86,6 +87,15 @@ public partial class BattleRoomServer {
             model.CopyStatsFrom(GameConfigDB.ToUnitModel(configEntry.Config));
         model.Position = new Vector3(spawnPos.X, 0f, spawnPos.Y);
 
+        // 注入 Pawn 移动速度：预测位移依赖 BaseSpeed，须在模型 CopyStatsFrom 之后回填
+        entity.BaseSpeed.Value = model.MoveSpeed;
+
+        // 注入碰撞半径与移动管线（Logic 层 MovementResolver，含场景交互）。
+        // 场景两端口径一致（OpenMovementScene 无碰撞），保证预测与权威确定性一致。
+        entity.BodyRadius.Value = model.BodyRadius;
+        entity.MoveResolver = (pos, dir, speed, dt) =>
+            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, OpenMovementScene.Instance);
+
         return entity;
     }
 
@@ -142,25 +152,16 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理通过 UnitPawn 实例事件到达的玩家输入：转发到 Logic 层结算移动，
-    /// 并将 Logic 层权威位置回写 Pawn（LES SyncVar），使客户端渲染可见。
-    /// Logic 层为移动权威；Pawn 位置 SyncVar 仅作网络同步载体。
+    /// 处理通过 UnitPawn 实例事件到达的玩家输入。
+    /// 移动已由 UnitPawn.Update() 确定性结算（客户端预测 + 服务端权威），
+    /// 本方法仅作服务端输入钩子（保留日志与未来扩展）。
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
+        // 移动已由 UnitPawn.Update() 确定性结算（客户端预测 + 服务端权威），
+        // 此处仅作服务端输入钩子（保留日志与未来扩展），不再做移动结算。
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
                 RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
-        _logicService.UpdatePlayerMovement(RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
-
-        // Logic 层结算后回写 Pawn 位置（客户端渲染读 pawn.Position.Value）
-        var model = _logicService.FindUnitModel(RoomId, pawn.UnitName.Value);
-        if (model is not null) {
-            var pos = model.Position;
-            pawn.Position.Value = new Vector2(pos.X, pos.Z);
-        }
-        else {
-            _logger.LogWarning("[RoomServer:{RoomId}] Unit model not found for input handling: {Unit}", RoomId, pawn.UnitName.Value);
-        }
     }
 
     /// <summary>

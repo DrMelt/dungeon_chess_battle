@@ -255,8 +255,9 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>
-    /// 每帧推进读条 + 递减 Pawn 冷却，并将 Logic 层模型的最新状态回写到网络 Pawn
-    /// （健康值、位置、朝向、读条状态）。仅房间线程调用。
+    /// 每帧推进读条 + 递减 Pawn 冷却，并同步 Pawn 与 Logic 模型的状态。仅房间线程调用。
+    /// 移动位置/朝向由 Pawn(权威) 单向桥接到 Logic 模型（技能结算依赖模型位置）；
+    /// 不再从模型回写位置到 Pawn，避免覆盖预测/权威位置。
     /// </summary>
     /// <param name="dt">距上一帧的间隔时间（秒）。</param>
     private void SyncLogicModelToPawns(float dt) {
@@ -264,12 +265,28 @@ public partial class BattleRoomServer : INetEventListener {
         if (gameRoom == null)
             return;
 
-        // 推进读条：Logic 层权威递减，完成时结算并返回完成读条的单位
+        // 1. 桥接：Pawn(权威) → UnitModel 位置与朝向（技能结算 caster/testUnit.Position 依赖此值）
+        foreach (var pawn in _roomPawns) {
+            var model = gameRoom.Units
+                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
+            if (model == null)
+                continue;
+
+            var pos = pawn.Position.Value;
+            model.Position = new System.Numerics.Vector3(pos.X, 0f, pos.Y);
+
+            var lookOffset = pawn.Direction.Value;
+            if (System.Numerics.Vector2.DistanceSquared(lookOffset, System.Numerics.Vector2.Zero) > 0.0001f)
+                model.LookAtDir = new System.Numerics.Vector3(lookOffset.X, 0f, lookOffset.Y);
+        }
+
+        // 2. 推进读条：Logic 层权威递减，完成时结算并返回完成读条的单位
         var finishedSpells = _logicService.TickSpells(RoomId, dt);
 
-        // 推进 Logic 层冷却（GCD + 个体技能冷却）
+        // 3. 推进 Logic 层冷却（GCD + 个体技能冷却）
         _logicService.TickCooldowns(RoomId, dt);
 
+        // 4. 回写：Logic 模型状态（Health/冷却/读条）→ Pawn
         foreach (var pawn in _roomPawns) {
             var model = gameRoom.Units
                 .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
@@ -281,21 +298,6 @@ public partial class BattleRoomServer : INetEventListener {
                 pawn.Health.Value = model.Health;
                 pawn.UnitState.Value = (byte)(model.Health <= 0f ? 1 : 0);
             }
-
-            var modelPos = model.Position;
-            var pawnPos = new System.Numerics.Vector2(modelPos.X, modelPos.Z);
-            if (System.Numerics.Vector2.DistanceSquared(pawn.Position.Value, pawnPos) > 0.0001f) {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("[RoomServer:{RoomId}] SyncPos: {Unit} = ({X}, {Z})",
-                        RoomId, pawn.UnitName.Value, modelPos.X, modelPos.Z);
-                pawn.Position.Value = pawnPos;
-            }
-
-            // 回写朝向方向向量（模型 LookAtDir 的 XZ 平面投影）
-            var lookAt = model.LookAtDir;
-            var dir = new System.Numerics.Vector2(lookAt.X, lookAt.Z);
-            if (System.Numerics.Vector2.DistanceSquared(pawn.Direction.Value, dir) > 0.0001f)
-                pawn.Direction.Value = dir;
 
             // 回写冷却状态：GCD + 技能个体冷却（仅 Logic UnitModel 有真实冷却）
             if (model is UnitModel unitModel) {

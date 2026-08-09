@@ -97,11 +97,11 @@ public abstract class NetworkClientBase : INetEventListener {
     /// <param name="delta">距上一帧的秒数。</param>
     public virtual void Update(float delta) {
         _netClient.PollEvents();
-        OnAfterPollEvents(delta);
+        UpdateAfterPollEvents(delta);
     }
 
     /// <summary>子类重写以在 PollEvents 后执行额外逻辑（如 EntityManager.Update）。</summary>
-    protected virtual void OnAfterPollEvents(float delta) {
+    protected virtual void UpdateAfterPollEvents(float delta) {
     }
 
     /// <summary>发送原始字节数据到服务端。</summary>

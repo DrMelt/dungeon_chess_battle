@@ -1,6 +1,7 @@
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -30,6 +31,11 @@ public partial class RoomBattleClient {
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
+        // 注入移动管线（Logic 层 MovementResolver，含场景交互）。
+        // 与服务端注入同一实现；延迟读 BodyRadius.Value，规避实体构造时同步未完成的时序。
+        pawn.MoveResolver = (pos, dir, speed, dt) =>
+            MovementResolver.Move(pos, dir, speed, dt, pawn.BodyRadius.Value, OpenMovementScene.Instance);
+
         var unitName = pawn.UnitName.Value;
         lock (_lock) {
             _roomPawns.Add(pawn);

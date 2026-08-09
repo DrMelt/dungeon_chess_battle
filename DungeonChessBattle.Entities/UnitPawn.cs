@@ -104,6 +104,42 @@ public class UnitPawn : PawnLogic {
         set;
     }
 
+    /// <summary>当前移动方向（由控制器逐逻辑帧注入，纯本地变量，不参与网络同步）。</summary>
+    private Vector2 _moveDir;
+
+    /// <summary>
+    /// 确定性移动管线（由 Server/Client 装配时注入 <c>Logic.Movement.MovementResolver.Move</c>）。
+    /// 输入：位置、方向、速度、帧间隔 → 输出：场景交互后的最终位置。
+    /// 移动规则与场景交互统一在 Logic 层，本实体只做状态落点。
+    /// </summary>
+    public Func<Vector2, Vector2, float, float, Vector2>? MoveResolver;
+
+    /// <summary>
+    /// 设置当前移动方向。由 <see cref="UnitController"/> 在客户端预测与服务端权威阶段
+    /// 都调用，驱动 <see cref="Update"/> 执行确定性位移。
+    /// </summary>
+    /// <param name="moveDir">移动方向向量（无需单位化）。</param>
+    public void SetMovementInput(Vector2 moveDir) {
+        _moveDir = moveDir;
+    }
+
+    /// <summary>
+    /// 确定性移动结算：客户端预测与服务端权威都执行。
+    /// 客户端本地立即反馈（消除 RTT 卡顿），服务端为权威位置，LES 回滚重放自动纠偏。
+    /// 位移计算委托给 Logic 层移动管线（<see cref="MoveResolver"/>），本方法只写 SyncVar 状态。
+    /// </summary>
+    protected override void Update() {
+        base.Update();
+        if (MoveResolver == null || _moveDir.LengthSquared() <= 0.0001f || BaseSpeed.Value <= 0f)
+            return;
+
+        Position.Value = MoveResolver(Position.Value, _moveDir, BaseSpeed.Value, EntityManager.DeltaTimeF);
+
+        var dir = _moveDir / _moveDir.Length(); // 已判非零，防除零
+        if (Direction.Value != dir)
+            Direction.Value = dir;
+    }
+
     /// <summary>
     /// 初始化单位 Pawn 实体。
     /// </summary>

@@ -132,36 +132,6 @@ public class GameLogicService(ILogger<GameLogicService> logger) : IServerBattleS
 
     #endregion
 
-    #region Movement
-
-    /// <summary>
-    /// 按移动方向推进指定单位位置（XZ 平面，Y 恒为 0），并随移动方向更新朝向。
-    /// 移动方向超长时归一化。移动/速度规则统一在此层结算，Entities/Server 只做转发。
-    /// </summary>
-    /// <param name="roomId">房间 ID。</param>
-    /// <param name="unitName">单位名称。</param>
-    /// <param name="moveDir">移动方向向量（无需单位化）。</param>
-    /// <param name="deltaTime">距上一帧的间隔时间（秒）。</param>
-    public void UpdatePlayerMovement(string roomId, string unitName, System.Numerics.Vector2 moveDir, float deltaTime) {
-
-        var unit = FindUnitModel(roomId, unitName);
-        if (unit == null) {
-            _logger.LogWarning("Move ignored: unit '{Unit}' not found in room '{Room}'.", unitName, roomId);
-            return;
-        }
-        var pos = unit.Position;
-        unit.Position = new System.Numerics.Vector3(
-            pos.X + moveDir.X * unit.MoveSpeed * deltaTime,
-            0f,
-            pos.Z + moveDir.Y * unit.MoveSpeed * deltaTime);
-
-        if (moveDir.LengthSquared() > 0.0001f) {
-            unit.LookAtDir = new System.Numerics.Vector3(moveDir.X, 0f, moveDir.Y);
-        }
-    }
-
-    #endregion
-
     #region Skill
 
     /// <summary>
