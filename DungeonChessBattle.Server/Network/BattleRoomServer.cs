@@ -34,7 +34,9 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
     private const byte PacketHeader = 0xDC;
-    private const double TickInterval = 0.02; // 50 Hz
+
+    private const int FramesPerSecond = 50;
+    private const double TickInterval = 1.0 / FramesPerSecond;
 
     // 房间线程
     private Thread? _loopThread;
@@ -124,7 +126,7 @@ public partial class BattleRoomServer : INetEventListener {
         EntityManager = new ServerEntityManager(
             typesMap,
             PacketHeader,
-            framesPerSecond: 60,
+            framesPerSecond: FramesPerSecond,
             sendRate: ServerSendRate.EqualToFPS);
 
         _netManager = new NetManager(this);
@@ -217,11 +219,10 @@ public partial class BattleRoomServer : INetEventListener {
                 double now = _tickWatch.Elapsed.TotalSeconds;
                 double dt = now - _lastTickTime;
 
-                // 1. 网络事件
-                _netManager.PollEvents();
-
                 if (dt >= TickInterval) {
                     _lastTickTime = now;
+                    // 1. 网络事件
+                    _netManager.PollEvents();
 
                     // 2. Entity 同步
                     EntityManager.Update();
