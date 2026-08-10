@@ -116,16 +116,9 @@ public partial class GameLobby {
     /// <param name="room">房间实例。</param>
     /// <returns>状态文字。</returns>
     private static string GetRoomStatusText(GameRoom room) {
-        if (room.IsActive) {
-            int totalUnits = room.Units.Count;
-            if (totalUnits > 0) {
-                int campA = room.Units.Count(u => u.Camps.Contains(CampConstants.CampA));
-                int campB = totalUnits - campA;
-                return $"等待中 ({campA}v{campB})";
-            }
-            return "等待中";
-        }
-        return "已结束";
+        // 本地房间对象不含战斗单位（单位数据经 RoomSnapshot 下发的 PrepareUnitDto 提供），
+        // 此处仅按房间活动状态显示；单位营地计数由 RoomPreparation 面板基于快照渲染。
+        return room.IsActive ? "等待中" : "已结束";
     }
 
     #endregion

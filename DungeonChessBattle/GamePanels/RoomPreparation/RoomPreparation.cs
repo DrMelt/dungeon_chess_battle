@@ -3,7 +3,7 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Core.Network.Dtos;
+using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.GamePanels;

@@ -1,5 +1,7 @@
-using System;
-using DungeonChessBattle.Core.Network;
+﻿using System;
+using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Client.Lobby;
+using DungeonChessBattle.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;

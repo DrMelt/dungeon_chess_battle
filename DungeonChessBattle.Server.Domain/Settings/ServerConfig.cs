@@ -1,3 +1,5 @@
+﻿using DungeonChessBattle.Protocol;
+
 namespace DungeonChessBattle.Server.Domain.Settings;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace DungeonChessBattle.Server.Domain.Settings;
 /// </summary>
 public sealed record ServerConfig {
     /// <summary>默认大厅监听端口（唯一来源，替代散落各处的 10170 常量）。</summary>
-    public const int DefaultPort = 10170;
+    public const int DefaultPort = NetworkDefaults.LobbyPort;
 
     /// <summary>大厅监听端口。</summary>
     public int LobbyPort { get; init; } = DefaultPort;

@@ -1,12 +1,13 @@
-using DungeonChessBattle.Core.Enums;
+﻿using DungeonChessBattle.Core.Enums;
 
 namespace DungeonChessBattle.Core.Models;
 
 /// <summary>
-/// 游戏房间数据模型，承载单位的列表与战斗状态及招募板信息。
+/// 游戏房间数据模型（服务端权威、客户端只读共享）。
+/// 承载招募板信息与战斗开关，不含战斗单位（单位状态由 Logic 层权威持有）。
 /// 边界约定：招募板字段（Title/DungeonName/Description/Category/MaxPlayers/CurrentPlayers/Password/Status）
 /// 由服务端 Store 层（IGameStateStore）读写；战斗字段（Units/IsActive）
-/// 由 Logic 层（RoomManager）独占所有权。双方不交叉修改，仅靠约定约束。
+/// 由 Logic 层（GameLogicService 单房间门面）独占所有权。双方不交叉修改，仅靠约定约束。
 /// </summary>
 public class GameRoom(string roomId) {
     /// <summary>房间唯一 ID。</summary>
@@ -74,12 +75,8 @@ public class GameRoom(string roomId) {
         get; set;
     } = RoomStatus.Waiting;
 
-    // ─── 战斗字段（Logic 层独占所有权） ───
-
-    /// <summary>单位列表（战斗），阵营信息由 UnitModel.Camps 区分。</summary>
-    public List<UnitModel> Units { get; } = [];
-
     /// <summary>战斗是否进行中。</summary>
+    /// <remarks>战斗单位状态（UnitModel）已由 Logic 层（GameLogicService 单房间门面）权威持有，不再挂载于房间模型。</remarks>
     public bool IsActive {
         get; set;
     } = true;

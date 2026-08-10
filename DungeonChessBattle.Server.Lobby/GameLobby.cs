@@ -1,0 +1,251 @@
+﻿using DungeonChessBattle.Core;
+using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Server.Domain.Lobby;
+using DungeonChessBattle.Server.Domain.Settings;
+using DungeonChessBattle.Server.State;
+using Microsoft.Extensions.Logging;
+
+namespace DungeonChessBattle.Server.Lobby;
+
+/// <summary>
+/// 大厅业务协调者（Server.Lobby）：处理大厅 SignalR 协议的各类业务请求，
+/// 包括创建/加入房间、招募板列表、准备单位增删、准备状态设置与房间快照广播。
+/// 所有大厅级状态数据（房间配置、密码、玩家准备状态、准备单位等）统一由
+/// <see cref="IGameStateStore"/> 持有，本类不存储业务状态。
+/// 向客户端广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现（不依赖具体传输）。
+/// 战斗房间服务器的生命周期管理由协调层 RoomServerManager 承担（见 Server 根），
+/// 本类不触碰战斗房间。
+/// </summary>
+/// <param name="loggerFactory">日志工厂。</param>
+/// <param name="stateStore">大厅级状态存储。</param>
+/// <param name="broadcaster">大厅广播端口（向房间内连接推送消息）。</param>
+/// <param name="config">服务器配置（服务器密码等）。</param>
+public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
+    ILobbyBroadcaster broadcaster, ServerConfig config) {
+    private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
+    private readonly IGameStateStore _stateStore = stateStore;
+    private readonly ILobbyBroadcaster _broadcaster = broadcaster;
+    private readonly ServerConfig _config = config;
+
+    /// <summary>
+    /// 校验服务器密码；不匹配时返回 false（调用方负责构造失败结果）。
+    /// </summary>
+    private bool ValidateServerPassword(string? serverPassword, string responseDesc, string? roomId) {
+        if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword) {
+            _logger.LogWarning("[Game] {Desc}: invalid server password (room '{RoomId}').", responseDesc, roomId);
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>解析权威玩家显示名：空或超长时退化为 Player_{playerId 前 6 位}。</summary>
+    private static string GetDisplayName(string? playerName, string playerId) {
+        if (playerName == null)
+            return $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
+        // 超长拒绝（安全优于截断，避免两个玩家显示名碰撞）
+        return playerName.Length <= EntityConstants.MaxPlayerNameLength
+            ? playerName
+            : $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
+    }
+
+    /// <summary>
+    /// 处理 create_room：注册房间（准备阶段不重定向）。
+    /// </summary>
+    public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req) {
+        if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", null)
+            || string.IsNullOrWhiteSpace(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "roomId is required.");
+
+        string roomId = req.RoomId;
+        string playerId = req.PlayerId;
+        string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
+
+        // 房主 displayName 由服务端权威解析（不信任客户端提交的 HostName）
+        string hostDisplayName = GetDisplayName(req.PlayerName, playerId);
+
+        GameRoom config;
+        if (req.Config != null) {
+            config = new GameRoom(roomId) {
+                Title = req.Config.Title,
+                DungeonName = req.Config.DungeonName,
+                Description = req.Config.Description,
+                Category = req.Config.Category,
+                HostName = hostDisplayName,
+                MaxPlayers = req.Config.MaxPlayers > 0 ? req.Config.MaxPlayers : 2,
+                CurrentPlayers = 1,
+            };
+        }
+        else {
+            // 无配置时使用默认值，房间标题用 roomId
+            config = new GameRoom(roomId) {
+                Title = roomId,
+                HostName = hostDisplayName,
+                MaxPlayers = 2,
+                CurrentPlayers = 1,
+            };
+        }
+
+        // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + 连接归属 + playerId
+        if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, config,
+                hostDisplayName, playerId, connectionId))
+            return new LobbyResult(roomId, false, "Failed to register room.");
+
+        // 加入房间连接分组（准备阶段广播用）
+        await _broadcaster.AddToRoomAsync(connectionId, roomId);
+
+        await BroadcastRoomSnapshotAsync(roomId);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}), Title={Title}.",
+                roomId, hostDisplayName, playerId, config.Title);
+
+        return new LobbyResult(roomId, true);
+    }
+
+    /// <summary>
+    /// 处理 join_room：验证房间与密码（准备阶段不重定向）。
+    /// </summary>
+    public async Task<LobbyResult> HandleJoinRoomAsync(string connectionId, JoinRoomRequest req) {
+        if (!ValidateServerPassword(req.ServerPassword, "JoinRoom", null)
+            || string.IsNullOrWhiteSpace(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "roomId is required.");
+
+        if (!_stateStore.RoomExists(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "Room not found.");
+
+        string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
+        if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
+            return new LobbyResult(req.RoomId, false, "Invalid room password.");
+
+        // 原子自增玩家数（避免并发 join 时读改写丢失更新）
+        _stateStore.IncrementPlayerCount(req.RoomId);
+        await _broadcaster.AddToRoomAsync(connectionId, req.RoomId);
+
+        string displayName = GetDisplayName(req.PlayerName, req.PlayerId);
+        // 登记玩家为房间准备成员（默认未准备，playerId 一并登记用于战斗白名单）
+        _stateStore.RegisterRoomPlayer(req.RoomId, displayName, req.PlayerId, connectionId);
+
+        await BroadcastRoomSnapshotAsync(req.RoomId);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Player '{Player}' ({PlayerId}) joined room '{RoomId}' (prepare).",
+                displayName, req.PlayerId, req.RoomId);
+
+        return new LobbyResult(req.RoomId, true);
+    }
+
+    /// <summary>
+    /// 处理 list_rooms：返回招募板房间列表。
+    /// </summary>
+    public Task<RoomListResult> HandleListRoomsAsync() {
+        var rooms = _stateStore.ListActiveRooms();
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Sent listing of {Count} rooms.", rooms.Count);
+        return Task.FromResult(new RoomListResult([.. rooms]));
+    }
+
+    /// <summary>
+    /// 处理 prepare_add_unit：为房间添加准备单位，并广播最新列表。
+    /// </summary>
+    public async Task<LobbyResult> HandleAddPrepareUnitAsync(string connectionId, PrepareAddUnitRequest req) {
+        if (string.IsNullOrEmpty(req.RoomId) || string.IsNullOrEmpty(req.UnitName))
+            return new LobbyResult(req.RoomId, false, "roomId and unitName required.");
+
+        if (req.UnitName.Length > EntityConstants.MaxUnitNameLength || !CampConstants.IsValidCamp(req.Camp))
+            return new LobbyResult(req.RoomId, false, "Invalid unit params.");
+
+        // 单位归属用服务端权威玩家名（连接归属表），不信任客户端提交
+        string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
+        if (ownerName == null)
+            return new LobbyResult(req.RoomId, false, "Player not in room.");
+
+        // 反查该玩家的持久 playerId（控制器绑定用权威键，与连接密钥一致）
+        string? ownerPlayerId = _stateStore.GetRoomPlayerIds(req.RoomId).GetValueOrDefault(ownerName);
+        if (string.IsNullOrEmpty(ownerPlayerId))
+            return new LobbyResult(req.RoomId, false, "Player identity not registered.");
+
+        if (!_stateStore.AddPrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName, ownerPlayerId))
+            return new LobbyResult(req.RoomId, false, "Room not found.");
+
+        // 广播更新给房间内所有玩家
+        await BroadcastRoomSnapshotAsync(req.RoomId);
+        return new LobbyResult(req.RoomId, true);
+    }
+
+    /// <summary>
+    /// 处理 prepare_remove_unit：从房间移除准备单位，成功时广播最新列表。
+    /// 仅允许单位归属者（连接权威身份）移除，防止他人恶意移除。
+    /// </summary>
+    public async Task<LobbyResult> HandleRemovePrepareUnitAsync(string connectionId, PrepareRemoveUnitRequest req) {
+        if (string.IsNullOrEmpty(req.RoomId) || string.IsNullOrEmpty(req.UnitName))
+            return new LobbyResult(req.RoomId, false, "roomId and unitName required.");
+
+        // 单位归属用服务端权威玩家名（连接归属表），不信任客户端提交，仅本人可移除
+        string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
+        if (string.IsNullOrEmpty(ownerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
+            return new LobbyResult(req.RoomId, false, "Player not in room.");
+
+        bool removed = _stateStore.RemovePrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName);
+        if (removed)
+            await BroadcastRoomSnapshotAsync(req.RoomId);
+        return new LobbyResult(req.RoomId, removed, removed ? null : "Unit not found.");
+    }
+
+    /// <summary>
+    /// 处理 prepare_ready / prepare_unready：非房主请求设置准备状态，更新并广播房间准备状态。
+    /// </summary>
+    public async Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req) {
+        if (string.IsNullOrEmpty(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "roomId required.");
+
+        if (!_stateStore.RoomExists(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "Room not found.");
+
+        // 用连接归属反查权威玩家名（服务端 join/create 后的权威化名），
+        // 避免伪造他人准备状态或使用与权威名不一致的 playerName 造成孤立键。
+        string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
+        if (string.IsNullOrEmpty(playerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
+            return new LobbyResult(req.RoomId, false, "Player not in room.");
+
+        _stateStore.SetPlayerReady(req.RoomId, playerName, req.Ready);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Player '{Player}' {Action} in room '{RoomId}'.",
+                playerName, req.Ready ? "ready" : "unready", req.RoomId);
+
+        // 广播最新准备状态给房间内所有玩家
+        await BroadcastRoomSnapshotAsync(req.RoomId);
+        return new LobbyResult(req.RoomId, true);
+    }
+
+    /// <summary>
+    /// 将房间完整状态快照（静态配置 + 准备状态 + 单位）组装后单次广播给该房间所有连接。
+    /// 客户端以该快照为唯一权威视图，无需自行组装。
+    /// </summary>
+    public async Task BroadcastRoomSnapshotAsync(string roomId) {
+        var config = _stateStore.GetRoomConfig(roomId);
+        var state = _stateStore.GetRoomState(roomId);
+        var units = _stateStore.GetPrepareUnits(roomId);
+
+        var snapshot = new RoomSnapshot(
+            roomId,
+            config?.Title ?? roomId,
+            config?.Description ?? string.Empty,
+            config?.MaxPlayers ?? 2,
+            config?.Status ?? RoomStatus.Waiting,
+            state.HostName,
+            state.DungeonName,
+            config?.CurrentPlayers ?? state.Players.Count,
+            [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
+            [.. units.Select(u => new PrepareUnitDto(u.UnitName, u.Camp, u.PlayerName))]);
+
+        await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[Game] Broadcast room snapshot to room '{RoomId}' ({PlayerCount} players, {UnitCount} units)",
+                roomId, snapshot.Players.Count, snapshot.Units.Count);
+    }
+}

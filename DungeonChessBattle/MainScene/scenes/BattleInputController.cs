@@ -1,4 +1,4 @@
-using DungeonChessBattle.Logic.Services;
+using DungeonChessBattle.Client.Battle;
 using Godot;
 
 namespace DungeonChessBattle;

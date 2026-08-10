@@ -349,8 +349,8 @@ public sealed class ServerProcessHost : IServerHost {
 
         string config = System.Environment.GetEnvironmentVariable(ConfigEnvVar) ?? "Debug";
         string projectDir = ProjectSettings.GlobalizePath("res://");
-        string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server", "bin", config, "net10.0");
-        string exe = Path.Combine(outDir, "DungeonChessBattle.Server.exe");
-        return File.Exists(exe) ? exe : Path.Combine(outDir, "DungeonChessBattle.Server.dll");
+        string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server.Host", "bin", config, "net10.0");
+        string exe = Path.Combine(outDir, "DungeonChessBattle.Server.Host.exe");
+        return File.Exists(exe) ? exe : Path.Combine(outDir, "DungeonChessBattle.Server.Host.dll");
     }
 }

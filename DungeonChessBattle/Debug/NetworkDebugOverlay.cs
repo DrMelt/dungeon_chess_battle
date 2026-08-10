@@ -1,4 +1,4 @@
-using DungeonChessBattle.Client.Diagnostics;
+using DungeonChessBattle.Client.Battle.Diagnostics;
 using DungeonChessBattle.Services;
 using Godot;
 

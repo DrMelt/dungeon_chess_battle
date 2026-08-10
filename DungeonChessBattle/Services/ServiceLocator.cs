@@ -1,4 +1,5 @@
 ﻿using DungeonChessBattle.Client;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +11,7 @@ namespace DungeonChessBattle.Services;
 /// </summary>
 public static class ServiceLocator {
     /// <summary>默认服务器端口。</summary>
-    public const int DefaultPort = 10170;
+    public const int DefaultPort = NetworkDefaults.LobbyPort;
 
     /// <summary>日志工厂实例（Godot 控制台 Provider）。</summary>
     private static readonly ILoggerFactory LoggerFactoryInstance = LoggerFactory.Create(builder => {

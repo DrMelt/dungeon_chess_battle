@@ -1,9 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 
 namespace DungeonChessBattle;

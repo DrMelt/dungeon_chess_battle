@@ -1,5 +1,4 @@
 using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 
 namespace DungeonChessBattle.Logic.Battle;

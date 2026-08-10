@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Client;
+using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets.Skills;
 using DungeonChessBattle.GamePanels;
-using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;

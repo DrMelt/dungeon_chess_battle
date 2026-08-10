@@ -12,6 +12,9 @@ namespace DungeonChessBattle.Entities;
 /// </summary>
 public class UnitPawn : PawnLogic {
     private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
+    private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
+    private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;
+    private static RemoteCallSerializable<SyncBuffData> BuffRemovedRPC;
 
     /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
@@ -78,7 +81,6 @@ public class UnitPawn : PawnLogic {
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
-#pragma warning disable CS0067 // 状态事件由 Server 桥接投影触发（跨程序集订阅，实体内仅声明）
     /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
     public event Action<UnitPawn, float, float>? HealthChanged;
 
@@ -93,7 +95,6 @@ public class UnitPawn : PawnLogic {
 
     /// <summary>移除 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
-#pragma warning restore CS0067
 
     /// <summary>技能施放请求事件。</summary>
     public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
@@ -106,6 +107,9 @@ public class UnitPawn : PawnLogic {
 
     /// <summary>当前移动方向（由控制器逐逻辑帧注入，纯本地变量，不参与网络同步）。</summary>
     private Vector2 _moveDir;
+
+    /// <summary>客户端同步阶段缓存的上一次生命值（用于 HealthChanged 的 oldHealth）。</summary>
+    private float _lastHealth;
 
     /// <summary>
     /// 确定性移动管线（由 Server/Client 装配时注入 <c>Logic.Movement.MovementResolver.Move</c>）。
@@ -156,10 +160,71 @@ public class UnitPawn : PawnLogic {
             (e, req) => e.OnRpcCastSkill(req),
             ref CastSkillRPC,
             ExecuteFlags.ExecuteOnServer);
+
+        // 服务端→客户端广播：受击与 Buff 增减事件（瞬时语义，携带完整数据）
+        r.CreateRPCAction<UnitPawn, SyncDamageData>(
+            (e, d) => e.OnRpcDamageTaken(d),
+            ref DamageTakenRPC,
+            ExecuteFlags.SendToAll);
+        r.CreateRPCAction<UnitPawn, SyncBuffData>(
+            (e, b) => e.OnRpcBuffAdded(b),
+            ref BuffAddedRPC,
+            ExecuteFlags.SendToAll);
+        r.CreateRPCAction<UnitPawn, SyncBuffData>(
+            (e, b) => e.OnRpcBuffRemoved(b),
+            ref BuffRemovedRPC,
+            ExecuteFlags.SendToAll);
+
+        // 客户端在同步阶段检测血量/死亡状态变化（SyncVar 原生绑定，零带宽）
+        r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
+        r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
     }
 
     private void OnRpcCastSkill(SyncSkillRequest req) {
         SkillCastRequested?.Invoke(this, req);
+    }
+
+    /// <summary>客户端接收：受击事件广播。</summary>
+    private void OnRpcDamageTaken(SyncDamageData d) {
+        TookDamage?.Invoke(this, d.Damage, (DamageType)d.DamageType);
+    }
+
+    /// <summary>客户端接收：Buff 添加事件广播。</summary>
+    private void OnRpcBuffAdded(SyncBuffData buff) {
+        BuffAdded?.Invoke(this, buff);
+    }
+
+    /// <summary>客户端接收：Buff 移除事件广播。</summary>
+    private void OnRpcBuffRemoved(SyncBuffData buff) {
+        BuffRemoved?.Invoke(this, buff);
+    }
+
+    /// <summary>客户端同步阶段：生命值变化（缓存旧值以提供 oldHealth）。</summary>
+    private void OnHealthChangedBySync(float newHealth) {
+        var oldHealth = _lastHealth;
+        _lastHealth = newHealth;
+        HealthChanged?.Invoke(this, newHealth, oldHealth);
+    }
+
+    /// <summary>客户端同步阶段：单位状态变化（0 存活 → 1 死亡）。</summary>
+    private void OnUnitStateChangedBySync(byte newState) {
+        if (newState == 1)
+            UnitDied?.Invoke(this);
+    }
+
+    /// <summary>服务端调用：广播受击事件到客户端。</summary>
+    public void BroadcastDamageTaken(float damage, DamageType damageType) {
+        ExecuteRPC(DamageTakenRPC, new SyncDamageData { Damage = damage, DamageType = (byte)damageType });
+    }
+
+    /// <summary>服务端调用：广播 Buff 添加事件到客户端。</summary>
+    public void BroadcastBuffAdded(SyncBuffData buff) {
+        ExecuteRPC(BuffAddedRPC, buff);
+    }
+
+    /// <summary>服务端调用：广播 Buff 移除事件到客户端。</summary>
+    public void BroadcastBuffRemoved(SyncBuffData buff) {
+        ExecuteRPC(BuffRemovedRPC, buff);
     }
 
     /// <summary>

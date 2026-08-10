@@ -1,0 +1,87 @@
+﻿using DungeonChessBattle.Core;
+using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Entities;
+using DungeonChessBattle.Server.State;
+using Microsoft.Extensions.Logging;
+
+namespace DungeonChessBattle.Server.Host;
+
+/// <summary>
+/// GameServer 的战斗编排请求处理。
+/// 大厅业务（创建/加入/列房/准备等）由 Server.Lobby 的
+/// <see cref="DungeonChessBattle.Server.Lobby.GameLobby"/> 承担；
+/// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
+/// </summary>
+public partial class GameServer {
+    /// <summary>
+    /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
+    /// 校验通过后创建战斗房间服务器（经 <see cref="RoomServerManager"/>）并向房间内所有玩家广播重定向端口。
+    /// </summary>
+    public async Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req) {
+        if (string.IsNullOrWhiteSpace(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "roomId is required.");
+
+        if (string.IsNullOrWhiteSpace(req.PlayerName) || req.PlayerName.Length > EntityConstants.MaxPlayerNameLength) {
+            _logger.LogWarning("[Game] start_battle: invalid player name for '{PlayerId}'.", req.PlayerId);
+            return new LobbyResult(req.RoomId, false, "invalid player name.");
+        }
+
+        if (!_stateStore.RoomExists(req.RoomId)) {
+            _logger.LogWarning("[Game] start_battle: room '{RoomId}' not found.", req.RoomId);
+            return new LobbyResult(req.RoomId, false, "Room not found.");
+        }
+
+        // 校验发起者必须是房主（基于连接归属表，不信任客户端提交的 playerName）
+        if (!_stateStore.IsConnectionRoomHost(connectionId, req.RoomId)) {
+            _logger.LogWarning("[Game] start_battle: connection of room '{RoomId}' is not the host, rejected.", req.RoomId);
+            return new LobbyResult(req.RoomId, false, "Only room host can start battle.");
+        }
+
+        // 校验除房主外所有玩家已准备
+        if (!_stateStore.IsAllOthersReady(req.RoomId)) {
+            _logger.LogWarning("[Game] start_battle: room '{RoomId}' has not-ready players, rejected.", req.RoomId);
+            return new LobbyResult(req.RoomId, false, "Not all players ready.");
+        }
+
+        // 创建 BattleRoomServer：初始化（根实体与单位迁移）由房间线程从 Store 自取完成
+        var server = _roomServers.StartRoomBattle(req.RoomId);
+
+        // 向房间内所有玩家广播重定向（含端口号），确保非房主也能进入战斗
+        await BroadcastToRoomAsync(req.RoomId, HubMethods.OnPrepareBattleRedirect,
+            new RoomRedirect(req.RoomId, server.Port));
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Room '{RoomId}' battle started on port {Port}.", req.RoomId, server.Port);
+
+        return new LobbyResult(req.RoomId, true);
+    }
+
+    /// <summary>
+    /// 处理 reconnect_room：校验身份后将断线玩家重连到战斗房间。
+    /// </summary>
+    public async Task<LobbyResult> HandleReconnectRoomAsync(ReconnectRoomRequest req) {
+        if (string.IsNullOrWhiteSpace(req.RoomId) || string.IsNullOrWhiteSpace(req.PlayerName))
+            return new LobbyResult(req.RoomId, false, "roomId and playerName required.");
+
+        if (req.PlayerName.Length > EntityConstants.MaxPlayerNameLength)
+            return new LobbyResult(req.RoomId, false, "Player name too long.");
+
+        string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
+        if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
+            return new LobbyResult(req.RoomId, false, "Invalid room password.");
+
+        var server = _roomServers.GetRoomServer(req.RoomId);
+        if (server == null)
+            return new LobbyResult(req.RoomId, false, "Room not in battle.");
+
+        server.UpdatePlayerName(req.PlayerId, req.PlayerName);
+        server.RegisterPlayer(req.PlayerId, req.PlayerName);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
+                req.PlayerName, req.PlayerId, req.RoomId, server.Port);
+
+        return new LobbyResult(req.RoomId, true, Port: server.Port);
+    }
+}

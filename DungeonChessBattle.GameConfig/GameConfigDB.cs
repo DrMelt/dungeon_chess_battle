@@ -1,7 +1,5 @@
 using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Core.Range;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;

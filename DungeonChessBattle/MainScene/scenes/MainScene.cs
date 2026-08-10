@@ -1,6 +1,6 @@
 using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.GamePanels;
-using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Services;
 using Godot;
 

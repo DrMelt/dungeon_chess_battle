@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Core;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Services;
 

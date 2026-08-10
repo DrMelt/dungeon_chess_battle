@@ -1,6 +1,8 @@
+﻿using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Client.Lobby;
 using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Core.Network;
-using DungeonChessBattle.Core.Network.Dtos;
+using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -14,8 +16,21 @@ namespace DungeonChessBattle.Client;
 /// 支持断线自动重连（通过缓存的 playerId + roomId 重新走大厅→房间流程）。
 /// 连接连续性管理见 GameClientService.Connectivity。
 /// </summary>
-public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
-    private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
+public sealed partial class GameClientService {
+    private readonly ILogger<GameClientService> _logger;
+
+    /// <summary>
+    /// 创建客户端门面。连接客户端经 <see cref="IClientConnectionFactory"/> 创建，
+    /// 不直接依赖具体传输实现（默认工厂创建 SignalR/LES 客户端）。
+    /// </summary>
+    /// <param name="loggerFactory">日志工厂。</param>
+    /// <param name="connectionFactory">连接客户端工厂；为空时使用默认实现。</param>
+    public GameClientService(ILoggerFactory loggerFactory, IClientConnectionFactory? connectionFactory = null) {
+        _logger = loggerFactory.CreateLogger<GameClientService>();
+        var factory = connectionFactory ?? new DefaultClientConnectionFactory();
+        LobbyClient = factory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
+        RoomClient = factory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
+    }
 
     // 连接状态机（单一事实源，见 ClientConnectionState）。
     // 取代散落的 _connected/_reconnecting 布尔与 _connectStartTimestamp 字段。
@@ -35,7 +50,7 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     private const double ConnectTimeoutSeconds = 10.0;
 
     /// <summary>默认大厅端口。</summary>
-    public const int DefaultPort = 10170;
+    public const int DefaultPort = NetworkDefaults.LobbyPort;
 
     // 身份与会话缓存
 
@@ -59,12 +74,16 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
     /// <summary>
     /// 大厅客户端（持久实例，用于发送大厅请求和订阅事件）。
     /// </summary>
-    public LobbyClient LobbyClient { get; } = new(loggerFactory.CreateLogger<LobbyClient>());
+    public LobbyClient LobbyClient {
+        get;
+    }
 
     /// <summary>
     /// 房间客户端（持久实例，用于 LES Entity 同步）。
     /// </summary>
-    public RoomBattleClient RoomClient { get; } = new(loggerFactory.CreateLogger<RoomBattleClient>());
+    public RoomBattleClient RoomClient {
+        get;
+    }
 
     /// <summary>服务器主机地址。</summary>
     public string Host { get; private set; } = "";
@@ -327,7 +346,8 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory) {
             if (!string.IsNullOrEmpty(_cachedRoomId)) {
                 _logger.LogInformation("房间连接意外断开，尝试自动重连...");
                 AttemptReconnectToRoom();
-            } else {
+            }
+            else {
                 SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
                 OnConnectionLost();
             }

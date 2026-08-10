@@ -1,7 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Numerics;
 using System.Reflection;
-using DungeonChessBattle.Core.Math;
 using LiteEntitySystem;
 
 namespace DungeonChessBattle.Entities;

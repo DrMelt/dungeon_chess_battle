@@ -1,5 +1,4 @@
 using System;
-using DungeonChessBattle.Core.Interfaces;
 using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;

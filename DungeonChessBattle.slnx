@@ -4,11 +4,31 @@
     <BuildType Name="ExportDebug" />
     <BuildType Name="ExportRelease" />
   </Configurations>
-  <Project Path="DungeonChessBattle\DungeonChessBattle.csproj" />
-  <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
-  <Project Path="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
-  <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-  <Project Path="DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
-  <Project Path="DungeonChessBattle.Server\DungeonChessBattle.Server.csproj" />
-  <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+
+  <Folder Name="/Godot/">
+    <Project Path="DungeonChessBattle\DungeonChessBattle.csproj" />
+  </Folder>
+
+  <Folder Name="/Client/">
+    <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
+    <Project Path="DungeonChessBattle.Client.Lobby\DungeonChessBattle.Client.Lobby.csproj" />
+    <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
+  </Folder>
+
+  <Folder Name="/Shared/">
+    <Project Path="DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
+    <Project Path="DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
+    <Project Path="DungeonChessBattle.Battle\DungeonChessBattle.Battle.csproj" />
+    <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+    <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
+    <Project Path="DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
+  </Folder>
+
+  <Folder Name="/Server/">
+    <Project Path="DungeonChessBattle.Server.State\DungeonChessBattle.Server.State.csproj" />
+    <Project Path="DungeonChessBattle.Server.Domain\DungeonChessBattle.Server.Domain.csproj" />
+    <Project Path="DungeonChessBattle.Server.Lobby\DungeonChessBattle.Server.Lobby.csproj" />
+    <Project Path="DungeonChessBattle.Server.Battle\DungeonChessBattle.Server.Battle.csproj" />
+    <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
+  </Folder>
 </Solution>
