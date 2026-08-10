@@ -89,7 +89,7 @@ public partial class GameLobby {
 
         // 更新详情面板并从缓存的 listing 中获取配置
         if (InterRefs?.DetailLabel != null) {
-            var listing = _pendingRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
+            var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
                 _selectedRoomConfig = new GameRoom(listing.RoomId) {
                     Title = listing.Title,

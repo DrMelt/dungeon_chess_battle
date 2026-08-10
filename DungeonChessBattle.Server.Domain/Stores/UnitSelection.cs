@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Stores;
+namespace DungeonChessBattle.Server.Domain.Stores;
 
 /// <summary>
 /// 准备阶段的一单位选择记录（只读快照项）。

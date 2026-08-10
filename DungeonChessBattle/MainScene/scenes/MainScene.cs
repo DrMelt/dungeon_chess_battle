@@ -24,12 +24,6 @@ public partial class MainScene : Node {
     #region Exports
 
     [Export]
-    private MainMenu? _mainMenu;
-
-    [Export]
-    private GameLobby? _gameLobby;
-
-    [Export]
     private Control? _frontUI;
 
     [Export]
@@ -62,23 +56,16 @@ public partial class MainScene : Node {
     public override void _Ready() {
         ValidateExports();
 
-        // 连接 GameLobby 的 BattleStarted 信号
-        _gameLobby?.BattleStarted += OnBattleStarted;
+        // 订阅战斗启动事件（服务层事实源，GameLobby 为纯显示层不桥接）
+        ServiceLocator.ClientService.OnBattleStarted += OnBattleStarted;
 
         // 构造屏幕状态机（FrontUI 容器在战斗中整体隐藏）
-        _screenMachine = new ScreenStateMachine(_frontUI, _gameLobby);
-
-        // 默认显示主菜单
-        _mainMenu?.OpenPanelFrom();
+        _screenMachine = new ScreenStateMachine(_frontUI);
 
         GD.Print("[MainScene] _Ready Initialized.");
     }
 
     private void ValidateExports() {
-        if (_mainMenu == null)
-            GD.PrintErr("[MainScene] [Export] _mainMenu is not assigned!");
-        if (_gameLobby == null)
-            GD.PrintErr("[MainScene] [Export] _gameLobby is not assigned!");
         if (_frontUI == null)
             GD.PrintErr("[MainScene] [Export] _frontUI is not assigned!");
         if (_playerOperationInterfaceInfo == null)
@@ -118,6 +105,9 @@ public partial class MainScene : Node {
     }
 
     private void ExitBattle() {
+        // 主动断开房间连接并清空会话缓存，防止后续房间意外断开时误重连已离开的房间
+        ServiceLocator.ClientService.LeaveRoom();
+
         _battleService?.BattlePhaseChanged -= OnBattlePhase;
 
         // 子组件退订与清理
@@ -174,6 +164,7 @@ public partial class MainScene : Node {
     /// 节点退出场景树：取消战斗服务事件订阅。
     /// </summary>
     public override void _ExitTree() {
+        ServiceLocator.ClientService.OnBattleStarted -= OnBattleStarted;
         _battleService?.BattlePhaseChanged -= OnBattlePhase;
     }
 }

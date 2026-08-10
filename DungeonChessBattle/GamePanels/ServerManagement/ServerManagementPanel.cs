@@ -5,12 +5,17 @@ using DungeonChessBattle.Services;
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 服务器状态管理面板，提供启动/停止内嵌游戏服务器的功能。
-/// 服务器生命周期由 GameServerHost 后台服务管理，本面板仅负责 UI 交互。
+/// 服务器状态管理面板，提供启动/停止游戏服务器的功能。
+/// 服务器生命周期由 IServerHost 后台服务管理，本面板仅负责 UI 交互。
+/// 通过主线程每帧轮询 <see cref="IServerHost.Status"/> 刷新界面（无事件订阅），
+/// 从根上避免后台线程直接驱动 Godot 节点。
 /// </summary>
 public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>日志记录器。</summary>
     private readonly ILogger<ServerManagementPanel> _logger = ServiceLocator.GetLogger<ServerManagementPanel>();
+
+    /// <summary>上次渲染的服务器状态，用于去重刷新。</summary>
+    private ServerHostStatus _lastStatus = ServerHostStatus.Stopped;
 
     /// <summary>导出引用集合节点。</summary>
     public ServerManagementPanelInterRefs? InterRefs {
@@ -18,7 +23,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
     }
 
     /// <summary>
-    /// 节点就绪：绑定按钮事件、设置默认端口并订阅服务器状态事件。
+    /// 节点就绪：绑定按钮事件、设置默认端口并显示初始状态。
     /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
@@ -36,17 +41,27 @@ public partial class ServerManagementPanel : BaseGamePanel {
         }
         InterRefs?.CloseButton?.Pressed += OnClosePressed;
 
-        // 订阅后台服务事件
-        ServiceLocator.ServerService.StatusChanged += OnServerStatusChanged;
-
         UpdateStatus("服务器未启动");
         _logger.LogInformation("ServerManagementPanel ready");
+    }
+
+    /// <summary>
+    /// 主线程每帧轮询服务器状态，变化时刷新界面。
+    /// 轮询方式避免后台线程直接驱动 UI，天然线程安全。
+    /// </summary>
+    /// <param name="delta">距上一帧的秒数（本处未使用）。</param>
+    public override void _Process(double delta) {
+        var status = ServiceLocator.ServerService.Status;
+        if (status == _lastStatus)
+            return;
+        _lastStatus = status;
+        RefreshFromStatus();
     }
 
     #region Button Handlers
 
     /// <summary>
-    /// 点击启动按钮：校验端口后启动内嵌服务器。
+    /// 点击启动按钮：校验端口后启动服务器。
     /// </summary>
     private void OnStartPressed() {
         if (ServiceLocator.ServerService.IsRunning) {
@@ -66,7 +81,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
     }
 
     /// <summary>
-    /// 点击停止按钮：停止内嵌服务器。
+    /// 点击停止按钮：停止服务器。
     /// </summary>
     private void OnStopPressed() {
         if (!ServiceLocator.ServerService.IsRunning) {
@@ -86,28 +101,26 @@ public partial class ServerManagementPanel : BaseGamePanel {
 
     #endregion
 
-    #region Service Event Handlers
+    #region UI Helpers
 
     /// <summary>
-    /// 服务器状态变更回调，刷新按钮状态与状态文字。
+    /// 根据当前服务器状态刷新按钮可用性与状态文字。
     /// </summary>
-    /// <param name="isRunning">服务器是否运行中。</param>
-    /// <param name="port">服务器端口。</param>
-    private void OnServerStatusChanged(bool isRunning, int port) {
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("服务器状态变更: isRunning={IsRunning}, port={Port}", isRunning, port);
+    private void RefreshFromStatus() {
         UpdateButtonStates();
-        if (isRunning) {
-            UpdateStatus($"运行中 (端口 {port})", Colors.Green);
-        }
-        else {
-            UpdateStatus("服务器已停止");
+        switch (_lastStatus) {
+            case ServerHostStatus.Running:
+                UpdateStatus($"运行中 (端口 {ServiceLocator.ServerService.Port})", Colors.Green);
+                break;
+            case ServerHostStatus.Starting:
+                UpdateStatus("启动中...", Colors.Yellow);
+                break;
+            default:
+                string? err = ServiceLocator.ServerService.LastError;
+                UpdateStatus(string.IsNullOrEmpty(err) ? "服务器已停止" : $"已停止: {err}", Colors.Gray);
+                break;
         }
     }
-
-    #endregion
-
-    #region UI Helpers
 
     /// <summary>
     /// 根据服务器运行状态刷新按钮可用性与输入框可编辑性。
@@ -135,14 +148,5 @@ public partial class ServerManagementPanel : BaseGamePanel {
         label.Modulate = color ?? Colors.Gray;
     }
 
-
     #endregion
-
-    /// <summary>
-    /// 节点退出场景树时取消订阅服务器状态事件。
-    /// </summary>
-    public override void _ExitTree() {
-        // 取消订阅，避免内存泄漏
-        ServiceLocator.ServerService.StatusChanged -= OnServerStatusChanged;
-    }
 }

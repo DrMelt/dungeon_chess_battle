@@ -1,12 +1,11 @@
 ﻿using DungeonChessBattle.Client;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.Server;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Services;
 
 /// <summary>
-/// 服务定位器，持有 GameServerHost 和 GameClientService 的单例。
+/// 服务定位器，持有 IServerHost 和 GameClientService 的单例。
 /// 创建 ILoggerFactory（Console + Godot Provider），注入 Logger 到各 Service。
 /// </summary>
 public static class ServiceLocator {
@@ -38,10 +37,9 @@ public static class ServiceLocator {
     /// </summary>
     public static ILogger CreateLogger(string categoryName) => LoggerFactoryInstance.CreateLogger(categoryName);
 
-    /// <summary>内嵌游戏服务器单例。</summary>
-    public static readonly GameServerHost ServerService = new(
-        LoggerFactoryInstance.CreateLogger<GameServerHost>(),
-        LoggerFactoryInstance);
+    /// <summary>游戏服务器宿主单例（独立子进程实现）。</summary>
+    public static readonly IServerHost ServerService = new ServerProcessHost(
+        LoggerFactoryInstance.CreateLogger<ServerProcessHost>());
 
     /// <summary>游戏客户端服务单例。</summary>
     public static readonly GameClientService ClientService = new(

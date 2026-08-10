@@ -1,7 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Core.Network.Dtos;
 using DungeonChessBattle.Services;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.GamePanels;
@@ -79,11 +81,8 @@ public partial class RoomPreparation : BaseGamePanel {
         if (InterRefs?.UnitSelectPanel is not null)
             InterRefs.UnitSelectPanel.UnitSelected += OnUnitSelectedFromPanel;
 
-        // 持久订阅大厅准备阶段单位列表推送
-        ServiceLocator.ClientService.LobbyClient.OnPrepareUnitListUpdated += OnPrepareUnitListUpdated;
-
-        // 订阅大厅准备阶段房间准备状态推送（房主名与各玩家准备标志）
-        ServiceLocator.ClientService.LobbyClient.OnPrepareRoomStateUpdated += OnPrepareRoomStateUpdated;
+        // 订阅主线程派发的房间快照（服务端组装单发：准备状态 + 单位 + 房间信息）
+        ServiceLocator.ClientService.OnRoomSnapshotUpdated += OnRoomSnapshotUpdated;
 
         _logger.LogInformation("RoomPreparation ready");
     }
@@ -142,25 +141,12 @@ public partial class RoomPreparation : BaseGamePanel {
         }
 
         // 先以本地视角保底一张自己的占位卡，避免广播延迟导致网格空白；
-        // 随后用最近一次广播缓存覆盖为权威数据（重放修复"订阅晚于广播"的初始状态丢失）。
+        // 随后用最近一次权威快照覆盖为真实数据（重放修复"订阅晚于广播"的初始状态丢失）。
         _roomPlayers = [(ServiceLocator.ClientService.PlayerName, false)];
 
-        if (ServiceLocator.ClientService.LobbyClient.TryGetRecentUnitList(_roomId, out var cachedUnits)) {
-            _units.Clear();
-            _playerUnitNames.Clear();
-            foreach (var (unitName, _, playerName) in cachedUnits) {
-                _units.Add(unitName);
-                _playerUnitNames[playerName] = unitName;
-            }
-        }
-
-        if (ServiceLocator.ClientService.LobbyClient.TryGetRecentRoomState(_roomId,
-                out var cachedHostName, out var cachedDungeonName, out var cachedPlayers)) {
-            _roomPlayers = cachedPlayers;
-            _hostName = cachedHostName;
-            _dungeonName = cachedDungeonName;
-            UpdateRoomInfoLabels(cachedPlayers.Count);
-        }
+        // 用最近一次权威快照一次初始化（单位 + 准备状态 + 房间信息），未命中则保持本地占位。
+        if (ServiceLocator.ClientService.GetRoomSnapshot(_roomId) is { } snapshot)
+            ApplySnapshot(snapshot, isInitial: true);
 
         RefreshUnitGrid();
         RefreshStartButton();
@@ -191,68 +177,66 @@ public partial class RoomPreparation : BaseGamePanel {
         string displayName = entry.DisplayName;
         string camp = _selectedCamp;
 
-        // 通过大厅 LobbyClient JSON 协议发送
-        ServiceLocator.ClientService.LobbyClient.RequestPrepareAddUnit(_roomId, displayName, camp);
+        // 通过大厅 SignalR 协议发送（经 GameClientService 统一入口）
+        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, displayName, camp);
 
         InterRefs?.StatusLabel?.Text = $"请求创建 {displayName}...";
         RefreshStartButton();
     }
 
     /// <summary>
-    /// 服务器推送的准备阶段单位列表更新回调。
+    /// 订阅到的房间快照更新（GameClientService 已派发到主线程）。参数：房间 ID、完整快照。
+    /// 房号不匹配时丢弃；匹配则统一应用权威快照刷新 UI。
     /// </summary>
-    private void OnPrepareUnitListUpdated(string eventRoomId, List<(string UnitName, string Camp, string PlayerName)> units) {
+    private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
         if (eventRoomId != _roomId)
             return;
-
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("准备单位列表更新: {RoomId}, count={Count}", eventRoomId, units.Count);
-
-        _units.Clear();
-        _playerUnitNames.Clear();
-
-        foreach (var (unitName, _, playerName) in units) {
-            _units.Add(unitName);
-            _playerUnitNames[playerName] = unitName;
-        }
-
-        RefreshUnitGrid();
-        RefreshStartButton();
-        InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_units.Count})";
+        ApplySnapshot(snapshot, isInitial: false);
     }
 
     /// <summary>
-    /// 服务器推送的当前玩家准备状态回调：更新自己的准备标志与其他玩家的准备进度。
+    /// 应用服务端权威快照到本地状态并刷新 UI（首次初始化与后续更新共用）。
+    /// 快照合并了单位列表、准备状态与房间静态信息，无需再拼接或暂存。
     /// </summary>
-    private void OnPrepareRoomStateUpdated(string eventRoomId, string hostName, string dungeonName, List<(string PlayerName, bool Ready)> players) {
-        if (eventRoomId != _roomId)
-            return;
-
+    /// <param name="snapshot">房间权威快照。</param>
+    /// <param name="isInitial">是否为进房首次初始化（不写覆盖性提示文案）。</param>
+    private void ApplySnapshot(RoomSnapshot snapshot, bool isInitial) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("准备状态更新: {RoomId}, host={HostName}, players={Count}", eventRoomId, hostName, players.Count);
+            _logger.LogInformation("应用房间快照: {RoomId}, units={UnitCount}, players={PlayerCount}",
+                snapshot.RoomId, snapshot.Units.Count, snapshot.Players.Count);
 
-        // 同步自己的准备标志
+        // 单位列表
+        _units.Clear();
+        _playerUnitNames.Clear();
+        foreach (var unit in snapshot.Units) {
+            _units.Add(unit.UnitName);
+            _playerUnitNames[unit.PlayerName] = unit.UnitName;
+        }
+
+        // 房间静态信息
+        _hostName = snapshot.HostName;
+        _dungeonName = snapshot.DungeonName;
+        _maxPlayers = snapshot.MaxPlayers;
+
+        // 准备状态与玩家快照
+        var players = snapshot.Players.Select(p => (p.PlayerName, p.Ready)).ToList();
         string myName = ServiceLocator.ClientService.PlayerName;
+        _isReady = false;
         foreach (var (playerName, ready) in players) {
             if (playerName == myName) {
                 _isReady = ready;
                 break;
             }
         }
-
-        // 计算除房主外其他玩家是否全部准备
-        _othersReady = _isHost || AllOthersReady(hostName, players);
-
-        // 同步副标题展示（用服务端权威的房主名与副本名）
-        _hostName = hostName;
-        _dungeonName = dungeonName;
-        UpdateRoomInfoLabels(players.Count);
-
-        // 同步玩家快照与准备状态，按玩家刷新职业选择网格
+        _othersReady = _isHost || AllOthersReady(_hostName, players);
         _roomPlayers = players;
-        RefreshUnitGrid();
 
+        UpdateRoomInfoLabels(snapshot.CurrentPlayers);
+        RefreshUnitGrid();
         RefreshStartButton();
+
+        if (!isInitial)
+            InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_units.Count})";
     }
 
     /// <summary>判断除房主外所有玩家是否都已准备；无其他玩家时视为已满足。</summary>

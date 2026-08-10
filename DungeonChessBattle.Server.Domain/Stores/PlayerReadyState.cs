@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Stores;
+namespace DungeonChessBattle.Server.Domain.Stores;
 
 /// <summary>
 /// 房间内单个玩家的准备状态（只读快照项）。

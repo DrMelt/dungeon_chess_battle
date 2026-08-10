@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk.Web">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
@@ -14,14 +13,12 @@
         <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Server.Domain\DungeonChessBattle.Server.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="LiteNetLib" />
         <PackageReference Include="LiteEntitySystem" />
-        <PackageReference Include="Microsoft.Extensions.Logging" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     </ItemGroup>
 
 </Project>

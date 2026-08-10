@@ -1,7 +1,7 @@
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Core.Models;
 
-namespace DungeonChessBattle.Server.Stores;
+namespace DungeonChessBattle.Server.Domain.Stores;
 
 /// <summary>
 /// 房间状态存储接口：大厅级房间配置、密码与招募板状态的查询与写入。
@@ -14,10 +14,10 @@ public interface IRoomStateStore {
     /// <summary>
     /// 组合原子注册房间并登记房主为成员。
     /// 单次调用内完成：注册房间、初始化子表、记录房主、登记房主成员、
-    /// 记录房主 peer 归属与 playerId。房间已存在时返回 false，且不产生任何副作用。
+    /// 记录房主连接归属与 playerId。房间已存在时返回 false，且不产生任何副作用。
     /// </summary>
     bool TryRegisterRoomWithHost(string roomId, string? password, GameRoom config,
-        string hostName, string hostPlayerId, int hostPeerId);
+        string hostName, string hostPlayerId, string hostConnectionId);
 
     /// <summary>判断房间是否已注册（准备阶段或战斗中）。</summary>
     bool RoomExists(string roomId);

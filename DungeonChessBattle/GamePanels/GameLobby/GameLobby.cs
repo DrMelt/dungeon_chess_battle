@@ -17,16 +17,6 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>日志记录器。</summary>
     private readonly ILogger<GameLobby> _logger = ServiceLocator.GetLogger<GameLobby>();
 
-    #region Signals
-
-    /// <summary>
-    /// 战斗开始（从准备界面发起的请求）。
-    /// </summary>
-    [Signal]
-    public delegate void BattleStartedEventHandler(string roomId);
-
-    #endregion
-
     #region References
 
     /// <summary>房间准备界面引用。</summary>
@@ -51,7 +41,7 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>当前筛选的房间类别。</summary>
     private RoomCategory _selectedCategory = RoomCategory.Casual;
     /// <summary>缓存的服务端房间列表。</summary>
-    private List<RoomListing>? _pendingRoomListings;
+    private List<RoomListing>? _lastRoomListings;
     /// <summary>缓存创建房间时输入的房间名。</summary>
     private string? _cachedCreateRoomId;
     /// <summary>当前选中房间的配置。</summary>
@@ -82,13 +72,10 @@ public partial class GameLobby : BaseGamePanel {
             joinBtn.Disabled = true;
         }
 
-        // 持久订阅大厅客户端事件
-        ServiceLocator.ClientService.LobbyClient.OnRoomJoined += OnRoomJoinedHandler;
-        ServiceLocator.ClientService.LobbyClient.OnRoomCreated += OnRoomCreatedHandler;
+        // 持久订阅大厅客户端事件（经 GameClientService 主线程派发）
+        ServiceLocator.ClientService.OnRoomJoined += OnRoomJoinedHandler;
+        ServiceLocator.ClientService.OnRoomCreated += OnRoomCreatedHandler;
         SubscribeRoomListEvent();
-
-        // 网络模式：服务端确认战斗启动（房间端口连接成功后）→ 桥接 BattleStarted 信号
-        ServiceLocator.ClientService.OnBattleStarted += OnNetworkBattleStarted;
 
         _logger.LogInformation("GameLobby ready");
     }
@@ -124,17 +111,6 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>
-    /// 网络模式：服务端确认战斗启动后由 GameClientService 触发，
-    /// 桥接为 BattleStarted 信号。
-    /// </summary>
-    /// <param name="roomId">房间 ID。</param>
-    private void OnNetworkBattleStarted(string roomId) {
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("网络战斗启动: {RoomId}", roomId);
-        EmitSignal(SignalName.BattleStarted, roomId);
-    }
-
-    /// <summary>
     /// 点击加入按钮：校验已选中房间后发送加入请求。
     /// </summary>
     private void OnJoinRoom() {
@@ -154,7 +130,7 @@ public partial class GameLobby : BaseGamePanel {
     private void OnRoomCreatedHandler(string createdRoomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("房间创建成功: {RoomId}", createdRoomId);
-        CallDeferred(nameof(OnCreatedDeferred), createdRoomId);
+        OnCreatedDeferred(createdRoomId);
     }
 
     /// <summary>
@@ -183,7 +159,7 @@ public partial class GameLobby : BaseGamePanel {
     private void OnRoomJoinedHandler(string joinedRoomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
-        CallDeferred(nameof(OnJoinedDeferred), joinedRoomId);
+        OnJoinedDeferred(joinedRoomId);
     }
 
     /// <summary>
@@ -217,21 +193,17 @@ public partial class GameLobby : BaseGamePanel {
     /// 订阅大厅客户端的房间列表推送事件。
     /// </summary>
     private void SubscribeRoomListEvent() {
-        ServiceLocator.ClientService.LobbyClient.OnRoomListReceived += (listings) => {
-            _pendingRoomListings = listings;
-            CallDeferred(nameof(OnRoomListingsReceivedDeferred));
+        // GameClientService 已派发到主线程，直接更新缓存并刷新 UI
+        ServiceLocator.ClientService.OnRoomListReceived += (listings) => {
+            _lastRoomListings = [.. listings];
+            OnRoomListingsReceived(listings);
         };
     }
 
     /// <summary>
-    /// 主线程处理房间列表推送，转换为 GameRoom 并刷新 UI。
+    /// 在主线程处理房间列表推送，转换为 GameRoom 并刷新 UI。
     /// </summary>
-    private void OnRoomListingsReceivedDeferred() {
-        var listings = _pendingRoomListings;
-        _pendingRoomListings = null;
-        if (listings == null)
-            return;
-
+    private void OnRoomListingsReceived(IReadOnlyList<RoomListing> listings) {
         // 将 RoomListing 转换回 GameRoom 以适配现有 UI
         var rooms = listings.Select(l => new GameRoom(l.RoomId) {
             Title = l.Title,

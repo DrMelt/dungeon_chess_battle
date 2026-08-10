@@ -2,9 +2,8 @@ using System.Collections.Concurrent;
 using DungeonChessBattle.Core.Enums;
 using DungeonChessBattle.Logic.Services;
 using DungeonChessBattle.Server.Network;
-using DungeonChessBattle.Server.Settings;
-using DungeonChessBattle.Server.Stores;
-using LiteNetLib;
+using DungeonChessBattle.Server.Domain.Settings;
+using DungeonChessBattle.Server.Domain.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Lobby;
@@ -13,11 +12,10 @@ namespace DungeonChessBattle.Server.Lobby;
 /// 大厅协调者，负责战斗房间服务器的生命周期管理（创建、查找、销毁、端口分配）。
 /// 大厅级状态数据（房间配置、密码、玩家准备状态、准备单位等）统一由
 /// <see cref="IGameStateStore"/> 持有，本类不再直接存储状态。
-/// 准备阶段（选单位等）在大厅 JSON 协议上完成，战斗开始时才创建 BattleRoomServer。
-/// 线程所有权：本类的可变状态（房间服务器注册表、端口池、peer 引用表、
-/// 空房间投递队列）仅大厅线程（Lobby-Poll）操作。房间线程通过
-/// BattleRoomServer.RoomEmpty 事件仅向队列投递 roomId，由大厅线程
-/// <see cref="ProcessPendingRoomCleanups"/> 消费执行销毁。
+/// 准备阶段（选单位等）在大厅 SignalR 协议上完成，战斗开始时才创建 BattleRoomServer。
+/// 房间成员的连接分组（SignalR Group）由 LobbyHub 负责，本类不触碰网络层。
+/// 线程所有权：房间线程通过 BattleRoomServer.RoomEmpty 事件仅向队列投递 roomId，
+/// 由后台清理循环 <see cref="ProcessPendingRoomCleanups"/> 消费执行销毁。
 /// </summary>
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="stateStore">大厅级状态存储。</param>
@@ -31,13 +29,10 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>房间服务器注册表（线程安全）。准备阶段房间不在此表中。</summary>
     private readonly ConcurrentDictionary<string, BattleRoomServer> _roomServers = new();
 
-    /// <summary>房间 → 该房间内的所有大厅 peer（用于准备阶段广播）</summary>
-    private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, NetPeer>> _roomPeers = new();
-
     /// <summary>
     /// 空房间投递队列：房间线程在无活跃连接且初始化完成后投递 roomId，
-    /// 大厅线程每轮循环消费并执行移除。保证 _roomServers / 端口池仅在
-    /// 大厅线程被修改（线程所有权）。
+    /// 后台清理循环消费并执行移除。保证 _roomServers / 端口池仅在
+    /// 清理循环内被修改（线程所有权）。
     /// </summary>
     private readonly ConcurrentQueue<string> _pendingEmptyRooms = new();
 
@@ -85,44 +80,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             _logger.LogInformation("[Lobby] Room '{RoomId}' queued for removal (no active connections).", roomId);
     }
 
-    // ─── 房间 peer 引用管理（广播用；peer 对象属网络层，不入 store）───
-
-    /// <summary>
-    /// 将大厅 peer 注册到房间（用于准备阶段的广播）。
-    /// </summary>
-    public void RegisterPeerToRoom(string roomId, NetPeer peer) {
-        var peers = _roomPeers.GetOrAdd(roomId, _ => new ConcurrentDictionary<int, NetPeer>());
-        peers[peer.Id] = peer;
-
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[Lobby] Peer {PeerId} registered to room '{RoomId}'", peer.Id, roomId);
-    }
-
-    /// <summary>
-    /// 从房间中移除大厅 peer。
-    /// </summary>
-    public void UnregisterPeerFromRoom(string roomId, int peerId) {
-        if (_roomPeers.TryGetValue(roomId, out var peers)) {
-            peers.TryRemove(peerId, out _);
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("[Lobby] Peer {PeerId} unregistered from room '{RoomId}'", peerId, roomId);
-        }
-    }
-
-    /// <summary>
-    /// 获取房间内所有大厅 peer。
-    /// </summary>
-    public IReadOnlyCollection<NetPeer> GetRoomPeers(string roomId) {
-        if (_roomPeers.TryGetValue(roomId, out var peers))
-            return [.. peers.Values];
-        return [];
-    }
-
-    /// <summary>清理房间的全部 peer 引用。仅大厅线程调用。</summary>
-    private void RemoveRoomPeers(string roomId) {
-        _roomPeers.TryRemove(roomId, out _);
-    }
-
     // ─── 战斗房间生命周期 ───
 
     /// <summary>
@@ -167,8 +124,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     }
 
     /// <summary>
-    /// 移除并停止房间服务器，同时清理 store 中的房间状态与房间 peer 引用。
-    /// 仅大厅线程调用（等待初始化成功后房间线程已可安全 Join）。
+    /// 移除并停止房间服务器，同时清理 store 中的房间状态。
+    /// 由后台清理循环调用（等待初始化成功后房间线程已可安全 Join）。
     /// </summary>
     public bool RemoveRoom(string roomId) {
         bool removed;
@@ -184,7 +141,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             removed = false;
         }
 
-        RemoveRoomPeers(roomId);
         _stateStore.RemoveRoomState(roomId);
         return removed;
     }
@@ -203,7 +159,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             }
         }
         _pendingEmptyRooms.Clear();
-        _roomPeers.Clear();
         _stateStore.ClearAllState();
     }
 

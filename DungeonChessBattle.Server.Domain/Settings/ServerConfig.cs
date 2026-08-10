@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Settings;
+namespace DungeonChessBattle.Server.Domain.Settings;
 
 /// <summary>
 /// 服务器配置的唯一来源。

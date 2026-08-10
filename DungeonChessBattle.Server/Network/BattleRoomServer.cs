@@ -9,8 +9,8 @@ using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Logic.Battle;
 using DungeonChessBattle.Logic.Services;
-using DungeonChessBattle.Server.Settings;
-using DungeonChessBattle.Server.Stores;
+using DungeonChessBattle.Server.Domain.Settings;
+using DungeonChessBattle.Server.Domain.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Network;

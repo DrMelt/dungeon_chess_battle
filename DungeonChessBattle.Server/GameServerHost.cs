@@ -1,66 +1,128 @@
-using DungeonChessBattle.Server.Settings;
-using DungeonChessBattle.Server.Stores;
+using DungeonChessBattle.Server.Domain.Lobby;
+using DungeonChessBattle.Server.Domain.Settings;
+using DungeonChessBattle.Server.Domain.Stores;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
 
 /// <summary>
-/// 游戏服务器门面，包装 GameServer 实例。
-/// 提供 Start/Stop 操作和状态事件通知。
-/// GameServer 内部已有独立驱动线程，本类不创建额外线程。
+/// 游戏服务器宿主（ASP.NET Core / Kestrel + SignalR）。
+/// 负责任命名的 Kestrel 宿主、SignalR Hub 注册、依赖装配，
+/// 以及空房间清理后台循环。提供 Start/Stop 操作与状态事件通知。
 /// 服务器配置由 <see cref="ServerConfig"/> 唯一来源注入。
 /// </summary>
 public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactory loggerFactory) {
     private readonly ILogger<GameServerHost> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly Lock _lock = new();
+    private WebApplication? _app;
     private GameServer? _server;
-    private InMemoryGameStateStore? _stateStore;
+    private CancellationTokenSource? _cts;
+    private Task? _cleanupLoop;
 
     /// <summary>默认大厅端口。</summary>
     public const int DefaultPort = ServerConfig.DefaultPort;
 
     /// <summary>服务器是否正在运行。</summary>
-    public bool IsRunning => _server?.IsRunning ?? false;
+    public bool IsRunning {
+        get {
+            lock (_lock)
+                return _server != null;
+        }
+    }
 
     /// <summary>当前监听端口。</summary>
     public int Port {
-        get; private set;
+        get;
+        private set;
+    }
+
+    /// <summary>当前 Kestrel 宿主实例（运行中可用）。</summary>
+    public WebApplication? App {
+        get {
+            lock (_lock)
+                return _app;
+        }
     }
 
     /// <summary>服务器状态变化事件。参数：是否运行、端口。</summary>
     public event Action<bool, int>? StatusChanged;
 
     /// <summary>
-    /// 启动服务器。
+    /// 启动服务器（Kestrel + SignalR，监听大厅端口）。
     /// </summary>
     /// <param name="port">大厅监听端口。</param>
     /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
     public void Start(int port = DefaultPort, string? serverPassword = null) {
-        if (IsRunning) {
-            _logger.LogWarning("服务器已在运行中");
-            return;
-        }
+        lock (_lock) {
+            if (_server != null) {
+                _logger.LogWarning("服务器已在运行中");
+                return;
+            }
 
+            try {
+                var config = ServerConfig.FromEnvironment(serverPassword) with {
+                    LobbyPort = port
+                };
+                Port = config.LobbyPort;
+
+                var builder = WebApplication.CreateBuilder();
+                builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+                builder.Logging.AddConsole();
+                builder.Services.AddSingleton<ServerConfig>(config);
+                builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
+                builder.Services.AddSingleton<ILobbyBroadcaster>(sp =>
+                    new SignalRBroadcaster(sp.GetRequiredService<IHubContext<LobbyHub>>()));
+                builder.Services.AddSingleton(sp => new GameServer(
+                    _loggerFactory,
+                    sp.GetRequiredService<ILobbyBroadcaster>(),
+                    sp.GetRequiredService<ServerConfig>(),
+                    sp.GetRequiredService<IGameStateStore>()));
+                builder.Services.AddSignalR();
+
+                var app = builder.Build();
+                app.MapHub<LobbyHub>("/lobby");
+                app.Start();
+
+                _app = app;
+                _server = app.Services.GetRequiredService<GameServer>();
+
+                // 空房间清理后台循环（替代原大厅轮询线程）
+                _cts = new CancellationTokenSource();
+                _cleanupLoop = Task.Run(() => CleanupLoopAsync(_cts.Token));
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("服务器已启动，监听端口 {Port}", port);
+                StatusChanged?.Invoke(true, port);
+            }
+            catch (Exception ex) {
+                _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                _app = null;
+                _server = null;
+                Port = 0;
+                _logger.LogError(ex, "服务器启动失败");
+                StatusChanged?.Invoke(false, 0);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 空房间清理循环：周期消费 <see cref="DungeonChessBattle.Server.Lobby.GameLobby.ProcessPendingRoomCleanups"/>。
+    /// </summary>
+    private async Task CleanupLoopAsync(CancellationToken ct) {
+        using var timer = new System.Threading.PeriodicTimer(TimeSpan.FromMilliseconds(50));
         try {
-            var config = ServerConfig.FromEnvironment(serverPassword) with {
-                LobbyPort = port
-            };
-            Port = config.LobbyPort;
-            _stateStore = new InMemoryGameStateStore(_loggerFactory);
-            _server = new GameServer(_loggerFactory, config, _stateStore);
-            _server.StartAsync();
-
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("服务器已启动，监听端口 {Port}", port);
-            StatusChanged?.Invoke(true, port);
+            while (await timer.WaitForNextTickAsync(ct)) {
+                _server?.Lobby.ProcessPendingRoomCleanups();
+            }
         }
-        catch (Exception ex) {
-            _server = null;
-            _stateStore?.Dispose();
-            _stateStore = null;
-            Port = 0;
-            _logger.LogError(ex, "服务器启动失败");
-            StatusChanged?.Invoke(false, 0);
+        catch (OperationCanceledException) {
+            // 正常停止
         }
     }
 
@@ -68,24 +130,32 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     /// 停止服务器并触发状态通知。
     /// </summary>
     public void Stop() {
-        if (!IsRunning || _server is null) {
-            _logger.LogWarning("服务器未在运行");
-            return;
-        }
+        lock (_lock) {
+            if (_server == null) {
+                _logger.LogWarning("服务器未在运行");
+                return;
+            }
 
-        try {
-            _server.Stop();
-            _logger.LogInformation("服务器已停止");
-        }
-        catch (Exception ex) {
-            _logger.LogError(ex, "服务器停止失败");
-        }
-        finally {
-            _server = null;
-            _stateStore?.Dispose();
-            _stateStore = null;
-            Port = 0;
-            StatusChanged?.Invoke(false, 0);
+            try {
+                _cts?.Cancel();
+                _cleanupLoop?.Wait(TimeSpan.FromSeconds(3));
+                _server.Lobby.StopAll();
+                _app?.StopAsync().GetAwaiter().GetResult();
+                _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                _logger.LogInformation("服务器已停止");
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "服务器停止失败");
+            }
+            finally {
+                _cts?.Dispose();
+                _cts = null;
+                _cleanupLoop = null;
+                _app = null;
+                _server = null;
+                Port = 0;
+                StatusChanged?.Invoke(false, 0);
+            }
         }
     }
 }

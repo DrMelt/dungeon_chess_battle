@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Stores;
+namespace DungeonChessBattle.Server.Domain.Stores;
 
 /// <summary>
 /// 服务器状态存储门面：组合房间状态与玩家状态子接口。

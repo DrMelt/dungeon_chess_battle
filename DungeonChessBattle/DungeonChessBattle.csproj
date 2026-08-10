@@ -11,10 +11,17 @@
     <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Server\DungeonChessBattle.Server.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
+<!-- 游戏服务器以独立子进程方式运行，不再作为 Godot 工程的项目引用。
+       Debug 构建前自动构建 Server 工程，保证子进程可执行文件存在且最新。 -->
+  <Target Name="BuildGameServer" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Message Importance="high" Text="构建游戏服务器 (DungeonChessBattle.Server)..." />
+    <Exec Command="dotnet build &quot;$(MSBuildThisFileDirectory)..\DungeonChessBattle.Server\DungeonChessBattle.Server.csproj&quot; -c Debug" />
+  </Target>
 </Project>

@@ -12,13 +12,9 @@ namespace DungeonChessBattle.GamePanels;
 /// 初始化状态机。
 /// </remarks>
 /// <param name="frontUI">前厅 UI 容器引用（Interface/FrontUI）。</param>
-/// <param name="gameLobby">游戏大厅面板引用（需为非 null，退出战斗时复位用）。</param>
-public sealed class ScreenStateMachine(Control? frontUI, BaseGamePanel? gameLobby) {
+public sealed class ScreenStateMachine(Control? frontUI) {
     /// <summary>前厅 UI 容器（FrontUI），进入战斗时整体隐藏。</summary>
     private readonly Control _frontUI = frontUI ?? throw new System.ArgumentNullException(nameof(frontUI));
-
-    /// <summary>游戏大厅面板，退出战斗后恢复显示。</summary>
-    private readonly BaseGamePanel _gameLobby = gameLobby ?? throw new System.ArgumentNullException(nameof(gameLobby));
 
     /// <summary>当前屏幕状态。</summary>
     public GameScreenState Current {
@@ -42,7 +38,7 @@ public sealed class ScreenStateMachine(Control? frontUI, BaseGamePanel? gameLobb
     /// </summary>
     public void ExitBattle() {
         _frontUI.Visible = true;
-        _gameLobby.Visible = true;
+
         TransitionTo(GameScreenState.Lobby);
     }
 

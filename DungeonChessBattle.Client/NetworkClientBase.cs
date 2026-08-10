@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Client;
 /// 提供 NetManager、Connect/Disconnect/Reconnect/Update、INetEventListener 骨架。
 /// 子类重写 OnNetworkReceive、OnPeerConnected、OnPeerDisconnected 实现具体协议。
 /// </summary>
-public abstract class NetworkClientBase : INetEventListener {
+public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     /// <summary>底层 LiteNetLib 网络管理器。</summary>
     protected readonly NetManager _netClient;
     /// <summary>当前连接的服务端 peer；未连接时为 null。</summary>

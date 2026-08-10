@@ -1,127 +1,67 @@
-using System.Diagnostics;
+using DungeonChessBattle.Core.Network;
 using DungeonChessBattle.Server.Lobby;
-using DungeonChessBattle.Server.Network;
-using DungeonChessBattle.Server.Settings;
-using DungeonChessBattle.Server.Stores;
+using DungeonChessBattle.Server.Domain.Lobby;
+using DungeonChessBattle.Server.Domain.Settings;
+using DungeonChessBattle.Server.Domain.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server;
 
 /// <summary>
-/// 游戏服务端主控类。
-/// 大厅端口处理 create_room / join_room / list_rooms / prepare_* / start_battle 等 JSON 消息。
-/// 准备阶段在大厅连接上完成（选单位等），战斗开始时才创建 BattleRoomServer 并重定向客户端。
-/// 支持服务器密码 + 房间密码两层访问控制。
-/// 配置由 <see cref="ServerConfig"/> 唯一来源注入；大厅级状态数据由 <see cref="IGameStateStore"/> 持有，
-/// 战斗房间生命周期由 GameLobby 协调。
-/// 消息分发与各 Handle* 处理见 GameServer.MessageHandlers。
+/// 游戏服务端业务协调器。
+/// 大厅端口由 SignalR Hub（<see cref="LobbyHub"/>）承载，本类负责各请求的业务处理、
+/// 房间生命周期协调（<see cref="GameLobby"/>）与房间内广播。
+/// 业务层不依赖具体传输：广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现（ASP.NET 提供）。
+/// 配置由 <see cref="ServerConfig"/> 唯一来源注入；大厅级状态数据由
+/// <see cref="IGameStateStore"/> 持有。各 Handle* 处理见 GameServer.MessageHandlers。
 /// </summary>
 public partial class GameServer {
-    private readonly LobbyNetworkServer _lobbyServer;
     private readonly GameLobby _lobby;
     private readonly IGameStateStore _stateStore;
     private readonly ServerConfig _config;
     private readonly ILogger<GameServer> _logger;
-    private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
-
-    private volatile bool _running;
-    private Thread? _lobbyThread;
-
-    /// <summary>服务端是否正在运行。</summary>
-    public bool IsRunning => _running;
+    private readonly ILobbyBroadcaster _broadcaster;
 
     /// <summary>
-    /// 初始化游戏服务端。
+    /// 初始化游戏服务端业务协调器。
     /// </summary>
     /// <param name="loggerFactory">日志工厂。</param>
+    /// <param name="broadcaster">大厅广播端口（向房间内连接推送消息）。</param>
     /// <param name="config">服务器配置（端口、密钥、密码）。</param>
     /// <param name="stateStore">大厅级状态存储（存储引擎由装配层注入，可替换）。</param>
-    public GameServer(ILoggerFactory loggerFactory, ServerConfig config, IGameStateStore stateStore) {
+    public GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster broadcaster,
+        ServerConfig config, IGameStateStore stateStore) {
         _logger = loggerFactory.CreateLogger<GameServer>();
         _config = config;
         _stateStore = stateStore;
-        _lobbyServer = new LobbyNetworkServer(loggerFactory.CreateLogger<LobbyNetworkServer>(), _config);
+        _broadcaster = broadcaster;
         _lobby = new GameLobby(loggerFactory, _stateStore, _config);
+    }
 
-        _lobbyServer.OnCustomPacket += OnCustomPacket;
-        _lobbyServer.OnClientDisconnected += OnLobbyPeerDisconnected;
+    /// <summary>大厅协调者（房间服务器生命周期管理）。</summary>
+    internal GameLobby Lobby => _lobby;
+
+    /// <summary>大厅级状态存储。</summary>
+    internal IGameStateStore StateStore => _stateStore;
+
+    /// <summary>服务器配置。</summary>
+    internal ServerConfig Config => _config;
+
+    /// <summary>
+    /// 向房间内所有成员连接广播消息。
+    /// </summary>
+    private async Task BroadcastToRoomAsync<TDto>(string roomId, string hubMethod, TDto dto) {
+        await _broadcaster.SendToRoomAsync(roomId, hubMethod, dto);
     }
 
     /// <summary>
-    /// 大厅 peer 断线处理：清理该玩家所属房间的成员与准备状态，并向剩余玩家广播最新准备状态。
+    /// 连接断开清理：移除该连接所属房间的成员与准备状态，并向剩余玩家广播最新房间快照。
     /// </summary>
-    private void OnLobbyPeerDisconnected(int peerId) {
-        string? roomId = _stateStore.RemovePlayerByPeer(peerId);
+    public async Task ConnectionLostAsync(string connectionId) {
+        string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
         if (roomId == null)
             return;
 
-        _lobby.UnregisterPeerFromRoom(roomId, peerId);
-        BroadcastPrepareRoomState(roomId);
-    }
-
-    /// <summary>
-    /// 异步启动服务端：启动大厅网络服务并开启后台轮询线程。
-    /// </summary>
-    public void StartAsync() {
-        if (_running)
-            return;
-        _lobbyServer.Start(_config.LobbyPort);
-        _running = true;
-
-        _lobbyThread = new Thread(() => {
-            while (_running) {
-                _lobbyServer.PollEvents();
-                // 消费空房间投递队列：房间销毁动作收敛到大厅线程执行
-                _lobby.ProcessPendingRoomCleanups();
-                Thread.Sleep(1);
-            }
-        }) {
-            Name = "Lobby-Poll", IsBackground = true
-        };
-        _lobbyThread.Start();
-
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[GameServer] Started, lobby port: {Port}, ServerPassword={HasPassword}",
-                _config.LobbyPort, _config.ServerPassword != null);
-    }
-
-    /// <summary>
-    /// 以控制台交互模式启动服务端（默认大厅端口 10170）。
-    /// 运行到用户输入命令后退出循环。
-    /// </summary>
-    public void StartWithConsole() {
-        if (_running)
-            return;
-
-        StartAsync();
-        Console.WriteLine("══════════════════════════════════════════");
-        Console.WriteLine("  DungeonChessBattle Server (Multi-Room)");
-        Console.WriteLine("  Prepare phase stays in lobby.");
-        Console.WriteLine($"  Server password: {(_config.ServerPassword != null ? "ENABLED" : "DISABLED")}");
-        Console.WriteLine("  Type 'help' for commands.");
-        Console.WriteLine("══════════════════════════════════════════");
-
-        while (_running) {
-            if (Console.KeyAvailable) {
-                _lobby.RunConsoleLoop(() => _lobbyServer.PeerCount, () => _tickWatch.Elapsed);
-                break;
-            }
-            Thread.Sleep(50);
-        }
-
-        _running = false;
-        Stop();
-    }
-
-    /// <summary>
-    /// 停止服务端：关闭轮询线程、房间与大厅网络。
-    /// </summary>
-    public void Stop() {
-        _running = false;
-        _lobbyThread?.Join(TimeSpan.FromSeconds(3));
-        _lobby.StopAll();
-        _lobbyServer.Stop();
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Server stopped.");
+        await BroadcastRoomSnapshotAsync(roomId);
     }
 }
