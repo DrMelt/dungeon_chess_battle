@@ -31,6 +31,7 @@
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="30_1hpbe"]
 [ext_resource type="Script" uid="uid://88yvgj5vmctr" path="res://MainScene/scenes/BattleUnitManager.cs" id="31_yyqz"]
 [ext_resource type="Script" uid="uid://bejrk18uieflq" path="res://MainScene/scenes/BattleInputController.cs" id="32_piuq"]
+[ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -169,6 +170,16 @@ text = "DungeonTimeLabel"
 vertical_alignment = 1
 script = ExtResource("20_bmhqt")
 unitsInSceneViewRef = NodePath("../../../BattleUnitManager")
+
+[node name="NetworkDebugOverlay" type="Label" parent="Interface/Game_PlayerUI" unique_id=2106499745]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 420.0
+offset_bottom = 200.0
+theme_override_font_sizes/font_size = 12
+text = "Disconnected"
+script = ExtResource("33_ovly")
 
 [node name="StateBar2d_Focus" parent="Interface/Game_PlayerUI" unique_id=716113945 instance=ExtResource("21_nqfqb")]
 layout_mode = 1

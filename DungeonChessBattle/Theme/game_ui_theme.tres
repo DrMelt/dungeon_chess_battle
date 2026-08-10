@@ -1,5 +1,7 @@
 [gd_resource type="Theme" format=3 uid="uid://bkialcypkdmpl"]
 
+[ext_resource type="FontFile" uid="uid://m3wiseb8garp" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Medium.ttf" id="1_pjyip"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
 bg_color = Color(0.22670749, 0.22670752, 0.2267074, 1)
 
@@ -10,6 +12,7 @@ bg_color = Color(0.16206557, 0.1620656, 0.16206548, 1)
 bg_color = Color(0.8776157, 0.8776158, 0.87761563, 1)
 
 [resource]
+default_font = ExtResource("1_pjyip")
 BoxContainer/constants/separation = 0
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_42c4a")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_pjyip")

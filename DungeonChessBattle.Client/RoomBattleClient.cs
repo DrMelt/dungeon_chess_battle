@@ -8,6 +8,7 @@ using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Logic.Services;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Client.Diagnostics;
 
 namespace DungeonChessBattle.Client;
 
@@ -58,11 +59,22 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
     private BattlePhase _lastKnownPhase;
 
-    /// <summary>重连时清理实体缓存。</summary>
+    // 传输统计（仅房间链路，主线程驱动，无并发）
+    private long _bytesIn;
+    private int _packetsIn;
+    private float _secondAccumulator;
+    private int _packetsInPerSecond;
+    private long _bytesInPerSecond;
+    private int _packetsOutPerSecond;
+    private long _bytesOutPerSecond;
+    private CountingNetPeer? _countingPeer;
+
+    /// <summary>重连时清理实体缓存与传输统计。</summary>
     protected override void OnReconnectCleanup() {
         base.OnReconnectCleanup();
         _entityManager = null;
         _localController = null;
+        ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
@@ -72,12 +84,13 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 断开连接时清理实体管理器与房间缓存。
+    /// 断开连接时清理实体管理器、房间缓存与传输统计。
     /// </summary>
     protected override void OnDisconnectCleanup() {
         base.OnDisconnectCleanup();
         _entityManager = null;
         _localController = null;
+        ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
@@ -86,9 +99,22 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>轮询网络事件后更新实体并检测战斗阶段变化。</summary>
+    /// <summary>轮询网络事件后更新实体、结算每秒流量并检测战斗阶段变化。</summary>
     protected override void UpdateAfterPollEvents(float delta) {
         _entityManager?.Update();
+
+        // 每秒流量统计结算（每秒一次，换算并重置累加器）
+        _secondAccumulator += delta;
+        if (_secondAccumulator >= 1f) {
+            _secondAccumulator -= 1f;
+            _bytesInPerSecond = _bytesIn;
+            _packetsInPerSecond = _packetsIn;
+            _bytesOutPerSecond = _countingPeer?.BytesOut ?? 0;
+            _packetsOutPerSecond = _countingPeer?.PacketsOut ?? 0;
+            _bytesIn = 0;
+            _packetsIn = 0;
+            _countingPeer?.ResetTraffic();
+        }
 
         // 检测 BattlePhase SyncVar 变化（LES 无公开 Changed 事件，通过轮询检测）
         if (_roomEntity != null) {
@@ -105,6 +131,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>处理房间端口接收的 LES 二进制包（0xDC）。</summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
+        _bytesIn += data.Length;
+        _packetsIn++;
         if (data.Length > 0 && data[0] == PacketHeader) {
             _entityManager?.Deserialize(data);
         }
@@ -113,11 +141,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>
     /// 连接建立时创建客户端实体管理器并订阅各实体类型的创建事件。
+    /// 用计数装饰器包装 LES peer，采集出站流量。
     /// </summary>
     protected override void OnPeerConnectedInternal(NetPeer peer) {
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
+        var countingPeer = new CountingNetPeer(lesPeer);
+        _countingPeer = countingPeer;
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
-        _entityManager = new ClientEntityManager(typesMap, lesPeer, PacketHeader);
+        _entityManager = new ClientEntityManager(typesMap, countingPeer, PacketHeader);
 
         // 订阅所有同步 Entity 类型的创建事件
         _entityManager.GetEntities<BattleRoomEntity>()
@@ -280,4 +311,54 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             skillFlags,
             new System.Numerics.Vector2(aimX, aimY));
     }
+
+    #region 网络状态统计
+
+    /// <summary>当前实时延迟（毫秒），未连接时为 0。</summary>
+    private int GetLatencyMs() => _serverPeer?.Ping ?? 0;
+
+    /// <summary>获取传输层指标快照（延迟 + 每秒收发统计）。</summary>
+    public TransportMetrics TransportMetrics =>
+        new(GetLatencyMs(), _packetsInPerSecond, _bytesInPerSecond, _packetsOutPerSecond, _bytesOutPerSecond);
+
+    /// <summary>
+    /// 获取 LES 实体同步指标；未连接或未进入战斗时返回 null。
+    /// </summary>
+    public BattleEntityMetrics? BattleEntityMetrics {
+        get {
+            var em = _entityManager;
+            if (em == null)
+                return null;
+            return new BattleEntityMetrics(
+                em.ServerTick, em.Tick, em.LastProcessedTick, em.StoredCommands,
+                em.EntitiesCount, em.ServerInputBuffer, em.LerpBufferCount,
+                em.LerpBufferTimeLength, em.NetworkJitter, em.PendingToRemoveEntites);
+        }
+    }
+
+    /// <summary>
+    /// 获取完整网络状态快照（对外唯一入口）。
+    /// </summary>
+    public NetworkStatusSnapshot NetworkStatus {
+        get {
+            var peer = _serverPeer;
+            string host = peer?.Address.ToString() ?? "";
+            int port = peer?.Port ?? 0;
+            return new NetworkStatusSnapshot(IsConnected, host, port, TransportMetrics, BattleEntityMetrics);
+        }
+    }
+
+    /// <summary>清零传输统计（每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零）。</summary>
+    private void ResetTrafficCounters() {
+        _bytesIn = 0;
+        _packetsIn = 0;
+        _secondAccumulator = 0;
+        _packetsInPerSecond = 0;
+        _bytesInPerSecond = 0;
+        _packetsOutPerSecond = 0;
+        _bytesOutPerSecond = 0;
+        _countingPeer = null;
+    }
+
+    #endregion
 }
