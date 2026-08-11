@@ -14,7 +14,7 @@ public readonly record struct DamageResult {
         get; init;
     }
 
-    /// <summary>实际扣除的生命值（受当前生命值钳制）。</summary>
+    /// <summary>实际扣除的生命值，受当前生命值钳制。</summary>
     public required float ActualHealthLost {
         get; init;
     }
@@ -31,7 +31,7 @@ public readonly record struct DamageResult {
 /// </summary>
 public static class DamageProcessor {
     /// <summary>
-    /// 计算攻击方在给定基础伤害上的实际伤害数值（攻击系数换算）。
+    /// 计算攻击方在给定基础伤害上的实际伤害数值，攻击系数换算。
     /// </summary>
     public static float Amount(float baseDamage, UnitSnapshot attacker, DamageType type) => type switch {
         DamageType.Physical => baseDamage * attacker.PhysicalAttackBase,

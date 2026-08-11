@@ -6,19 +6,19 @@ namespace DungeonChessBattle.Entities.SyncData;
 /// 技能施放请求的扁平化同步结构，用于 RPC 参数。
 /// </summary>
 public struct SyncSkillRequest : ISpanSerializable {
-    /// <summary>施法单位 NetId</summary>
+    /// <summary>施法单位的网络 ID。</summary>
     public ushort CasterUnitNetId;
 
-    /// <summary>目标单位 NetId</summary>
+    /// <summary>目标单位的网络 ID。</summary>
     public ushort TargetUnitNetId;
 
-    /// <summary>技能类型 ID（对应配置表）</summary>
+    /// <summary>技能类型 ID，对应配置表。</summary>
     public ushort SkillTypeId;
 
-    /// <summary>位置目标 X（范围伤害技能使用，XZ 平面）。</summary>
+    /// <summary>位置目标 X，范围伤害技能使用，XZ 平面。</summary>
     public float TargetPosX;
 
-    /// <summary>位置目标 Z（范围伤害技能使用，XZ 平面）。</summary>
+    /// <summary>位置目标 Z，范围伤害技能使用，XZ 平面。</summary>
     public float TargetPosZ;
 
     /// <summary>序列化后的最大字节数。</summary>

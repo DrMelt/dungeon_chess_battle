@@ -8,41 +8,41 @@ namespace DungeonChessBattle.Server.StateStore;
 
 /// <summary>
 /// 基于进程内 ConcurrentDictionary 的状态存储实现。
-/// 收敛大厅级房间状态、玩家状态与准备单位数据的存储逻辑，
+/// 收敛大厅级房间状态、玩家状态与准备单位数据的存储逻辑。
 /// </summary>
 public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGameStateStore, IDisposable {
     private readonly ILogger<InMemoryGameStateStore> _logger = loggerFactory.CreateLogger<InMemoryGameStateStore>();
 
-    /// <summary>房间配置注册表（招募板使用）。</summary>
+    /// <summary>房间配置注册表，招募板使用。</summary>
     private readonly ConcurrentDictionary<string, GameRoom> _roomConfigs = new();
 
     /// <summary>房间密码字典。null 表示无密码房间。</summary>
     private readonly ConcurrentDictionary<string, string?> _roomPasswords = new();
 
-    /// <summary>房主玩家名表：房间ID → 房主 displayName。</summary>
+    /// <summary>房主玩家名表：房间 ID 到房主 displayName。</summary>
     private readonly ConcurrentDictionary<string, string> _roomHosts = new();
 
-    /// <summary>玩家准备状态表：房间ID → (玩家名 → 是否已准备)。</summary>
+    /// <summary>玩家准备状态表：房间 ID 到玩家名与是否已准备的映射。</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, bool>> _roomReadyStates = new();
 
-    /// <summary>房间内玩家的连接归属表：connectionId → (房间ID, 玩家名)。</summary>
+    /// <summary>房间内玩家的连接归属表：connectionId 到房间 ID 与玩家名的映射。</summary>
     private readonly ConcurrentDictionary<string, (string RoomId, string PlayerName)> _peerPlayers = new();
 
-    /// <summary>房间内玩家的 playerId 映射表：房间ID → (玩家名 → playerId)。</summary>
+    /// <summary>房间内玩家的 playerId 映射表：房间 ID 到玩家名与 playerId 的映射。</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> _roomPlayerIds = new();
 
-    /// <summary>准备阶段单位数据表：房间ID → (单位名, 阵营, 玩家名, 玩家ID) 列表。</summary>
+    /// <summary>准备阶段单位数据表：房间 ID 到单位名、阵营、玩家名与玩家 ID 的列表。</summary>
     private readonly ConcurrentDictionary<string, List<(string UnitName, string Camp, string PlayerName, string PlayerId)>> _prepareUnits = new();
 
     /// <summary>
     /// 房间级锁表：房间ID → 锁对象，串行化同一房间的读改写，保证
     /// List&lt;T&gt; 操作、可变模型字段读改写、peer 归属清理与注册互斥。
-    /// 条目不随房间删除而移除（房间数量有限），避免锁对象被回收后
+    /// 条目不随房间删除而移除，房间数量有限，避免锁对象被回收后
     /// 新旧锁对象错位导致的 ABA 竞态。
     /// </summary>
     private readonly ConcurrentDictionary<string, object> _roomLocks = new();
 
-    /// <summary>获取指定房间的锁对象（常驻，不回收）。</summary>
+    /// <summary>获取指定房间的锁对象，常驻，不回收。</summary>
     private object GetRoomLock(string roomId) => _roomLocks.GetOrAdd(roomId, _ => new object());
 
     /// <summary>
@@ -93,7 +93,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             if (!TryRegisterRoom(roomId, password, config))
                 return false;
 
-            // 单锁内完成房主登记（复用 RegisterRoomPlayer 的同锁内联逻辑，
+            // 单锁内完成房主登记，复用 RegisterRoomPlayer 的同锁内联逻辑，
             // 避免对外再取一次锁时房间可能已被并发移除）
             _roomHosts[roomId] = hostName;
             var states = _roomReadyStates.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, bool>());
@@ -133,7 +133,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
     /// <inheritdoc />
     public IReadOnlyList<RoomListing> ListActiveRooms() {
-        // 跨房间枚举统一不加锁（避免多锁获取顺序造成死锁），
+        // 跨房间枚举统一不加锁，避免多锁获取顺序造成死锁，
         // 依赖 ConcurrentDictionary 的弱一致性快照语义；字段可能略旧，可接受。
         return [.. _roomConfigs
             .Where(kvp => kvp.Value.Status != RoomStatus.Finished)
@@ -198,7 +198,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             _roomHosts.TryRemove(roomId, out _);
             _roomReadyStates.TryRemove(roomId, out _);
             _roomPlayerIds.TryRemove(roomId, out _);
-            // 清理 peerPlayers 中属于该房间的条目（与 RegisterRoomPlayer 互斥）
+            // 清理 peerPlayers 中属于该房间的条目，与 RegisterRoomPlayer 互斥
             foreach (var kv in _peerPlayers) {
                 if (kv.Value.RoomId == roomId)
                     _peerPlayers.TryRemove(kv.Key, out _);
@@ -216,14 +216,14 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         _roomReadyStates.Clear();
         _roomPlayerIds.Clear();
         _peerPlayers.Clear();
-        // 锁表随状态一并清空（停机后不再有房间，旧锁对象无保留价值）
+        // 锁表随状态一并清空，停机后不再有房间，旧锁对象无保留价值
         _roomLocks.Clear();
     }
 
     /// <summary>
-    /// 释放存储（装配层使用 using 管理生命周期时调用）。
+    /// 释放存储，装配层使用 using 管理生命周期时调用。
     /// 与停机流程等价：清空全部状态；调用方应确保后台线程已 Join
-    /// （GameServer.Stop/GameLobby.StopAll 已保证）。
+    /// GameServer.Stop 与 GameLobby.StopAll 已保证。
     /// </summary>
     public void Dispose() => ClearAllState();
 
@@ -233,7 +233,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     public void SetRoomHost(string roomId, string hostName) {
         lock (GetRoomLock(roomId)) {
             _roomHosts[roomId] = hostName;
-            // 将房主登记为房间成员（准备状态默认未准备，房主的准备状态不参与全员判定）
+            // 将房主登记为房间成员，准备状态默认未准备，房主的准备状态不参与全员判定
             var states = _roomReadyStates.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, bool>());
             states.TryAdd(hostName, false);
         }
@@ -344,7 +344,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
     /// <inheritdoc />
     public string? RemovePlayerByConnection(string connectionId) {
-        // 锁外先取房间用于定位锁对象（弱一致性，允许）
+        // 锁外先取房间用于定位锁对象，弱一致性，允许
         if (!_peerPlayers.TryGetValue(connectionId, out var entry))
             return null;
 
@@ -356,7 +356,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             string roomId = current.RoomId;
             string leavingName = current.PlayerName;
 
-            // 移除准备状态、playerId 映射与该玩家的准备单位（任何阶段都执行，避免状态残留）
+            // 移除准备状态、playerId 映射与该玩家的准备单位，任何阶段都执行，避免状态残留
             if (_roomReadyStates.TryGetValue(roomId, out var states))
                 states.TryRemove(leavingName, out _);
             if (_roomPlayerIds.TryGetValue(roomId, out var ids))
@@ -369,7 +369,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             if (_roomConfigs.TryGetValue(roomId, out var config) && config.Status == RoomStatus.Waiting) {
                 config.CurrentPlayers = Math.Max(0, config.CurrentPlayers - 1);
 
-                // 房主退出：转让给剩余玩家（房主表与招募板配置同步更新，保持一致）
+                // 房主退出：转让给剩余玩家，房主表与招募板配置同步更新，保持一致
                 if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == leavingName) {
                     string? newHost = null;
                     if (states != null) {

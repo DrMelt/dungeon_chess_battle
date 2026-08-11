@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.SignalR;
 namespace DungeonChessBattle.Server.Host;
 
 /// <summary>
-/// <see cref="ILobbyBroadcaster"/> 的 SignalR 实现（ASP.NET 传输层）。
-/// 将领域广播端口映射到 SignalR Group，供业务层（Domain）使用。
+/// <see cref="ILobbyBroadcaster"/> 的 SignalR 实现，ASP.NET 传输层。
+/// 将领域广播端口映射到 SignalR Group，供业务层 Domain 使用。
 /// </summary>
 /// <param name="hub">SignalR Hub 上下文。</param>
 public sealed class SignalRBroadcaster(IHubContext<LobbyHub> hub) : ILobbyBroadcaster {

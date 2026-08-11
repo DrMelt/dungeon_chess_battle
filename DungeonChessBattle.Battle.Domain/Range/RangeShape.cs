@@ -4,14 +4,14 @@ using DungeonChessBattle.Battle.Domain.Math;
 namespace DungeonChessBattle.Battle.Domain.Range;
 
 /// <summary>
-/// 几何范围形状（纯几何判定，不依赖战斗实体）。使用 XZ 平面（俯视）坐标。
+/// 几何范围形状，纯几何判定，不依赖战斗实体。使用 XZ 平面俯视坐标。
 /// </summary>
 public abstract class RangeShape {
     /// <summary>判断检测点是否处于以锚点为基准、给定朝向的范围内。</summary>
     public abstract bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius);
 }
 
-/// <summary>扇形（环形）范围：以锚点为圆心、沿朝向的角度与半径区间。</summary>
+/// <summary>扇形环形范围，以锚点为圆心、沿朝向的角度与半径区间。</summary>
 public sealed class SectorShape : RangeShape {
     /// <summary>近端半径。</summary>
     public required float NearClamp {
@@ -23,10 +23,10 @@ public sealed class SectorShape : RangeShape {
         get; init;
     }
 
-    /// <summary>扇形起始角（弧度，以朝向为 0）。</summary>
+    /// <summary>扇形起始角，弧度，以朝向为 0。</summary>
     public float RadianFrom { get; init; } = -MathF.PI;
 
-    /// <summary>扇形结束角（弧度，以朝向为 0）。</summary>
+    /// <summary>扇形结束角，弧度，以朝向为 0。</summary>
     public float RadianTo { get; init; } = MathF.PI;
 
     /// <inheritdoc />
@@ -52,7 +52,7 @@ public sealed class SectorShape : RangeShape {
         return AngularIntervalsOverlap(centerAngle - halfAngle, centerAngle + halfAngle, RadianFrom, RadianTo);
     }
 
-    /// <summary>判断两个角度区间（弧度，边界可能超出 [-π, π]）是否有交集。</summary>
+    /// <summary>判断两个角度区间是否有交集，弧度，边界可能超出 [-π, π]。</summary>
     private static bool AngularIntervalsOverlap(float aFrom, float aTo, float bFrom, float bTo) {
         const float twoPi = 2f * MathF.PI;
         aFrom = NormalizePositive(aFrom);

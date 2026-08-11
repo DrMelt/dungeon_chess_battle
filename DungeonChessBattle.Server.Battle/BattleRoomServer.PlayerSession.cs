@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Server.Battle;
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 大厅层预注册玩家到房间（准备阶段调用）。白名单校验由 Store 实时查询承担，
+    /// 大厅层预注册玩家到房间，准备阶段调用。白名单校验由 Store 实时查询承担，
     /// 此处仅预留会话聚合。客户端真正连接房间端口前调用。
     /// </summary>
     public void RegisterPlayer(string playerId, string playerName) {
@@ -24,7 +24,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 更新已注册玩家的显示名（重连时可能更改）。
+    /// 更新已注册玩家的显示名，重连时可能更改。
     /// </summary>
     public void UpdatePlayerName(string playerId, string playerName) {
         if (_sessions.TryGetValue(playerId, out var session)) {
@@ -32,7 +32,7 @@ public partial class BattleRoomServer {
             session.Entity?.PlayerName.Value = playerName;
         }
         else {
-            // 预注册阶段（尚未创建 Entity + Session），创建 session
+            // 预注册阶段，尚未创建 Entity 与 Session，创建 session
             _sessions[playerId] = new PlayerSession(playerId, playerName);
         }
     }
@@ -48,7 +48,7 @@ public partial class BattleRoomServer {
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var netPlayer = EntityManager.AddPlayer(lesPeer);
 
-        // 确定 playerId（优先使用连接密钥中的 playerId）
+        // 确定 playerId，优先使用连接密钥中的 playerId
         string effectivePlayerId = (connectionKey != null && connectionKey != _connectionKey)
             ? connectionKey
             : $"auto_{peer.Id}";
@@ -74,7 +74,7 @@ public partial class BattleRoomServer {
             session.NetPlayer = netPlayer;
             _peerToPlayerId[peer.Id] = effectivePlayerId;
 
-            // 将该玩家与其在准备阶段选择的单位绑定（创建 UnitController）
+            // 将该玩家与其在准备阶段选择的单位绑定，创建 UnitController
             TryBindPlayerController(session, netPlayer, playerEntity);
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -84,7 +84,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理玩家重连：将新网络连接绑定到已有的 PlayerSession（保留原实体与战斗状态）。
+    /// 处理玩家重连：将新网络连接绑定到已有的 PlayerSession，保留原实体与战斗状态。
     /// </summary>
     private void HandlePlayerReconnect(NetPeer peer, string playerId) {
         if (!_sessions.TryGetValue(playerId, out var session) || session.Entity == null) {
@@ -103,7 +103,7 @@ public partial class BattleRoomServer {
         session.NetPlayer = netPlayer;
         _peerToPlayerId[peer.Id] = playerId;
 
-        // 重连时重新建立控制器绑定（原 Controller 已随旧连接清理）
+        // 重连时重新建立控制器绑定，原 Controller 已随旧连接清理
         TryBindPlayerController(session, netPlayer, session.Entity);
 
         // 客户端通过 PlayerState SyncVar 从 Disconnected→Connected 的变化检测重连成功
@@ -116,10 +116,10 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 将玩家与其在准备阶段选择的单位绑定：创建 UnitController 并交由 LES 管理。
     /// 首次连接与断线重连共用。仅房间线程调用。
-    /// 玩家未选单位（如房主/观战）时跳过，输入自然被忽略。
+    /// 玩家未选单位时跳过，如房主或观战，输入自然被忽略。
     /// </summary>
     private void TryBindPlayerController(PlayerSession session, NetPlayer netPlayer, PlayerRoomEntity playerEntity) {
-        // 1. 按玩家持久 ID 匹配准备阶段选择的单位（连接密钥即 playerId，零竞态）
+        // 1. 按玩家持久 ID 匹配准备阶段选择的单位，连接密钥即 playerId，零竞态
         var selection = _stateStore.GetPrepareUnits(RoomId)
             .FirstOrDefault(s => s.PlayerId == session.PlayerId);
         if (selection == null) {
@@ -137,11 +137,11 @@ public partial class BattleRoomServer {
             return;
         }
 
-        // 3. 创建控制器并绑定到该单位（LiteEntitySystem 标准 API）
+        // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API
         EntityManager.AddController<UnitController>(netPlayer, pawn, c => session.Controller = c);
         session.ControlledPawn = pawn;
 
-        // 4. 同步玩家阵营到 PlayerRoomEntity（客户端可识别自身阵营）
+        // 4. 同步玩家阵营到 PlayerRoomEntity，客户端可识别自身阵营
         playerEntity.Camp.Value = selection.Camp;
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -150,7 +150,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 清理旧连接的所有映射（用于新连接替换旧连接场景）。
+    /// 清理旧连接的所有映射，用于新连接替换旧连接场景。
     /// 不触发 OnPeerDisconnected 的断线标记，不修改 PlayerState。
     /// </summary>
     private void ReplaceExistingConnection(string playerId) {
@@ -173,7 +173,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 销毁全部保留实体（房间销毁时调用；由大厅线程经 Stop() 触发）。
+    /// 销毁全部保留实体，房间销毁时调用，由大厅线程经 Stop() 触发。
     /// </summary>
     private void CleanupAllSessions() {
         foreach (var session in _sessions.Values) {

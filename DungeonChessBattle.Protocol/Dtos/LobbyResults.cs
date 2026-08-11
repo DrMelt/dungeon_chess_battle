@@ -4,7 +4,7 @@
 /// <param name="RoomId">相关房间 ID。</param>
 /// <param name="Success">是否成功。</param>
 /// <param name="Error">失败原因；成功时为空。</param>
-/// <param name="Port">重定向端口（战斗启动/加入/重连时填充）。</param>
+/// <param name="Port">重定向端口，战斗启动、加入或重连时填充。</param>
 public sealed record LobbyResult(string RoomId, bool Success, string? Error = null, int? Port = null);
 
 /// <summary>招募板房间列表结果。</summary>

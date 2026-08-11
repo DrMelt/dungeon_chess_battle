@@ -8,14 +8,14 @@ namespace DungeonChessBattle.Server.Host;
 
 /// <summary>
 /// GameServer 的战斗编排请求处理。
-/// 大厅业务（创建/加入/列房/准备等）由 Server.Lobby 的
+/// 大厅业务，创建、加入、列房与准备等，由 Server.Lobby 的
 /// <see cref="DungeonChessBattle.Server.Lobby.GameLobby"/> 承担；
 /// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
 /// </summary>
 public partial class GameServer {
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
-    /// 校验通过后创建战斗房间服务器（经 <see cref="DungeonChessBattle.Server.Battle.RoomServerManager"/>）并向房间内所有玩家广播重定向端口。
+    /// 校验通过后创建战斗房间服务器，经 <see cref="DungeonChessBattle.Server.Battle.RoomServerManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
     public async Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req) {
         if (string.IsNullOrWhiteSpace(req.RoomId))
@@ -31,7 +31,7 @@ public partial class GameServer {
             return new LobbyResult(req.RoomId, false, "Room not found.");
         }
 
-        // 校验发起者必须是房主（基于连接归属表，不信任客户端提交的 playerName）
+        // 校验发起者必须是房主，基于连接归属表，不信任客户端提交的 playerName
         if (!_stateStore.IsConnectionRoomHost(connectionId, req.RoomId)) {
             _logger.LogWarning("[Game] start_battle: connection of room '{RoomId}' is not the host, rejected.", req.RoomId);
             return new LobbyResult(req.RoomId, false, "Only room host can start battle.");
@@ -43,10 +43,10 @@ public partial class GameServer {
             return new LobbyResult(req.RoomId, false, "Not all players ready.");
         }
 
-        // 创建 BattleRoomServer：初始化（根实体与单位迁移）由房间线程从 Store 自取完成
+        // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
         var server = _roomServers.StartRoomBattle(req.RoomId);
 
-        // 向房间内所有玩家广播重定向（含端口号），确保非房主也能进入战斗
+        // 向房间内所有玩家广播重定向，含端口号，确保非房主也能进入战斗
         await BroadcastToRoomAsync(req.RoomId, HubMethods.OnPrepareBattleRedirect,
             new RoomRedirect(req.RoomId, server.Port));
 

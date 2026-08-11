@@ -6,28 +6,28 @@ namespace DungeonChessBattle.Entities.SyncData;
 /// Buff 的扁平化同步数据，实现 ISpanSerializable 以便在 SyncList 中传输。
 /// </summary>
 public struct SyncBuffData : ISpanSerializable {
-    /// <summary>Buff 类型 ID，对应配置表中的 Buff 名称哈希</summary>
+    /// <summary>Buff 类型 ID，对应配置表中的 Buff 名称哈希。</summary>
     public ushort BuffTypeId;
 
-    /// <summary>剩余持续时间（秒）</summary>
+    /// <summary>剩余持续时间，秒。</summary>
     public float Remaining;
 
-    /// <summary>每跳间隔（秒），0 表示非周期性 Buff</summary>
+    /// <summary>每跳间隔，秒，0 表示非周期性 Buff。</summary>
     public float TickInterval;
 
-    /// <summary>每跳数值。DOT 为正（伤害量），HOT 为负（治疗量）。非周期性 Buff 为 0</summary>
+    /// <summary>每跳数值。DOT 为正，伤害量，HOT 为负，治疗量。非周期性 Buff 为 0。</summary>
     public float TickValue;
 
-    /// <summary>当前叠加层数</summary>
+    /// <summary>当前叠加层数。</summary>
     public ushort StackCount;
 
-    /// <summary>最大叠加层数</summary>
+    /// <summary>最大叠加层数。</summary>
     public ushort MaxStackCount;
 
-    /// <summary>来源施法单位的 NetId</summary>
+    /// <summary>来源施法单位的网络 ID。</summary>
     public ushort SourceUnitNetId;
 
-    /// <summary>伤害类型（仅 DOT 有效，HOT 和纯 Buff 忽略）</summary>
+    /// <summary>伤害类型，仅 DOT 有效，HOT 和纯 Buff 忽略。</summary>
     public byte DamageType;
 
     /// <summary>序列化后的最大字节数。</summary>
@@ -64,12 +64,12 @@ public struct SyncBuffData : ISpanSerializable {
     }
 
     /// <summary>
-    /// 判断此 Buff 是否为 DOT（持续伤害）
+    /// 判断此 Buff 是否为 DOT，持续伤害。
     /// </summary>
     public readonly bool IsDOT => TickInterval > 0 && TickValue > 0;
 
     /// <summary>
-    /// 判断此 Buff 是否为 HOT（持续治疗）
+    /// 判断此 Buff 是否为 HOT，持续治疗。
     /// </summary>
     public readonly bool IsHOT => TickInterval > 0 && TickValue < 0;
 

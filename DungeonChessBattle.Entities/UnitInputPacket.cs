@@ -15,7 +15,7 @@ public struct UnitInputPacket {
     /// <summary>移动方向 Y 分量。</summary>
     public float MoveY;
 
-    /// <summary>技能按压位标志（bit i 表示第 i 个技能被按下）。</summary>
+    /// <summary>技能按压位标志，bit i 表示第 i 个技能被按下。</summary>
     public byte SkillFlags;
 
     /// <summary>瞄准位置 X 分量。</summary>
@@ -24,7 +24,7 @@ public struct UnitInputPacket {
     /// <summary>瞄准位置 Y 分量。</summary>
     public float AimY;
 
-    /// <summary>输入时间戳（环境 TickCount 低 16 位）。</summary>
+    /// <summary>输入时间戳，环境 TickCount 低 16 位。</summary>
     public ushort Timestamp;
 
     /// <summary>移动方向向量。</summary>
@@ -36,7 +36,7 @@ public struct UnitInputPacket {
     /// <summary>
     /// 判断指定技能是否被按下。
     /// </summary>
-    /// <param name="skillIndex">技能索引（从 0 开始）。</param>
+    /// <param name="skillIndex">技能索引，从 0 开始。</param>
     /// <returns>技能被按下返回 true。</returns>
     public readonly bool IsSkillPressed(int skillIndex) {
         return (SkillFlags & (1 << skillIndex)) != 0;

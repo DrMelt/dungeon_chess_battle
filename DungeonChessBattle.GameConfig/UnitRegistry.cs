@@ -4,13 +4,13 @@ namespace DungeonChessBattle.GameConfig;
 
 /// <summary>
 /// 单位目录的纯 C# 权威注册表：配置键 / 显示名 ↔ 单位配置。
-/// 服务端（建模、控制器绑定校验）与客户端（UnitCatalog 展示）共享同一份配置，
-/// 新增单位只需在此登记一处。协议按显示名（DisplayName）传输。
+/// 服务端建模与控制器绑定校验、客户端 UnitCatalog 展示共享同一份配置，
+/// 新增单位只需在此登记一处。协议按显示名 DisplayName 传输。
 /// </summary>
 public sealed class UnitRegistry {
     /// <summary>单位条目：配置键、显示名与单位配置。</summary>
-    /// <param name="ConfigKey">单位配置键（内部标识）。</param>
-    /// <param name="DisplayName">单位显示名（协议传输用）。</param>
+    /// <param name="ConfigKey">单位配置键，内部标识。</param>
+    /// <param name="DisplayName">单位显示名，协议传输用。</param>
     /// <param name="Config">单位配置数据。</param>
     public sealed record UnitEntry(string ConfigKey, string DisplayName, UnitConfig Config);
 
@@ -21,7 +21,7 @@ public sealed class UnitRegistry {
     private readonly Dictionary<string, UnitEntry> _byDisplayName;
 
     private UnitRegistry() {
-        // 新增单位在此登记（唯一注册点）
+        // 新增单位在此登记，唯一注册点
         var entries = new[] {
             new UnitEntry("WhiteMage", "White Mage", GameConfigDB.UnitWhiteMage),
         };

@@ -7,7 +7,7 @@ public class RangeConfig {
 }
 
 /// <summary>
-/// 扇形（环形）范围配置。
+/// 扇形环形范围配置。
 /// </summary>
 public class CircularRangeConfig : RangeConfig {
     /// <summary>近端半径。</summary>
@@ -16,10 +16,10 @@ public class CircularRangeConfig : RangeConfig {
     /// <summary>远端半径。</summary>
     public float FarClamp { get; set; } = 1.0f;
 
-    /// <summary>扇形起始角（弧度）。</summary>
+    /// <summary>扇形起始角，弧度。</summary>
     public float RadianFrom { get; set; } = -1.0f;
 
-    /// <summary>扇形结束角（弧度）。</summary>
+    /// <summary>扇形结束角，弧度。</summary>
     public float RadianTo { get; set; } = 1.0f;
 }
 

@@ -6,10 +6,10 @@ namespace DungeonChessBattle.Entities.SyncData;
 /// 仇恨数据的扁平化同步结构，用于 SyncList 传输。
 /// </summary>
 public struct SyncHateData : ISpanSerializable {
-    /// <summary>目标单位的 NetId</summary>
+    /// <summary>目标单位的网络 ID。</summary>
     public ushort TargetUnitNetId;
 
-    /// <summary>仇恨值</summary>
+    /// <summary>仇恨值。</summary>
     public float HateValue;
 
     /// <summary>序列化后的最大字节数。</summary>

@@ -5,7 +5,7 @@ using DungeonChessBattle.GameConfig.Data;
 namespace DungeonChessBattle.GameConfig;
 
 /// <summary>
-/// 领域技能仓库（ISkillRepository）的配置层实现：把只读 SkillConfig 映射为
+/// 领域技能仓库 ISkillRepository 的配置层实现：把只读 SkillConfig 映射为
 /// Domain 的 SkillDefinition 供 BattleRoom 结算。映射为纯转换，无运行时状态。
 /// </summary>
 public sealed class SkillRepository : ISkillRepository {

@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Entities;
 
 /// <summary>
 /// 实时化的单位 Pawn 实体。继承 PawnLogic，支持移动、技能、预测回滚。
-/// 逐步替代 UnitSyncEntity（回合制纯数据载体）。
+/// 逐步替代 UnitSyncEntity，回合制纯数据载体。
 /// </summary>
 public partial class UnitPawn : PawnLogic {
     private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
@@ -20,15 +20,15 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
 
-    /// <summary>单位位置（XZ 平面）。</summary>
+    /// <summary>单位位置，XZ 平面。</summary>
     [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Position;
 
-    /// <summary>单位朝向方向向量（XZ 平面单位向量）。</summary>
+    /// <summary>单位朝向方向向量，XZ 平面单位向量。</summary>
     [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Direction;
 
-    /// <summary>单位碰撞半径（技能范围判定用）。</summary>
+    /// <summary>单位碰撞半径，供技能范围判定使用。</summary>
     public SyncVar<float> BodyRadius;
 
     /// <summary>当前生命值。</summary>
@@ -37,37 +37,37 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>最大生命值。</summary>
     public SyncVar<float> MaxHealth;
 
-    /// <summary>阵营字符串标识（如 "Camp_A"、"Camp_B"）。</summary>
+    /// <summary>阵营字符串标识，如 "Camp_A"、"Camp_B"。</summary>
     public readonly SyncString Camp = new();
 
-    /// <summary>单位状态（0=存活，1=死亡）。</summary>
+    /// <summary>单位状态，0 表示存活，1 表示死亡。</summary>
     public SyncVar<byte> UnitState;
 
-    /// <summary>剩余全局冷却时间（秒）。</summary>
+    /// <summary>剩余全局冷却时间，秒。</summary>
     public SyncVar<float> GcdRemaining;
 
-    /// <summary>技能个体冷却列表（服务端权威回写）。</summary>
+    /// <summary>技能个体冷却列表，服务端权威回写。</summary>
     public readonly SyncList<SyncSkillCooldown> SkillCooldowns = [];
 
-    /// <summary>当前施法技能 ID（0=无施法）。</summary>
+    /// <summary>当前施法技能 ID，0 表示无施法。</summary>
     public SyncVar<ushort> SkillCasting;
 
-    /// <summary>当前施法剩余读条时间（秒）。</summary>
+    /// <summary>当前施法剩余读条时间，秒。</summary>
     public SyncVar<float> SkillCastRemaining;
 
-    /// <summary>物理攻击基础系数（伤害倍率）。</summary>
+    /// <summary>物理攻击基础系数即伤害倍率。</summary>
     public SyncVar<float> PhysicalAttackBase;
 
-    /// <summary>魔法攻击基础系数（伤害倍率）。</summary>
+    /// <summary>魔法攻击基础系数即伤害倍率。</summary>
     public SyncVar<float> MagicAttackBase;
 
-    /// <summary>物理伤害承受系数（减免倍率）。</summary>
+    /// <summary>物理伤害承受系数即减免倍率。</summary>
     public SyncVar<float> PhysicalTakePercent;
 
-    /// <summary>魔法伤害承受系数（减免倍率）。</summary>
+    /// <summary>魔法伤害承受系数即减免倍率。</summary>
     public SyncVar<float> MagicTakePercent;
 
-    /// <summary>治疗强度系数（治疗量倍率）。</summary>
+    /// <summary>治疗强度系数即治疗倍率。</summary>
     public SyncVar<float> CureIntensity;
 
     /// <summary>基础移动速度。</summary>
@@ -76,7 +76,7 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位当前持有的 Buff 列表。</summary>
     public readonly SyncList<SyncBuffData> BuffsList = [];
 
-    /// <summary>单位拥有的技能类型 ID 列表（对应配置表）。</summary>
+    /// <summary>单位拥有的技能类型 ID 列表，对应配置表。</summary>
     public readonly SyncList<ushort> SkillIds = [];
 
     /// <summary>单位仇恨列表。</summary>
@@ -106,14 +106,14 @@ public partial class UnitPawn : PawnLogic {
         set;
     }
 
-    /// <summary>当前移动方向（由控制器逐逻辑帧注入，纯本地变量，不参与网络同步）。</summary>
+    /// <summary>当前移动方向，由控制器逐逻辑帧注入，纯本地变量，不参与网络同步。</summary>
     private Vector2 _moveDir;
 
-    /// <summary>客户端同步阶段缓存的上一次生命值（用于 HealthChanged 的 oldHealth）。</summary>
+    /// <summary>客户端同步阶段缓存的上一次生命值，用于 HealthChanged 的 oldHealth。</summary>
     private float _lastHealth;
 
     /// <summary>
-    /// 确定性移动管线（由 Server/Client 装配时注入 <c>Logic.Movement.MovementResolver.Move</c>）。
+    /// 确定性移动管线，由 Server 与 Client 装配时注入 <c>Logic.Movement.MovementResolver.Move</c>。
     /// 输入：位置、方向、速度、帧间隔 → 输出：场景交互后的最终位置。
     /// 移动规则与场景交互统一在 Logic 层，本实体只做状态落点。
     /// </summary>
@@ -123,15 +123,15 @@ public partial class UnitPawn : PawnLogic {
     /// 设置当前移动方向。由 <see cref="UnitController"/> 在客户端预测与服务端权威阶段
     /// 都调用，驱动 <see cref="Update"/> 执行确定性位移。
     /// </summary>
-    /// <param name="moveDir">移动方向向量（无需单位化）。</param>
+    /// <param name="moveDir">移动方向向量，无需单位化。</param>
     public void SetMovementInput(Vector2 moveDir) {
         _moveDir = moveDir;
     }
 
     /// <summary>
     /// 确定性移动结算：客户端预测与服务端权威都执行。
-    /// 客户端本地立即反馈（消除 RTT 卡顿），服务端为权威位置，LES 回滚重放自动纠偏。
-    /// 位移计算委托给 Logic 层移动管线（<see cref="MoveResolver"/>），本方法只写 SyncVar 状态。
+    /// 客户端本地立即反馈，消除 RTT 卡顿，服务端为权威位置，LES 回滚重放自动纠偏。
+    /// 位移计算委托给 Logic 层移动管线 <see cref="MoveResolver"/>，本方法只写 SyncVar 状态。
     /// </summary>
     protected override void Update() {
         base.Update();
@@ -152,7 +152,7 @@ public partial class UnitPawn : PawnLogic {
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
     /// <summary>
-    /// 注册 RPC 动作：技能施放请求（在服务端执行）。
+    /// 注册 RPC 动作：技能施放请求，在服务端执行。
     /// </summary>
     /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {
@@ -162,7 +162,7 @@ public partial class UnitPawn : PawnLogic {
             ref CastSkillRPC,
             ExecuteFlags.ExecuteOnServer);
 
-        // 服务端→客户端广播：受击与 Buff 增减事件（瞬时语义，携带完整数据）
+        // 服务端到客户端广播：受击与 Buff 增减事件，瞬时语义，携带完整数据
         r.CreateRPCAction<UnitPawn, SyncDamageData>(
             (e, d) => e.OnRpcDamageTaken(d),
             ref DamageTakenRPC,
@@ -176,7 +176,7 @@ public partial class UnitPawn : PawnLogic {
             ref BuffRemovedRPC,
             ExecuteFlags.SendToAll);
 
-        // 客户端在同步阶段检测血量/死亡状态变化（SyncVar 原生绑定，零带宽）
+        // 客户端在同步阶段检测血量与死亡状态变化，SyncVar 原生绑定，零带宽
         r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
         r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
     }
@@ -200,14 +200,14 @@ public partial class UnitPawn : PawnLogic {
         BuffRemoved?.Invoke(this, buff);
     }
 
-    /// <summary>客户端同步阶段：生命值变化（缓存旧值以提供 oldHealth）。</summary>
+    /// <summary>客户端同步阶段：生命值变化，缓存旧值以提供 oldHealth。</summary>
     private void OnHealthChangedBySync(float newHealth) {
         var oldHealth = _lastHealth;
         _lastHealth = newHealth;
         HealthChanged?.Invoke(this, newHealth, oldHealth);
     }
 
-    /// <summary>客户端同步阶段：单位状态变化（0 存活 → 1 死亡）。</summary>
+    /// <summary>客户端同步阶段：单位状态变化，0 存活到 1 死亡。</summary>
     private void OnUnitStateChangedBySync(byte newState) {
         if (newState == 1)
             UnitDied?.Invoke(this);
@@ -238,10 +238,10 @@ public partial class UnitPawn : PawnLogic {
 
     /// <summary>
     /// 服务端调用：接收控制器转发的玩家输入。仅调用 <see cref="InputHandler"/> 委托，
-    /// 移动逻辑由 Logic 层消费（与 SkillCastRequested → Server → Logic 转发模式一致）。
+    /// 移动逻辑由 Logic 层消费，与 SkillCastRequested 经 Server 到 Logic 的转发模式一致。
     /// </summary>
     /// <param name="input">玩家输入包。</param>
-    /// <param name="deltaTime">距上一逻辑帧的间隔时间（秒）。</param>
+    /// <param name="deltaTime">距上一逻辑帧的间隔时间，秒。</param>
     public void ServerApplyInput(UnitInputPacket input, float deltaTime) {
         if (!IsServer)
             return;

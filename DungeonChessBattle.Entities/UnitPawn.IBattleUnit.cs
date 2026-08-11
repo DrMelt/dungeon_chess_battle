@@ -4,7 +4,7 @@ using DungeonChessBattle.Entities.SyncData;
 namespace DungeonChessBattle.Entities;
 
 // UnitPawn 对 IBattleUnit 接口的适配：把 LES SyncVar/SyncList 映射为领域读写通道。
-// 领域结算（BattleRoom）面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
+// 领域结算 BattleRoom 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
 public partial class UnitPawn : IBattleUnit {
     /// <inheritdoc />
     string IBattleUnit.UnitName => UnitName.Value;

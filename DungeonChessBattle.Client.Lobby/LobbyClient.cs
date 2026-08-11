@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Client.Lobby;
 
 /// <summary>
-/// 大厅客户端（ASP.NET Core SignalR 版），负责与大厅端口的 LobbyHub 通信。
+/// 大厅客户端，ASP.NET Core SignalR 版，负责与大厅端口的 LobbyHub 通信。
 /// 处理 create_room、join_room、list_rooms、prepare_*、reconnect_room 请求及广播回调。
 /// 公开请求方法与事件与旧 JSON 协议保持一致，供 UI 层与 GameClientService 复用。
 /// 不包含 LES Entity 系统。
@@ -18,7 +18,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     private HubConnection? _hub;
 
     // 连接代际：每次 Connect 递增，用于隔离过期的异步 StartAsync 回调，
-    // 防止旧连接建立成功后干扰新连接（配合旧连接释放）。
+    // 防止旧连接建立成功后干扰新连接，配合旧连接释放。
     private int _connectionVersion;
 
     /// <summary>成功加入房间事件。参数：房间 ID。</summary>
@@ -39,7 +39,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// <summary>准备阶段战斗启动重定向事件。参数：房间 ID、端口。</summary>
     public event Action<string, int>? OnPrepareBattleRedirect;
 
-    /// <summary>房间快照更新事件（服务端组装单发）。参数：房间 ID、完整快照。</summary>
+    /// <summary>房间快照更新事件，服务端组装单发。参数：房间 ID、完整快照。</summary>
     public event Action<string, RoomSnapshot>? OnRoomSnapshotUpdated;
 
     /// <summary>大厅完全连接成功事件。</summary>
@@ -52,10 +52,10 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     public bool IsConnected => _hub is { State: HubConnectionState.Connected };
 
     /// <summary>
-    /// 连接大厅（SignalR）。
+    /// 连接大厅，SignalR。
     /// </summary>
     public void Connect(string host, int port) {
-        // 若已有旧连接，先释放（不触发 OnFullyDisconnected，避免与新连接状态串扰）
+        // 若已有旧连接，先释放，不触发 OnFullyDisconnected，避免与新连接状态串扰
         var old = _hub;
         _hub = null;
         if (old != null) {
@@ -69,7 +69,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         _ = StartAsync(hub, version);
     }
 
-    /// <summary>复用当前实例重连到新地址（先清理旧连接与缓存，再建立新连接）。</summary>
+    /// <summary>复用当前实例重连到新地址，先清理旧连接与缓存，再建立新连接。</summary>
     public void Reconnect(string host, int port) {
         ClearCaches();
         Connect(host, port);
@@ -135,7 +135,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         });
     }
 
-    /// <summary>发送请求到大厅（fire-and-forget，结果经事件回调）。</summary>
+    /// <summary>发送请求到大厅，fire-and-forget，结果经事件回调。</summary>
     private void RunHubCall(Func<HubConnection, Task> op) {
         var hub = _hub;
         if (hub is not { State: HubConnectionState.Connected })
@@ -144,7 +144,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求创建房间（含招募板配置）。
+    /// 请求创建房间，含招募板配置。
     /// </summary>
     public void RequestCreateRoom(string roomId, string playerName, string playerId,
         string? roomPassword, RoomConfigDto? config, string? serverPassword = null) {
@@ -178,7 +178,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求房间列表（招募板）。
+    /// 请求房间列表，招募板。
     /// </summary>
     public void RequestListRooms() {
         RunHubCall(async hub => {
@@ -208,7 +208,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求开始战斗（仅房主可发起，需其他玩家已全部准备）。
+    /// 请求开始战斗，仅房主可发起，需其他玩家已全部准备。
     /// </summary>
     public void RequestPrepareStartBattle(string roomId, string playerName, string playerId) {
         RunHubCall(async hub => {
@@ -218,7 +218,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求设置是否已准备（非房主）。
+    /// 请求设置是否已准备，仅非房主。
     /// </summary>
     public void RequestSetReady(string roomId, string playerName, bool ready) {
         RunHubCall(async hub => {
@@ -227,12 +227,12 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         });
     }
     /// <summary>
-    /// 请求准备（非房主）。
+    /// 请求准备，仅非房主。
     /// </summary>
     public void RequestPrepareReady(string roomId, string playerName) => RequestSetReady(roomId, playerName, true);
 
     /// <summary>
-    /// 请求取消准备（非房主）。
+    /// 请求取消准备，仅非房主。
     /// </summary>
     public void RequestPrepareUnready(string roomId, string playerName) => RequestSetReady(roomId, playerName, false);
 
@@ -254,7 +254,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求离开房间（准备阶段主动退出）。服务端从连接身份反查房间成员，无需传玩家名。
+    /// 请求离开房间，准备阶段主动退出。服务端从连接身份反查房间成员，无需传玩家名。
     /// </summary>
     public void RequestLeaveRoom(string roomId) {
         RunHubCall(async hub => {
@@ -268,7 +268,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         OnRoomSnapshotUpdated?.Invoke(snapshot.RoomId, snapshot);
     }
 
-    /// <summary>获取指定房间最近一次快照缓存（进房初始化用）；不存在时返回 null。</summary>
+    /// <summary>获取指定房间最近一次快照缓存，进房初始化用；不存在时返回 null。</summary>
     public RoomSnapshot? TryGetRoomSnapshot(string roomId) {
         _roomSnapshots.TryGetValue(roomId, out var snapshot);
         return snapshot;

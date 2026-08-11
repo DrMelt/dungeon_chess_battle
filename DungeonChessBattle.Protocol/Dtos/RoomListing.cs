@@ -47,7 +47,7 @@ public class RoomListing {
         get; init;
     }
 
-    /// <summary>房间创建时间（UTC）。</summary>
+    /// <summary>房间创建时间，UTC。</summary>
     public DateTime CreatedAt {
         get; init;
     }

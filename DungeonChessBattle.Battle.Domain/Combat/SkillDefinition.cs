@@ -14,7 +14,7 @@ public enum SkillTargetPolicy {
 }
 
 /// <summary>
-/// 技能只读定义（纯数据，无运行时状态）。由配置层（ISkillRepository）提供，
+/// 技能只读定义，纯数据无运行时状态。由配置层 ISkillRepository 提供，
 /// 领域结算直接消费数值，不再生成可变运行时模型。
 /// </summary>
 public abstract class SkillDefinition {
@@ -23,17 +23,17 @@ public abstract class SkillDefinition {
         get; init;
     }
 
-    /// <summary>读条时间（秒）。</summary>
+    /// <summary>读条时间，秒。</summary>
     public required float SpellTime {
         get; init;
     }
 
-    /// <summary>个体冷却时间（秒）。</summary>
+    /// <summary>个体冷却时间，秒。</summary>
     public required float CooldownTime {
         get; init;
     }
 
-    /// <summary>释放成功后触发的全局冷却（秒）。</summary>
+    /// <summary>释放成功后触发的全局冷却，秒。</summary>
     public required float GcdTime {
         get; init;
     }
@@ -56,7 +56,7 @@ public abstract class SkillDefinition {
 
 /// <summary>单体伤害技能定义。</summary>
 public sealed class DamageSkillDefinition : SkillDefinition {
-    /// <summary>伤害基础值（经施法者攻击系数换算）。</summary>
+    /// <summary>伤害基础值，经施法者攻击系数换算。</summary>
     public required float Damage {
         get; init;
     }
@@ -69,7 +69,7 @@ public sealed class DamageSkillDefinition : SkillDefinition {
 
 /// <summary>治疗技能定义。</summary>
 public sealed class HealSkillDefinition : SkillDefinition {
-    /// <summary>治疗基础值（经施法者治疗强度换算）。</summary>
+    /// <summary>治疗基础值，经施法者治疗强度换算。</summary>
     public required float CurePotency {
         get; init;
     }
@@ -102,7 +102,7 @@ public sealed class AddBuffSkillDefinition : SkillDefinition {
 }
 
 /// <summary>
-/// Buff 只读定义（纯数据）。描述持续效果与叠加规则，由配置层提供。
+/// Buff 只读定义，纯数据。描述持续效果与叠加规则，由配置层提供。
 /// </summary>
 public abstract class BuffDefinition {
     /// <summary>Buff 全局唯一 ID。</summary>
@@ -110,7 +110,7 @@ public abstract class BuffDefinition {
         get; init;
     }
 
-    /// <summary>持续时间（秒）。</summary>
+    /// <summary>持续时间，秒。</summary>
     public required double Duration {
         get; init;
     }
@@ -121,7 +121,7 @@ public abstract class BuffDefinition {
     }
 }
 
-/// <summary>持续伤害（DOT）Buff 定义。</summary>
+/// <summary>持续伤害 DOT Buff 定义。</summary>
 public sealed class DamageOverTimeBuff : BuffDefinition {
     /// <summary>每秒伤害基础值。</summary>
     public required float DamagePerSec {
@@ -134,7 +134,7 @@ public sealed class DamageOverTimeBuff : BuffDefinition {
     }
 }
 
-/// <summary>持续治疗（HOT）Buff 定义。</summary>
+/// <summary>持续治疗 HOT Buff 定义。</summary>
 public sealed class HealOverTimeBuff : BuffDefinition {
     /// <summary>每秒治疗基础值。</summary>
     public required float HealthPerSec {

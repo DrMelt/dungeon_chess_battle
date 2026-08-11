@@ -12,8 +12,8 @@ using DungeonChessBattle.Client.Battle.Diagnostics;
 namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
-/// 房间战斗客户端，负责与房间端口的 LES 二进制协议 (0xDC) 通信。
-/// 实现 IClientBattleService，管理 LES Entity（BattleRoomEntity、UnitPawn、PlayerRoomEntity）。
+/// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
+/// 实现 IClientBattleService，管理 LES Entity：BattleRoomEntity、UnitPawn、PlayerRoomEntity。
 /// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
@@ -22,13 +22,13 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     private const byte PacketHeader = 0xDC;
 
-    // 单房间 Entity 缓存（P2-7：替代 Dictionary）
+    // 单房间 Entity 缓存，P2-7 替代 Dictionary
     private BattleRoomEntity? _roomEntity;
     private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
     private readonly Lock _lock = new();
 
-    /// <summary>房间服务端权威创建时间（UTC Unix 秒；房间实体同步后回填）。</summary>
+    /// <summary>房间服务端权威创建时间，UTC Unix 秒；房间实体同步后回填。</summary>
     private long _roomCreatedUnix;
 
     /// <summary>单位生命值变化事件。参数：单位名称、新生命值、旧生命值。</summary>
@@ -43,22 +43,22 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>单位移除 Buff 事件。参数：单位名称、Buff 数据。</summary>
     public event Action<string, BuffView>? UnitBuffRemoved;
 
-    /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)</summary>
+    /// <summary>单位创建事件。参数：房间 ID、单位名称、阵营字符串。</summary>
     public event Action<string, string, string>? OnUnitCreated;
 
     /// <summary>
-    /// 战斗阶段变化事件（roomId, phase）。
+    /// 战斗阶段变化事件，roomId 与 phase。
     /// 由 BattleRoomEntity.BattlePhase SyncVar 变化触发。
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 
-    // 本地玩家的 UnitController（在 OnUnitControllerCreated 回调中识别并缓存）
+    // 本地玩家的 UnitController，在 OnUnitControllerCreated 回调中识别并缓存
     private UnitController? _localController;
 
     /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
     private BattlePhase _lastKnownPhase;
 
-    // 传输统计（仅房间链路，主线程驱动，无并发）
+    // 传输统计，仅房间链路，主线程驱动，无并发
     private long _bytesIn;
     private int _packetsIn;
     private float _secondAccumulator;
@@ -102,7 +102,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     protected override void UpdateAfterPollEvents(float delta) {
         _entityManager?.Update();
 
-        // 每秒流量统计结算（每秒一次，换算并重置累加器）
+        // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;
         if (_secondAccumulator >= 1f) {
             _secondAccumulator -= 1f;
@@ -115,7 +115,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _countingPeer?.ResetTraffic();
         }
 
-        // 检测 BattlePhase SyncVar 变化（LES 无公开 Changed 事件，通过轮询检测）
+        // 检测 BattlePhase SyncVar 变化，LES 无公开 Changed 事件，通过轮询检测
         if (_roomEntity != null) {
             var currentPhase = _roomEntity.BattlePhase.Value;
             var phase = (BattlePhase)currentPhase;
@@ -128,7 +128,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>处理房间端口接收的 LES 二进制包（0xDC）。</summary>
+    /// <summary>处理房间端口接收的 LES 二进制包，0xDC。</summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
         _bytesIn += data.Length;
         _packetsIn++;
@@ -180,7 +180,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 获取房间服务端权威创建时间（UTC Unix 秒）。
+    /// 获取房间服务端权威创建时间，UTC Unix 秒。
     /// 房间实体尚未同步时返回 0；调用方按需忽略。
     /// </summary>
     public long? GetRoomCreatedUnixTime(string roomId) {
@@ -190,7 +190,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 向服务端发送创建单位 RPC 请求。单位实体由服务端创建并回传（Pawn），
+    /// 向服务端发送创建单位 RPC 请求。单位实体由服务端创建并回传 Pawn，
     /// 客户端不维护本地状态。
     /// </summary>
     public void CreateUnit(string roomId, string unitName, string camp) {
@@ -205,14 +205,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 通过 RPC 向服务端发起施法读条（服务端权威结算）。
+    /// 通过 RPC 向服务端发起施法读条，服务端权威结算。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="casterName">施法单位名称。</param>
-    /// <param name="targetName">目标单位名称（范围伤害技能传 null）。</param>
+    /// <param name="targetName">目标单位名称，范围伤害技能传 null。</param>
     /// <param name="skillId">技能配置 ID。</param>
-    /// <param name="targetPosX">位置目标 X（范围伤害技能使用）。</param>
-    /// <param name="targetPosZ">位置目标 Z（范围伤害技能使用）。</param>
+    /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
+    /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
     public void CastSkill(string roomId, string casterName, string? targetName, ushort skillId,
         float targetPosX = 0f, float targetPosZ = 0f) {
         if (_entityManager == null)
@@ -275,7 +275,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>IClientBattleService 接口的输入提交实现（float 参数版）。</summary>
+    /// <summary>IClientBattleService 接口的输入提交实现，float 参数版。</summary>
     void IClientBattleService.SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY) {
         SubmitPlayerInput(
             new System.Numerics.Vector2(moveX, moveY),
@@ -285,10 +285,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     #region 网络状态统计
 
-    /// <summary>当前实时延迟（毫秒），未连接时为 0。</summary>
+    /// <summary>当前实时延迟，毫秒，未连接时为 0。</summary>
     private int GetLatencyMs() => _serverPeer?.Ping ?? 0;
 
-    /// <summary>获取传输层指标快照（延迟 + 每秒收发统计）。</summary>
+    /// <summary>获取传输层指标快照，延迟与每秒收发统计。</summary>
     public TransportMetrics TransportMetrics =>
         new(GetLatencyMs(), _packetsInPerSecond, _bytesInPerSecond, _packetsOutPerSecond, _bytesOutPerSecond);
 
@@ -308,7 +308,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 获取完整网络状态快照（对外唯一入口）。
+    /// 获取完整网络状态快照，对外唯一入口。
     /// </summary>
     public NetworkStatusSnapshot NetworkStatus {
         get {
@@ -319,7 +319,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>清零传输统计（每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零）。</summary>
+    /// <summary>清零传输统计，每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零。</summary>
     private void ResetTrafficCounters() {
         _bytesIn = 0;
         _packetsIn = 0;

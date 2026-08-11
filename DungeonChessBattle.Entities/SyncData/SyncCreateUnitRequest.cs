@@ -7,10 +7,10 @@ namespace DungeonChessBattle.Entities.SyncData;
 /// 创建单位的扁平化同步结构，用于 RPC 参数。
 /// </summary>
 public struct SyncCreateUnitRequest : ISpanSerializable {
-    /// <summary>单位显示名称（如 "White Mage"）</summary>
+    /// <summary>单位显示名称，如 "White Mage"。</summary>
     public string UnitName;
 
-    /// <summary>阵营字符串标识，见 <see cref="CampConstants"/>）。</summary>
+    /// <summary>阵营字符串标识，见 <see cref="CampConstants"/>。</summary>
     public string Camp;
 
     /// <summary>序列化后的最大字节数。</summary>

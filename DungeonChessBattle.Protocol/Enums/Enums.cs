@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Protocol.Enums;
 
 /// <summary>
-/// 玩家连接状态（用于断线重连）。
+/// 玩家连接状态，用于断线重连。
 /// </summary>
 public enum PlayerConnectionState : byte {
     /// <summary>已连接。</summary>
@@ -11,7 +11,7 @@ public enum PlayerConnectionState : byte {
 }
 
 /// <summary>
-/// 房间分类（招募板使用）。
+/// 房间分类，招募板使用。
 /// </summary>
 public enum RoomCategory : byte {
     /// <summary>休闲房间。</summary>
@@ -25,7 +25,7 @@ public enum RoomCategory : byte {
 }
 
 /// <summary>
-/// 房间状态（招募板使用）。
+/// 房间状态，招募板使用。
 /// </summary>
 public enum RoomStatus : byte {
     /// <summary>等待中。</summary>

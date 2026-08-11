@@ -22,7 +22,7 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// 内部通过 <c>ModifyPendingInput()</c> 写入待发送缓冲，随下一网络包发往服务端。
     /// </summary>
     /// <param name="moveDir">移动方向向量。</param>
-    /// <param name="skillFlags">技能按压位标志（bit i 表示第 i 个技能被按下）。</param>
+    /// <param name="skillFlags">技能按压位标志，bit i 表示第 i 个技能被按下。</param>
     /// <param name="aimPos">瞄准位置。</param>
     public void SubmitInput(Vector2 moveDir, byte skillFlags, Vector2 aimPos) {
         _latestInput = UnitInputPacket.Create(
@@ -44,12 +44,12 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
             return;
 
         // 全端执行：把当前输入传给受控 Pawn，驱动其 Update() 做确定性位移。
-        // LES 在客户端预测阶段也会调用本方法，实现本地即时反馈（消除 RTT 卡顿）；
+        // LES 在客户端预测阶段也会调用本方法，实现本地即时反馈，消除 RTT 卡顿；
         // 服务端同款执行即为权威结算，回滚重放自动纠偏。
         var input = CurrentInput;
         ControlledEntity.SetMovementInput(input.MoveDirection);
 
-        // 服务端扩展钩子：转发输入到 Logic 层衔接（如未来技能/动画联动）。
+        // 服务端扩展钩子：转发输入到 Logic 层衔接，如未来技能或动画联动。
         if (EntityManager.IsServer)
             ControlledEntity.ServerApplyInput(input, EntityManager.DeltaTimeF);
     }

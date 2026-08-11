@@ -10,12 +10,12 @@ public sealed class BuffInstance {
         get; init;
     }
 
-    /// <summary>Buff 名称（叠加判定唯一标识）。</summary>
+    /// <summary>Buff 名称，叠加判定的唯一标识。</summary>
     public required string BuffName {
         get; init;
     }
 
-    /// <summary>目标单位名称（事件上报用）。</summary>
+    /// <summary>目标单位名称，事件上报用。</summary>
     public required string TargetName {
         get; init;
     }
@@ -25,7 +25,7 @@ public sealed class BuffInstance {
         get; set;
     }
 
-    /// <summary>剩余持续时间（秒）。</summary>
+    /// <summary>剩余持续时间，秒。</summary>
     public double Remaining {
         get; set;
     }
@@ -40,8 +40,8 @@ public sealed class BuffInstance {
     public bool IsAlive { get; set; } = true;
 }
 
-/// <summary>Buff 的持续效果策略（纯函数，无状态）。</summary>
+/// <summary>Buff 的持续效果策略，纯函数无状态。</summary>
 public interface IBuffEffect {
-    /// <summary>每帧执行一次效果，返回产生的领域事件（可能为空）。</summary>
+    /// <summary>每帧执行一次效果，返回产生的领域事件，可能为空。</summary>
     IEnumerable<IDomainEvent> Tick(double deltaTime, BuffInstance instance, UnitSnapshot target);
 }

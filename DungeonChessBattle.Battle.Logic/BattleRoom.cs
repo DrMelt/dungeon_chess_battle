@@ -13,31 +13,31 @@ namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
 /// 战斗编排门面：统一驱动读条、冷却、Buff 推进与技能结算。
-/// 只依赖 Domain 接口（IBattleUnit/ISkillRepository/IMovementScene），不依赖具体网络载体。
+/// 只依赖 Domain 接口 IBattleUnit、ISkillRepository 与 IMovementScene，不依赖具体网络载体。
 /// 服务端每帧调用 <see cref="Tick"/> 推进状态，并消费返回的领域事件做网络广播。
 /// </summary>
 public sealed class BattleRoom(ISkillRepository skills) {
     private readonly ISkillRepository _skills = skills ?? throw new ArgumentNullException(nameof(skills));
     private readonly List<IBattleUnit> _units = [];
 
-    /// <summary>读条目标权威（服务端私有，不参与同步）。</summary>
+    /// <summary>读条目标权威，服务端私有，不参与同步。</summary>
     private readonly Dictionary<IBattleUnit, CastContext> _castTargets = [];
 
-    /// <summary>运行时 Buff 权威（按目标单位分组）。</summary>
+    /// <summary>运行时 Buff 权威，按目标单位分组。</summary>
     private readonly Dictionary<IBattleUnit, List<ActiveBuff>> _buffs = [];
 
-    /// <summary>已判定死亡的单位（避免重复触发 UnitDied）。</summary>
+    /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
     private readonly HashSet<IBattleUnit> _dead = [];
 
-    /// <summary>当前战斗阶段（阶段机权威，非 Running 时 Tick 不推进）。</summary>
+    /// <summary>当前战斗阶段，阶段机权威，非 Running 时 Tick 不推进。</summary>
     public BattlePhase CurrentPhase { get; private set; } = BattlePhase.Waiting;
 
-    /// <summary>战斗已运行的秒数（Running 期间累加）。</summary>
+    /// <summary>战斗已运行的秒数，Running 期间累加。</summary>
     public float ElapsedTime {
         get; private set;
     }
 
-    /// <summary>已判定结束（避免重复产出 BattleEnded）。</summary>
+    /// <summary>已判定结束，避免重复产出 BattleEnded。</summary>
     private bool _ended;
 
     private sealed record CastContext(IBattleUnit? Target, Vector2? TargetPos);
@@ -60,7 +60,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
     }
 
     /// <summary>
-    /// 开始战斗：Waiting → Running，清零计时。返回本步产生的领域事件（含 <see cref="BattleStarted"/>）。
+    /// 开始战斗：Waiting 到 Running，清零计时。返回本步产生的领域事件，含 <see cref="BattleStarted"/>。
     /// </summary>
     public IReadOnlyList<IDomainEvent> StartBattle() {
         if (CurrentPhase != BattlePhase.Waiting)
@@ -72,7 +72,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
     }
 
     /// <summary>
-    /// 手动结束战斗（幂等兜底，如全员断线）。产生战斗内事件，由编排层自行按需消费。
+    /// 手动结束战斗，幂等兜底，如全员断线。产生战斗内事件，由编排层自行按需消费。
     /// </summary>
     public void EndBattle() {
         if (CurrentPhase == BattlePhase.Finished)
@@ -141,7 +141,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
 
     /// <summary>
     /// 判定战斗是否结束：任一阵营无存活单位则结束。胜方为仍有存活单位的唯一阵营，否则平局/无存活。
-    /// 满足条件时置 Finished 并返回 true（每场仅产出一次 BattleEnded）。
+    /// 满足条件时置 Finished 并返回 true，每场仅产出一次 BattleEnded。
     /// </summary>
     private bool TryEndBattle(out string? winnerCamp) {
         winnerCamp = null;

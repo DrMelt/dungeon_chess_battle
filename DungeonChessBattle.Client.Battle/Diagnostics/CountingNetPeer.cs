@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Client.Battle.Diagnostics;
 /// 使房间链路的出站流量可被网络状态统计采集。
 /// 仅委托 <see cref="AbstractNetPeer"/> 的四个发送相关方法，不影响实体同步。
 /// </summary>
-/// <param name="inner">被包装的内部传输 peer（通常为 <see cref="LiteNetLibNetPeer"/>）。</param>
+/// <param name="inner">被包装的内部传输 peer，通常为 <see cref="LiteNetLibNetPeer"/>。</param>
 public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer {
     private readonly AbstractNetPeer _inner = inner;
 
@@ -23,7 +23,7 @@ public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer {
     /// <summary>累计的出站包数。</summary>
     public int PacketsOut => _packetsOut;
 
-    /// <summary>清零出站计数（每秒结算或断开/重连时调用）。</summary>
+    /// <summary>清零出站计数，每秒结算或断开重连时调用。</summary>
     public void ResetTraffic() {
         _bytesOut = 0;
         _packetsOut = 0;

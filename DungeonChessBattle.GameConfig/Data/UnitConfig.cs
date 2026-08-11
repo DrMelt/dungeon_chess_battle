@@ -10,19 +10,19 @@ public class UnitConfig {
     /// <summary>最大生命值。</summary>
     public float MaxHealth { get; set; } = 1000f;
 
-    /// <summary>治疗强度系数（治疗量倍率）。</summary>
+    /// <summary>治疗强度系数即治疗倍率。</summary>
     public float CureIntensity { get; set; } = 1.0f;
 
-    /// <summary>物理攻击基础系数（伤害倍率）。</summary>
+    /// <summary>物理攻击基础系数即伤害倍率。</summary>
     public float PhysicalAttackBase { get; set; } = 1.0f;
 
-    /// <summary>物理伤害承受系数（减免倍率）。</summary>
+    /// <summary>物理伤害承受系数即减免倍率。</summary>
     public float PhysicalTakePercent { get; set; } = 1.0f;
 
-    /// <summary>魔法攻击基础系数（伤害倍率）。</summary>
+    /// <summary>魔法攻击基础系数即伤害倍率。</summary>
     public float MagicAttackBase { get; set; } = 1.0f;
 
-    /// <summary>魔法伤害承受系数（减免倍率）。</summary>
+    /// <summary>魔法伤害承受系数即减免倍率。</summary>
     public float MagicTakePercent { get; set; } = 1.0f;
 
     /// <summary>基础移动速度。</summary>

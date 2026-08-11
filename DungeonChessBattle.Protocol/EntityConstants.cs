@@ -8,7 +8,7 @@ public static class EntityConstants {
     /// <summary>玩家昵称最大字符数。</summary>
     public const int MaxPlayerNameLength = 16;
 
-    /// <summary>单位显示名最大字符数（与配置表 displayName 对齐）。</summary>
+    /// <summary>单位显示名最大字符数，与配置表 displayName 对齐。</summary>
     public const int MaxUnitNameLength = 32;
 
     /// <summary>房间 ID 最大字符数。</summary>

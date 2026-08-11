@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.SignalR;
 namespace DungeonChessBattle.Server.Host;
 
 /// <summary>
-/// 大厅 SignalR Hub（ASP.NET Core 网络端点）。
+/// 大厅 SignalR Hub，ASP.NET Core 网络端点。
 /// 每个 Hub 方法对应一个大厅请求，委托给 <see cref="GameServer"/> 业务协调器处理；
 /// 服务端 → 客户端的广播由 GameServer 经 IHubContext 的 Group 推送。
 /// </summary>
-/// <param name="server">游戏服务端业务协调器（面向抽象契约）。</param>
+/// <param name="server">游戏服务端业务协调器，面向抽象契约。</param>
 public class LobbyHub(ILobbyApplication server) : Hub {
     private readonly ILobbyApplication _server = server;
 

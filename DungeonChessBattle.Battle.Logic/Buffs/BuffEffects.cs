@@ -5,7 +5,7 @@ using DungeonChessBattle.Battle.Logic.Combat;
 
 namespace DungeonChessBattle.Battle.Logic.Buffs;
 
-/// <summary>持续伤害（DOT）效果。</summary>
+/// <summary>持续伤害 DOT 效果。</summary>
 public sealed class DotEffect : IBuffEffect {
     /// <summary>每秒伤害基础值。</summary>
     public required float DamagePerSec {
@@ -28,7 +28,7 @@ public sealed class DotEffect : IBuffEffect {
     }
 }
 
-/// <summary>持续治疗（HOT）效果。</summary>
+/// <summary>持续治疗 HOT 效果。</summary>
 public sealed class HotEffect : IBuffEffect {
     /// <summary>每秒治疗基础值。</summary>
     public required float HealthPerSec {

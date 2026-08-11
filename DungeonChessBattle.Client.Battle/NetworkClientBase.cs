@@ -56,8 +56,8 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     }
 
     /// <summary>
-    /// 复用当前实例重连到新地址（不清空对象和事件订阅）。
-    /// 先执行 Disconnect 级别的清理（不触发 OnFullyDisconnected），再连接新地址。
+    /// 复用当前实例重连到新地址，不清空对象和事件订阅。
+    /// 先执行 Disconnect 级别的清理，不触发 OnFullyDisconnected，再连接新地址。
     /// </summary>
     public virtual void Reconnect(string host, int port) {
         Reconnect(host, port, ConnectionKey);
@@ -101,7 +101,7 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
         UpdateAfterPollEvents(delta);
     }
 
-    /// <summary>子类重写以在 PollEvents 后执行额外逻辑（如 EntityManager.Update）。</summary>
+    /// <summary>子类重写以在 PollEvents 后执行额外逻辑，如 EntityManager.Update。</summary>
     protected virtual void UpdateAfterPollEvents(float delta) {
     }
 

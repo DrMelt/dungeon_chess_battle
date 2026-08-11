@@ -3,7 +3,7 @@
 namespace DungeonChessBattle.Protocol.Dtos;
 
 /// <summary>
-/// 客房招募板配置传输对象（create_room 的可选配置）。
+/// 客房招募板配置传输对象，create_room 的可选配置。
 /// 房主 displayName 由服务端权威解析，不随此对象传输。
 /// </summary>
 /// <param name="Title">招募板展示的房间标题。</param>
@@ -58,13 +58,13 @@ public sealed record PrepareAddUnitRequest(string RoomId, string UnitName, strin
 /// <param name="Camp">阵营。</param>
 public sealed record PrepareRemoveUnitRequest(string RoomId, string UnitName, string Camp);
 
-/// <summary>准备阶段：开始战斗请求（仅房主可发起）。</summary>
+/// <summary>准备阶段：开始战斗请求，仅房主可发起。</summary>
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="PlayerId">发起者玩家 ID。</param>
 /// <param name="PlayerName">发起者显示名。</param>
 public sealed record PrepareStartBattleRequest(string RoomId, string PlayerId, string PlayerName);
 
-/// <summary>准备阶段：设置是否已准备请求（非房主）。</summary>
+/// <summary>准备阶段：设置是否已准备请求，仅非房主。</summary>
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="PlayerName">玩家显示名。</param>
 /// <param name="Ready">是否已准备。</param>
@@ -83,6 +83,6 @@ public sealed record ReconnectRoomRequest(
     string? RoomPassword,
     string? ServerPassword);
 
-/// <summary>离开房间请求（准备阶段主动退出）。</summary>
+/// <summary>离开房间请求，准备阶段主动退出。</summary>
 /// <param name="RoomId">房间 ID。</param>
 public sealed record LeaveRoomRequest(string RoomId);

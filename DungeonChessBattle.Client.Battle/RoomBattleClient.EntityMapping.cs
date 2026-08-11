@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
 /// RoomBattleClient 的 LES 实体创建回调与本地 Pawn 查询工具。
-/// 展示层直读 UnitPawn（SyncVar），不再维护客户端模型中转。
+/// 展示层直读 UnitPawn 的 SyncVar，不再维护客户端模型中转。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
@@ -17,7 +17,7 @@ public partial class RoomBattleClient {
             _roomEntity = entity;
             _currentRoomId = entity.RoomId.Value;
 
-            // 回填服务端权威创建时间（>0 才覆盖，规避 OnConstructed 默认 0 的竞态时序）
+            // 回填服务端权威创建时间，>0 才覆盖，规避 OnConstructed 默认 0 的竞态时序
             if (entity.CreatedUnixTime.Value > 0) {
                 _roomCreatedUnix = (long)entity.CreatedUnixTime.Value;
             }
@@ -29,7 +29,7 @@ public partial class RoomBattleClient {
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
-        // 注入移动管线（Logic 层 MovementResolver，含场景交互）。
+        // 注入移动管线，Logic 层 MovementResolver，含场景交互。
         // 与服务端注入同一实现；延迟读 BodyRadius.Value，规避实体构造时同步未完成的时序。
         pawn.MoveResolver = (pos, dir, speed, dt) =>
             MovementResolver.Move(pos, dir, speed, dt, pawn.BodyRadius.Value, OpenMovementScene.Instance);
@@ -53,7 +53,7 @@ public partial class RoomBattleClient {
             UnitBuffRemoved?.Invoke(u.UnitName.Value, eventData);
         };
 
-        // 触发 OnUnitCreated 事件（通知 UI 层）
+        // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;
         if (roomId != null)
             OnUnitCreated?.Invoke(roomId, unitName, pawn.Camp.Value);
@@ -70,10 +70,10 @@ public partial class RoomBattleClient {
     }
 
     /// <summary>
-    /// 控制器实体构造回调：识别并缓存本地玩家的 UnitController（用于 SubmitPlayerInput）。
-    /// 客户端单房间单连接（OnlyForOwner 分发），收到控制器实体即属主控制器；
+    /// 控制器实体构造回调：识别并缓存本地玩家的 UnitController，用于 SubmitPlayerInput。
+    /// 客户端单房间单连接，OnlyForOwner 分发，收到控制器实体即属主控制器；
     /// 不依赖 IsLocalControlled——该判断在构造回调时序上可能尚未同步完成，
-    /// 误判会导致 _localController 恒为 null、输入被静默丢弃（Position 恒为 0）。
+    /// 误判会导致 _localController 恒为 null、输入被静默丢弃，Position 恒为 0。
     /// </summary>
     private void OnUnitControllerCreated(UnitController controller) {
         var pawnName = controller.ControlledEntity?.UnitName.Value ?? "(null)";
@@ -105,7 +105,7 @@ public partial class RoomBattleClient {
         }
     }
 
-    /// <summary>获取本房间全部 Pawn 实体的只读快照（展示层枚举数据源）。</summary>
+    /// <summary>获取本房间全部 Pawn 实体的只读快照，展示层枚举数据源。</summary>
     public IReadOnlyList<UnitPawn> GetPawns() {
         lock (_lock) {
             return [.. _roomPawns];

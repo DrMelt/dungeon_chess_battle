@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Server.Host;
 
 /// <summary>
-/// 游戏服务器宿主（ASP.NET Core / Kestrel + SignalR）。
+/// 游戏服务器宿主，ASP.NET Core、Kestrel 与 SignalR。
 /// 负责任命名的 Kestrel 宿主、SignalR Hub 注册、依赖装配，
 /// 以及空房间清理后台循环。提供 Start/Stop 操作与状态事件通知。
 /// 服务器配置由 <see cref="ServerConfig"/> 唯一来源注入。
@@ -43,7 +43,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
         private set;
     }
 
-    /// <summary>当前 Kestrel 宿主实例（运行中可用）。</summary>
+    /// <summary>当前 Kestrel 宿主实例，运行中可用。</summary>
     public WebApplication? App {
         get {
             lock (_lock)
@@ -55,7 +55,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     public event Action<bool, int>? StatusChanged;
 
     /// <summary>
-    /// 启动服务器（Kestrel + SignalR，监听大厅端口）。
+    /// 启动服务器，Kestrel 与 SignalR，监听大厅端口。
     /// </summary>
     /// <param name="port">大厅监听端口。</param>
     /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
@@ -99,7 +99,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 _app = app;
                 _server = app.Services.GetRequiredService<GameServer>();
 
-                // 空房间清理后台循环（替代原大厅轮询线程）
+                // 空房间清理后台循环，替代原大厅轮询线程
                 _cts = new CancellationTokenSource();
                 _cleanupLoop = Task.Run(() => CleanupLoopAsync(_cts.Token));
 
@@ -168,7 +168,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
 
     /// <summary>
     /// 运行控制台交互循环，支持 help / status / rooms / exit 命令。
-    /// 归位到宿主层（不再属于大厅/战斗领域）；当前版本不自动启动，由调用方按需启用。
+    /// 归位到宿主层，不再属于大厅或战斗领域；当前版本不自动启动，由调用方按需启用。
     /// </summary>
     /// <param name="getPeerCount">获取当前在线人数委托。</param>
     /// <param name="getUptime">获取服务运行时长委托。</param>
