@@ -13,10 +13,12 @@ public partial class NetworkDebugOverlay : Label {
     /// <summary>显隐切换键（集中在常量，便于调整）。</summary>
     private const Key ToggleKey = Key.F3;
 
+    /// <summary>每帧刷新网络状态文本。</summary>
     public override void _Process(double delta) {
         Text = FormatStatus(ServiceLocator.ClientService.RoomClient.NetworkStatus);
     }
 
+    /// <summary>处理显隐切换快捷键。</summary>
     public override void _UnhandledInput(InputEvent @event) {
         if (@event is InputEventKey { Pressed: true, PhysicalKeycode: ToggleKey, Echo: false })
             Visible = !Visible;

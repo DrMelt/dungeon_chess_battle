@@ -12,8 +12,11 @@ public partial class BattleInputController : Node {
     [Export]
     private PlayerOperationInterfaceInfo? _playerOperationInterfaceInfo;
 
+    /// <summary>移动输入向量。</summary>
     private Vector2 _moveDir;
+    /// <summary>技能触发标志位。</summary>
     private byte _skillFlags;
+    /// <summary>瞄准点位置。</summary>
     private Vector2 _aimPos;
 
     /// <summary>

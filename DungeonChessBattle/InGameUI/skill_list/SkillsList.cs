@@ -23,7 +23,7 @@ public partial class SkillsList : Control {
         get; set;
     }
 
-    /// <summary>ViewModel 引用（由 PlayerUIRoot 在绑定时注入），用于通知目标等待状态</summary>
+    /// <summary>ViewModel 引用（由 PlayerUIRoot 在绑定时注入），用于通知目标等待状态。</summary>
     public PlayerOperationInterfaceInfo? ViewModel {
         get; set;
     }

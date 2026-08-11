@@ -31,35 +31,35 @@ public partial class PlayerOperationInterfaceInfo : Node {
 
     #region Bindable Properties (ViewModel)
 
-    /// <summary>当前是否在等待技能目标选择</summary>
+    /// <summary>当前是否在等待技能目标选择。</summary>
     public bool IsWaitingSkillTarget {
         get; private set;
     }
 
-    /// <summary>当前是否在等待移动目标选择</summary>
+    /// <summary>当前是否在等待移动目标选择。</summary>
     public bool IsWaitingMoveTarget {
         get; private set;
     }
 
-    /// <summary>当前是否在等待任何目标选择</summary>
+    /// <summary>当前是否在等待任何目标选择。</summary>
     public bool IsWaitingTarget => IsWaitingSkillTarget || IsWaitingMoveTarget;
 
-    /// <summary>战斗输入是否被 UI 阻塞（等待目标选择中）</summary>
+    /// <summary>战斗输入是否被 UI 阻塞（等待目标选择中）。</summary>
     public bool IsBlockingInput => IsWaitingTarget;
 
     #endregion
 
     #region Signals
 
-    /// <summary>战斗绑定完成信号（供 View 层 PlayerUIRoot 订阅）</summary>
+    /// <summary>战斗绑定完成信号（供 View 层 PlayerUIRoot 订阅）。</summary>
     [Signal]
     public delegate void BattleBoundEventHandler();
 
-    /// <summary>战斗解绑信号</summary>
+    /// <summary>战斗解绑信号。</summary>
     [Signal]
     public delegate void BattleUnboundEventHandler();
 
-    /// <summary>等待目标状态变化信号</summary>
+    /// <summary>等待目标状态变化信号。</summary>
     [Signal]
     public delegate void WaitingTargetChangedEventHandler(bool isWaiting);
 
@@ -67,12 +67,12 @@ public partial class PlayerOperationInterfaceInfo : Node {
 
     #region Public API (MainScene 消费)
 
-    /// <summary>进入战斗：触发 UI 绑定初始化</summary>
+    /// <summary>进入战斗：触发 UI 绑定初始化。</summary>
     public void BindToBattle() {
         EmitSignal(SignalName.BattleBound);
     }
 
-    /// <summary>退出战斗：清理 UI 绑定状态</summary>
+    /// <summary>退出战斗：清理 UI 绑定状态。</summary>
     public void UnbindFromBattle() {
         IsWaitingSkillTarget = false;
         IsWaitingMoveTarget = false;
@@ -83,7 +83,7 @@ public partial class PlayerOperationInterfaceInfo : Node {
 
     #region Commands (ViewModel)
 
-    /// <summary>View 层通知 VM 正在等待技能目标选择</summary>
+    /// <summary>View 层通知 VM 正在等待技能目标选择。</summary>
     /// <param name="waiting">是否进入等待技能目标状态。</param>
     public void NotifyWaitingSkillTarget(bool waiting) {
         var wasWaiting = IsWaitingTarget;
@@ -92,7 +92,7 @@ public partial class PlayerOperationInterfaceInfo : Node {
             EmitSignal(SignalName.WaitingTargetChanged, IsWaitingTarget);
     }
 
-    /// <summary>View 层通知 VM 正在等待移动目标选择</summary>
+    /// <summary>View 层通知 VM 正在等待移动目标选择。</summary>
     /// <param name="waiting">是否进入等待移动目标状态。</param>
     public void NotifyWaitingMoveTarget(bool waiting) {
         var wasWaiting = IsWaitingTarget;
@@ -101,7 +101,7 @@ public partial class PlayerOperationInterfaceInfo : Node {
             EmitSignal(SignalName.WaitingTargetChanged, IsWaitingTarget);
     }
 
-    /// <summary>取消所有等待状态</summary>
+    /// <summary>取消所有等待状态。</summary>
     public void CancelAllWaiting() {
         var wasWaiting = IsWaitingTarget;
         IsWaitingSkillTarget = false;

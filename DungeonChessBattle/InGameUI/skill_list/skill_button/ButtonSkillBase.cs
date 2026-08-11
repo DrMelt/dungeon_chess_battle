@@ -53,7 +53,7 @@ public partial class ButtonSkillBase : Button {
         Icon = bindSkill.Icon;
     }
 
-    /// <summary>初始化按钮：校验导出并注册鼠标悬浮 UI 判定。</summary>
+    /// <summary>节点就绪：校验导出引用并注册鼠标悬浮 UI 判定。</summary>
     public override void _Ready() {
         ValidateExports();
 

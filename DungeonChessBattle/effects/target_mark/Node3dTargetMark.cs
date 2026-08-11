@@ -9,22 +9,15 @@ namespace DungeonChessBattle;
 /// 目标标记节点：用于在棋盘上显示单位的目标圈标记，并根据阵营着色。
 /// </summary>
 public partial class Node3dTargetMark : Node3D, IUIUpdate {
-    /// <summary>
-    /// 节点引用。
-    /// </summary>
+    /// <summary>导出引用集合节点。</summary>
     public Node3dTargetMarkInterRefs? InterRefs {
         get; private set;
     }
 
-    /// <summary>
-    /// 获取已初始化的节点引用，未初始化时抛出异常。
-    /// </summary>
     private Node3dTargetMarkInterRefs InterRefsOrThrow =>
         InterRefs ?? throw new InvalidOperationException("[Node3dTargetMark] InterRefs has not been initialized.");
 
-    /// <summary>
-    /// 目标标记贴花引用。
-    /// </summary>
+    /// <summary>目标标记贴花引用。</summary>
     public Decal? TargetDecalRef => InterRefsOrThrow.TargetDecalRef;
 
     /// <summary>

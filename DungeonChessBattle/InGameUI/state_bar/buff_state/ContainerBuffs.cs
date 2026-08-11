@@ -40,7 +40,7 @@ public partial class ContainerBuffs : Control, IUIUpdate {
             return;
         }
 
-        // 为每个同步 Buff 数据创建图标占位（图标资源按 BuffTypeId 匹配待资源表补充）
+        // 为每个同步 Buff 数据创建图标（图标按 BuffTypeId 从资源表匹配）
         foreach (var buffData in pawn.BuffsList) {
             TextureRectBuffIcon buffIcon = InterRefs.BuffIconPackedScene.Instantiate<TextureRectBuffIcon>();
             buffIcon.SetBuffIcon(buffData, pawn);

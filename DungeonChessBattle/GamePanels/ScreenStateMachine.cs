@@ -8,9 +8,6 @@ namespace DungeonChessBattle.GamePanels;
 /// 面板间导航仍由 BaseGamePanel 的 caller 链负责，避免职责重叠。
 /// 进入战斗隐藏整个 FrontUI；退出战斗恢复 FrontUI 并复位到大厅。
 /// </summary>
-/// <remarks>
-/// 初始化状态机。
-/// </remarks>
 /// <param name="frontUI">前厅 UI 容器引用（Interface/FrontUI）。</param>
 public sealed class ScreenStateMachine(Control? frontUI) {
     /// <summary>前厅 UI 容器（FrontUI），进入战斗时整体隐藏。</summary>

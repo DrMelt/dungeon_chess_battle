@@ -29,7 +29,6 @@ public partial class FocusOnOutline : Node {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        // Update OutLine
         var focused = playerInterfaceRes?.MouseOnUnit;
         var focusedMesh = focused?.IsInsideTree() == true
             ? focused.UnitMeshInstanceRef

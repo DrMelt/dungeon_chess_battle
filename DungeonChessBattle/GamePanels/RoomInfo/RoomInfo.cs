@@ -18,7 +18,6 @@ public partial class RoomInfo : Container {
     /// <summary>背景面板，用于高亮效果。</summary>
     [Export] private Panel? _bgPanel;
 
-    // 缓存原始背景色用于高亮切换
     /// <summary>未选中时的原始背景色。</summary>
     private Color _normalBgColor;
     /// <summary>选中状态下的背景色。</summary>
@@ -31,12 +30,10 @@ public partial class RoomInfo : Container {
     /// 节点就绪：缓存正常背景色并连接鼠标交互事件。
     /// </summary>
     public override void _Ready() {
-        // 缓存正常背景色
         if (_bgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             _normalBgColor = flat.BgColor;
         }
 
-        // 连接输入事件用于点击
         GuiInput += OnGuiInput;
         MouseEntered += OnMouseEntered;
         MouseExited += OnMouseExited;

@@ -30,16 +30,4 @@ public partial class EffectHints : Node {
             GD.PrintErr("[EffectHints] [Export] _effectRectRange_PKS is not assigned!");
     }
 
-    /// <summary>
-    /// 每帧遍历子效果节点，清理由子脚本自行处理。
-    /// </summary>
-    /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
-        var children = GetChildren();
-        foreach (Node child in children) {
-            if (child is Node3D) {
-                // effect cleanup handled by child scripts
-            }
-        }
-    }
 }

@@ -55,7 +55,7 @@ public partial class BuffChangeInfo : FadeInfo {
     }
 
     /// <summary>
-    /// 初始化提示内容（同步 Buff 数据版本）：设置变化符号，图标资源按 BuffTypeId 匹配待资源表补充（暂空）。
+    /// 初始化提示内容（同步 Buff 数据版本）：设置变化符号，图标按 BuffTypeId 从资源表匹配。
     /// </summary>
     /// <param name="buffData">要展示的同步 Buff 数据。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>

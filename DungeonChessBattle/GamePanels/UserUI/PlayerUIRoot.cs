@@ -30,7 +30,7 @@ public partial class PlayerUIRoot : Control {
     [Export]
     private StateBarList? stateBarListRef;
 
-    /// <summary>ViewModel 引用（由 PlayerOperationInterface_Info 在 _Ready 时注入）</summary>
+    /// <summary>ViewModel 引用（由 PlayerOperationInterfaceInfo 在 _Ready 时注入）。</summary>
     private PlayerOperationInterfaceInfo? _viewModel;
 
     #endregion
@@ -60,7 +60,7 @@ public partial class PlayerUIRoot : Control {
 
     #region ViewModel
 
-    /// <summary>由 PlayerOperationInterface_Info 调用，注入 ViewModel 并订阅事件</summary>
+    /// <summary>由 PlayerOperationInterfaceInfo 调用，注入 ViewModel 并订阅事件。</summary>
     public void SetViewModel(PlayerOperationInterfaceInfo vm) {
         if (_viewModel != null) {
             _viewModel.BattleBound -= OnBattleBound;
@@ -113,12 +113,12 @@ public partial class PlayerUIRoot : Control {
         skillsListRef?.UpdateSkillsList(unitShow);
     }
 
-    /// <summary>当前是否在等待技能目标选择（由 SkillsList 驱动）</summary>
+    /// <summary>当前是否在等待技能目标选择（由 SkillsList 驱动）。</summary>
     public bool IsWaitSkillTarget() {
         return skillsListRef != null && skillsListRef.IsWaitTarget();
     }
 
-    /// <summary>当前是否在等待移动目标选择（委托给 ViewModel）</summary>
+    /// <summary>当前是否在等待移动目标选择（委托给 ViewModel）。</summary>
     public bool IsWaitMoveTarget() {
         return _viewModel?.IsWaitingMoveTarget ?? false;
     }
