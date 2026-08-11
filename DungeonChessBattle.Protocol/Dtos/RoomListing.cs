@@ -19,11 +19,6 @@ public class RoomListing {
     /// <summary>招募板展示的房间描述。</summary>
     public string Description { get; init; } = string.Empty;
 
-    /// <summary>房间分类。</summary>
-    public RoomCategory Category {
-        get; init;
-    }
-
     /// <summary>房主玩家名。</summary>
     public string HostName { get; init; } = string.Empty;
 

@@ -38,8 +38,6 @@ public partial class GameLobby : BaseGamePanel {
     private string? _selectedRoomId;
     /// <summary>房间 ID 到卡片节点的缓存。</summary>
     private readonly Dictionary<string, RoomInfo> _roomInfoCache = [];
-    /// <summary>当前筛选的房间类别。</summary>
-    private RoomCategory _selectedCategory = RoomCategory.Casual;
     /// <summary>缓存的服务端房间列表。</summary>
     private List<RoomListing>? _lastRoomListings;
     /// <summary>缓存创建房间时输入的房间名。</summary>

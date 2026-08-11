@@ -1,5 +1,3 @@
-﻿using DungeonChessBattle.Protocol.Enums;
-
 namespace DungeonChessBattle.Protocol.Dtos;
 
 /// <summary>
@@ -9,13 +7,11 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// <param name="Title">招募板展示的房间标题。</param>
 /// <param name="DungeonName">副本名。</param>
 /// <param name="Description">招募板展示的房间描述。</param>
-/// <param name="Category">房间分类。</param>
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 public sealed record RoomConfigDto(
     string Title,
     string DungeonName,
     string Description,
-    RoomCategory Category,
     int MaxPlayers);
 
 /// <summary>创建房间请求。</summary>

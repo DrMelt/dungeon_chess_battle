@@ -92,7 +92,7 @@ public partial class GameLobby {
             var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
                 _selectedRoomConfig = listing;
-                InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n房主: {listing.HostName}\n类别: {listing.Category}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
+                InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {
                 InterRefs.DetailLabel.Text = $"选中房间: {roomId}\n";

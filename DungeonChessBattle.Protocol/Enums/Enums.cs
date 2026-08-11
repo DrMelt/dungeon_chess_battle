@@ -11,20 +11,6 @@ public enum PlayerConnectionState : byte {
 }
 
 /// <summary>
-/// 房间分类，招募板使用。
-/// </summary>
-public enum RoomCategory : byte {
-    /// <summary>休闲房间。</summary>
-    Casual = 0,
-    /// <summary>竞技房间。</summary>
-    Competitive = 1,
-    /// <summary>练习房间。</summary>
-    Practice = 2,
-    /// <summary>锦标赛房间。</summary>
-    Tournament = 3,
-}
-
-/// <summary>
 /// 房间状态，招募板使用。
 /// </summary>
 public enum RoomStatus : byte {
