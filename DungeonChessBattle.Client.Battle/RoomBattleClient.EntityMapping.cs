@@ -41,22 +41,22 @@ public partial class RoomBattleClient {
 
         // 订阅 UnitPawn 事件
         pawn.HealthChanged += (u, newHealth, oldHealth) =>
-            UnitHealthChanged?.Invoke(u.UnitName.Value, newHealth, oldHealth);
+            UnitHealthChanged?.Invoke(u.Id, newHealth, oldHealth);
         pawn.UnitDied += (u) =>
-            UnitDied?.Invoke(u.UnitName.Value);
+            UnitDied?.Invoke(u.Id);
         pawn.BuffAdded += (u, buff) => {
             var eventData = MapBuffData(buff);
-            UnitBuffAdded?.Invoke(u.UnitName.Value, eventData);
+            UnitBuffAdded?.Invoke(u.Id, eventData);
         };
         pawn.BuffRemoved += (u, buff) => {
             var eventData = MapBuffData(buff);
-            UnitBuffRemoved?.Invoke(u.UnitName.Value, eventData);
+            UnitBuffRemoved?.Invoke(u.Id, eventData);
         };
 
         // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;
         if (roomId != null)
-            OnUnitCreated?.Invoke(roomId, unitName, pawn.Camp.Value);
+            OnUnitCreated?.Invoke(roomId, pawn.Id, unitName, pawn.Camp.Value);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomBattleClient] UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
@@ -98,10 +98,10 @@ public partial class RoomBattleClient {
         DamageType = buff.DamageType,
     };
 
-    /// <summary>按单位名称查找本房间的 Pawn 实体。</summary>
-    public UnitPawn? FindPawnByName(string unitName) {
+    /// <summary>按网络实体 ID 查找本房间的 Pawn 实体。</summary>
+    public UnitPawn? FindPawnById(ushort netId) {
         lock (_lock) {
-            return _roomPawns.Find(p => p.UnitName.Value == unitName);
+            return _roomPawns.Find(p => p.Id == netId);
         }
     }
 

@@ -129,9 +129,8 @@ public partial class BattleRoomServer {
             return;
         }
 
-        // 2. 按单位名在房间内找到对应 Pawn
-        var pawn = _roomPawns.FirstOrDefault(p => p.UnitName.Value == selection.UnitName);
-        if (pawn == null) {
+        // 2. 取该玩家专属 Pawn，重名单位不串绑
+        if (!_pawnByPlayerId.TryGetValue(session.PlayerId, out var pawn)) {
             _logger.LogWarning("[RoomServer:{RoomId}] Player '{PlayerName}' prepare unit '{UnitName}' pawn not found.",
                 RoomId, session.PlayerName, selection.UnitName);
             return;

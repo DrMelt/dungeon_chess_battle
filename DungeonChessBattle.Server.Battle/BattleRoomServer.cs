@@ -60,6 +60,12 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的所有 UnitPawn。</summary>
     private readonly List<UnitPawn> _roomPawns = [];
 
+    /// <summary>playerId 到其专属 Pawn 的映射，控制器绑定用；房间线程首帧迁移时填充。</summary>
+    private readonly Dictionary<string, UnitPawn> _pawnByPlayerId = [];
+
+    /// <summary>同阵营玩家出生点间距，大于两倍碰撞半径避免重叠。</summary>
+    private const float SpawnSpacing = 3f;
+
     /// <summary>本房间的 BattleRoomEntity，SEM 创建后填充。</summary>
     private BattleRoomEntity? _roomEntity;
 

@@ -131,7 +131,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
         // 若在单位迭代内判定，同帧互杀时后死者可能因战斗已切 Finished 而丢失死亡事件。
         foreach (var unit in _units.ToArray()) {
             if (unit.Health <= 0f && _dead.Add(unit))
-                events.Add(new UnitDied(unit.UnitName));
+                events.Add(new UnitDied(unit.UnitNetId));
         }
 
         if (TryEndBattle(out string? winnerCamp))
@@ -236,7 +236,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
                 if (ctx.Target is { } target) {
                     var res = CastResolver.ComputeDamage(caster.Snapshot, target.Snapshot, d.Damage, d.DamageType);
                     target.Health = res.RemainingHealth;
-                    events.Add(new DamageOccurred(target.UnitName, res.AppliedDamage, d.DamageType));
+                    events.Add(new DamageOccurred(target.UnitNetId, res.AppliedDamage, d.DamageType));
                 }
                 break;
 
@@ -244,7 +244,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
                 if (ctx.Target is { } healTarget) {
                     var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
                     healTarget.Health = heal.RemainingHealth;
-                    events.Add(new HealOccurred(healTarget.UnitName, heal.ActualHeal));
+                    events.Add(new HealOccurred(healTarget.UnitNetId, heal.ActualHeal));
                 }
                 break;
 
@@ -258,7 +258,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
                 break;
         }
 
-        events.Add(new CastCompleted(caster.UnitName, skill.SkillId, ctx.Target?.UnitName));
+        events.Add(new CastCompleted(caster.UnitNetId, skill.SkillId, ctx.Target?.UnitNetId));
     }
 
     private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IDomainEvent> events) {
@@ -271,7 +271,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
 
             var res = CastResolver.ComputeDamage(caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);
             unit.Health = res.RemainingHealth;
-            events.Add(new DamageOccurred(unit.UnitName, res.AppliedDamage, skill.DamageType));
+            events.Add(new DamageOccurred(unit.UnitNetId, res.AppliedDamage, skill.DamageType));
         }
     }
 
@@ -289,12 +289,12 @@ public sealed class BattleRoom(ISkillRepository skills) {
             stacks = existing.Instance.Stacks;
         }
         else {
-            list.Add(new ActiveBuff(BuffFactory.CreateInstance(def, target.UnitName, caster.Snapshot),
+            list.Add(new ActiveBuff(BuffFactory.CreateInstance(def, target.UnitNetId, caster.Snapshot),
                 BuffFactory.CreateEffect(def)));
             stacks = 1;
         }
 
-        events.Add(new BuffApplied(target.UnitName, def.BuffTypeId, stacks));
+        events.Add(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
     }
 
     private static void ApplyHealthDelta(IBattleUnit unit, float delta) {

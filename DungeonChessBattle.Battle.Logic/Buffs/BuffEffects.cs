@@ -24,7 +24,7 @@ public sealed class DotEffect : IBuffEffect {
 
         float baseDps = DamagePerSec * (float)deltaTime;
         var result = DamageProcessor.Process(from, target, baseDps, DamageType);
-        yield return new DamageOccurred(instance.TargetName, result.AppliedDamage, DamageType);
+        yield return new DamageOccurred(instance.TargetNetId, result.AppliedDamage, DamageType);
     }
 }
 
@@ -42,7 +42,7 @@ public sealed class HotEffect : IBuffEffect {
 
         float baseHps = HealthPerSec * (float)deltaTime;
         var result = HealProcessor.Process(from, target, baseHps);
-        yield return new HealOccurred(instance.TargetName, result.ActualHeal);
+        yield return new HealOccurred(instance.TargetNetId, result.ActualHeal);
     }
 }
 
@@ -60,7 +60,7 @@ public static class BuffTickProcessor {
         instance.Remaining -= deltaTime;
         if (instance.Remaining < 0 || instance.Stacks <= 0) {
             instance.IsAlive = false;
-            events.Add(new BuffExpired(instance.TargetName, instance.BuffTypeId));
+            events.Add(new BuffExpired(instance.TargetNetId, instance.BuffTypeId));
         }
 
         return events;

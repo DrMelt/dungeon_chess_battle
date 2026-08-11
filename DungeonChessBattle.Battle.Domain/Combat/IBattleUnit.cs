@@ -6,8 +6,13 @@ namespace DungeonChessBattle.Battle.Domain.Combat;
 /// 读条、冷却、Buff 为服务端每帧推进的权威状态，通过本接口写回载体同步。
 /// </summary>
 public interface IBattleUnit {
-    /// <summary>单位名称，供调试与事件标识使用。</summary>
+    /// <summary>单位名称，供调试与展示使用。</summary>
     string UnitName {
+        get;
+    }
+
+    /// <summary>单位网络实体 ID，房间内唯一，领域事件标识用。</summary>
+    ushort UnitNetId {
         get;
     }
 

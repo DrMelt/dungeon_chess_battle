@@ -7,22 +7,22 @@ public interface IDomainEvent {
 }
 
 /// <summary>单位受到伤害。</summary>
-public readonly record struct DamageOccurred(string TargetName, float AppliedDamage, DamageType DamageType) : IDomainEvent;
+public readonly record struct DamageOccurred(ushort TargetNetId, float AppliedDamage, DamageType DamageType) : IDomainEvent;
 
 /// <summary>单位接受治疗。</summary>
-public readonly record struct HealOccurred(string TargetName, float ActualHeal) : IDomainEvent;
+public readonly record struct HealOccurred(ushort TargetNetId, float ActualHeal) : IDomainEvent;
 
 /// <summary>单位获得 Buff。</summary>
-public readonly record struct BuffApplied(string TargetName, ushort BuffTypeId, int StackCount) : IDomainEvent;
+public readonly record struct BuffApplied(ushort TargetNetId, ushort BuffTypeId, int StackCount) : IDomainEvent;
 
 /// <summary>单位失去 Buff。</summary>
-public readonly record struct BuffExpired(string TargetName, ushort BuffTypeId) : IDomainEvent;
+public readonly record struct BuffExpired(ushort TargetNetId, ushort BuffTypeId) : IDomainEvent;
 
 /// <summary>技能读条完成并完成结算。</summary>
-public readonly record struct CastCompleted(string CasterName, ushort SkillId, string? TargetName) : IDomainEvent;
+public readonly record struct CastCompleted(ushort CasterNetId, ushort SkillId, ushort? TargetNetId) : IDomainEvent;
 
 /// <summary>单位死亡。</summary>
-public readonly record struct UnitDied(string UnitName) : IDomainEvent;
+public readonly record struct UnitDied(ushort UnitNetId) : IDomainEvent;
 
 /// <summary>战斗开始，阶段机进入 Running，房间级元事件。</summary>
 public readonly record struct BattleStarted() : IDomainEvent;

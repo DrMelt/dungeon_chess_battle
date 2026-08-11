@@ -96,7 +96,7 @@ public partial class SkillsList : Control {
             return;
         }
         var roomId = unitsManager?.RoomId ?? "";
-        var casterName = button.BindPawn.UnitName.Value;
+        var casterNetId = button.BindPawn.Id;
 
         // NeedUnitTarget：使用已锁定的 FocusOnUnit，同步发起施法 RPC
         if (skill.NeedUnitTarget) {
@@ -105,7 +105,7 @@ public partial class SkillsList : Control {
                 button.ButtonPressed = false;
                 return;
             }
-            service.CastSkill(roomId, casterName, targetUnit.Pawn.UnitName.Value, skill.SkillId);
+            service.CastSkill(roomId, casterNetId, targetUnit.Pawn.Id, skill.SkillId);
             button.ButtonPressed = false;
             return;
         }
@@ -119,7 +119,7 @@ public partial class SkillsList : Control {
         }
 
         // 无目标需求：同步发起施法 RPC
-        service.CastSkill(roomId, casterName, null, skill.SkillId);
+        service.CastSkill(roomId, casterNetId, 0, skill.SkillId);
         button.ButtonPressed = false;
     }
 
@@ -143,8 +143,8 @@ public partial class SkillsList : Control {
                 var service = unitsManager?.BattleService;
                 service?.CastSkill(
                         unitsManager?.RoomId ?? "",
-                        _waitingButton.BindPawn.UnitName.Value,
-                        null,
+                        _waitingButton.BindPawn.Id,
+                        0,
                         skill.SkillId,
                         v.X,
                         v.Z);

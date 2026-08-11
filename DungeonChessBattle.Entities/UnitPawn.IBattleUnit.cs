@@ -10,6 +10,9 @@ public partial class UnitPawn : IBattleUnit {
     string IBattleUnit.UnitName => UnitName.Value;
 
     /// <inheritdoc />
+    ushort IBattleUnit.UnitNetId => Id;
+
+    /// <inheritdoc />
     IReadOnlyList<string> IBattleUnit.Camps => [Camp.Value];
 
     /// <inheritdoc />

@@ -46,8 +46,8 @@ public partial class BattleUnitManager : Node {
     /// <summary>当前房间 ID（Bind 时注入）。</summary>
     private string _roomId = "";
 
-    /// <summary>UnitStateName → UnitGameShow 映射。</summary>
-    private readonly Dictionary<string, UnitGameShow> _unitShows = [];
+    /// <summary>单位网络实体 ID → UnitGameShow 映射。</summary>
+    private readonly Dictionary<ushort, UnitGameShow> _unitShows = [];
 
     /// <summary>
     /// 进入战斗：注入服务与房间客户端，订阅单位事件并初始化缓存单位。
@@ -101,21 +101,21 @@ public partial class BattleUnitManager : Node {
     /// 服务事件：单位创建。网络模式下单位实体可能晚于战斗开始到达；
     /// 与 InitializeUnitsFromPawns 缓存兜底共用幂等入口，保证不重不漏。
     /// </summary>
-    private void OnServiceUnitCreated(string eventRoomId, string unitName, string camp) {
+    private void OnServiceUnitCreated(string eventRoomId, ushort netId, string unitName, string camp) {
         if (eventRoomId != _roomId)
             return;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[MainScene] Unit created via service: {UnitName} (camp={Camp})", unitName, camp);
-        CallDeferred(nameof(SpawnUnitFromCache), unitName);
+            _logger.LogInformation("[MainScene] Unit created via service: {UnitName} (camp={Camp}, netId={NetId})", unitName, camp, netId);
+        CallDeferred(nameof(SpawnUnitFromCache), netId);
     }
 
     /// <summary>延迟生成单位（CallDeferred 入口）。</summary>
-    private void SpawnUnitFromCache(string unitName) {
-        var pawn = _roomClient?.FindPawnByName(unitName);
+    private void SpawnUnitFromCache(ushort netId) {
+        var pawn = _roomClient?.FindPawnById(netId);
         if (pawn is not null)
             TrySpawnUnit(pawn);
         else
-            _logger.LogWarning("[MainScene] Unit '{UnitName}' not found in pawn cache; entity may not have arrived yet", unitName);
+            _logger.LogWarning("[MainScene] Unit netId={NetId} not found in pawn cache; entity may not have arrived yet", netId);
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public partial class BattleUnitManager : Node {
     /// 事件驱动路径（OnServiceUnitCreated）与缓存兜底路径（InitializeUnitsFromPawns）共用。
     /// </summary>
     private void TrySpawnUnit(UnitPawn pawn) {
-        if (_unitShows.ContainsKey(pawn.UnitName.Value))
+        if (_unitShows.ContainsKey(pawn.Id))
             return;
         SpawnUnit(pawn);
     }
@@ -152,7 +152,7 @@ public partial class BattleUnitManager : Node {
 
         UnitsInSceneRes.AddUnit(pawn);
         AddChild(unitShow);
-        _unitShows[unitName] = unitShow;
+        _unitShows[pawn.Id] = unitShow;
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[MainScene] Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
@@ -179,23 +179,23 @@ public partial class BattleUnitManager : Node {
     }
 
     /// <summary>服务事件：单位生命值变化。血条直读 Pawn.Health，事件仅做表现响应钩子。</summary>
-    private void OnUnitHealth(string unitName, float newHealth, float oldHealth) {
+    private void OnUnitHealth(ushort netId, float newHealth, float oldHealth) {
     }
 
     /// <summary>服务事件：单位死亡（主线程直接同步隐藏）。</summary>
-    private void OnUnitDied(string unitName) {
-        if (_unitShows.TryGetValue(unitName, out var show)) {
+    private void OnUnitDied(ushort netId) {
+        if (_unitShows.TryGetValue(netId, out var show)) {
             show.Visible = false;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[MainScene] Unit died: {UnitName}", unitName);
+                _logger.LogInformation("[MainScene] Unit died: netId={NetId}", netId);
         }
     }
 
     /// <summary>服务事件：单位添加 Buff（当前无展示行为）。</summary>
-    private void OnBuffAdded(string unitName, BuffView buff) {
+    private void OnBuffAdded(ushort netId, BuffView buff) {
     }
 
     /// <summary>服务事件：单位移除 Buff（当前无展示行为）。</summary>
-    private void OnBuffRemoved(string unitName, BuffView buff) {
+    private void OnBuffRemoved(ushort netId, BuffView buff) {
     }
 }

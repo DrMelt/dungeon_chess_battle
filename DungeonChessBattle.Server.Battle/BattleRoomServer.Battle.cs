@@ -35,13 +35,15 @@ public partial class BattleRoomServer {
         _roomEntity?.CreatedUnixTime.Value =
                 new DateTimeOffset(_roomCreatedAt).ToUnixTimeSeconds();
 
-        // 从 Store 迁移准备期单位
+        // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
+        int campAIndex = 0, campBIndex = 0;
         foreach (var selection in units) {
             var spawnPos = selection.Camp == CampConstants.CampA
-                ? new Vector2(0, 0)
-                : new Vector2(5, 0);
-            CreatePawnEntity(selection.UnitName, selection.Camp, spawnPos);
+                ? new Vector2(campAIndex++ * SpawnSpacing, 0)
+                : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
+            var pawn = CreatePawnEntity(selection.UnitName, selection.Camp, spawnPos);
+            _pawnByPlayerId[selection.PlayerId] = pawn;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -103,13 +105,6 @@ public partial class BattleRoomServer {
     /// </summary>
     public UnitPawn? FindPawnById(ushort netId) {
         return _roomPawns.Find(p => p.Id == netId);
-    }
-
-    /// <summary>
-    /// 在本房间范围内按单位名称查找 UnitPawn。
-    /// </summary>
-    public UnitPawn? FindPawnByName(string unitName) {
-        return _roomPawns.Find(p => p.UnitName.Value == unitName);
     }
 
     /// <summary>
@@ -233,7 +228,7 @@ public partial class BattleRoomServer {
                 break;
 
             case DamageOccurred dmg:
-                FindPawnByName(dmg.TargetName)?
+                FindPawnById(dmg.TargetNetId)?
                     .BroadcastDamageTaken(dmg.AppliedDamage, dmg.DamageType);
                 break;
 
@@ -242,16 +237,16 @@ public partial class BattleRoomServer {
                 break;
 
             case UnitDied died:
-                var deadPawn = FindPawnByName(died.UnitName);
+                var deadPawn = FindPawnById(died.UnitNetId);
                 deadPawn?.UnitState.Value = 1;
                 break;
 
             case BuffApplied buff:
-                BroadcastBuffChanged(buff.TargetName, buff.BuffTypeId, (ushort)buff.StackCount, added: true);
+                BroadcastBuffChanged(buff.TargetNetId, buff.BuffTypeId, (ushort)buff.StackCount, added: true);
                 break;
 
             case BuffExpired buffExp:
-                BroadcastBuffChanged(buffExp.TargetName, buffExp.BuffTypeId, (ushort)0, added: false);
+                BroadcastBuffChanged(buffExp.TargetNetId, buffExp.BuffTypeId, (ushort)0, added: false);
                 break;
 
             case CastCompleted:
@@ -261,8 +256,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>Buff 增减事件：从 Pawn 的同步列表取快照构造 SyncBuffData 并广播 RPC。</summary>
-    private void BroadcastBuffChanged(string targetName, ushort buffTypeId, ushort stackCount, bool added) {
-        var pawn = FindPawnByName(targetName);
+    private void BroadcastBuffChanged(ushort targetNetId, ushort buffTypeId, ushort stackCount, bool added) {
+        var pawn = FindPawnById(targetNetId);
         if (pawn == null)
             return;
 

@@ -15,8 +15,8 @@ public sealed class BuffInstance {
         get; init;
     }
 
-    /// <summary>目标单位名称，事件上报用。</summary>
-    public required string TargetName {
+    /// <summary>目标单位网络实体 ID，事件上报用。</summary>
+    public required ushort TargetNetId {
         get; init;
     }
 

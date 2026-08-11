@@ -16,10 +16,10 @@ public static class BuffFactory {
     };
 
     /// <summary>创建运行时 Buff 实例并绑定效果策略与来源快照。</summary>
-    public static BuffInstance CreateInstance(BuffDefinition def, string targetName, UnitSnapshot? from) => new() {
+    public static BuffInstance CreateInstance(BuffDefinition def, ushort targetNetId, UnitSnapshot? from) => new() {
         BuffTypeId = def.BuffTypeId,
         BuffName = $"buff_{def.BuffTypeId}",
-        TargetName = targetName,
+        TargetNetId = targetNetId,
         From = from,
         Remaining = def.Duration,
         MaxStacks = def.MaxStacks,
