@@ -268,14 +268,53 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void SetPlayerReady(string roomId, string playerName, bool ready) {
+    public bool TrySetPlayerReady(string roomId, string playerName, bool ready) {
         lock (GetRoomLock(roomId)) {
-            if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == playerName)
-                return;
+            if (!_roomReadyStates.TryGetValue(roomId, out var states) || !states.ContainsKey(playerName))
+                return false;
 
-            if (_roomReadyStates.TryGetValue(roomId, out var states))
-                states[playerName] = ready;
+            // 房主身份不参与准备判定
+            if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == playerName)
+                return false;
+
+            // 未选择角色不能准备
+            if (ready && !PlayerHasUnitLocked(roomId, playerName))
+                return false;
+
+            states[playerName] = ready;
+            return true;
         }
+    }
+
+    /// <inheritdoc />
+    public bool IsPlayerReady(string roomId, string playerName) {
+        lock (GetRoomLock(roomId)) {
+            return _roomReadyStates.TryGetValue(roomId, out var states)
+                && states.TryGetValue(playerName, out var ready) && ready;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool AreAllPlayersUnitSelected(string roomId) {
+        lock (GetRoomLock(roomId)) {
+            if (!_roomReadyStates.TryGetValue(roomId, out var states) || states.IsEmpty)
+                return false;
+            if (!_prepareUnits.TryGetValue(roomId, out var units))
+                return false;
+
+            foreach (var playerName in states.Keys) {
+                if (!PlayerHasUnitLocked(roomId, playerName))
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    /// <summary>判断房间锁内玩家是否已选择至少一个准备单位。</summary>
+    private bool PlayerHasUnitLocked(string roomId, string playerName) {
+        if (!_prepareUnits.TryGetValue(roomId, out var units))
+            return false;
+        return units.Any(u => u.PlayerName == playerName);
     }
 
     /// <inheritdoc />
@@ -413,6 +452,11 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
 
+            // 已准备的玩家不能更改角色
+            if (_roomReadyStates.TryGetValue(roomId, out var states)
+                && states.TryGetValue(playerName, out var ready) && ready)
+                return false;
+
             units.Add((unitName, camp, playerName, playerId));
             return true;
         }
@@ -423,6 +467,12 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         lock (GetRoomLock(roomId)) {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
+
+            // 已准备的玩家不能更改角色
+            if (_roomReadyStates.TryGetValue(roomId, out var states)
+                && states.TryGetValue(ownerName, out var ready) && ready)
+                return false;
+
             return units.RemoveAll(u => u.UnitName == unitName && u.Camp == camp && u.PlayerName == ownerName) > 0;
         }
     }

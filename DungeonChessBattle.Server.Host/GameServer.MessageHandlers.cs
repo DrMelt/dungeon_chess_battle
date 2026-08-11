@@ -43,6 +43,12 @@ public partial class GameServer {
             return new LobbyResult(req.RoomId, false, "Not all players ready.");
         }
 
+        // 校验所有玩家（含房主）都已选择角色
+        if (!_stateStore.AreAllPlayersUnitSelected(req.RoomId)) {
+            _logger.LogWarning("[Game] start_battle: room '{RoomId}' has players without unit selection, rejected.", req.RoomId);
+            return new LobbyResult(req.RoomId, false, "Not all players selected a unit.");
+        }
+
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
         var server = _roomServers.StartRoomBattle(req.RoomId);
 

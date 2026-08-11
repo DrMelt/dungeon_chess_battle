@@ -167,6 +167,11 @@ public partial class RoomPreparation : BaseGamePanel {
     /// </summary>
     /// <param name="unitConfigKey">单位配置键。</param>
     private void OnUnitSelectedFromPanel(string unitConfigKey) {
+        // 已准备时禁止更改角色，服务端权威兜底，UI 亦拦截
+        if (_isReady) {
+            InterRefs?.StatusLabel?.Text = "已准备，不能更改角色";
+            return;
+        }
         _selectedUnitKey = unitConfigKey;
         var entry = UnitCatalog.GetByKey(unitConfigKey);
         if (entry is not null)
@@ -240,7 +245,8 @@ public partial class RoomPreparation : BaseGamePanel {
         }
         // 房主可能随原房主退出而转让：以服务端权威房主为准刷新本地身份，驱动按钮状态切换
         _isHost = snapshot.HostName == myName;
-        _othersReady = _isHost || AllOthersReady(_hostName, players);
+        // 非房主不使用 _othersReady，直接视为通过；房主才计算其他玩家是否全部准备
+        _othersReady = !_isHost || AllOthersReady(_hostName, players);
         _roomPlayers = players;
 
         UpdateRoomInfoLabels(snapshot.CurrentPlayers);
@@ -326,14 +332,21 @@ public partial class RoomPreparation : BaseGamePanel {
         if (startBtn == null)
             return;
 
+        // 以当前玩家是否已选角色判断，而非房间内任意玩家有单位
+        bool hasSelectedUnit = _playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName);
+
         if (_isHost) {
             startBtn.Text = "开始战斗";
-            startBtn.Disabled = _units.Count == 0 || !_othersReady;
+            startBtn.Disabled = !hasSelectedUnit || !_othersReady;
         }
         else {
             startBtn.Text = _isReady ? "取消准备" : "准备";
-            startBtn.Disabled = _units.Count == 0;
+            startBtn.Disabled = !hasSelectedUnit;
         }
+
+        // 已准备时锁定角色选择，禁止准备后更改角色
+        if (InterRefs?.SelectUnitButton != null)
+            InterRefs.SelectUnitButton.Disabled = _isReady;
     }
 
     /// <summary>
@@ -352,8 +365,8 @@ public partial class RoomPreparation : BaseGamePanel {
     /// 房主点击开始战斗：校验单位与全员准备后，通过 LobbyClient 发送请求。
     /// </summary>
     private void OnStartBattleAsHost() {
-        if (_units.Count == 0) {
-            InterRefs?.StatusLabel?.Text = "请先添加单位！";
+        if (!_playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
+            InterRefs?.StatusLabel?.Text = "请先选择角色！";
             return;
         }
 
@@ -384,6 +397,10 @@ public partial class RoomPreparation : BaseGamePanel {
             InterRefs?.StatusLabel?.Text = "已取消准备";
         }
         else {
+            if (!_playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
+                InterRefs?.StatusLabel?.Text = "请先选择角色！";
+                return;
+            }
             ServiceLocator.ClientService.LobbyClient.RequestPrepareReady(_roomId, ServiceLocator.ClientService.PlayerName);
             InterRefs?.StatusLabel?.Text = "已请求准备...";
         }

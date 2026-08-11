@@ -19,7 +19,14 @@ public interface IPlayerStateStore {
     Dictionary<string, string> GetRoomPlayerIds(string roomId);
 
     /// <summary>设置房间内玩家准备状态，仅限非房主，房主身份不参与准备判定。</summary>
-    void SetPlayerReady(string roomId, string playerName, bool ready);
+    /// <remarks>未选择角色时拒绝准备，返回是否成功；取消准备不校验角色。</remarks>
+    bool TrySetPlayerReady(string roomId, string playerName, bool ready);
+
+    /// <summary>判断房间内指定玩家是否已准备。</summary>
+    bool IsPlayerReady(string roomId, string playerName);
+
+    /// <summary>判断房间内所有玩家（含房主）是否都已选择角色。</summary>
+    bool AreAllPlayersUnitSelected(string roomId);
 
     /// <summary>判断房间内除房主外的所有玩家是否都已准备。无其他成员时视为已满足。</summary>
     bool IsAllOthersReady(string roomId);
@@ -44,10 +51,10 @@ public interface IPlayerStateStore {
     /// </remarks>
     string? RemovePlayerByConnection(string connectionId);
 
-    /// <summary>在大厅准备阶段添加单位。</summary>
+    /// <summary>在大厅准备阶段添加单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     bool AddPrepareUnit(string roomId, string unitName, string camp, string playerName, string playerId);
 
-    /// <summary>在大厅准备阶段移除单位。</summary>
+    /// <summary>在大厅准备阶段移除单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="unitName">单位名称。</param>
     /// <param name="camp">阵营。</param>

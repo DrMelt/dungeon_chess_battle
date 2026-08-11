@@ -170,7 +170,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(req.RoomId, false, "Player identity not registered.");
 
         if (!_stateStore.AddPrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName, ownerPlayerId))
-            return new LobbyResult(req.RoomId, false, "Room not found.");
+            return new LobbyResult(req.RoomId, false,
+                _stateStore.RoomExists(req.RoomId) ? "Cannot change unit while ready." : "Room not found.");
 
         // 广播更新给房间内所有玩家
         await BroadcastRoomSnapshotAsync(req.RoomId);
@@ -191,9 +192,16 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(req.RoomId, false, "Player not in room.");
 
         bool removed = _stateStore.RemovePrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName);
-        if (removed)
+        if (removed) {
             await BroadcastRoomSnapshotAsync(req.RoomId);
-        return new LobbyResult(req.RoomId, removed, removed ? null : "Unit not found.");
+            return new LobbyResult(req.RoomId, true);
+        }
+
+        // 已准备的玩家不能移除角色；否则视为单位不存在
+        string error = _stateStore.IsPlayerReady(req.RoomId, ownerName)
+            ? "Cannot change unit while ready."
+            : "Unit not found.";
+        return new LobbyResult(req.RoomId, false, error);
     }
 
     /// <summary>
@@ -212,7 +220,16 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(playerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
             return new LobbyResult(req.RoomId, false, "Player not in room.");
 
-        _stateStore.SetPlayerReady(req.RoomId, playerName, req.Ready);
+        // 房主不参与准备
+        if (_stateStore.IsConnectionRoomHost(connectionId, req.RoomId))
+            return new LobbyResult(req.RoomId, false, "Host cannot set ready state.");
+
+        // 未选择角色不能准备
+        if (!_stateStore.TrySetPlayerReady(req.RoomId, playerName, req.Ready)) {
+            _logger.LogWarning("[Game] Player '{Player}' set_ready rejected in room '{RoomId}' (ready={Ready}).",
+                playerName, req.RoomId, req.Ready);
+            return new LobbyResult(req.RoomId, false, "Select a unit before ready.");
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Player '{Player}' {Action} in room '{RoomId}'.",
