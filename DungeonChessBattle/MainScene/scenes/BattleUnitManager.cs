@@ -40,6 +40,17 @@ public partial class BattleUnitManager : Node {
     /// <summary>当前房间 ID（供技能链发起施法 RPC）。</summary>
     public string RoomId => _roomId;
 
+    /// <summary>本地玩家控制的单位视图就绪事件，参数为对应的 UnitGameShow。</summary>
+    public event Action<UnitGameShow>? LocalUnitShowReady;
+
+    /// <summary>本地玩家控制的单位视图，控制器或视图未就绪时返回 null。</summary>
+    public UnitGameShow? LocalUnitShow {
+        get {
+            var pawn = _roomClient?.LocalUnitPawn;
+            return pawn != null ? _unitShows.GetValueOrDefault(pawn.Id) : null;
+        }
+    }
+
     /// <summary>房间客户端（Bind 时注入，用于 Pawn 查询）。</summary>
     private RoomBattleClient? _roomClient;
 
@@ -153,6 +164,10 @@ public partial class BattleUnitManager : Node {
         UnitsInSceneRes.AddUnit(pawn);
         AddChild(unitShow);
         _unitShows[pawn.Id] = unitShow;
+
+        // 本地玩家单位的视图就绪通知，供 UI 层自动展示自身状态与技能
+        if (pawn == _roomClient?.LocalUnitPawn)
+            LocalUnitShowReady?.Invoke(unitShow);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[MainScene] Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);

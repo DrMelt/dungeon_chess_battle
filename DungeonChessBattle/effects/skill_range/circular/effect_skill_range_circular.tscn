@@ -26,6 +26,6 @@ material_override = SubResource("ShaderMaterial_dowf7")
 cast_shadow = 0
 mesh = SubResource("BoxMesh_0gsne")
 
-[node name="SkillRangeCircular_HintInterRefs" type="Node" parent="."]
+[node name="SkillRangeCircular_HintInterRefs" type="Node" parent="." node_paths=PackedStringArray("DecalRef")]
 script = ExtResource("3_interrefs")
 DecalRef = NodePath("../Skill_Range_Decal_Circular")

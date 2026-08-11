@@ -30,13 +30,18 @@ public partial class StateBarList : Control {
     /// <summary>当前绑定的场景单位集合。</summary>
     private UnitsInScene? bindingUnitsInScene;
 
+    /// <summary>要展示的友方阵营标识，由进入战斗时本地玩家阵营注入。</summary>
+    private string _localCamp = "";
+
     /// <summary>
     /// 绑定场景单位集合并订阅单位变化事件，立即刷新一次。
     /// </summary>
     /// <param name="unitsInScene">场景单位集合。</param>
-    public void BindUnitsInScene(UnitsInScene unitsInScene) {
+    /// <param name="localCamp">本地玩家所在阵营标识，仅展示该阵营的友方单位。</param>
+    public void BindUnitsInScene(UnitsInScene unitsInScene, string localCamp) {
         bindingUnitsInScene?.OnUnitsChangedEvent -= OnUnitsChanged;
         bindingUnitsInScene = unitsInScene;
+        _localCamp = localCamp;
 
         bindingUnitsInScene.OnUnitsChangedEvent += OnUnitsChanged;
         OnUnitsChanged(bindingUnitsInScene);
@@ -56,7 +61,7 @@ public partial class StateBarList : Control {
 
         var units = scene.UnitsArr;
         foreach (var unit in units) {
-            if (unit.Camp.Value == InterRefs.ListOfCamp) {
+            if (unit.Camp.Value == _localCamp) {
                 StateBarMini stateBarMini = NewStateBarMini;
 
                 InterRefs.VBoxContainerRef.AddChild(stateBarMini);

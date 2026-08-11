@@ -22,6 +22,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -0.5)
 material_override = SubResource("ShaderMaterial_ctxme")
 mesh = SubResource("BoxMesh_cact4")
 
-[node name="SkillRangeRect_HintInterRefs" type="Node" parent="."]
+[node name="SkillRangeRect_HintInterRefs" type="Node" parent="." node_paths=PackedStringArray("DecalRef")]
 script = ExtResource("3_interrefs")
 DecalRef = NodePath("../Skill_Range_Decal_Rect")

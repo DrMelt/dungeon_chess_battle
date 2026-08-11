@@ -83,7 +83,7 @@ public partial class PlayerUIRoot : Control {
         // View 层绑定：将数据源注入到子组件
         if (unitsInSceneShowRef != null) {
             stateChangeInfoRef?.BindUnitsInScene(unitsInSceneShowRef.UnitsInSceneRes);
-            stateBarListRef?.BindUnitsInScene(unitsInSceneShowRef.UnitsInSceneRes);
+            unitsInSceneShowRef.LocalUnitShowReady += OnLocalUnitShowReady;
         }
 
         if (skillsListRef != null && unitsInSceneShowRef != null) {
@@ -91,14 +91,37 @@ public partial class PlayerUIRoot : Control {
             skillsListRef.PlayerInterfaceRes = playerInterfaceRes;
             skillsListRef.ViewModel = _viewModel;
         }
+
+        TryShowLocalUnit();
     }
 
     /// <summary>
-    /// 战斗解绑：清理子组件中的 ViewModel 引用。
+    /// 战斗解绑：清理子组件中的 ViewModel 引用并退订本地单位事件。
     /// </summary>
     private void OnBattleUnbound() {
         // 清理 View 绑定
+        if (unitsInSceneShowRef != null)
+            unitsInSceneShowRef.LocalUnitShowReady -= OnLocalUnitShowReady;
         skillsListRef?.ViewModel = null;
+    }
+
+    /// <summary>
+    /// 本地玩家单位视图就绪：绑定动态友方阵营状态列表并刷新自身技能列表。
+    /// </summary>
+    /// <param name="localShow">本地玩家控制的单位视图。</param>
+    private void OnLocalUnitShowReady(UnitGameShow localShow) {
+        if (unitsInSceneShowRef != null)
+            stateBarListRef?.BindUnitsInScene(unitsInSceneShowRef.UnitsInSceneRes, localShow.Pawn.Camp.Value);
+        UpdateSkillList(localShow);
+    }
+
+    /// <summary>
+    /// 尝试立即展示本地单位：本地单位可能已随单位管理器 Bind 同步生成。
+    /// </summary>
+    private void TryShowLocalUnit() {
+        var localShow = unitsInSceneShowRef?.LocalUnitShow;
+        if (localShow != null)
+            OnLocalUnitShowReady(localShow);
     }
 
     #endregion

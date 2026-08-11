@@ -111,4 +111,7 @@ public partial class RoomBattleClient {
             return [.. _roomPawns];
         }
     }
+
+    /// <summary>本地玩家控制的单位 Pawn，控制器未就绪时返回 null。</summary>
+    public UnitPawn? LocalUnitPawn => _localController?.ControlledEntity;
 }
