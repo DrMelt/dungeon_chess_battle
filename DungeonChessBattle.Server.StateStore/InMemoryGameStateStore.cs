@@ -9,11 +9,6 @@ namespace DungeonChessBattle.Server.StateStore;
 /// <summary>
 /// 基于进程内 ConcurrentDictionary 的状态存储实现。
 /// 收敛大厅级房间状态、玩家状态与准备单位数据的存储逻辑，
-/// 供 GameServer 与 GameLobby 统一访问；线程安全。
-/// 并发策略：外层容器使用 ConcurrentDictionary 保证条目原子读写；
-/// 同一房间内的读改写（含 List&lt;T&gt; 与可变模型字段）统一经房间级锁
-/// 串行化（见 <see cref="GetRoomLock"/>），避免 ConcurrentDictionary
-/// 不保证 value 对象线程安全的问题。跨房间的枚举（招募板）采用弱一致性快照。
 /// </summary>
 public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGameStateStore, IDisposable {
     private readonly ILogger<InMemoryGameStateStore> _logger = loggerFactory.CreateLogger<InMemoryGameStateStore>();
@@ -358,13 +353,59 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             if (!_peerPlayers.TryRemove(connectionId, out var current))
                 return null;
 
-            if (_roomReadyStates.TryGetValue(current.RoomId, out var states)) {
-                states.TryRemove(current.PlayerName, out _);
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("[Store] Player '{Player}' removed from room '{RoomId}' (disconnected)",
-                        current.PlayerName, current.RoomId);
+            string roomId = current.RoomId;
+            string leavingName = current.PlayerName;
+
+            // 移除准备状态、playerId 映射与该玩家的准备单位（任何阶段都执行，避免状态残留）
+            if (_roomReadyStates.TryGetValue(roomId, out var states))
+                states.TryRemove(leavingName, out _);
+            if (_roomPlayerIds.TryGetValue(roomId, out var ids))
+                ids.TryRemove(leavingName, out _);
+            if (_prepareUnits.TryGetValue(roomId, out var units))
+                units.RemoveAll(u => u.PlayerName == leavingName);
+
+            // 仅准备阶段房间维护人数、房主转让与空房删除；
+            // 战斗中房间的生命周期由 RoomServerManager 全权负责，本方法不触碰。
+            if (_roomConfigs.TryGetValue(roomId, out var config) && config.Status == RoomStatus.Waiting) {
+                config.CurrentPlayers = Math.Max(0, config.CurrentPlayers - 1);
+
+                // 房主退出：转让给剩余玩家（房主表与招募板配置同步更新，保持一致）
+                if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == leavingName) {
+                    string? newHost = null;
+                    if (states != null) {
+                        foreach (var name in states.Keys) {
+                            if (name != leavingName) {
+                                newHost = name;
+                                break;
+                            }
+                        }
+                    }
+                    if (newHost != null) {
+                        _roomHosts[roomId] = newHost;
+                        config.HostName = newHost;
+                        if (_logger.IsEnabled(LogLevel.Information))
+                            _logger.LogInformation("[Store] Host of room '{RoomId}' transferred to '{NewHost}' (old host '{OldHost}' left).",
+                                roomId, newHost, leavingName);
+                    }
+                    else {
+                        _roomHosts.TryRemove(roomId, out _);
+                    }
+                }
+
+                // 最后一人退出：删除房间全部状态
+                if (config.CurrentPlayers <= 0) {
+                    RemoveRoomState(roomId);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                        _logger.LogInformation("[Store] Room '{RoomId}' removed (last player '{Player}' left).",
+                            roomId, leavingName);
+                    return null; // 房间已删除，调用方无需广播
+                }
             }
-            return current.RoomId;
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[Store] Player '{Player}' removed from room '{RoomId}' (disconnected)",
+                    leavingName, roomId);
+            return roomId;
         }
     }
 

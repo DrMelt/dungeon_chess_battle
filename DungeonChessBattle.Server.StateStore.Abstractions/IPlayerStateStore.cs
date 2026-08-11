@@ -36,7 +36,12 @@ public interface IPlayerStateStore {
     /// <summary>解析指定连接在房间内登记的玩家名（服务器权威身份）。</summary>
     string? GetPlayerNameForConnection(string connectionId);
 
-    /// <summary>移除房间内玩家（连接断开清理），返回所属房间 ID；未登记时返回 null。</summary>
+    /// <summary>移除房间内玩家（连接断开/主动离开清理），返回所属房间 ID；玩家未登记或房间因此被删除时返回 null。</summary>
+    /// <remarks>
+    /// 对准备阶段（Waiting）房间还执行：减少当前玩家数、移除玩家准备单位；
+    /// 房主退出时转让房主给剩余玩家；最后一人退出时删除房间全部状态并返回 null。
+    /// 战斗中（InProgress）房间仅做基础清理，生命周期由 RoomServerManager 负责。
+    /// </remarks>
     string? RemovePlayerByConnection(string connectionId);
 
     /// <summary>在大厅准备阶段添加单位。</summary>

@@ -82,3 +82,7 @@ public sealed record ReconnectRoomRequest(
     string PlayerName,
     string? RoomPassword,
     string? ServerPassword);
+
+/// <summary>离开房间请求（准备阶段主动退出）。</summary>
+/// <param name="RoomId">房间 ID。</param>
+public sealed record LeaveRoomRequest(string RoomId);

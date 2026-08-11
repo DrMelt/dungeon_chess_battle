@@ -69,7 +69,7 @@ public partial class RoomPreparation : BaseGamePanel {
             // UnitSelectPanel 为本面板的子节点覆盖层，直接打开而不隐藏本面板
             InterRefs?.UnitSelectPanel?.OpenPanelFrom();
         };
-        InterRefs?.BackButton?.Pressed += GoBack;
+        InterRefs?.BackButton?.Pressed += OnBackButtonPressed;
         var startBtn = InterRefs?.StartBattleButton;
         if (startBtn is not null) {
             startBtn.Pressed += OnStartBattleClicked;
@@ -84,6 +84,17 @@ public partial class RoomPreparation : BaseGamePanel {
         ServiceLocator.ClientService.OnRoomSnapshotUpdated += OnRoomSnapshotUpdated;
 
         _logger.LogInformation("RoomPreparation ready");
+    }
+
+    /// <summary>
+    /// 返回按钮：通知服务端离开房间（准备阶段主动退出），随后返回来源面板。
+    /// 服务端据此移除成员，并在房主退出时转让房主、最后一人退出时删除房间。
+    /// </summary>
+    private void OnBackButtonPressed() {
+        if (!string.IsNullOrEmpty(_roomId))
+            ServiceLocator.ClientService.RequestLeaveRoom(_roomId);
+        _roomId = ""; // 复位，避免离开后旧房间快照误应用（OnRoomSnapshotUpdated 按 _roomId 过滤）
+        GoBack();
     }
 
     /// <summary>
@@ -227,6 +238,8 @@ public partial class RoomPreparation : BaseGamePanel {
                 break;
             }
         }
+        // 房主可能随原房主退出而转让：以服务端权威房主为准刷新本地身份，驱动按钮状态切换
+        _isHost = snapshot.HostName == myName;
         _othersReady = _isHost || AllOthersReady(_hostName, players);
         _roomPlayers = players;
 

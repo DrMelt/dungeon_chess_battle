@@ -8,6 +8,9 @@ public interface ILobbyBroadcaster {
     /// <summary>将指定连接加入房间的广播分组。</summary>
     Task AddToRoomAsync(string connectionId, string roomId);
 
+    /// <summary>将指定连接移出房间的广播分组（主动离开时停止接收该房间广播）。</summary>
+    Task RemoveFromRoomAsync(string connectionId, string roomId);
+
     /// <summary>向房间内所有连接广播一条消息。</summary>
     Task SendToRoomAsync(string roomId, string hubMethod, object? dto);
 }

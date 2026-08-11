@@ -202,6 +202,11 @@ public sealed partial class GameClientService {
         LobbyClient.RequestPrepareRemoveUnit(roomId, unitName, camp);
     }
 
+    /// <summary>请求离开房间（准备阶段主动退出），通知服务端移除成员并清理房间状态。</summary>
+    public void RequestLeaveRoom(string roomId) {
+        LobbyClient.RequestLeaveRoom(roomId);
+    }
+
     /// <summary>
     /// 断开全部连接并清理活动客户端状态。
     /// </summary>

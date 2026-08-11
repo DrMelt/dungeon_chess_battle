@@ -44,6 +44,10 @@ public class LobbyHub(ILobbyApplication server) : Hub {
     public Task<LobbyResult> ReconnectRoom(ReconnectRoomRequest req)
         => _server.HandleReconnectRoomAsync(req);
 
+    /// <summary>离开房间请求。</summary>
+    public Task<LobbyResult> LeaveRoom(LeaveRoomRequest req)
+        => _server.HandleLeaveRoomAsync(Context.ConnectionId, req);
+
     /// <summary>连接断开时清理玩家归属。</summary>
     public override async Task OnDisconnectedAsync(Exception? exception) {
         await _server.ConnectionLostAsync(Context.ConnectionId);

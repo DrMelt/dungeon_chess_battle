@@ -30,6 +30,9 @@ public static class HubMethods {
     /// <summary>重连房间。</summary>
     public const string ReconnectRoom = "ReconnectRoom";
 
+    /// <summary>离开房间（准备阶段主动退出）。</summary>
+    public const string LeaveRoom = "LeaveRoom";
+
     // ─── 服务端 → 客户端（广播/回调） ───
 
     /// <summary>准备阶段战斗启动重定向。</summary>

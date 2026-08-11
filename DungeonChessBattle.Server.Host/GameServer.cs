@@ -1,4 +1,5 @@
 ﻿using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Battle;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.StateStore.Abstractions;
@@ -45,6 +46,7 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
 
     /// <summary>
     /// 连接断开清理：移除该连接所属房间的成员与准备状态，并向剩余玩家广播最新房间快照。
+    /// 准备阶段房间的最后一人退出时房间被删除，本方法不再广播。
     /// </summary>
     public async Task ConnectionLostAsync(string connectionId) {
         string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
@@ -52,5 +54,30 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
             return;
 
         await _lobby.BroadcastRoomSnapshotAsync(roomId);
+    }
+
+    /// <summary>
+    /// 处理 leave_room：玩家主动离开房间（准备阶段退出）。
+    /// 先从房间广播分组移除连接，再复用统一清理
+    /// <see cref="IPlayerStateStore.RemovePlayerByConnection"/>
+    /// （成员/单位/人数/房主转让/空房删除），并向剩余玩家广播最新房间快照。
+    /// </summary>
+    public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId, LeaveRoomRequest req) {
+        if (string.IsNullOrWhiteSpace(req.RoomId))
+            return new LobbyResult(req.RoomId, false, "roomId is required.");
+
+        // 先停止接收该房间广播，再清理状态（清理后最后一人退出时房间已删，无需广播）
+        await _broadcaster.RemoveFromRoomAsync(connectionId, req.RoomId);
+
+        string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
+        if (roomId == null)
+            return new LobbyResult(req.RoomId, true); // 最后一人退出，房间已删除
+
+        await _lobby.BroadcastRoomSnapshotAsync(roomId);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Game] Player left room '{RoomId}'.", req.RoomId);
+
+        return new LobbyResult(req.RoomId, true);
     }
 }

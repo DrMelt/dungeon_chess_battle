@@ -253,6 +253,15 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         });
     }
 
+    /// <summary>
+    /// 请求离开房间（准备阶段主动退出）。服务端从连接身份反查房间成员，无需传玩家名。
+    /// </summary>
+    public void RequestLeaveRoom(string roomId) {
+        RunHubCall(async hub => {
+            await hub.InvokeAsync<LobbyResult>(HubMethods.LeaveRoom, new LeaveRoomRequest(roomId));
+        });
+    }
+
     /// <summary>处理服务端广播的房间快照：缓存并触发更新事件。</summary>
     private void HandleRoomSnapshot(RoomSnapshot snapshot) {
         _roomSnapshots[snapshot.RoomId] = snapshot;

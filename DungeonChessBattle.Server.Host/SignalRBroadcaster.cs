@@ -16,6 +16,10 @@ public sealed class SignalRBroadcaster(IHubContext<LobbyHub> hub) : ILobbyBroadc
         => _hub.Groups.AddToGroupAsync(connectionId, roomId);
 
     /// <inheritdoc />
+    public Task RemoveFromRoomAsync(string connectionId, string roomId)
+        => _hub.Groups.RemoveFromGroupAsync(connectionId, roomId);
+
+    /// <inheritdoc />
     public Task SendToRoomAsync(string roomId, string hubMethod, object? dto)
         => _hub.Clients.Group(roomId).SendAsync(hubMethod, dto);
 }

@@ -31,6 +31,9 @@ public interface ILobbyApplication {
     /// <summary>重连房间。</summary>
     Task<LobbyResult> HandleReconnectRoomAsync(ReconnectRoomRequest req);
 
+    /// <summary>离开房间（准备阶段主动退出）。</summary>
+    Task<LobbyResult> HandleLeaveRoomAsync(string connectionId, LeaveRoomRequest req);
+
     /// <summary>连接断开清理。</summary>
     Task ConnectionLostAsync(string connectionId);
 }
