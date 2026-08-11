@@ -24,6 +24,10 @@ var host = new GameServerHost(
     loggerFactory.CreateLogger<GameServerHost>(),
     loggerFactory);
 
+// 父进程看护：客户端（父进程）退出/强杀/崩溃时自动停止服务器，避免孤儿进程。
+// 未配置父 PID（独立运行）时返回 null 不启用。
+ParentProcessWatcher.FromEnvironment(host, loggerFactory.CreateLogger<ParentProcessWatcher>())?.Start();
+
 // 注册 Ctrl+C 优雅退出
 Console.CancelKeyPress += (_, e) => {
     e.Cancel = true;

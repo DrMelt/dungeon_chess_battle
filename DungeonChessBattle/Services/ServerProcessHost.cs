@@ -21,6 +21,8 @@ public sealed class ServerProcessHost : IServerHost {
     private const string PasswordEnvVar = "DCB_SERVER_PASSWORD";
     private const string ExeEnvVar = "DCB_SERVER_EXE";
     private const string ConfigEnvVar = "DCB_SERVER_CONFIG";
+    /// <summary>父进程 PID 环境变量（服务器端 ParentProcessWatcher 读取；跨进程契约，见 Server.Host）。</summary>
+    private const string ParentPidEnvVar = "DCB_SERVER_PARENT_PID";
     private static readonly TimeSpan KillWaitTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ILogger<ServerProcessHost> _logger;
@@ -128,6 +130,8 @@ public sealed class ServerProcessHost : IServerHost {
                 psi.ArgumentList.Add(port.ToString());
                 if (!string.IsNullOrEmpty(serverPassword))
                     psi.Environment[PasswordEnvVar] = serverPassword;
+                // 注入父进程 PID，供服务器端 ParentProcessWatcher 检测客户端存活（防孤儿）
+                psi.Environment[ParentPidEnvVar] = System.Environment.ProcessId.ToString();
 
                 process = new Process { StartInfo = psi, EnableRaisingEvents = true };
                 process.OutputDataReceived += (_, e) => ForwardLog(e.Data);
