@@ -109,8 +109,12 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             || string.IsNullOrWhiteSpace(req.RoomId))
             return new LobbyResult(req.RoomId, false, "roomId is required.");
 
-        if (!_stateStore.RoomExists(req.RoomId))
+        // 仅允许加入等待中的房间；进行中（游戏中）/已结束的房间不可加入
+        var roomConfig = _stateStore.GetRoomConfig(req.RoomId);
+        if (roomConfig == null)
             return new LobbyResult(req.RoomId, false, "Room not found.");
+        if (roomConfig.Status != RoomStatus.Waiting)
+            return new LobbyResult(req.RoomId, false, "Room is not available for joining.");
 
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
         if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
@@ -135,12 +139,15 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
     /// <summary>
     /// 处理 list_rooms：返回招募板房间列表。
+    /// 招募板仅展示等待中的房间；进行中（游戏中）/已结束的房间对大厅隐藏。
     /// </summary>
     public Task<RoomListResult> HandleListRoomsAsync() {
-        var rooms = _stateStore.ListActiveRooms();
+        var rooms = _stateStore.ListActiveRooms()
+            .Where(r => r.Status == RoomStatus.Waiting)
+            .ToList();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Game] Sent listing of {Count} rooms.", rooms.Count);
-        return Task.FromResult(new RoomListResult([.. rooms]));
+        return Task.FromResult(new RoomListResult(rooms));
     }
 
     /// <summary>
