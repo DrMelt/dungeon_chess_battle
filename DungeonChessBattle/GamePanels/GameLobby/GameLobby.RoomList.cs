@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Protocol.Dtos;
 using Godot;
 
 namespace DungeonChessBattle;
@@ -16,7 +16,7 @@ public partial class GameLobby {
     /// 刷新房间列表 UI：移除已消失的房间，添加或更新现存卡片。
     /// </summary>
     /// <param name="rooms">最新的房间列表。</param>
-    private void RefreshRoomList(List<GameRoom> rooms) {
+    private void RefreshRoomList(List<RoomListing> rooms) {
         if (InterRefs?.RoomListContainer == null)
             return;
 
@@ -91,14 +91,7 @@ public partial class GameLobby {
         if (InterRefs?.DetailLabel != null) {
             var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
-                _selectedRoomConfig = new GameRoom(listing.RoomId) {
-                    Title = listing.Title,
-                    DungeonName = listing.DungeonName,
-                    Category = listing.Category,
-                    HostName = listing.HostName,
-                    CurrentPlayers = listing.CurrentPlayers,
-                    MaxPlayers = listing.MaxPlayers,
-                };
+                _selectedRoomConfig = listing;
                 InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n房主: {listing.HostName}\n类别: {listing.Category}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {
@@ -115,11 +108,8 @@ public partial class GameLobby {
     /// </summary>
     /// <param name="room">房间实例。</param>
     /// <returns>状态文字。</returns>
-    private static string GetRoomStatusText(GameRoom room) {
-        // 本地房间对象不含战斗单位（单位数据经 RoomSnapshot 下发的 PrepareUnitDto 提供），
-        // 此处仅按房间活动状态显示；单位营地计数由 RoomPreparation 面板基于快照渲染。
-        return room.IsActive ? "等待中" : "已结束";
-    }
+    private static string GetRoomStatusText(RoomListing room) =>
+        room.Status != RoomStatus.Finished ? "等待中" : "已结束";
 
     #endregion
 }

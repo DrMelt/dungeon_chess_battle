@@ -1,5 +1,6 @@
 using System.Numerics;
-using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Protocol.Enums;
+using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -10,7 +11,7 @@ namespace DungeonChessBattle.Entities;
 /// 实时化的单位 Pawn 实体。继承 PawnLogic，支持移动、技能、预测回滚。
 /// 逐步替代 UnitSyncEntity（回合制纯数据载体）。
 /// </summary>
-public class UnitPawn : PawnLogic {
+public partial class UnitPawn : PawnLogic {
     private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
     private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;

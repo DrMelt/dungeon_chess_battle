@@ -1,5 +1,6 @@
-using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.Client.Battle;
+using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.Services;
 using Godot;

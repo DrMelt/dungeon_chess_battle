@@ -7,7 +7,4 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
-    </ItemGroup>
 </Project>

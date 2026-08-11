@@ -1,14 +1,14 @@
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.Logic.Movement;
+using DungeonChessBattle.Battle.Logic.Movement;
+using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
 /// RoomBattleClient 的 LES 实体创建回调与本地 Pawn 查询工具。
-/// 展示层直读 UnitPawn（SyncVar），不再维护客户端 UnitModel 中转。
+/// 展示层直读 UnitPawn（SyncVar），不再维护客户端模型中转。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
@@ -16,12 +16,10 @@ public partial class RoomBattleClient {
         lock (_lock) {
             _roomEntity = entity;
             _currentRoomId = entity.RoomId.Value;
-            _persistentRoom ??= new GameRoom(entity.RoomId.Value);
 
             // 回填服务端权威创建时间（>0 才覆盖，规避 OnConstructed 默认 0 的竞态时序）
             if (entity.CreatedUnixTime.Value > 0) {
-                _persistentRoom.CreatedAt = DateTimeOffset
-                    .FromUnixTimeSeconds((long)entity.CreatedUnixTime.Value).UtcDateTime;
+                _roomCreatedUnix = (long)entity.CreatedUnixTime.Value;
             }
         }
 
@@ -92,10 +90,10 @@ public partial class RoomBattleClient {
             _logger.LogInformation("[RoomBattleClient] Local UnitController bound: {PawnName}", pawnName);
     }
 
-    /// <summary>将同步 Buff 数据映射为 UI 事件使用的轻量数据结构。</summary>
-    private static BuffEventData MapBuffData(SyncBuffData buff) => new() {
+    /// <summary>将同步 Buff 数据映射为 UI 事件使用的展示视图。</summary>
+    private static BuffView MapBuffData(SyncBuffData buff) => new() {
         BuffTypeId = buff.BuffTypeId,
-        RemainingDuration = buff.RemainingDuration,
+        Remaining = buff.Remaining,
         StackCount = buff.StackCount,
         DamageType = buff.DamageType,
     };

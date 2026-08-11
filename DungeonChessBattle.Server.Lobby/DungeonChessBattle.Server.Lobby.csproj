@@ -8,10 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.Domain\DungeonChessBattle.Server.Domain.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.State\DungeonChessBattle.Server.State.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Server.StateStore.Abstractions\DungeonChessBattle.Server.StateStore.Abstractions.csproj" />
     </ItemGroup>
 
     <ItemGroup>

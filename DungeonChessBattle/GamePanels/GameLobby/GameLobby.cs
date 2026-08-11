@@ -2,8 +2,7 @@
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 
@@ -45,8 +44,8 @@ public partial class GameLobby : BaseGamePanel {
     private List<RoomListing>? _lastRoomListings;
     /// <summary>缓存创建房间时输入的房间名。</summary>
     private string? _cachedCreateRoomId;
-    /// <summary>当前选中房间的配置。</summary>
-    private GameRoom? _selectedRoomConfig;
+    /// <summary>当前选中房间的列表配置。</summary>
+    private RoomListing? _selectedRoomConfig;
 
     #endregion
 
@@ -140,12 +139,14 @@ public partial class GameLobby : BaseGamePanel {
     /// <param name="roomId">创建成功的房间 ID。</param>
     private void OnCreatedDeferred(string roomId) {
         if (_roomPreparation != null) {
-            // 构造简单的 GameRoom config（Title 用缓存的房间名）
-            var config = new GameRoom(roomId) {
+            // 构造 RoomListing 作为进房初始展示（Title 用缓存的房间名）
+            var config = new RoomListing {
+                RoomId = roomId,
                 Title = _cachedCreateRoomId ?? roomId,
                 HostName = ServiceLocator.ClientService.PlayerName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
+                Status = RoomStatus.Waiting,
             };
             _cachedCreateRoomId = null;
             _roomPreparation.EnterRoom(roomId, config, isHost: true);
@@ -170,10 +171,12 @@ public partial class GameLobby : BaseGamePanel {
     private void OnJoinedDeferred(string joinedRoomId) {
         if (_roomPreparation != null) {
             // 使用缓存的选中房间配置，或构造默认配置
-            var config = _selectedRoomConfig ?? new GameRoom(joinedRoomId) {
+            var config = _selectedRoomConfig ?? new RoomListing {
+                RoomId = joinedRoomId,
                 Title = joinedRoomId,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
+                Status = RoomStatus.Waiting,
             };
             _roomPreparation.EnterRoom(joinedRoomId, config, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))
@@ -202,24 +205,13 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>
-    /// 在主线程处理房间列表推送，转换为 GameRoom 并刷新 UI。
+    /// 在主线程处理房间列表推送，直接以 RoomListing DTO 刷新 UI。
     /// </summary>
     private void OnRoomListingsReceived(IReadOnlyList<RoomListing> listings) {
-        // 将 RoomListing 转换回 GameRoom 以适配现有 UI
-        var rooms = listings.Select(l => new GameRoom(l.RoomId) {
-            Title = l.Title,
-            DungeonName = l.DungeonName,
-            Category = l.Category,
-            HostName = l.HostName,
-            CurrentPlayers = l.CurrentPlayers,
-            MaxPlayers = l.MaxPlayers,
-            // Password 不通过列表传输，标记 HasPassword
-            IsActive = l.Status != RoomStatus.Finished,
-        }).ToList();
-
-        RefreshRoomList(rooms);
+        // 直接以传输 DTO RoomListing 作为 UI 数据源，不再二次转换为本地模型
+        RefreshRoomList([.. listings]);
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("招募板列表刷新: {Count} 个房间", rooms.Count);
+            _logger.LogDebug("招募板列表刷新: {Count} 个房间", listings.Count);
     }
 
     #endregion

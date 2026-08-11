@@ -1,4 +1,3 @@
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;
@@ -51,25 +50,4 @@ public interface IGameConfigDB {
     UnitConfig UnitWhiteMage {
         get;
     }
-
-    /// <summary>
-    /// 将单位配置转换为运行时单位模型。
-    /// </summary>
-    /// <param name="config">单位配置。</param>
-    /// <returns>对应的 <see cref="UnitModel"/>。</returns>
-    UnitModel ToUnitModel(UnitConfig config);
-
-    /// <summary>
-    /// 将技能配置转换为运行时技能模型。
-    /// </summary>
-    /// <param name="config">技能配置。</param>
-    /// <returns>对应的 <see cref="SkillModel"/> 派生实例。</returns>
-    SkillModel ToSkillModel(SkillConfig config);
-
-    /// <summary>
-    /// 将 Buff 配置转换为运行时 Buff 模型。
-    /// </summary>
-    /// <param name="config">Buff 配置。</param>
-    /// <returns>对应的 <see cref="BuffModel"/> 派生实例。</returns>
-    BuffModel ToBuffModel(BuffConfig config);
 }

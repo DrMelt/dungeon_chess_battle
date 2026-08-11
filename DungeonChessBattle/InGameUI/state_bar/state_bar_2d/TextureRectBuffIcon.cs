@@ -51,7 +51,7 @@ public partial class TextureRectBuffIcon : TextureRect {
         if (durationLabelRef == null || superpositionsLabelRef == null)
             return;
 
-        durationLabelRef.Text = buffData.RemainingDuration.ToString("F0");
+        durationLabelRef.Text = buffData.Remaining.ToString("F0");
         superpositionsLabelRef.Text = buffData.StackCount.ToString();
 
         durationLabelRef.LabelSettings.FontColor =

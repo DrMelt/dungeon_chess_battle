@@ -2,23 +2,22 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using LiteNetLib;
 using LiteEntitySystem;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.Logic.Battle;
-using DungeonChessBattle.Logic.Services;
-using DungeonChessBattle.Server.Domain.Settings;
-using DungeonChessBattle.Server.State;
+using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的 Logic 实例 (GameLogicService + RoomManager)，并运行在独立线程中，
+/// 独立的战斗编排实例 (BattleRoom + SkillRepository)，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
-/// 战斗流程面向 IBattle 抽象接口。
+/// 战斗流程由 BattleRoom 统一驱动（读条/冷却/Buff/结算/阶段），领域事件经 HandleDomainEvent 翻译为 RPC / SyncVar。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>（房间存在期间
 /// 登记成员可连接）；断线玩家实体保留直至房间销毁（无宽限期机制）。
@@ -64,11 +63,11 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的 BattleRoomEntity（SEM 创建后填充）</summary>
     private BattleRoomEntity? _roomEntity;
 
-    /// <summary>本房间独立的 Logic 实例（不再共享全局）</summary>
-    private readonly GameLogicService _logicService;
+    /// <summary>本房间的战斗编排门面（面向 IBattleUnit，只依赖 Domain + GameConfig 仓库）。</summary>
+    private readonly BattleRoom _battleRoom;
 
-    /// <summary>本房间的战斗流程（面向 IBattle 抽象接口）</summary>
-    private IBattle? _battle;
+    /// <summary>本房间创建时间（服务端权威，来自 Store 房间配置）。</summary>
+    private readonly DateTime _roomCreatedAt;
 
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
@@ -109,17 +108,17 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
     /// <param name="logger">日志器</param>
-    /// <param name="logicLogger">Logic 层日志器。</param>
-    /// <param name="config">服务器配置（连接密钥）。</param>
+    /// <param name="config">战斗侧配置切片（连接密钥）。</param>
     /// <param name="stateStore">大厅级状态存储（房间线程用于自取初始化数据与成员校验）。</param>
     public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger,
-        ILogger<GameLogicService> logicLogger, ServerConfig config, IGameStateStore stateStore) {
+        BattleServerConfig config, IGameStateStore stateStore) {
         Port = port;
         RoomId = roomId;
         _logger = logger;
-        _connectionKey = config.ServerPassword ?? config.ConnectionKey;
+        _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
-        _logicService = new(roomId, logicLogger);
+        _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
+        _battleRoom = new BattleRoom(new SkillRepository());
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         EntityManager = new ServerEntityManager(
@@ -176,15 +175,7 @@ public partial class BattleRoomServer : INetEventListener {
         foreach (var pawn in _roomPawns) {
             pawn.SkillCastRequested -= OnPawnSkillCast;
             pawn.InputHandler = null;
-
-            // 退订对应 Logic 权威模型的事件桥接（房间销毁时解除，防止悬挂）
-            var model = _logicService.GetUnits()
-                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
-            if (model is UnitModel unitModel) {
-                unitModel.TookDamage -= OnModelTookDamage;
-                unitModel.BuffAdded -= OnModelBuffAdded;
-                unitModel.BuffRemoved -= OnModelBuffRemoved;
-            }
+            _battleRoom.RemoveUnit(pawn);
         }
 
         // 先等待房间线程退出，再销毁保留实体（避免大厅线程在房间线程
@@ -194,9 +185,6 @@ public partial class BattleRoomServer : INetEventListener {
 
         // 销毁全部保留实体（断线玩家实体随房间销毁一并清理；房间线程已退出）
         CleanupAllSessions();
-
-        // 闭合 Logic 层生命周期：释放本房间战斗上下文
-        _logicService.Dispose();
 
         // 释放初始化信号（不再有等待方）
         _initialized.Dispose();
@@ -235,18 +223,10 @@ public partial class BattleRoomServer : INetEventListener {
                     // 2. Entity 同步
                     EntityManager.Update();
 
-                    // 3. 战斗 Tick + Buff 更新
-                    if (_battle?.CurrentPhase == BattlePhase.Running) {
-                        _battle.Tick((float)dt);
-
-                        _logicService.UpdateBuffs(_logicService.GetUnits(), dt);
-                    }
-
-                    // 4. Pawn 冷却更新 + Logic 模型回写到 Pawn（Health / Position）
-                    SyncLogicModelToPawns((float)dt);
-
-                    // 5. 战斗结束检查
-                    CheckBattleEnded();
+                    // 3. 战斗编排：BattleRoom 统一推进读条/冷却/Buff/结算/阶段，
+                    //    返回领域事件并由 HandleDomainEvent 翻译为 RPC / SyncVar
+                    foreach (var e in _battleRoom.Tick(dt))
+                        HandleDomainEvent(e);
                 }
                 else {
                     Thread.Sleep(1);
@@ -257,99 +237,4 @@ public partial class BattleRoomServer : INetEventListener {
             }
         }
     }
-
-    /// <summary>
-    /// 每帧推进读条 + 递减 Pawn 冷却，并同步 Pawn 与 Logic 模型的状态。仅房间线程调用。
-    /// 移动位置/朝向由 Pawn(权威) 单向桥接到 Logic 模型（技能结算依赖模型位置）；
-    /// 不再从模型回写位置到 Pawn，避免覆盖预测/权威位置。
-    /// </summary>
-    /// <param name="dt">距上一帧的间隔时间（秒）。</param>
-    private void SyncLogicModelToPawns(float dt) {
-        // 1. 桥接：Pawn(权威) → UnitModel 位置与朝向（技能结算 caster/testUnit.Position 依赖此值）
-        foreach (var pawn in _roomPawns) {
-            var model = _logicService.GetUnits()
-                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
-            if (model == null)
-                continue;
-
-            var pos = pawn.Position.Value;
-            model.Position = new System.Numerics.Vector3(pos.X, 0f, pos.Y);
-
-            var lookOffset = pawn.Direction.Value;
-            if (System.Numerics.Vector2.DistanceSquared(lookOffset, System.Numerics.Vector2.Zero) > 0.0001f)
-                model.LookAtDir = new System.Numerics.Vector3(lookOffset.X, 0f, lookOffset.Y);
-        }
-
-        // 2. 推进读条：Logic 层权威递减，完成时结算并返回完成读条的单位
-        var finishedSpells = _logicService.TickSpells(dt);
-
-        // 3. 推进 Logic 层冷却（GCD + 个体技能冷却）
-        _logicService.TickCooldowns(dt);
-
-        // 4. 回写：Logic 模型状态（Health/冷却/读条）→ Pawn
-        foreach (var pawn in _roomPawns) {
-            var model = _logicService.GetUnits()
-                .FirstOrDefault(u => u.UnitStateName == pawn.UnitName.Value);
-            if (model == null)
-                continue;
-
-            // 回写生命值（Logic 层权威含死亡判定，此处仅投影结果）
-            if (MathF.Abs(pawn.Health.Value - model.Health) > 0.0001f) {
-                pawn.Health.Value = model.Health;
-                pawn.UnitState.Value = (byte)(model.Health <= 0f ? 1 : 0);
-            }
-
-            // 回写冷却状态：GCD + 技能个体冷却（仅 Logic UnitModel 有真实冷却）
-            if (model is UnitModel unitModel) {
-                if (MathF.Abs(pawn.GcdRemaining.Value - unitModel.GcdTime) > 0.0001f)
-                    pawn.GcdRemaining.Value = Math.Max(0f, unitModel.GcdTime);
-                ProjectSkillCooldowns(pawn, unitModel.SkillCooldowns);
-                ProjectBuffList(pawn, MapModelBuffs(unitModel.BuffList));
-            }
-
-            // 回写读条状态：读条已完成并结算的单位清空；否则更新剩余时间
-            if (finishedSpells.Contains(pawn.UnitName.Value)) {
-                pawn.SkillCasting.Value = 0;
-                pawn.SkillCastRemaining.Value = 0f;
-            }
-            else if (model.SpellingSkillId != 0) {
-                if (pawn.SkillCasting.Value != model.SpellingSkillId)
-                    pawn.SkillCasting.Value = model.SpellingSkillId;
-                pawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
-            }
-        }
-    }
-
-    /// <summary>将 Logic 层技能冷却快照投影到 Pawn 的同步列表（全量覆盖）。</summary>
-    private static void ProjectSkillCooldowns(UnitPawn pawn, IReadOnlyDictionary<ushort, float> cooldowns) {
-        while (pawn.SkillCooldowns.Count > 0)
-            pawn.SkillCooldowns.RemoveAt(pawn.SkillCooldowns.Count - 1);
-        foreach (var kv in cooldowns) {
-            if (kv.Value > 0f)
-                pawn.SkillCooldowns.Add(new SyncSkillCooldown { SkillId = kv.Key, Remaining = kv.Value });
-        }
-    }
-
-    /// <summary>将 Logic 层 Buff 快照投影到 Pawn 的同步列表（全量覆盖）。</summary>
-    private static void ProjectBuffList(UnitPawn pawn, IReadOnlyList<SyncBuffData> buffs) {
-        while (pawn.BuffsList.Count > 0)
-            pawn.BuffsList.RemoveAt(pawn.BuffsList.Count - 1);
-        foreach (var buff in buffs)
-            pawn.BuffsList.Add(buff);
-    }
-
-    /// <summary>
-    /// 将 Logic 层的 Buff 列表映射为同步 Buff 数据快照（服务端权威回写）。
-    /// </summary>
-    /// <param name="buffs">Logic 层 Buff 模型列表。</param>
-    /// <returns>同步 Buff 数据列表。</returns>
-    private static List<SyncBuffData> MapModelBuffs(IEnumerable<IBuff> buffs) {
-        var result = new List<SyncBuffData>();
-        foreach (var buff in buffs) {
-            if (buff is BuffModel)
-                result.Add(MapSingleModelBuff(buff));
-        }
-        return result;
-    }
-
 }

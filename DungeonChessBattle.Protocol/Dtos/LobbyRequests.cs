@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Core.Enums;
+﻿using DungeonChessBattle.Protocol.Enums;
 
 namespace DungeonChessBattle.Protocol.Dtos;
 

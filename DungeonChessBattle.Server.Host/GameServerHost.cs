@@ -1,6 +1,7 @@
-﻿using DungeonChessBattle.Server.Domain.Lobby;
-using DungeonChessBattle.Server.Domain.Settings;
-using DungeonChessBattle.Server.State;
+﻿using DungeonChessBattle.Server.Battle;
+using DungeonChessBattle.Server.Lobby;
+using DungeonChessBattle.Server.StateStore;
+using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
@@ -74,14 +75,19 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 var builder = WebApplication.CreateBuilder();
                 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
                 builder.Logging.AddConsole();
-                builder.Services.AddSingleton<ServerConfig>(config);
+                builder.Services.AddSingleton(new LobbyServerConfig { ServerPassword = config.ServerPassword });
+                builder.Services.AddSingleton(new BattleServerConfig {
+                    ConnectionKey = config.ServerPassword ?? config.ConnectionKey,
+                    FirstRoomPort = config.FirstRoomPort,
+                });
                 builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
                 builder.Services.AddSingleton<ILobbyBroadcaster>(sp =>
                     new SignalRBroadcaster(sp.GetRequiredService<IHubContext<LobbyHub>>()));
                 builder.Services.AddSingleton<GameServer>(sp => new GameServer(
                     _loggerFactory,
                     sp.GetRequiredService<ILobbyBroadcaster>(),
-                    sp.GetRequiredService<ServerConfig>(),
+                    sp.GetRequiredService<LobbyServerConfig>(),
+                    sp.GetRequiredService<BattleServerConfig>(),
                     sp.GetRequiredService<IGameStateStore>()));
                 builder.Services.AddSingleton<ILobbyApplication>(sp => sp.GetRequiredService<GameServer>());
                 builder.Services.AddSignalR();

@@ -1,5 +1,4 @@
-﻿using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+﻿using DungeonChessBattle.Protocol.Enums;
 
 namespace DungeonChessBattle.Protocol.Dtos;
 
@@ -16,6 +15,9 @@ public class RoomListing {
 
     /// <summary>副本名。</summary>
     public string DungeonName { get; init; } = string.Empty;
+
+    /// <summary>招募板展示的房间描述。</summary>
+    public string Description { get; init; } = string.Empty;
 
     /// <summary>房间分类。</summary>
     public RoomCategory Category {
@@ -48,25 +50,5 @@ public class RoomListing {
     /// <summary>房间创建时间（UTC）。</summary>
     public DateTime CreatedAt {
         get; init;
-    }
-
-    /// <summary>
-    /// 从完整的房间数据模型转换为轻量的列表展示模型。
-    /// </summary>
-    /// <param name="room">源房间数据。</param>
-    /// <returns>对应的 <see cref="RoomListing"/> 实例。</returns>
-    public static RoomListing FromGameRoom(GameRoom room) {
-        return new RoomListing {
-            RoomId = room.RoomId,
-            Title = room.Title,
-            DungeonName = room.DungeonName,
-            Category = room.Category,
-            HostName = room.HostName,
-            CurrentPlayers = room.CurrentPlayers,
-            MaxPlayers = room.MaxPlayers,
-            HasPassword = room.HasPassword,
-            Status = room.Status,
-            CreatedAt = room.CreatedAt,
-        };
     }
 }

@@ -1,4 +1,4 @@
-using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Battle.Domain.Combat;
 
 namespace DungeonChessBattle.GameConfig.Data;
 

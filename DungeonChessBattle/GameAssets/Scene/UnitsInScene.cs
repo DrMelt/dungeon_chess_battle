@@ -31,7 +31,7 @@ public partial class UnitsInScene : Resource {
     private DateTime _roomCreatedAt = DateTime.MinValue;
 
     /// <summary>
-    /// 设置房间创建时间（服务端权威，来自 <see cref="Core.Models.GameRoom.CreatedAt"/>）。
+    /// 设置房间创建时间（服务端权威，来自 BattleRoomEntity.CreatedUnixTime 同步字段）。
     /// 进入战斗时由 BattleUnitManager.Bind 注入；退出战斗时传 <see cref="DateTime.MinValue"/> 重置。
     /// </summary>
     /// <param name="utc">房间创建时刻（UTC）。</param>

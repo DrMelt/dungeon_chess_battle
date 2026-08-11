@@ -1,9 +1,10 @@
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.Entities;
+using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
+using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using DungeonChessBattle.Entities.SyncData;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;
@@ -27,8 +28,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private string? _currentRoomId;
     private readonly Lock _lock = new();
 
-    /// <summary>持久房间（GetRoom 返回稳定引用，避免每帧快照重建）。</summary>
-    private GameRoom? _persistentRoom;
+    /// <summary>房间服务端权威创建时间（UTC Unix 秒；房间实体同步后回填）。</summary>
+    private long _roomCreatedUnix;
 
     /// <summary>单位生命值变化事件。参数：单位名称、新生命值、旧生命值。</summary>
     public event Action<string, float, float>? UnitHealthChanged;
@@ -37,10 +38,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public event Action<string>? UnitDied;
 
     /// <summary>单位添加 Buff 事件。参数：单位名称、Buff 数据。</summary>
-    public event Action<string, BuffEventData>? UnitBuffAdded;
+    public event Action<string, BuffView>? UnitBuffAdded;
 
     /// <summary>单位移除 Buff 事件。参数：单位名称、Buff 数据。</summary>
-    public event Action<string, BuffEventData>? UnitBuffRemoved;
+    public event Action<string, BuffView>? UnitBuffRemoved;
 
     /// <summary>单位创建事件。参数：房间ID、单位名称、阵营(字符串)</summary>
     public event Action<string, string, string>? OnUnitCreated;
@@ -77,7 +78,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _persistentRoom = null;
+            _roomCreatedUnix = 0;
         }
     }
 
@@ -93,7 +94,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _persistentRoom = null;
+            _roomCreatedUnix = 0;
         }
     }
 
@@ -174,45 +175,25 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _persistentRoom = null;
+            _roomCreatedUnix = 0;
         }
     }
 
     /// <summary>
-    /// 按房间 ID 返回持久房间（仅承载房间元信息，如创建时间；单位数据由 Pawn 查询提供）。
+    /// 获取房间服务端权威创建时间（UTC Unix 秒）。
+    /// 房间实体尚未同步时返回 0；调用方按需忽略。
     /// </summary>
-    public GameRoom? GetRoom(string roomId) {
+    public long? GetRoomCreatedUnixTime(string roomId) {
         lock (_lock) {
-            return _persistentRoom;
+            return _roomCreatedUnix;
         }
-    }
-
-    /// <summary>获取当前房间（客户端仅持有单房间）。</summary>
-    public IEnumerable<GameRoom> GetAllRooms() {
-        var roomId = _currentRoomId;
-        if (roomId == null)
-            return [];
-        var room = GetRoom(roomId);
-        return room != null ? [room] : [];
-    }
-
-    /// <summary>
-    /// 创建房间记录并清空本地 Pawn 缓存。
-    /// </summary>
-    public GameRoom CreateRoom(string roomId) {
-        _currentRoomId = roomId;
-        lock (_lock) {
-            _roomPawns.Clear();
-            _persistentRoom = new GameRoom(roomId);
-        }
-        return _persistentRoom;
     }
 
     /// <summary>
     /// 向服务端发送创建单位 RPC 请求。单位实体由服务端创建并回传（Pawn），
-    /// 客户端不维护本地 UnitModel，因此返回 null。
+    /// 客户端不维护本地状态。
     /// </summary>
-    public IUnitState? CreateUnit(string roomId, string unitName, string camp) {
+    public void CreateUnit(string roomId, string unitName, string camp) {
         if (_roomEntity != null) {
             var req = new SyncCreateUnitRequest { UnitName = unitName, Camp = camp };
             _roomEntity.RequestCreateUnit(req);
@@ -221,7 +202,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("[RoomBattleClient] CreateUnit: room entity not found for {RoomId}", roomId);
         }
-        return null;
     }
 
     /// <summary>
@@ -258,13 +238,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             TargetPosZ = targetPosZ,
         };
         casterPawn.RequestCastSkill(req);
-    }
-
-    /// <summary>
-    /// 客户端不对 Buff 做本地结算（服务端权威），空实现。
-    /// </summary>
-    public void UpdateBuffs(string roomId, IEnumerable<IUnitState> units, double deltaTime) {
-        // Buff 结算由服务端权威执行，客户端仅接收同步更新
     }
 
     /// <summary>判断当前房间战斗是否已结束。</summary>

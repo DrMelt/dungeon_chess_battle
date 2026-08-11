@@ -2,10 +2,9 @@
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
-using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.GamePanels;
 
 namespace DungeonChessBattle;
@@ -94,7 +93,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// <param name="roomId">房间 ID。</param>
     /// <param name="config">房间配置（可为空）。</param>
     /// <param name="isHost">当前玩家是否为房主。</param>
-    public void EnterRoom(string roomId, GameRoom? config = null, bool isHost = false) {
+    public void EnterRoom(string roomId, RoomListing? config = null, bool isHost = false) {
         _roomId = roomId;
         _isHost = isHost;
         _isReady = false;

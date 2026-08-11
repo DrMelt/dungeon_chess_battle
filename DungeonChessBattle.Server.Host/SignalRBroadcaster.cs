@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Server.Domain.Lobby;
+﻿using DungeonChessBattle.Server.Lobby;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DungeonChessBattle.Server.Host;

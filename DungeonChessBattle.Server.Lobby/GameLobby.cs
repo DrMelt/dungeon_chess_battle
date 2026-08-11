@@ -1,11 +1,7 @@
-﻿using DungeonChessBattle.Core;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
-using DungeonChessBattle.Protocol;
+﻿using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Enums;
 using DungeonChessBattle.Protocol.Dtos;
-using DungeonChessBattle.Server.Domain.Lobby;
-using DungeonChessBattle.Server.Domain.Settings;
-using DungeonChessBattle.Server.State;
+using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Lobby;
@@ -24,11 +20,11 @@ namespace DungeonChessBattle.Server.Lobby;
 /// <param name="broadcaster">大厅广播端口（向房间内连接推送消息）。</param>
 /// <param name="config">服务器配置（服务器密码等）。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
-    ILobbyBroadcaster broadcaster, ServerConfig config) {
+    ILobbyBroadcaster broadcaster, LobbyServerConfig config) {
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly ILobbyBroadcaster _broadcaster = broadcaster;
-    private readonly ServerConfig _config = config;
+    private readonly LobbyServerConfig _config = config;
 
     /// <summary>
     /// 校验服务器密码；不匹配时返回 false（调用方负责构造失败结果）。

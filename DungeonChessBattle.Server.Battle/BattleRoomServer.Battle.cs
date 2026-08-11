@@ -1,11 +1,13 @@
 using System.Numerics;
-using DungeonChessBattle.Core;
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Logic.Movement;
+using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -28,18 +30,10 @@ public partial class BattleRoomServer {
         _roomEntity.CreateUnitRequested += OnCreateUnitRequested;
         _roomEntity.StartBattleRequested += OnStartBattleRequested;
 
-        // Logic 层单房间门面已在构造时持有本房间；此处仅注入运行时依赖
-        // 注入技能解析器：按技能配置 ID 构造运行时技能模型（服务端持有配置表）
-        _logicService.SetSkillResolver(skillId => {
-            var config = GameConfigDB.GetSkillById(skillId);
-            return config != null ? GameConfigDB.ToSkillModel(config) : null;
-        });
-
-        // 注入服务端权威创建时间（Logic 房间在构造时创建，此处直接取用；
+        // 注入服务端权威创建时间（房间在构造时创建，此处直接取用；
         // 且不能在 AddEntity initAction 中注入——OnConstructed 会以默认值覆盖运行时值）
-        var gameRoom = _logicService.Room;
         _roomEntity?.CreatedUnixTime.Value =
-                new DateTimeOffset(gameRoom.CreatedAt).ToUnixTimeSeconds();
+                new DateTimeOffset(_roomCreatedAt).ToUnixTimeSeconds();
 
         // 从 Store 迁移准备期单位
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -76,76 +70,32 @@ public partial class BattleRoomServer {
 
         _roomPawns.Add(entity);
 
-        // Logic 层创建单位：先从注册表取配置建模并注入运行时数值（BaseSpeed 等），
-        // 避免裸 UnitModel 速度恒为 0；再同步初始位置（与 Pawn 一致，避免回写时拉回原点）
-        var model = _logicService.CreateUnit(unitName, camp);
+        // 从单位配置注入 Pawn 战斗系数（权威由 BattleRoom 直接读写 IBattleUnit 载体）
         var configEntry = UnitRegistry.Instance.GetByDisplayName(unitName);
-        if (configEntry != null)
-            model.CopyStatsFrom(GameConfigDB.ToUnitModel(configEntry.Config));
-        model.Position = new Vector3(spawnPos.X, 0f, spawnPos.Y);
-
-        // 订阅 Logic 权威模型事件，桥接为客户端事件广播（受击 / Buff 增减）
-        if (model is UnitModel unitModel) {
-            unitModel.TookDamage += OnModelTookDamage;
-            unitModel.BuffAdded += OnModelBuffAdded;
-            unitModel.BuffRemoved += OnModelBuffRemoved;
+        if (configEntry != null) {
+            var cfg = configEntry.Config;
+            entity.MaxHealth.Value = cfg.MaxHealth;
+            entity.Health.Value = cfg.MaxHealth;
+            entity.PhysicalAttackBase.Value = cfg.PhysicalAttackBase;
+            entity.PhysicalTakePercent.Value = cfg.PhysicalTakePercent;
+            entity.MagicAttackBase.Value = cfg.MagicAttackBase;
+            entity.MagicTakePercent.Value = cfg.MagicTakePercent;
+            entity.CureIntensity.Value = cfg.CureIntensity;
+            entity.BaseSpeed.Value = cfg.BaseSpeed;
+            entity.BodyRadius.Value = cfg.BodyRadius;
+            foreach (var skill in cfg.Skills)
+                entity.SkillIds.Add(skill.Id);
         }
 
-        // 注入 Pawn 移动速度：预测位移依赖 BaseSpeed，须在模型 CopyStatsFrom 之后回填
-        entity.BaseSpeed.Value = model.MoveSpeed;
+        // 注册到战斗编排门面（BattleRoom 面向 IBattleUnit 结算，读条/冷却/Buff 由 Tick 写回 Pawn）
+        _battleRoom.AddUnit(entity);
 
         // 注入碰撞半径与移动管线（Logic 层 MovementResolver，含场景交互）。
         // 场景两端口径一致（OpenMovementScene 无碰撞），保证预测与权威确定性一致。
-        entity.BodyRadius.Value = model.BodyRadius;
         entity.MoveResolver = (pos, dir, speed, dt) =>
             MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, OpenMovementScene.Instance);
 
         return entity;
-    }
-
-    /// <summary>Logic 权威模型受击事件：桥接为对应 Pawn 的客户端广播。</summary>
-    private void OnModelTookDamage(UnitModel model, float damage, DamageType damageType) {
-        var pawn = _roomPawns.Find(p => p.UnitName.Value == model.UnitStateName);
-        pawn?.BroadcastDamageTaken(damage, damageType);
-    }
-
-    /// <summary>Logic 权威模型 Buff 添加事件：桥接为对应 Pawn 的客户端广播。</summary>
-    private void OnModelBuffAdded(UnitModel model, IBuff buff) {
-        var pawn = _roomPawns.Find(p => p.UnitName.Value == model.UnitStateName);
-        pawn?.BroadcastBuffAdded(MapSingleModelBuff(buff));
-    }
-
-    /// <summary>Logic 权威模型 Buff 移除事件：桥接为对应 Pawn 的客户端广播。</summary>
-    private void OnModelBuffRemoved(UnitModel model, IBuff buff) {
-        var pawn = _roomPawns.Find(p => p.UnitName.Value == model.UnitStateName);
-        pawn?.BroadcastBuffRemoved(MapSingleModelBuff(buff));
-    }
-
-    /// <summary>将单条 Logic Buff 模型映射为同步 Buff 数据快照（与 MapModelBuffs 同源转换）。</summary>
-    private static SyncBuffData MapSingleModelBuff(IBuff buff) {
-        if (buff is not BuffModel model)
-            return default;
-
-        var data = new SyncBuffData {
-            BuffTypeId = model.BuffTypeId,
-            RemainingDuration = (float)model.Duration,
-            StackCount = (ushort)model.Superpositions,
-            MaxStackCount = (ushort)model.MaxSuperpositions,
-        };
-
-        switch (model) {
-            case BuffDOTModel dot:
-                data.TickInterval = 1f;
-                data.TickValue = dot.DamagePerSec;
-                data.DamageType = (byte)dot.DamageType;
-                break;
-            case BuffHOTModel hot:
-                data.TickInterval = 1f;
-                data.TickValue = -hot.HealthPerSec; // 负值表示治疗
-                break;
-        }
-
-        return data;
     }
 
     /// <summary>
@@ -156,15 +106,18 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 在本房间启动战斗。
+    /// 在本房间范围内按单位名称查找 UnitPawn。
+    /// </summary>
+    public UnitPawn? FindPawnByName(string unitName) {
+        return _roomPawns.Find(p => p.UnitName.Value == unitName);
+    }
+
+    /// <summary>
+    /// 在本房间启动战斗：委托 BattleRoom 阶段机，并将阶段事件翻译为网络同步。
     /// </summary>
     public void StartBattle() {
-        if (_battle != null && _battle.CurrentPhase == BattlePhase.Running)
-            return;
-
-        _battle = _logicService.StartBattle();
-        _battle.BattleStarted += OnBattleStarted;
-        _battle.BattleEnded += OnBattleEnded;
+        foreach (var e in _battleRoom.StartBattle())
+            HandleDomainEvent(e);
     }
 
     /// <summary>
@@ -206,8 +159,10 @@ public partial class BattleRoomServer {
     /// 本方法仅作服务端输入钩子（保留日志与未来扩展）。
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
-        // 移动已由 UnitPawn.Update() 确定性结算（客户端预测 + 服务端权威），
-        // 此处仅作服务端输入钩子（保留日志与未来扩展），不再做移动结算。
+        // 移动已由 UnitPawn.Update() 确定性结算（客户端预测 + 服务端权威）。
+        // 此处驱动"移动即打断读条"（BattleRoom 保留既有行为）。
+        _battleRoom.OnUnitMoved(pawn, input.MoveDirection);
+
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
                 RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
@@ -219,14 +174,14 @@ public partial class BattleRoomServer {
     /// 完成时 Logic 结算并回写。
     /// </summary>
     private void OnPawnSkillCast(UnitPawn casterPawn, SyncSkillRequest req) {
-        if (_battle == null || _battle.CurrentPhase != BattlePhase.Running) {
+        if (_battleRoom.CurrentPhase != BattlePhase.Running) {
             _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC dropped: battle not running.", RoomId);
             return;
         }
 
-        // 发起读条：Logic 层按 SkillTypeId 解析技能时长并暂存目标（冷却校验在 BeginSpell 内）
-        string? targetName = null;
-        Vector3? targetPos = null;
+        // 发起读条：BattleRoom 面向 IBattleUnit 校验冷却并写入读条状态
+        IBattleUnit? target = null;
+        Vector2? targetPos = null;
         if (req.TargetUnitNetId != 0) {
             var targetPawn = FindPawnById(req.TargetUnitNetId);
             if (targetPawn == null) {
@@ -234,69 +189,90 @@ public partial class BattleRoomServer {
                     RoomId, req.TargetUnitNetId);
                 return;
             }
-            targetName = targetPawn.UnitName.Value;
+            target = targetPawn;
         }
         else {
             // 位置目标技能（范围伤害）：XZ 平面
-            targetPos = new Vector3(req.TargetPosX, 0f, req.TargetPosZ);
+            targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
         }
 
-        bool began = _logicService.BeginSpell(casterPawn.UnitName.Value, req.SkillTypeId, targetName, targetPos);
+        bool began = _battleRoom.BeginCast(casterPawn, req.SkillTypeId, target, targetPos);
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomServer:{RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
                     RoomId, casterPawn.UnitName.Value, req.SkillTypeId);
             return;
         }
-
-        // 回写 Pawn 施法状态（客户端渲染读 pawn.SkillCasting / SkillCastRemaining）
-        var casterModel = _logicService.FindUnitModel(casterPawn.UnitName.Value);
-        if (casterModel is UnitModel model) {
-            casterPawn.SkillCasting.Value = model.SpellingSkillId;
-            casterPawn.SkillCastRemaining.Value = Math.Max(0f, model.SpellRemaining);
-        }
+        // 读条状态已由 BeginCast 直接写回 Pawn（IBattleUnit），无需额外回写
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomServer:{RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
-                RoomId, casterPawn.UnitName.Value, targetName ?? "(position)", req.SkillTypeId);
+                RoomId, casterPawn.UnitName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
     }
 
     /// <summary>
-    /// 战斗开始时更新房间实体阶段状态。
+    /// 领域事件 → 网络翻译：把 BattleRoom 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
+    /// Health/读条/冷却/Buff 全量已由 BattleRoom 直接写 IBattleUnit（Pawn SyncVar），
+    /// 此处仅处理瞬时事件（阶段、受击、死亡、Buff 增减）。
     /// </summary>
-    private void OnBattleStarted() {
-        if (_roomEntity != null) {
-            _roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
-            _roomEntity.IsFinished.Value = false;
+    private void HandleDomainEvent(IDomainEvent domainEvent) {
+        switch (domainEvent) {
+            case BattleStarted:
+                if (_roomEntity != null) {
+                    _roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
+                    _roomEntity.IsFinished.Value = false;
+                }
+                break;
+
+            case BattleEnded ended:
+                if (_roomEntity != null) {
+                    _roomEntity.BattlePhase.Value = (byte)BattlePhase.Finished;
+                    _roomEntity.IsFinished.Value = true;
+                    _roomEntity.WinnerCamp.Value = ended.WinnerCamp ?? string.Empty;
+                }
+                break;
+
+            case DamageOccurred dmg:
+                FindPawnByName(dmg.TargetName)?
+                    .BroadcastDamageTaken(dmg.AppliedDamage, dmg.DamageType);
+                break;
+
+            case HealOccurred:
+                // 治疗量经 Health SyncVar 自动同步，无需额外 RPC
+                break;
+
+            case UnitDied died:
+                var deadPawn = FindPawnByName(died.UnitName);
+                deadPawn?.UnitState.Value = 1;
+                break;
+
+            case BuffApplied buff:
+                BroadcastBuffChanged(buff.TargetName, buff.BuffTypeId, (ushort)buff.StackCount, added: true);
+                break;
+
+            case BuffExpired buffExp:
+                BroadcastBuffChanged(buffExp.TargetName, buffExp.BuffTypeId, (ushort)0, added: false);
+                break;
+
+            case CastCompleted:
+                // 日志级事件，无网络投影
+                break;
         }
     }
 
-    /// <summary>
-    /// 战斗结束时更新房间实体阶段与胜方阵营状态。
-    /// </summary>
-    private void OnBattleEnded() {
-        if (_roomEntity != null) {
-            _roomEntity.BattlePhase.Value = (byte)BattlePhase.Finished;
-            _roomEntity.IsFinished.Value = true;
-
-            if (_logicService.CheckBattleEnded()) {
-                _roomEntity.WinnerCamp.Value =
-                    _logicService.GetUnits().Any(u => u.Health > 0 && u.Camps.Contains(CampConstants.CampA))
-                        ? CampConstants.CampA
-                        : CampConstants.CampB;
-            }
-        }
-    }
-
-    /// <summary>
-    /// 检查战斗是否已结束，结束时通知战斗管理器。
-    /// </summary>
-    private void CheckBattleEnded() {
-        if (_battle?.CurrentPhase != BattlePhase.Running)
+    /// <summary>Buff 增减事件：从 Pawn 的同步列表取快照构造 SyncBuffData 并广播 RPC。</summary>
+    private void BroadcastBuffChanged(string targetName, ushort buffTypeId, ushort stackCount, bool added) {
+        var pawn = FindPawnByName(targetName);
+        if (pawn == null)
             return;
 
-        if (_logicService.CheckBattleEnded()) {
-            _logicService.EndBattle(_battle);
-        }
+        var data = pawn.BuffsList.FirstOrDefault(b => b.BuffTypeId == buffTypeId);
+        if (data.BuffTypeId == 0)
+            data = new SyncBuffData { BuffTypeId = buffTypeId, StackCount = stackCount };
+
+        if (added)
+            pawn.BroadcastBuffAdded(data);
+        else
+            pawn.BroadcastBuffRemoved(data);
     }
 }

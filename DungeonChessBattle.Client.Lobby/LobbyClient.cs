@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -148,9 +147,8 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// 请求创建房间（含招募板配置）。
     /// </summary>
     public void RequestCreateRoom(string roomId, string playerName, string playerId,
-        string? roomPassword, GameRoom? config, string? serverPassword = null) {
-        var dto = new CreateRoomRequest(roomId, playerId, playerName, roomPassword,
-            config != null ? ToRoomConfig(config) : null, serverPassword);
+        string? roomPassword, RoomConfigDto? config, string? serverPassword = null) {
+        var dto = new CreateRoomRequest(roomId, playerId, playerName, roomPassword, config, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.CreateRoom, dto);
             if (result.Success) {
@@ -271,8 +269,4 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     private void ClearCaches() {
         _roomSnapshots.Clear();
     }
-
-    /// <summary>将 GameRoom 转换为传输用 RoomConfigDto。</summary>
-    private static RoomConfigDto ToRoomConfig(GameRoom room) =>
-        new(room.Title, room.DungeonName, room.Description, room.Category, room.MaxPlayers);
 }

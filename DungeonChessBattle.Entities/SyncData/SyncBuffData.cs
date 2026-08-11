@@ -10,7 +10,7 @@ public struct SyncBuffData : ISpanSerializable {
     public ushort BuffTypeId;
 
     /// <summary>剩余持续时间（秒）</summary>
-    public float RemainingDuration;
+    public float Remaining;
 
     /// <summary>每跳间隔（秒），0 表示非周期性 Buff</summary>
     public float TickInterval;
@@ -39,7 +39,7 @@ public struct SyncBuffData : ISpanSerializable {
     /// <param name="writer">序列化写入器。</param>
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(BuffTypeId);
-        writer.Put(RemainingDuration);
+        writer.Put(Remaining);
         writer.Put(TickInterval);
         writer.Put(TickValue);
         writer.Put(StackCount);
@@ -54,7 +54,7 @@ public struct SyncBuffData : ISpanSerializable {
     /// <param name="reader">序列化读取器。</param>
     public void Deserialize(ref SpanReader reader) {
         BuffTypeId = reader.GetUShort();
-        RemainingDuration = reader.GetFloat();
+        Remaining = reader.GetFloat();
         TickInterval = reader.GetFloat();
         TickValue = reader.GetFloat();
         StackCount = reader.GetUShort();

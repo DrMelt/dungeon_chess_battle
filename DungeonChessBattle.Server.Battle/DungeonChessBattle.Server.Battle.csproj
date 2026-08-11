@@ -8,14 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Core\DungeonChessBattle.Core.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Battle\DungeonChessBattle.Battle.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Logic\DungeonChessBattle.Logic.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.Domain\DungeonChessBattle.Server.Domain.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.State\DungeonChessBattle.Server.State.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Server.StateStore.Abstractions\DungeonChessBattle.Server.StateStore.Abstractions.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -24,11 +21,4 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Using Include="DungeonChessBattle.Battle.Enums" />
-        <Using Include="DungeonChessBattle.Battle.Interfaces" />
-        <Using Include="DungeonChessBattle.Battle.Math" />
-        <Using Include="DungeonChessBattle.Battle.Models" />
-        <Using Include="DungeonChessBattle.Battle.Range" />
-    </ItemGroup>
-</Project>
+    </Project>

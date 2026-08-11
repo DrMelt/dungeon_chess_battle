@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets.Skills;
 using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.Services;
+using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -64,9 +64,11 @@ public partial class BattleUnitManager : Node {
         service.UnitBuffRemoved += OnBuffRemoved;
 
         // 注入服务端权威房间创建时间（跨端一致的战斗计时起点）
-        var room = service.GetRoom(roomId);
-        if (room != null)
-            UnitsInSceneRes.SetRoomCreatedAt(room.CreatedAt);
+        var createdUnix = service.GetRoomCreatedUnixTime(roomId);
+        if (createdUnix is > 0) {
+            UnitsInSceneRes.SetRoomCreatedAt(
+                DateTimeOffset.FromUnixTimeSeconds(createdUnix.Value).UtcDateTime);
+        }
 
         InitializeUnitsFromPawns();
     }
@@ -190,10 +192,10 @@ public partial class BattleUnitManager : Node {
     }
 
     /// <summary>服务事件：单位添加 Buff（当前无展示行为）。</summary>
-    private void OnBuffAdded(string unitName, BuffEventData buff) {
+    private void OnBuffAdded(string unitName, BuffView buff) {
     }
 
     /// <summary>服务事件：单位移除 Buff（当前无展示行为）。</summary>
-    private void OnBuffRemoved(string unitName, BuffEventData buff) {
+    private void OnBuffRemoved(string unitName, BuffView buff) {
     }
 }

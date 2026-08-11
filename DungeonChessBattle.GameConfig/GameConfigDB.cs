@@ -1,5 +1,4 @@
-using DungeonChessBattle.Core.Enums;
-using DungeonChessBattle.Core.Models;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;
@@ -152,10 +151,6 @@ public class GameConfigDB : IGameConfigDB {
     SkillRangeDamageConfig IGameConfigDB.SkillRectRangeDamage => SkillRectRangeDamage;
     UnitConfig IGameConfigDB.UnitWhiteMage => UnitWhiteMage;
 
-    UnitModel IGameConfigDB.ToUnitModel(UnitConfig config) => ToUnitModel(config);
-    SkillModel IGameConfigDB.ToSkillModel(SkillConfig config) => ToSkillModel(config);
-    BuffModel IGameConfigDB.ToBuffModel(BuffConfig config) => ToBuffModel(config);
-
     /// <summary>
     /// 按技能全局 ID 查找技能配置。
     /// </summary>
@@ -172,117 +167,4 @@ public class GameConfigDB : IGameConfigDB {
         };
     }
 
-    /// <summary>
-    /// 将单位配置转换为运行时单位模型。
-    /// </summary>
-    /// <param name="config">单位配置。</param>
-    /// <returns>对应的 <see cref="UnitModel"/>。</returns>
-    public static UnitModel ToUnitModel(UnitConfig config) {
-        ArgumentNullException.ThrowIfNull(config);
-
-        return new UnitModel {
-            BodyRadius = config.BodyRadius,
-            MaxHealth = config.MaxHealth,
-            CureIntensity = config.CureIntensity,
-            PhysicalAttackBase = config.PhysicalAttackBase,
-            PhysicalTakePercent = config.PhysicalTakePercent,
-            MagicAttackBase = config.MagicAttackBase,
-            MagicTakePercent = config.MagicTakePercent,
-            BaseSpeed = config.BaseSpeed,
-        };
-    }
-
-    /// <summary>
-    /// 将技能配置转换为对应类型的运行时技能模型。
-    /// </summary>
-    /// <param name="config">技能配置。</param>
-    /// <returns>对应的 <see cref="SkillModel"/> 派生实例。</returns>
-    public static SkillModel ToSkillModel(SkillConfig config) {
-        ArgumentNullException.ThrowIfNull(config);
-
-        var model = config switch {
-            SkillDamageConfig dmg => (SkillModel)new SkillDamageModel {
-                Damage = dmg.Damage,
-                DamageType = dmg.DamageType,
-            },
-            SkillCureConfig cure => new SkillCureModel {
-                CurePotency = cure.CurePotency,
-            },
-            SkillAddBuffConfig addBuff => new SkillAddBuffModel {
-                Buff = ToBuffModel(addBuff.BuffConfig),
-            },
-            SkillRangeDamageConfig rangeDmg => new SkillRangeDamageModel {
-                Damage = rangeDmg.Damage,
-                DamageType = rangeDmg.DamageType,
-                RangeRes = ToRangeRes(rangeDmg.Range),
-            },
-            _ => throw new InvalidOperationException(
-                $"Unknown SkillConfig type: {config.GetType().Name}. " +
-                "Please add the corresponding case in GameConfigDB.ToSkillModel()."),
-        };
-
-        model.SkillSpellTime = config.SkillSpellTime;
-        model.SkillCooldownTime = config.SkillCooldownTime;
-        model.GCDTime = config.GCDTime;
-        model.NeedUnitTarget = config.NeedUnitTarget;
-        model.NeedPosTarget = config.NeedPosTarget;
-        model.SkillCanAdd = Enum.Parse<SkillCanAdd>(config.SkillCanAdd);
-
-        return model;
-    }
-
-    /// <summary>
-    /// 将 Buff 配置转换为对应类型的运行时 Buff 模型。
-    /// </summary>
-    /// <param name="config">Buff 配置。</param>
-    /// <returns>对应的 <see cref="BuffModel"/> 派生实例。</returns>
-    public static BuffModel ToBuffModel(BuffConfig config) {
-        ArgumentNullException.ThrowIfNull(config);
-
-        var model = config switch {
-            BuffDOTConfig dot => (BuffModel)new BuffDOTModel {
-                DamageType = dot.DamageType,
-                DamagePerSec = dot.DamagePerSec,
-            },
-            BuffHOTConfig hot => new BuffHOTModel {
-                HealthPerSec = hot.HealthPerSec,
-            },
-            _ => throw new InvalidOperationException(
-                $"Unknown BuffConfig type: {config.GetType().Name}. " +
-                "Please add the corresponding case in GameConfigDB.ToBuffModel()."),
-        };
-
-        model.Duration = config.Duration;
-        model.MaxSuperpositions = config.MaxSuperpositions;
-        model.BuffTypeId = config.Id;
-
-        return model;
-    }
-
-    /// <summary>
-    /// 将范围配置转换为对应的范围判定器。
-    /// </summary>
-    /// <param name="config">范围配置。</param>
-    /// <returns>对应的 <see cref="IRangeChecker"/> 实现。</returns>
-    private static IRangeChecker ToRangeRes(RangeConfig config) {
-        ArgumentNullException.ThrowIfNull(config);
-
-        return config switch {
-            CircularRangeConfig c => new CircularRangeChecker {
-                NearClamp = c.NearClamp,
-                FarClamp = c.FarClamp,
-                RadianFrom = c.RadianFrom,
-                RadianTo = c.RadianTo,
-            },
-            RectRangeConfig r => new RectRangeChecker {
-                NearClamp = r.NearClamp,
-                FarClamp = r.FarClamp,
-                FromL = r.FromL,
-                ToR = r.ToR,
-            },
-            _ => throw new InvalidOperationException(
-                $"Unknown RangeConfig type: {config.GetType().Name}. " +
-                "Please add the corresponding case in GameConfigDB.ToRangeRes()."),
-        };
-    }
 }

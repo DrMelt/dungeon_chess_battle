@@ -1,5 +1,6 @@
 using Godot;
-using DungeonChessBattle.Core.Enums;
+using DungeonChessBattle.Protocol.Enums;
+using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 
 namespace DungeonChessBattle;
 

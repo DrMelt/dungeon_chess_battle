@@ -1,5 +1,4 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.Server.Domain.Settings;
 using DungeonChessBattle.Server.Host;
 using Microsoft.Extensions.Logging;
 

@@ -1,8 +1,7 @@
-﻿using DungeonChessBattle.Core;
-using DungeonChessBattle.Protocol;
+﻿using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.Server.State;
+using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Host;
@@ -16,7 +15,7 @@ namespace DungeonChessBattle.Server.Host;
 public partial class GameServer {
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
-    /// 校验通过后创建战斗房间服务器（经 <see cref="RoomServerManager"/>）并向房间内所有玩家广播重定向端口。
+    /// 校验通过后创建战斗房间服务器（经 <see cref="DungeonChessBattle.Server.Battle.RoomServerManager"/>）并向房间内所有玩家广播重定向端口。
     /// </summary>
     public async Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req) {
         if (string.IsNullOrWhiteSpace(req.RoomId))

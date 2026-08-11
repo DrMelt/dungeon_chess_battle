@@ -1,6 +1,5 @@
 ﻿using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Client.Lobby;
-using DungeonChessBattle.Core.Models;
 using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.Extensions.Logging;
@@ -168,7 +167,7 @@ public sealed partial class GameClientService {
     /// <summary>
     /// 请求创建房间（通过大厅 SignalR 协议，含招募板配置）。
     /// </summary>
-    public void RequestCreateRoom(string roomId, string? roomPassword = null, GameRoom? config = null) {
+    public void RequestCreateRoom(string roomId, string? roomPassword = null, RoomConfigDto? config = null) {
         _cachedRoomId = roomId;
         _cachedRoomPassword = roomPassword;
 
