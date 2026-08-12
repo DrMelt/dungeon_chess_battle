@@ -22,10 +22,10 @@ public partial class BuffBaseGodot : Resource {
     public ushort BuffTypeId => Config?.Id ?? 0;
 
     /// <summary>Buff 名称。</summary>
-    [field: Export]
+    [Export]
     public string BuffName { get; private set; } = "";
     /// <summary>Buff 描述。</summary>
-    [field: Export]
+    [Export]
     public string BuffDescription { get; private set; } = "";
     /// <summary>图标资源路径。</summary>
     public string IconPath => icon?.ResourcePath ?? "";

@@ -42,10 +42,10 @@ public partial class BuffResourceTable : Resource {
         foreach (var res in BuffResources) {
             if (res == null)
                 continue;
-            var copy = (BuffBaseGodot)res.Duplicate();
-            var id = copy.BuffTypeId;
+            // 直接以原始资源为模板（只读访问 Config，不修改原始资源）
+            var id = res.BuffTypeId;
             if (id != 0)
-                _lookup[id] = copy;
+                _lookup[id] = res;
         }
 
         _initialized = true;

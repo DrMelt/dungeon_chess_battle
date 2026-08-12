@@ -5,8 +5,8 @@
 
 [resource]
 script = ExtResource("2_2535u")
-icon = ExtResource("1_5yhb0")
-_skillName = "魔法攻击"
-_skillDescription = "对目标发动魔法攻击
+Icon = ExtResource("1_5yhb0")
+SkillName = "魔法攻击"
+SkillDescription = "对目标发动魔法攻击
 威力：140"
 metadata/_custom_type_script = "uid://5jswv8456nig"

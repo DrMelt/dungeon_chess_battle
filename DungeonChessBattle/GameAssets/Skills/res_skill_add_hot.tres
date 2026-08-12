@@ -5,8 +5,8 @@
 
 [resource]
 script = ExtResource("2_rr8gh")
-icon = ExtResource("1_kxi6u")
-_skillName = "持续治疗"
-_skillDescription = "对目标添加持续治疗buff
+Icon = ExtResource("1_kxi6u")
+SkillName = "持续治疗"
+SkillDescription = "对目标添加持续治疗buff
 恢复力：100
 持续时间：15秒"

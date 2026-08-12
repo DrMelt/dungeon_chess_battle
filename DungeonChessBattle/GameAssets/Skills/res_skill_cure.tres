@@ -5,8 +5,8 @@
 
 [resource]
 script = ExtResource("2_640i4")
-icon = ExtResource("1_ou5dl")
-_skillName = "治疗"
-_skillDescription = "回复目标体力
+Icon = ExtResource("1_ou5dl")
+SkillName = "治疗"
+SkillDescription = "回复目标体力
 恢复力：500"
 metadata/_custom_type_script = "uid://vpibuyw7n6k8"

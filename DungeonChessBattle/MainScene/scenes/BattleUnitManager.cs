@@ -21,7 +21,7 @@ public partial class BattleUnitManager : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BattleUnitManager> _logger = ServiceLocator.GetLogger<BattleUnitManager>();
 
-    /// <summary>单位展示场景（unit_show.tscn）。</summary>
+    /// <summary>单位展示场景（unit_game_show.tscn）。</summary>
     [Export]
     private PackedScene? _unitShowScene;
 

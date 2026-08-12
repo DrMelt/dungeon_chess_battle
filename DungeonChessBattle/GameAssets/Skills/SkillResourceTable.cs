@@ -45,11 +45,10 @@ public partial class SkillResourceTable : Resource {
             return;
 
         foreach (var res in SkillResources) {
-            // 对每个资源创建一个副本（避免修改原始资源），然后读取其 Config
-            var copy = (UnitSkillBaseGodot)res.Duplicate();
-            var config = copy.InternalConfig;
+            // 直接以原始资源为模板（只读访问 Config，不修改原始资源）
+            var config = res.InternalConfig;
             if (config != null) {
-                _lookup[config] = copy;
+                _lookup[config] = res;
             }
         }
 

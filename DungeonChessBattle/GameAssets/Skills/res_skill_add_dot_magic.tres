@@ -5,8 +5,8 @@
 
 [resource]
 script = ExtResource("2_k17g1")
-icon = ExtResource("1_pn3k0")
-_skillName = "持续魔法伤害"
-_skillDescription = "对目标添加持续魔法伤害buff
+Icon = ExtResource("1_pn3k0")
+SkillName = "持续魔法伤害"
+SkillDescription = "对目标添加持续魔法伤害buff
 威力：10
 持续时间：30秒"

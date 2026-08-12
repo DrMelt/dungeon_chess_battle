@@ -23,15 +23,15 @@ public partial class UnitSkillBaseGodot : Resource {
     public ushort SkillId => Config?.Id ?? 0;
 
     /// <summary>技能图标。</summary>
-    [field: Export]
+    [Export]
     public Texture2D? Icon { get; private set; } = null;
 
     /// <summary>技能名称。</summary>
-    [field: Export]
+    [Export]
     public string SkillName { get; private set; } = "";
 
     /// <summary>技能描述（支持多行文本）。</summary>
-    [field: Export(PropertyHint.MultilineText)]
+    [Export(PropertyHint.MultilineText)]
     public string SkillDescription { get; private set; } = "";
 
     /// <summary>技能施放总时长（秒）。</summary>
