@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PlayerUISettings" format=3 uid="uid://b0iwa5usgilno"]
+
+[ext_resource type="Script" uid="uid://qks1e7ilw8rt" path="res://GamePlayUI/user_ui_settings/PlayerUISettings.cs" id="1_ff8ny"]
+
+[resource]
+script = ExtResource("1_ff8ny")
+HealthInfoColor = Color(0.0912, 0.76, 0.45904, 1)
+PhysicalInfoColor = Color(1, 0.827667, 0.53, 1)
+MagicInfoColor = Color(0.63, 0.839667, 1, 1)
+AllyCampColor = Color(0.0823529, 0.521569, 0.0901961, 1)
+NeutralCampColor = Color(0.678431, 0.607843, 0.141176, 1)
+EnemyCampColor = Color(0.6, 0.113725, 0.0941176, 1)
+metadata/_custom_type_script = "uid://qks1e7ilw8rt"

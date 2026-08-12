@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Skill_Damage" format=3 uid="uid://ki4rvmooffx3"]
 
-[ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://icons/skills_buffs/Stone/000403_hr1.png" id="1_5yhb0"]
+[ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://Images/skills_buffs/Stone/000403_hr1.png" id="1_5yhb0"]
 [ext_resource type="Script" uid="uid://5jswv8456nig" path="res://GameAssets/Skills/scripts/Skill_Damage.cs" id="2_2535u"]
 
 [resource]

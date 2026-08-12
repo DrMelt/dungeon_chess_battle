@@ -2,22 +2,22 @@
 
 [ext_resource type="Texture2D" uid="uid://bqsyuvsy3u8fd" path="res://effects/target_mark/target_mark_white.png" id="1_ehvke"]
 [ext_resource type="Script" uid="uid://jhy8a4dd3ple" path="res://effects/target_mark/Node3dTargetMark.cs" id="1_mdwx6"]
-[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://InGameUI/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
 [ext_resource type="Script" uid="uid://c6d2rrkc3xgv3" path="res://effects/target_mark/Node3dTargetMarkInterRefs.cs" id="4_interrefs"]
 
-[node name="Node3D_Target_Mark" type="Node3D"]
+[node name="Node3D_Target_Mark" type="Node3D" unique_id=391211095]
 script = ExtResource("1_mdwx6")
 
-[node name="Decal_Target_Mark" type="Decal" parent="."]
+[node name="Node3dTargetMarkInterRefs" type="Node" parent="." unique_id=570502249 node_paths=PackedStringArray("TargetDecalRef")]
+script = ExtResource("4_interrefs")
+TargetDecalRef = NodePath("../Decal_Target_Mark")
+DefultColor = Color(0.678431, 0.607843, 0.141176, 1)
+PlayerUISettingsRes = ExtResource("3_savtm")
+
+[node name="Decal_Target_Mark" type="Decal" parent="." unique_id=1560115824]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.108015)
 layers = 2
 size = Vector3(2.33, 2, 2.55)
 texture_emission = ExtResource("1_ehvke")
 emission_energy = 2.25
 cull_mask = 1
-
-[node name="Node3dTargetMarkInterRefs" type="Node" parent="." node_paths=PackedStringArray("TargetDecalRef")]
-script = ExtResource("4_interrefs")
-TargetDecalRef = NodePath("../Decal_Target_Mark")
-PlayerUISettingsRes = ExtResource("3_savtm")
-DefultColor = Color(0.678431, 0.607843, 0.141176, 1)

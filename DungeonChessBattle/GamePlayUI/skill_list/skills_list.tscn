@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://bxw2fxx6n6hp8"]
+
+[ext_resource type="Script" uid="uid://qd3t3f6ut6kb" path="res://GamePlayUI/skill_list/SkillsList.cs" id="1_g7j42"]
+[ext_resource type="Script" uid="uid://hqq073h5156d" path="res://GamePlayUI/skill_list/SkillsListInterRefs.cs" id="1_inter"]
+[ext_resource type="PackedScene" uid="uid://djuu70u5pdyyo" path="res://GamePlayUI/skill_list/skill_button/button_skill_base.tscn" id="2_cw1qh"]
+
+[node name="Skills_List" type="Control" unique_id=1476465931]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+script = ExtResource("1_g7j42")
+
+[node name="SkillsListInterRefs" type="Node" parent="." unique_id=123811723 node_paths=PackedStringArray("HBoxContainerRef")]
+script = ExtResource("1_inter")
+SkillButtonPackedScene = ExtResource("2_cw1qh")
+HBoxContainerRef = NodePath("../HBoxContainer_Skills")
+
+[node name="HBoxContainer_Skills" type="HBoxContainer" parent="." unique_id=981158559]
+layout_mode = 1
+offset_right = 88.0
+offset_bottom = 88.0

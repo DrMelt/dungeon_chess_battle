@@ -1,7 +1,0 @@
-[gd_resource type="Resource" format=3 uid="uid://dxc2d4ehwh4ij"]
-
-[ext_resource type="Script" uid="uid://7ws2cisfgjag" path="res://InGameUI/user_interface/PlayerInterfaceRes.cs" id="1_57ctc"]
-
-[resource]
-script = ExtResource("1_57ctc")
-metadata/_custom_type_script = "uid://7ws2cisfgjag"

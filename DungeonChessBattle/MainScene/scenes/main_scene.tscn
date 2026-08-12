@@ -4,12 +4,12 @@
 [ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_game_show.tscn" id="2_blw6q"]
 [ext_resource type="Script" uid="uid://rr4mpyfdgbxj" path="res://GameAssets/Services/GameClientDriver.cs" id="3_m78bw"]
 [ext_resource type="Script" uid="uid://coab1v74bi3y6" path="res://GameAssets/Scene/UserCamera3D.cs" id="5_sxf1u"]
-[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://InGameUI/user_interface/res_user_interface.tres" id="6_8ka0p"]
-[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://InGameUI/state_change_info/StateChangeInfo.cs" id="7_6vwic"]
-[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://InGameUI/state_change_info/StateChangeInfoInterRefs.cs" id="8_4ssfp"]
-[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://InGameUI/user_ui_settings/res_user_ui_settings.tres" id="9_i3pf0"]
-[ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://InGameUI/state_info/took_damage_info.tscn" id="10_2ac7b"]
-[ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://InGameUI/state_info/buff_change_info.tscn" id="11_f6kqk"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="6_8ka0p"]
+[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://GamePlayUI/state_change_info/StateChangeInfo.cs" id="7_6vwic"]
+[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://GamePlayUI/state_change_info/StateChangeInfoInterRefs.cs" id="8_4ssfp"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="9_i3pf0"]
+[ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://GamePlayUI/state_info/took_damage_info.tscn" id="10_2ac7b"]
+[ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://GamePlayUI/state_info/buff_change_info.tscn" id="11_f6kqk"]
 [ext_resource type="Script" uid="uid://d3rcfq7rkpubq" path="res://GamePanels/UserUI/PlayerOperationInterfaceInfo.cs" id="12_217wv"]
 [ext_resource type="Script" uid="uid://bvm0whqi2x4t4" path="res://GameAssets/Scene/EffectHints.cs" id="13_cxaww"]
 [ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="14_125m5"]
@@ -18,13 +18,13 @@
 [ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://MainScene/scenes/shader/outline.gdshader" id="17_uajju"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="18_50oy0"]
 [ext_resource type="Script" uid="uid://cauo1xmt4hf32" path="res://GamePanels/UserUI/PlayerUIRoot.cs" id="19_thosv"]
-[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://InGameUI/DungeonTimeLabel.cs" id="20_bmhqt"]
-[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://InGameUI/state_bar/state_bar_2d/state_bar_2d.tscn" id="21_nqfqb"]
-[ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://InGameUI/state_bar/state_bar_mark/StateBarMark.cs" id="22_cdc5x"]
-[ext_resource type="PackedScene" uid="uid://bmraovrwblgf1" path="res://InGameUI/state_bar/state_bar_mark/state_bar_mark_2d.tscn" id="23_hfd03"]
-[ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://InGameUI/state_bar/state_bar_list/state_bar_list.tscn" id="24_o75dv"]
-[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://InGameUI/skill_list/skills_list.tscn" id="25_5lst5"]
-[ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://InGameUI/ui_info/panel_ui_info.tscn" id="26_eo60w"]
+[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://GamePlayUI/DungeonTimeLabel.cs" id="20_bmhqt"]
+[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://GamePlayUI/state_bar/state_bar_2d/state_bar_2d.tscn" id="21_nqfqb"]
+[ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://GamePlayUI/state_bar/state_bar_mark/StateBarMark.cs" id="22_cdc5x"]
+[ext_resource type="PackedScene" uid="uid://bmraovrwblgf1" path="res://GamePlayUI/state_bar/state_bar_mark/state_bar_mark_2d.tscn" id="23_hfd03"]
+[ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://GamePlayUI/state_bar/state_bar_list/state_bar_list.tscn" id="24_o75dv"]
+[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://GamePlayUI/skill_list/skills_list.tscn" id="25_5lst5"]
+[ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://GamePlayUI/ui_info/panel_ui_info.tscn" id="26_eo60w"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="27_kkbek"]
 [ext_resource type="PackedScene" uid="uid://duxpr0xqbx" path="res://GamePanels/ServerManagement/server_management_panel.tscn" id="28_prmww"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="29_7jnwl"]
@@ -62,7 +62,7 @@ bg_color = Color(0, 0, 0, 1)
 [node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI", "_playerOperationInterfaceInfo", "_unitManager", "_inputController")]
 script = ExtResource("1_2n8vo")
 _frontUI = NodePath("Interface/FrontUI")
-_playerOperationInterfaceInfo = NodePath("Interface/PlayerOperationInterface_Info")
+_playerOperationInterfaceInfo = NodePath("Interface/GamePlay/PlayerOperationInterface_Info")
 _unitManager = NodePath("BattleUnitManager")
 _inputController = NodePath("BattleInputController")
 
@@ -111,38 +111,42 @@ playerInterfaceRes = ExtResource("6_8ka0p")
 
 [node name="Interface" type="Node" parent="." unique_id=1240739248]
 
-[node name="StateChange_Info" type="Node" parent="Interface" unique_id=820233417]
+[node name="GamePlay" type="Node" parent="Interface" unique_id=801121985]
+
+[node name="StateChange_Info" type="Node" parent="Interface/GamePlay" unique_id=820233417]
 script = ExtResource("7_6vwic")
 
-[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/StateChange_Info" unique_id=188019131]
+[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/GamePlay/StateChange_Info" unique_id=188019131]
 script = ExtResource("8_4ssfp")
 PlayerUISettingsRes = ExtResource("9_i3pf0")
 TookDamageInfoPackedScene = ExtResource("10_2ac7b")
 BuffChangeInfoPackedScene = ExtResource("11_f6kqk")
 
-[node name="PlayerOperationInterface_Info" type="Node" parent="Interface" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "playerUiRef", "effectHintsRef")]
+[node name="PlayerOperationInterface_Info" type="Node" parent="Interface/GamePlay" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "playerUiRef", "effectHintsRef")]
 script = ExtResource("12_217wv")
-camera3DRef = NodePath("../../PlayerCamera3D")
-playerUiRef = NodePath("../Game_PlayerUI")
+camera3DRef = NodePath("../../../PlayerCamera3D")
+playerUiRef = NodePath("../GamePlayUI")
 playerInterfaceRes = ExtResource("6_8ka0p")
 effectHintsRef = NodePath("EffectHints")
 
-[node name="EffectHints" type="Node" parent="Interface/PlayerOperationInterface_Info" unique_id=1098280841]
+[node name="UnitMark" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1018245733]
+
+[node name="EffectHints" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1098280841]
 script = ExtResource("13_cxaww")
 playerInterfaceRes = ExtResource("6_8ka0p")
 _effectCircleRange_PKS = ExtResource("14_125m5")
 _effectRectRange_PKS = ExtResource("15_mshji")
 
-[node name="FocusOn_Outline" type="Node" parent="Interface/PlayerOperationInterface_Info" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
+[node name="FocusOn_Outline" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
 script = ExtResource("16_rmbqq")
 playerInterfaceRes = ExtResource("6_8ka0p")
 outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 
-[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="Interface/PlayerOperationInterface_Info/FocusOn_Outline" unique_id=317289446]
+[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="Interface/GamePlay/PlayerOperationInterface_Info/FocusOn_Outline" unique_id=317289446]
 material_override = SubResource("ShaderMaterial_3um0x")
 skeleton = NodePath("../..")
 
-[node name="Game_PlayerUI" type="Control" parent="Interface" unique_id=955543473 node_paths=PackedStringArray("unitsInSceneShowRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
+[node name="GamePlayUI" type="Control" parent="Interface/GamePlay" unique_id=955543473 node_paths=PackedStringArray("unitsInSceneShowRef", "skillsListRef", "stateChangeInfoRef", "stateBarListRef")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -153,12 +157,19 @@ mouse_filter = 1
 theme = ExtResource("18_50oy0")
 script = ExtResource("19_thosv")
 playerInterfaceRes = ExtResource("6_8ka0p")
-unitsInSceneShowRef = NodePath("../../BattleUnitManager")
+unitsInSceneShowRef = NodePath("../../../BattleUnitManager")
 skillsListRef = NodePath("Skill_UI/Skills_List")
 stateChangeInfoRef = NodePath("../StateChange_Info")
 stateBarListRef = NodePath("StateBar_List")
 
-[node name="DungeonTimeLabel" type="Label" parent="Interface/Game_PlayerUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInSceneViewRef")]
+[node name="StateBar_Units" type="Control" parent="Interface/GamePlay/GamePlayUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
+layout_mode = 1
+anchors_preset = 0
+script = ExtResource("22_cdc5x")
+unitsInScene_Show_Ref = NodePath("../../../../BattleUnitManager")
+stateBarSimple2d_PKD = ExtResource("23_hfd03")
+
+[node name="DungeonTimeLabel" type="Label" parent="Interface/GamePlay/GamePlayUI" unique_id=2106499744 node_paths=PackedStringArray("unitsInSceneViewRef")]
 layout_mode = 0
 offset_left = 992.0
 offset_top = 2.0
@@ -167,9 +178,9 @@ offset_bottom = 26.0
 text = "DungeonTimeLabel"
 vertical_alignment = 1
 script = ExtResource("20_bmhqt")
-unitsInSceneViewRef = NodePath("../../../BattleUnitManager")
+unitsInSceneViewRef = NodePath("../../../../BattleUnitManager")
 
-[node name="NetworkDebugOverlay" type="Label" parent="Interface/Game_PlayerUI" unique_id=2106499745]
+[node name="NetworkDebugOverlay" type="Label" parent="Interface/GamePlay/GamePlayUI" unique_id=2106499745]
 layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
@@ -179,27 +190,20 @@ theme_override_font_sizes/font_size = 12
 text = "Disconnected"
 script = ExtResource("33_ovly")
 
-[node name="StateBar2d_Focus" parent="Interface/Game_PlayerUI" unique_id=716113945 instance=ExtResource("21_nqfqb")]
+[node name="StateBar2d_Focus" parent="Interface/GamePlay/GamePlayUI" unique_id=716113945 instance=ExtResource("21_nqfqb")]
 layout_mode = 1
 offset_right = -567.0
 offset_bottom = -458.0
 mouse_filter = 1
 
-[node name="StateBar_Simple" type="Control" parent="Interface/Game_PlayerUI" unique_id=885250196 node_paths=PackedStringArray("unitsInScene_Show_Ref")]
-layout_mode = 1
-anchors_preset = 0
-script = ExtResource("22_cdc5x")
-unitsInScene_Show_Ref = NodePath("../../../BattleUnitManager")
-stateBarSimple2d_PKD = ExtResource("23_hfd03")
-
-[node name="StateBar_List" parent="Interface/Game_PlayerUI" unique_id=318767437 instance=ExtResource("24_o75dv")]
+[node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 instance=ExtResource("24_o75dv")]
 layout_mode = 0
 offset_left = 858.0
 offset_top = 62.0
 offset_right = 1137.0
 offset_bottom = 494.0
 
-[node name="Skill_UI" type="Control" parent="Interface/Game_PlayerUI" unique_id=1773258382]
+[node name="Skill_UI" type="Control" parent="Interface/GamePlay/GamePlayUI" unique_id=1773258382]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -207,7 +211,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Skills_List" parent="Interface/Game_PlayerUI/Skill_UI" unique_id=839039226 instance=ExtResource("25_5lst5")]
+[node name="Skills_List" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=839039226 instance=ExtResource("25_5lst5")]
 layout_mode = 1
 offset_left = 350.0
 offset_top = 510.0
@@ -217,7 +221,7 @@ scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
 
-[node name="SkillInfoPanel" parent="Interface/Game_PlayerUI/Skill_UI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
+[node name="SkillInfoPanel" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
 layout_mode = 0
 anchors_preset = 0
 anchor_right = 0.0
@@ -230,6 +234,7 @@ grow_horizontal = 1
 grow_vertical = 1
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
