@@ -40,16 +40,19 @@ theme_override_constants/margin_right = 4
 [node name="Label_Percent" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=2073596792]
 layout_mode = 2
 size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 14
 text = "100.0%"
 
 [node name="Label_ObjectName" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=858613177]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
 text = "ObjectName"
 
 [node name="Label_CurrentValue" type="Label" parent="VBoxContainer/Control/MarginContainer" unique_id=302196190]
 layout_mode = 2
 size_flags_horizontal = 8
+theme_override_font_sizes/font_size = 14
 text = "1.0"
 horizontal_alignment = 2
 

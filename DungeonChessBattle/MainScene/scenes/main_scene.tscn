@@ -75,10 +75,11 @@ script = ExtResource("31_yyqz")
 _unitShowScene = ExtResource("2_blw6q")
 playerInterfaceResRef = ExtResource("6_8ka0p")
 
-[node name="BattleInputController" type="Node" parent="." unique_id=1868664180 node_paths=PackedStringArray("unitManagerRef")]
+[node name="BattleInputController" type="Node" parent="." unique_id=1868664180 node_paths=PackedStringArray("unitManagerRef", "cameraRef")]
 script = ExtResource("32_piuq")
 playerInterfaceResRef = ExtResource("6_8ka0p")
 unitManagerRef = NodePath("../BattleUnitManager")
+cameraRef = NodePath("../PlayerCamera3D")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
 
@@ -108,6 +109,7 @@ projection = 1
 current = true
 fov = 44.3
 size = 11.425
+far = 1000.0
 script = ExtResource("5_sxf1u")
 _cameraMoveSpeed = 0.5
 _rotationEnabled = false
@@ -191,8 +193,8 @@ script = ExtResource("33_ovly")
 
 [node name="StateBar2d_Focus" parent="Interface/GamePlay/GamePlayUI" unique_id=716113945 instance=ExtResource("21_nqfqb")]
 layout_mode = 1
-offset_right = -567.0
-offset_bottom = -458.0
+offset_right = 600.0
+offset_bottom = 300.0
 mouse_filter = 1
 
 [node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 instance=ExtResource("24_o75dv")]
@@ -212,25 +214,30 @@ grow_vertical = 2
 
 [node name="Skills_List" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=839039226 instance=ExtResource("25_5lst5")]
 layout_mode = 1
-offset_left = 350.0
-offset_top = 510.0
-offset_right = 350.0
-offset_bottom = 510.0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -207.0
+offset_top = -186.0
+offset_right = 609.0
+offset_bottom = 78.0
+grow_horizontal = 2
+grow_vertical = 0
 scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
 
 [node name="SkillInfoPanel" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
-layout_mode = 0
-anchors_preset = 0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 841.0
-offset_top = 493.0
-offset_right = 1148.0
-offset_bottom = 638.0
-grow_horizontal = 1
-grow_vertical = 1
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+offset_left = -307.0
+offset_top = -145.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
 layout_mode = 3

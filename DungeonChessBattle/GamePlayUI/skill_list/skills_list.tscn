@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://djuu70u5pdyyo" path="res://GamePlayUI/skill_list/skill_button/button_skill_base.tscn" id="2_cw1qh"]
 
 [node name="Skills_List" type="Control" unique_id=1476465931]
+custom_minimum_size = Vector2(50, 50)
 layout_mode = 3
 anchors_preset = 0
 mouse_filter = 1

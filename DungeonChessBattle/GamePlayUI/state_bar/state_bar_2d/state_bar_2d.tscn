@@ -9,12 +9,11 @@
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="9_ui_res"]
 
 [node name="State_Bar_2D" type="Control" unique_id=1035438243]
+custom_minimum_size = Vector2(300, 100)
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
+offset_right = 504.0
+offset_bottom = 100.0
 script = ExtResource("1_yhj07")
 
 [node name="StateBar2d_FocusInterRefs" type="Node" parent="." unique_id=560142546 node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
@@ -37,8 +36,8 @@ grow_vertical = 2
 layout_mode = 2
 
 [node name="HP_StateBar" parent="VBoxContainer/HBoxContainer" unique_id=1600851250 instance=ExtResource("3_odry5")]
+custom_minimum_size = Vector2(300, 32)
 layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="Panel_Skill_ProgressBar" parent="VBoxContainer/HBoxContainer" unique_id=1753394107 instance=ExtResource("7_8vcj7")]
 layout_mode = 2

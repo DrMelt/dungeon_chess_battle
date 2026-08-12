@@ -2,6 +2,7 @@ using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePlayUI;
 using Godot;
+using Godot.Collections;
 
 namespace DungeonChessBattle.MainScene;
 
@@ -43,10 +44,13 @@ public partial class BattleInputController : Node {
             GD.PrintErr("[BattleInputController] [Export] playerInterfaceResRef is not assigned!");
         if (unitManagerRef == null)
             GD.PrintErr("[BattleInputController] [Export] unitManagerRef is not assigned!");
+        if (cameraRef == null)
+            GD.PrintErr("[BattleInputController] [Export] cameraRef is not assigned!");
     }
 
-    /// <summary>当前活动相机（每帧取当前视口相机）。</summary>
-    private Camera3D? Camera => GetViewport().GetCamera3D();
+    /// <summary>当前活动相机引用。</summary>
+    [Export]
+    private Camera3D? cameraRef;
 
     /// <summary>
     /// 每帧采集输入并提交到战斗服务；先更新 3D 拾取，等待目标选择时跳过移动输入提交。
@@ -87,7 +91,7 @@ public partial class BattleInputController : Node {
     /// MouseOnUnit 驱动轮廓高亮；MouseGroundPosition 供位置型技能瞄准使用。
     /// </summary>
     private void UpdateRaycast() {
-        if (playerInterfaceResRef == null || Camera == null)
+        if (playerInterfaceResRef == null || cameraRef == null)
             return;
 
         var hit = RaycastUnitFromCamera();
@@ -97,15 +101,16 @@ public partial class BattleInputController : Node {
 
     /// <summary>从相机经鼠标位置发射线，命中单位交互层时返回对应的交互区域。</summary>
     private UnitShowArea3D? RaycastUnitFromCamera() {
-        if (Camera == null)
+        if (cameraRef == null)
             return null;
 
         Vector2 mousePos = GetViewport().GetMousePosition();
-        Vector3 from = Camera.ProjectRayOrigin(mousePos);
-        Vector3 to = from + Camera.ProjectRayNormal(mousePos) * RaycastMaxDistance;
+        Vector3 from = cameraRef.ProjectRayOrigin(mousePos);
+        Vector3 to = from + cameraRef.ProjectRayNormal(mousePos) * RaycastMaxDistance;
 
-        var query = PhysicsRayQueryParameters3D.Create(from, to, UnitCollisionLayer);
-        var result = Camera.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        PhysicsRayQueryParameters3D query = PhysicsRayQueryParameters3D.Create(from, to, UnitCollisionLayer);
+        query.CollideWithAreas = true;
+        Dictionary result = cameraRef.GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (result.Count == 0)
             return null;
         return result["collider"].As<UnitShowArea3D>();
@@ -113,12 +118,12 @@ public partial class BattleInputController : Node {
 
     /// <summary>射线与地面平面（Y=0）的交点；无交点或朝下不交时返回 null。</summary>
     private Vector3? RaycastGroundPosition() {
-        if (Camera == null)
+        if (cameraRef == null)
             return null;
 
         Vector2 mousePos = GetViewport().GetMousePosition();
-        Vector3 origin = Camera.ProjectRayOrigin(mousePos);
-        Vector3 dir = Camera.ProjectRayNormal(mousePos);
+        Vector3 origin = cameraRef.ProjectRayOrigin(mousePos);
+        Vector3 dir = cameraRef.ProjectRayNormal(mousePos);
 
         if (Mathf.Abs(dir.Y) < 1e-6f)
             return null;
