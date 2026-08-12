@@ -23,13 +23,7 @@ public partial class Node3dTargetMarkInterRefs : Node {
     }
 
     /// <summary>
-    /// 默认颜色，在未匹配到阵营颜色时使用。
-    /// </summary>
-    [Export]
-    public Color DefultColor { get; private set; } = new("ad9b24");
-
-    /// <summary>
-    /// 玩家 UI 设置资源。
+    /// 玩家 UI 设置资源，提供友方、中立、敌方阵营颜色。
     /// </summary>
     [Export]
     public PlayerUISettings? PlayerUISettingsRes {

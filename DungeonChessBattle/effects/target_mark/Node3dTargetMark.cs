@@ -1,4 +1,5 @@
 using System;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GamePlayUI.Interfaces;
 using Godot;
@@ -6,7 +7,7 @@ using Godot;
 namespace DungeonChessBattle;
 
 /// <summary>
-/// 目标标记节点：用于在棋盘上显示单位的目标圈标记，并根据阵营着色。
+/// 目标标记节点：用于在棋盘上显示单位的目标圈标记，并根据阵营关系着色。
 /// </summary>
 public partial class Node3dTargetMark : Node3D, IUIUpdate {
     /// <summary>导出引用集合节点。</summary>
@@ -25,28 +26,53 @@ public partial class Node3dTargetMark : Node3D, IUIUpdate {
     /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<Node3dTargetMarkInterRefs>("Node3dTargetMarkInterRefs");
-        SetCampColor("");
+        SetColor(CampRelation.Neutral);
     }
 
     /// <summary>
-    /// 根据阵营名称设置目标标记颜色。
+    /// 设置目标标记半径，仅修改节点缩放。
     /// </summary>
-    /// <param name="camp">阵营名称，为空时使用默认颜色。</param>
-    public void SetCampColor(string camp) {
+    /// <param name="radius">半径。</param>
+    public void SetRadius(float radius) {
+        Scale = new Vector3(radius, 1, radius);
+    }
+
+    /// <summary>
+    /// 根据阵营关系设置目标标记颜色。
+    /// </summary>
+    /// <param name="relation">阵营关系：友方、中立、敌方。</param>
+    public void SetColor(CampRelation relation) {
         var interRefs = InterRefsOrThrow;
         var uiSettings = interRefs.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[Node3dTargetMark] PlayerUISettingsRes is not assigned.");
         var targetDecal = interRefs.TargetDecalRef
             ?? throw new InvalidOperationException("[Node3dTargetMark] TargetDecalRef is not assigned.");
-        Color? resColor = uiSettings.GetCampColor(camp);
 
-        resColor ??= interRefs.DefultColor;
-
-        targetDecal.Modulate = (Color)resColor;
+        targetDecal.Modulate = relation switch {
+            CampRelation.Friendly => uiSettings.AllyCampColor,
+            CampRelation.Enemy => uiSettings.EnemyCampColor,
+            _ => uiSettings.NeutralCampColor,
+        };
     }
 
     /// <summary>
-    /// 根据单位 Pawn 更新目标标记：聚焦单位时显示其阵营颜色，否则使用默认颜色，并同步标记大小。
+    /// 根据阵营名称设置目标标记颜色，为空时使用中立颜色。
+    /// </summary>
+    /// <param name="camp">阵营名称。</param>
+    public void SetCampColor(string camp) {
+        SetColor(GetRelation(camp));
+    }
+
+    private static CampRelation GetRelation(string camp) => camp switch {
+        CampConstants.CampA => CampRelation.Friendly,
+        CampConstants.CampB => CampRelation.Enemy,
+        CampConstants.CampBoss => CampRelation.Neutral,
+        "" => CampRelation.Neutral,
+        _ => CampRelation.Friendly,
+    };
+
+    /// <summary>
+    /// 根据单位 Pawn 更新目标标记：聚焦单位时显示其阵营颜色，否则使用中立颜色，并同步标记大小。
     /// </summary>
     /// <param name="pawn">单位 Pawn。</param>
     public void UpdateUI_WithUnit(UnitPawn pawn) {

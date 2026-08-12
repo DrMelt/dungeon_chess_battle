@@ -11,7 +11,6 @@ script = ExtResource("1_mdwx6")
 [node name="Node3dTargetMarkInterRefs" type="Node" parent="." unique_id=570502249 node_paths=PackedStringArray("TargetDecalRef")]
 script = ExtResource("4_interrefs")
 TargetDecalRef = NodePath("../Decal_Target_Mark")
-DefultColor = Color(0.678431, 0.607843, 0.141176, 1)
 PlayerUISettingsRes = ExtResource("3_savtm")
 
 [node name="Decal_Target_Mark" type="Decal" parent="." unique_id=1560115824]
