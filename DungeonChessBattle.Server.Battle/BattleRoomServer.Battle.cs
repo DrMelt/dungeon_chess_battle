@@ -69,6 +69,7 @@ public partial class BattleRoomServer {
         // 订阅该 Pawn 的技能 RPC 与玩家输入回调
         entity.SkillCastRequested += OnPawnSkillCast;
         entity.InputHandler = OnPawnInput;
+        entity.FocusTargetSetRequested += OnPawnSetFocusTarget;
 
         _roomPawns.Add(entity);
 
@@ -206,6 +207,36 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
+    /// 处理聚焦目标设置请求：服务端校验目标合法性后写回权威状态。
+    /// 0 表示清除聚焦目标；目标必须存在且存活；允许目标为自己。
+    /// </summary>
+    private void OnPawnSetFocusTarget(UnitPawn pawn, ushort targetNetId) {
+        if (targetNetId != 0) {
+            var targetPawn = FindPawnById(targetNetId);
+            if (targetPawn == null || targetPawn.UnitState.Value == 1) {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("[RoomServer:{RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
+                        RoomId, pawn.UnitName.Value, targetNetId);
+                return;
+            }
+        }
+
+        pawn.FocusTargetNetId.Value = targetNetId;
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[RoomServer:{RoomId}] Focus target set: {Unit} -> {TargetId}",
+                RoomId, pawn.UnitName.Value, targetNetId);
+    }
+
+    /// <summary>清空所有 Pawn 中对指定单位 ID 的聚焦目标，目标死亡时调用。</summary>
+    private void ClearFocusTargetsTo(ushort unitNetId) {
+        foreach (var pawn in _roomPawns) {
+            if (pawn.FocusTargetNetId.Value == unitNetId)
+                pawn.FocusTargetNetId.Value = 0;
+        }
+    }
+
+    /// <summary>
     /// 领域事件 → 网络翻译：把 BattleRoom 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
     /// Health、读条、冷却与 Buff 全量已由 BattleRoom 直接写 IBattleUnit 的 Pawn SyncVar，
     /// 此处仅处理瞬时事件，阶段、受击、死亡、Buff 增减。
@@ -239,6 +270,7 @@ public partial class BattleRoomServer {
             case UnitDied died:
                 var deadPawn = FindPawnById(died.UnitNetId);
                 deadPawn?.UnitState.Value = 1;
+                ClearFocusTargetsTo(died.UnitNetId);
                 break;
 
             case BuffApplied buff:

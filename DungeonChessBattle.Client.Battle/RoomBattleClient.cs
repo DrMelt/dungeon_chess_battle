@@ -43,6 +43,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>单位移除 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
     public event Action<ushort, BuffView>? UnitBuffRemoved;
 
+    /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
+    public event Action<ushort, ushort>? UnitFocusTargetChanged;
+
     /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营字符串。</summary>
     public event Action<string, ushort, string, string>? OnUnitCreated;
 
@@ -235,6 +238,23 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>判断当前房间战斗是否已结束。</summary>
     public bool CheckBattleEnded(string roomId) {
         return _roomEntity?.IsFinished.Value ?? false;
+    }
+
+    /// <summary>
+    /// 通过 RPC 请求设置单位聚焦目标，服务端校验并写回权威状态。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID。</param>
+    /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
+    public void SetFocusTarget(string roomId, ushort unitNetId, ushort targetNetId) {
+        var pawn = FindPawnById(unitNetId);
+        if (pawn == null)
+            return;
+
+        pawn.RequestSetFocusTarget(targetNetId);
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[RoomBattleClient] SetFocusTarget: unit={UnitId} -> target={TargetId}", unitNetId, targetNetId);
     }
 
     /// <summary>

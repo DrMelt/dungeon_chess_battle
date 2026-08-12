@@ -16,6 +16,7 @@ public partial class UnitPawn : PawnLogic {
     private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffRemovedRPC;
+    private static RemoteCallSerializable<SyncFocusTargetRequest> SetFocusTargetRPC;
 
     /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
@@ -82,6 +83,9 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
+    /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标。</summary>
+    public SyncVar<ushort> FocusTargetNetId;
+
     /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
     public event Action<UnitPawn, float, float>? HealthChanged;
 
@@ -99,6 +103,12 @@ public partial class UnitPawn : PawnLogic {
 
     /// <summary>技能施放请求事件。</summary>
     public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
+
+    /// <summary>聚焦目标设置请求事件，服务端订阅并校验写回。</summary>
+    public event Action<UnitPawn, ushort>? FocusTargetSetRequested;
+
+    /// <summary>聚焦目标变化事件，客户端同步阶段触发。参数：实体、目标单位网络 ID。</summary>
+    public event Action<UnitPawn, ushort>? FocusTargetChanged;
 
     /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>
     public Action<UnitPawn, UnitInputPacket, float>? InputHandler {
@@ -176,6 +186,15 @@ public partial class UnitPawn : PawnLogic {
             ref BuffRemovedRPC,
             ExecuteFlags.SendToAll);
 
+        // 客户端请求设置聚焦目标，在服务端校验后写回 FocusTargetNetId
+        r.CreateRPCAction<UnitPawn, SyncFocusTargetRequest>(
+            (e, req) => e.OnRpcSetFocusTarget(req),
+            ref SetFocusTargetRPC,
+            ExecuteFlags.ExecuteOnServer);
+
+        // 客户端在同步阶段检测聚焦目标变化，SyncVar 原生绑定，零带宽
+        r.BindOnChange<UnitPawn, ushort>(ref FocusTargetNetId, (e, t) => e.OnFocusTargetChangedBySync(t), BindOnChangeFlags.ExecuteOnSync);
+
         // 客户端在同步阶段检测血量与死亡状态变化，SyncVar 原生绑定，零带宽
         r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
         r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
@@ -183,6 +202,11 @@ public partial class UnitPawn : PawnLogic {
 
     private void OnRpcCastSkill(SyncSkillRequest req) {
         SkillCastRequested?.Invoke(this, req);
+    }
+
+    /// <summary>服务端接收：聚焦目标设置请求，转发给房间校验与写回。</summary>
+    private void OnRpcSetFocusTarget(SyncFocusTargetRequest req) {
+        FocusTargetSetRequested?.Invoke(this, req.TargetUnitNetId);
     }
 
     /// <summary>客户端接收：受击事件广播。</summary>
@@ -213,6 +237,11 @@ public partial class UnitPawn : PawnLogic {
             UnitDied?.Invoke(this);
     }
 
+    /// <summary>客户端同步阶段：聚焦目标变化，0 表示无聚焦目标。</summary>
+    private void OnFocusTargetChangedBySync(ushort targetNetId) {
+        FocusTargetChanged?.Invoke(this, targetNetId);
+    }
+
     /// <summary>服务端调用：广播受击事件到客户端。</summary>
     public void BroadcastDamageTaken(float damage, DamageType damageType) {
         ExecuteRPC(DamageTakenRPC, new SyncDamageData { Damage = damage, DamageType = (byte)damageType });
@@ -234,6 +263,15 @@ public partial class UnitPawn : PawnLogic {
     /// <param name="req">技能施放请求数据。</param>
     public void RequestCastSkill(SyncSkillRequest req) {
         ExecuteRPC(CastSkillRPC, req);
+    }
+
+    /// <summary>
+    /// 客户端调用：请求设置聚焦目标，0 表示清除聚焦目标。
+    /// 服务端校验目标合法性后写回权威状态。
+    /// </summary>
+    /// <param name="targetNetId">目标单位网络 ID。</param>
+    public void RequestSetFocusTarget(ushort targetNetId) {
+        ExecuteRPC(SetFocusTargetRPC, new SyncFocusTargetRequest { TargetUnitNetId = targetNetId });
     }
 
     /// <summary>

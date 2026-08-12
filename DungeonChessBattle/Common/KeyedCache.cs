@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Common;
 
 /// <summary>
 /// 按键缓存，复用键对应的缓存对象，仅在源集合增删时创建或销毁。

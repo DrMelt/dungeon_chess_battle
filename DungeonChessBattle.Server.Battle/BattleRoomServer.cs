@@ -181,6 +181,7 @@ public partial class BattleRoomServer : INetEventListener {
         foreach (var pawn in _roomPawns) {
             pawn.SkillCastRequested -= OnPawnSkillCast;
             pawn.InputHandler = null;
+            pawn.FocusTargetSetRequested -= OnPawnSetFocusTarget;
             _battleRoom.RemoveUnit(pawn);
         }
 

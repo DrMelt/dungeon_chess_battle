@@ -52,6 +52,8 @@ public partial class RoomBattleClient {
             var eventData = MapBuffData(buff);
             UnitBuffRemoved?.Invoke(u.Id, eventData);
         };
+        pawn.FocusTargetChanged += (u, target) =>
+            UnitFocusTargetChanged?.Invoke(u.Id, target);
 
         // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;

@@ -27,6 +27,9 @@ public interface IClientBattleService {
     /// <summary>单位移除 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
     event Action<ushort, BuffView>? UnitBuffRemoved;
 
+    /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
+    event Action<ushort, ushort>? UnitFocusTargetChanged;
+
     /// <summary>
     /// 获取房间的服务端权威创建时间，UTC Unix 秒。
     /// 未进入房间或实体同步未完成时返回 null。
@@ -54,6 +57,14 @@ public interface IClientBattleService {
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
     void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, ushort skillId,
         float targetPosX = 0f, float targetPosZ = 0f);
+
+    /// <summary>
+    /// 设置单位聚焦目标，客户端发起。通过 RPC 发送，服务端校验后写回权威状态。
+    /// </summary>
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID。</param>
+    /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
+    void SetFocusTarget(string roomId, ushort unitNetId, ushort targetNetId);
 
     /// <summary>
     /// 判断指定房间的战斗是否已结束。

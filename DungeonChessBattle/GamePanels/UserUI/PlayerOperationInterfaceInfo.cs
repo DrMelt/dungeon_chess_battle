@@ -22,6 +22,10 @@ public partial class PlayerOperationInterfaceInfo : Node {
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
 
+    /// <summary>战斗单位管理器引用，用于发起本地玩家聚焦目标 RPC。</summary>
+    [Export]
+    private BattleUnitManager? battleUnitManagerRef;
+
     /// <summary>技能效果提示引用。</summary>
     [ExportGroup("Intrinsic Parameter")]
     [Export]
@@ -124,18 +128,19 @@ public partial class PlayerOperationInterfaceInfo : Node {
     private const float GroundPlaneY = 0f;
 
     /// <summary>
-    /// 鼠标左键点击：选中或取消单位焦点。
-    /// 设置 FocusOnUnit 会触发 FocusOnUnitChanged 信号，
-    /// 由 PlayerUIRoot → SkillsList 链路生成技能按钮。
+    /// 鼠标左键点击：请求设置或清除本地玩家单位的聚焦目标。
+    /// 经 RPC 提交服务端，校验后写回 FocusTargetNetId 同步到所有客户端，
+    /// 由 BattleUnitManager 桥接更新 FocusOnUnit 触发 FocusOnUnitChanged 信号。
     /// </summary>
     public override void _UnhandledInput(InputEvent @event) {
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
             return;
-        if (playerInterfaceRes == null)
+        if (playerInterfaceRes == null || battleUnitManagerRef == null)
             return;
 
         var hit = RaycastUnitFromCamera();
-        playerInterfaceRes.FocusOnUnit = hit?.UnitShowRef;
+        var targetNetId = hit?.UnitShowRef.Pawn.Id ?? 0;
+        battleUnitManagerRef.SetLocalFocusTarget(targetNetId);
     }
 
     /// <summary>

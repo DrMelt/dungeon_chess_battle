@@ -74,6 +74,7 @@ script = ExtResource("3_m78bw")
 [node name="BattleUnitManager" type="Node" parent="." unique_id=1868664179]
 script = ExtResource("31_yyqz")
 _unitShowScene = ExtResource("2_blw6q")
+playerInterfaceResRef = ExtResource("6_8ka0p")
 
 [node name="BattleInputController" type="Node" parent="." unique_id=1868664180]
 script = ExtResource("32_piuq")
@@ -124,12 +125,13 @@ PlayerUISettingsRes = ExtResource("9_i3pf0")
 TookDamageInfoPackedScene = ExtResource("10_2ac7b")
 BuffChangeInfoPackedScene = ExtResource("11_f6kqk")
 
-[node name="PlayerOperationInterface_Info" type="Node" parent="Interface/GamePlay" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "playerUiRef", "effectHintsRef")]
+[node name="PlayerOperationInterface_Info" type="Node" parent="Interface/GamePlay" unique_id=1354810101 node_paths=PackedStringArray("camera3DRef", "playerUiRef", "effectHintsRef", "battleUnitManagerRef")]
 script = ExtResource("12_217wv")
 camera3DRef = NodePath("../../../PlayerCamera3D")
 playerUiRef = NodePath("../GamePlayUI")
 playerInterfaceRes = ExtResource("6_8ka0p")
 effectHintsRef = NodePath("EffectHints")
+battleUnitManagerRef = NodePath("../../../BattleUnitManager")
 
 [node name="UnitMarks" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1018245733 node_paths=PackedStringArray("_unitManagerRef")]
 script = ExtResource("35_7m0y")

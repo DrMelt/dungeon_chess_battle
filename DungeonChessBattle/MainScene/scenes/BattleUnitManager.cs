@@ -25,6 +25,10 @@ public partial class BattleUnitManager : Node {
     [Export]
     private PackedScene? _unitShowScene;
 
+    /// <summary>玩家界面资源引用，桥接服务端聚焦目标到 UI 选中态。</summary>
+    [Export]
+    private PlayerInterfaceRes? playerInterfaceResRef;
+
     /// <summary>场景单位集合资源（UI 层数据源：状态条、技能目标、计时等）。</summary>
     public UnitsInScene UnitsInSceneRes { get; } = new();
 
@@ -73,6 +77,7 @@ public partial class BattleUnitManager : Node {
         service.UnitDied += OnUnitDied;
         service.UnitBuffAdded += OnBuffAdded;
         service.UnitBuffRemoved += OnBuffRemoved;
+        service.UnitFocusTargetChanged += OnUnitFocusTargetChanged;
 
         // 注入服务端权威房间创建时间（跨端一致的战斗计时起点）
         var createdUnix = service.GetRoomCreatedUnixTime(roomId);
@@ -92,6 +97,7 @@ public partial class BattleUnitManager : Node {
             _battleService.UnitDied -= OnUnitDied;
             _battleService.UnitBuffAdded -= OnBuffAdded;
             _battleService.UnitBuffRemoved -= OnBuffRemoved;
+            _battleService.UnitFocusTargetChanged -= OnUnitFocusTargetChanged;
         }
 
         ClearUnits();
@@ -166,8 +172,11 @@ public partial class BattleUnitManager : Node {
         _unitShows[pawn.Id] = unitShow;
 
         // 本地玩家单位的视图就绪通知，供 UI 层自动展示自身状态与技能
-        if (pawn == _roomClient?.LocalUnitPawn)
+        if (pawn == _roomClient?.LocalUnitPawn) {
             LocalUnitShowReady?.Invoke(unitShow);
+            // 重连场景初始同步的聚焦目标不触发 BindOnChange，主动桥接一次
+            OnUnitFocusTargetChanged(pawn.Id, pawn.FocusTargetNetId.Value);
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[MainScene] Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
@@ -212,5 +221,30 @@ public partial class BattleUnitManager : Node {
 
     /// <summary>服务事件：单位移除 Buff（当前无展示行为）。</summary>
     private void OnBuffRemoved(ushort netId, BuffView buff) {
+    }
+
+    /// <summary>
+    /// 请求本地玩家单位设置聚焦目标，0 表示清除。
+    /// 经 IClientBattleService 发送 RPC，服务端校验后写回权威状态。
+    /// </summary>
+    /// <param name="targetNetId">目标单位网络 ID，0 表示清除。</param>
+    public void SetLocalFocusTarget(ushort targetNetId) {
+        var pawn = _roomClient?.LocalUnitPawn;
+        if (pawn == null || _battleService == null)
+            return;
+        _battleService.SetFocusTarget(_roomId, pawn.Id, targetNetId);
+    }
+
+    /// <summary>
+    /// 服务端聚焦目标变化桥接：仅本地玩家单位的聚焦变化映射为 UI 选中态。
+    /// 目标单位视图未生成时置空选中，随后续单位生成事件补全。
+    /// </summary>
+    private void OnUnitFocusTargetChanged(ushort unitNetId, ushort targetNetId) {
+        var localPawn = _roomClient?.LocalUnitPawn;
+        if (localPawn == null || localPawn.Id != unitNetId || playerInterfaceResRef == null)
+            return;
+
+        var targetShow = targetNetId != 0 ? _unitShows.GetValueOrDefault(targetNetId) : null;
+        playerInterfaceResRef.FocusOnUnit = targetShow;
     }
 }
