@@ -1,5 +1,5 @@
 using System.Numerics;
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;

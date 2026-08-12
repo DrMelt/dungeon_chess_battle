@@ -4,7 +4,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.GamePanels;
 
 namespace DungeonChessBattle;

@@ -1,7 +1,7 @@
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;

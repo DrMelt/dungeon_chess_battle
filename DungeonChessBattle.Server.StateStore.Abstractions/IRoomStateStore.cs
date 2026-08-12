@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Protocol.Enums;
+﻿using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 
 namespace DungeonChessBattle.Server.StateStore.Abstractions;

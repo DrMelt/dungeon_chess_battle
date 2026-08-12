@@ -1,4 +1,4 @@
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 

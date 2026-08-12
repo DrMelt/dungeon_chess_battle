@@ -1,4 +1,4 @@
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using LiteEntitySystem;
 
 namespace DungeonChessBattle.Entities.SyncData;

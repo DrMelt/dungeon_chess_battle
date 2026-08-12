@@ -1,6 +1,6 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets.Skills;
-using DungeonChessBattle.InGameUI.ui_interface;
+using DungeonChessBattle.GamePlayUI.Interfaces;
 using Godot;
 
 namespace DungeonChessBattle;

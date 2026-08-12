@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol.Enums;
+namespace DungeonChessBattle.Battle.Domain.Enums;
 
 /// <summary>
 /// 玩家连接状态，用于断线重连。

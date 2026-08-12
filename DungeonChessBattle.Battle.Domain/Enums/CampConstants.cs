@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol.Enums;
+namespace DungeonChessBattle.Battle.Domain.Enums;
 
 /// <summary>
 /// 阵营字符串常量，替代原 EnumCamp 枚举。

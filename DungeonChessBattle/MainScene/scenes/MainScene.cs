@@ -1,4 +1,4 @@
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Client.Battle;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using DungeonChessBattle.GamePanels;

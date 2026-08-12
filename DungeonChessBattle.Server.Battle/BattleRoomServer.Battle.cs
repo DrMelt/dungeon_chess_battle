@@ -1,7 +1,7 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Entities;

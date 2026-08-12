@@ -2,7 +2,7 @@
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Protocol.Enums;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 

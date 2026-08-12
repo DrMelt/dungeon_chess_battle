@@ -100,8 +100,7 @@ public partial class PlayerUIRoot : Control {
     /// </summary>
     private void OnBattleUnbound() {
         // 清理 View 绑定
-        if (unitsInSceneShowRef != null)
-            unitsInSceneShowRef.LocalUnitShowReady -= OnLocalUnitShowReady;
+        unitsInSceneShowRef?.LocalUnitShowReady -= OnLocalUnitShowReady;
         skillsListRef?.ViewModel = null;
     }
 

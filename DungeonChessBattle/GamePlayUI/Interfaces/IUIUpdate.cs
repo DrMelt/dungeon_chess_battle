@@ -1,6 +1,6 @@
 using DungeonChessBattle.Entities;
 
-namespace DungeonChessBattle.InGameUI.ui_interface;
+namespace DungeonChessBattle.GamePlayUI.Interfaces;
 
 /// <summary>
 /// UI 更新接口，实现此接口的组件可直接通过 UnitPawn（网络同步 SyncVar）刷新显示。
