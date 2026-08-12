@@ -32,6 +32,8 @@
 [ext_resource type="Script" uid="uid://88yvgj5vmctr" path="res://MainScene/scenes/BattleUnitManager.cs" id="31_yyqz"]
 [ext_resource type="Script" uid="uid://bejrk18uieflq" path="res://MainScene/scenes/BattleInputController.cs" id="32_piuq"]
 [ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
+[ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="34_7m0x"]
+[ext_resource type="Script" uid="uid://c83a7urju38u0" path="res://effects/target_mark/UnitTargetMarks.cs" id="35_7m0y"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -129,7 +131,10 @@ playerUiRef = NodePath("../GamePlayUI")
 playerInterfaceRes = ExtResource("6_8ka0p")
 effectHintsRef = NodePath("EffectHints")
 
-[node name="UnitMark" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1018245733]
+[node name="UnitMarks" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1018245733 node_paths=PackedStringArray("_unitManagerRef")]
+script = ExtResource("35_7m0y")
+_unitManagerRef = NodePath("../../../../BattleUnitManager")
+_targetMarkPackedScene = ExtResource("34_7m0x")
 
 [node name="EffectHints" type="Node" parent="Interface/GamePlay/PlayerOperationInterface_Info" unique_id=1098280841]
 script = ExtResource("13_cxaww")
@@ -234,7 +239,6 @@ grow_horizontal = 1
 grow_vertical = 1
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

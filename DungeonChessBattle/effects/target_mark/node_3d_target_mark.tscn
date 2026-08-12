@@ -14,7 +14,6 @@ TargetDecalRef = NodePath("../Decal_Target_Mark")
 PlayerUISettingsRes = ExtResource("3_savtm")
 
 [node name="Decal_Target_Mark" type="Decal" parent="." unique_id=1560115824]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.108015)
 layers = 2
 size = Vector3(2.33, 2, 2.55)
 texture_emission = ExtResource("1_ehvke")

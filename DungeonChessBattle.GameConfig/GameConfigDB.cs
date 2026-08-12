@@ -123,7 +123,7 @@ public class GameConfigDB : IGameConfigDB {
     public static UnitConfig UnitWhiteMage {
         get;
     } = new() {
-        BodyRadius = 1.0f,
+        BodyRadius = 0.5f,
         MaxHealth = 1000f,
         CureIntensity = 1.0f,
         PhysicalAttackBase = 1.0f,
