@@ -1,14 +1,13 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GameAssets.Skills;
-using DungeonChessBattle.GamePlayUI.Interfaces;
+using DungeonChessBattle.GameAssets;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能施法进度条，直读 Pawn.SkillCasting / SkillCastRemaining 展示当前施法技能名称、剩余时间与进度。
 /// </summary>
-public partial class SkillProgressBar : Control, IUIUpdate {
+public partial class SkillProgressBar : Control {
     /// <summary>导出引用集合节点。</summary>
     public SkillProgressBarInterRefs? InterRefs {
         get; private set;

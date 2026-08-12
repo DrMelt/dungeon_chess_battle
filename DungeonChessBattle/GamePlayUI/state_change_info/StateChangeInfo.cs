@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Entities;
-using Godot;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Entities;
+using DungeonChessBattle.GameAssets;
+using Godot;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 状态变化信息管理器，订阅单位 Pawn 事件并在对应位置弹出受击/ Buff 增减提示。

@@ -3,7 +3,7 @@ using Godot;
 using Godot.Collections;
 using DungeonChessBattle.Entities;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 单位 3D 展示组件。

@@ -1,9 +1,10 @@
 using System;
 using DungeonChessBattle.Common;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.MainScene;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 状态标记容器，为场景中所有单位生成对应的 2D 状态标记。
@@ -12,7 +13,7 @@ namespace DungeonChessBattle;
 public partial class StateBarMark : Control {
     /// <summary>战斗单位管理器引用。</summary>
     [Export]
-    private BattleUnitManager? unitsInScene_Show_Ref;
+    private BattleUnitManager? unitsInSceneRef;
     /// <summary>2D 状态标记使用的场景资源。</summary>
     [Export]
     private PackedScene? stateBarSimple2d_PKD;
@@ -31,8 +32,8 @@ public partial class StateBarMark : Control {
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (unitsInScene_Show_Ref == null)
-            GD.PrintErr("[StateBarMark] [Export] unitsInScene_Show_Ref is not assigned!");
+        if (unitsInSceneRef == null)
+            GD.PrintErr("[StateBarMark] [Export] unitsInSceneRef is not assigned!");
         if (stateBarSimple2d_PKD == null)
             GD.PrintErr("[StateBarMark] [Export] stateBarSimple2d_PKD is not assigned!");
     }
@@ -42,8 +43,8 @@ public partial class StateBarMark : Control {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        var manager = unitsInScene_Show_Ref
-            ?? throw new InvalidOperationException("[StateBarMark] unitsInScene_Show_Ref is not assigned!");
+        var manager = unitsInSceneRef
+            ?? throw new InvalidOperationException("[StateBarMark] unitsInSceneRef is not assigned!");
 
         _marks.Sync(manager.UnitsArr);
     }

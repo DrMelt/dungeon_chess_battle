@@ -2,7 +2,7 @@ using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 物理持续伤害（DOT）Buff。

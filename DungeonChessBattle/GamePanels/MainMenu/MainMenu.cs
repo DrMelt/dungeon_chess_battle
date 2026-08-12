@@ -4,7 +4,7 @@ using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Services;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 主界面脚本，提供连接服务器功能。

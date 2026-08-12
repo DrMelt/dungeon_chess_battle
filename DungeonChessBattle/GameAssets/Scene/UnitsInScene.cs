@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Entities;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 场景单位集合资源，管理单位的增删并广播变化事件。

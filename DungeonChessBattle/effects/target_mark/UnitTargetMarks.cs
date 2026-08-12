@@ -1,9 +1,10 @@
 using System;
 using DungeonChessBattle.Common;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.MainScene;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 单位目标标记管理器，为场景中所有单位生成对应的 3D 目标标记并跟随单位位置。

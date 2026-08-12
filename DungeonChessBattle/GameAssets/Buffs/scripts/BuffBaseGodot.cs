@@ -2,7 +2,7 @@ using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// Godot Buff 基类资源，承载 BuffConfig 配置与展示属性（图标/名称/描述）。

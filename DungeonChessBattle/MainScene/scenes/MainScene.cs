@@ -2,10 +2,11 @@ using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Client.Battle;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using DungeonChessBattle.GamePanels;
+using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 主场景入口脚本，挂载到 MainScene 根节点。
@@ -28,7 +29,7 @@ public partial class MainScene : Node {
     private Control? _frontUI;
 
     [Export]
-    private PlayerOperationInterfaceInfo? _playerOperationInterfaceInfo;
+    private BattleUIRoot? _battleUiRoot;
 
     [Export]
     private BattleUnitManager? _unitManager;
@@ -69,8 +70,8 @@ public partial class MainScene : Node {
     private void ValidateExports() {
         if (_frontUI == null)
             GD.PrintErr("[MainScene] [Export] _frontUI is not assigned!");
-        if (_playerOperationInterfaceInfo == null)
-            GD.PrintErr("[MainScene] [Export] _playerOperationInterfaceInfo is not assigned!");
+        if (_battleUiRoot == null)
+            GD.PrintErr("[MainScene] [Export] _battleUiRoot is not assigned!");
         if (_unitManager == null)
             GD.PrintErr("[MainScene] [Export] _unitManager is not assigned!");
         if (_inputController == null)
@@ -95,8 +96,8 @@ public partial class MainScene : Node {
             _inputController?.Reset();
         }
 
-        // 绑定 UI（通过 VM 触发 View 初始化）
-        _playerOperationInterfaceInfo?.BindToBattle();
+        // 绑定战斗 UI（View 层直接初始化子组件）
+        _battleUiRoot?.BindToBattle();
 
         // 隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
         _screenMachine?.EnterBattle();
@@ -115,8 +116,8 @@ public partial class MainScene : Node {
         _unitManager?.Unbind();
         _inputController?.Reset();
 
-        // 解绑 UI
-        _playerOperationInterfaceInfo?.UnbindFromBattle();
+        // 解绑战斗 UI
+        _battleUiRoot?.UnbindFromBattle();
 
         _battleService = null;
         _roomId = "";

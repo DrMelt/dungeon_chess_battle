@@ -2,7 +2,7 @@ using Godot;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 受击伤害提示浮字，按伤害类型着色并带淡出效果。

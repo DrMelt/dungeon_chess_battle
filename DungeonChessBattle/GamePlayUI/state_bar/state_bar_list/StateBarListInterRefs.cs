@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// StateBarList 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。

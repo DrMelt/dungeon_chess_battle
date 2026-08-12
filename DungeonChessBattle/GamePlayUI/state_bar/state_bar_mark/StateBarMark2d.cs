@@ -1,13 +1,12 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GamePlayUI.Interfaces;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 单个单位的 2D 状态标记，投影单位位置到屏幕并同步刷新状态条。
 /// </summary>
-public partial class StateBarMark2d : Control, IUIUpdate {
+public partial class StateBarMark2d : Control {
     /// <summary>导出引用集合节点。</summary>
     public StateBarMark2dInterRefs? InterRefs {
         get; private set;

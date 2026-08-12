@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 淡出信息基类，按曲线驱动透明度变化并在结束后自动销毁。

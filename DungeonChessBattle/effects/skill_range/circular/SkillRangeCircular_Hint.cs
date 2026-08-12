@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 圆形范围技能提示，通过着色器展示近/远距离扇形范围。

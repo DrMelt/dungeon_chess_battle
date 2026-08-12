@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 圆形范围技能提示的导出引用集合节点。

@@ -1,7 +1,7 @@
 using DungeonChessBattle.Services;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Services;
 
 /// <summary>
 /// 客户端网络驱动节点：在 Godot 渲染主线程每帧驱动 GameClientService 的

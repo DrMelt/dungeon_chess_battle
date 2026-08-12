@@ -2,7 +2,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Services;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 服务器状态管理面板，提供启动/停止游戏服务器的功能。

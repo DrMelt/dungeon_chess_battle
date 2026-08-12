@@ -1,7 +1,7 @@
 using DungeonChessBattle.GamePanels;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 角色选取面板。以网格形式展示所有可用单位，用户点击选择一个职业。

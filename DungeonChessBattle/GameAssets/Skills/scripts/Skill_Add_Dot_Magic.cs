@@ -2,7 +2,7 @@ using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 附加魔法持续伤害（DOT）的技能。

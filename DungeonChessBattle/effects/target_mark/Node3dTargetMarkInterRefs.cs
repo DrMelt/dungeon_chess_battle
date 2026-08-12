@@ -1,6 +1,7 @@
+using DungeonChessBattle.GamePlayUI;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 目标标记节点的资源引用集合，用于集中管理场景中引用的 UI 资源与贴花。

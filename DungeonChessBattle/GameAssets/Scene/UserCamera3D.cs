@@ -1,6 +1,7 @@
+using DungeonChessBattle.GamePlayUI;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 用户控制的 3D 相机，支持旋转、平移、缩放、聚焦单位与俯视操作。

@@ -1,7 +1,7 @@
 using Godot;
-using DungeonChessBattle.GameAssets.Buffs;
+using DungeonChessBattle.GameAssets;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能信息面板，悬停技能按钮或 Buff 图标时显示其名称与描述。

@@ -1,14 +1,13 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GamePlayUI.Interfaces;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// Buff 图标容器，根据单位 Pawn 同步的 Buff 列表动态创建/清理 Buff 图标。
 /// 数据源为 Pawn.BuffsList（SyncBuffData，服务端权威）。
 /// </summary>
-public partial class ContainerBuffs : Control, IUIUpdate {
+public partial class ContainerBuffs : Control {
     /// <summary>导出引用集合节点。</summary>
     public ContainerBuffsInterRefs? InterRefs {
         get; private set;

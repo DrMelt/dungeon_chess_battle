@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Domain.Enums;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 玩家 UI 颜色设置资源，配置状态信息与阵营相关颜色。

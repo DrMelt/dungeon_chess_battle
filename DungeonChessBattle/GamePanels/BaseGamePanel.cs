@@ -2,7 +2,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Services;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 游戏面板基类，提供面板间导航功能。

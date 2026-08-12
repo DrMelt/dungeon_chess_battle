@@ -2,7 +2,7 @@ using DungeonChessBattle.Client.Battle.Diagnostics;
 using DungeonChessBattle.Services;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Debug;
 
 /// <summary>
 /// 网络状态调试覆盖层：纯 View，只消费 <see cref="NetworkStatusSnapshot"/> DTO，

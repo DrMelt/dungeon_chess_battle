@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dy3y0pqqsp3sd"]
 
-[ext_resource type="Script" uid="uid://duod8exoqjbqv" path="res://GamePlayUI/state_bar/skill_progressBar/SkillProgressBar.cs" id="1_ytur1"]
-[ext_resource type="Script" uid="uid://bh1tcssn3bc77" path="res://GamePlayUI/state_bar/skill_progressBar/SkillProgressBarInterRefs.cs" id="2_skillprogressbar_interrefs"]
+[ext_resource type="Script" uid="uid://duod8exoqjbqv" path="res://GamePlayUI/state_bar/skill_progress_bar/SkillProgressBar.cs" id="1_ytur1"]
+[ext_resource type="Script" uid="uid://bh1tcssn3bc77" path="res://GamePlayUI/state_bar/skill_progress_bar/SkillProgressBarInterRefs.cs" id="2_skillprogressbar_interrefs"]
 
 [node name="Skill_ProgressBar" type="Control" unique_id=1327954040]
 custom_minimum_size = Vector2(150, 32)

@@ -1,15 +1,16 @@
 using System;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GamePlayUI.Interfaces;
+using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GamePlayUI;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 目标标记节点：用于在棋盘上显示单位的目标圈标记，并根据阵营关系着色。
 /// </summary>
-public partial class Node3dTargetMark : Node3D, IUIUpdate {
+public partial class Node3dTargetMark : Node3D {
     /// <summary>导出引用集合节点。</summary>
     public Node3dTargetMarkInterRefs? InterRefs {
         get; private set;

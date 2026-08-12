@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -6,7 +6,7 @@ using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 游戏大厅主控脚本，负责房间列表展示（招募板）、创建/加入房间等操作。

@@ -1,6 +1,7 @@
+using DungeonChessBattle.GameAssets;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 焦点/悬停单位的 2D 状态栏容器。

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// ServerManagementPanel 的导出引用集合。

@@ -1,7 +1,7 @@
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// Godot 技能基类资源。仅承载展示所需数据（图标/名称/描述）与配置 ID，

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle.GameAssets.Buffs;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// Buff 资源强类型映射表（基于 .tres 资源文件 + BuffTypeId 匹配）。

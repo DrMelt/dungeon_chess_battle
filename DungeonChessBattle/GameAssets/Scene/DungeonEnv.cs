@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 地牢环境根节点，承载地牢场景的环境表现。

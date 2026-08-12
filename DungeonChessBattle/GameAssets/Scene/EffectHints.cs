@@ -1,6 +1,7 @@
+using DungeonChessBattle.GamePlayUI;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 技能效果提示管理器，持有圆形/矩形范围提示场景资源。

@@ -1,7 +1,7 @@
 using DungeonChessBattle.Entities;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 迷你状态条组件，展示单个单位的 Buff、血条与施法进度，支持鼠标悬停高亮外框。

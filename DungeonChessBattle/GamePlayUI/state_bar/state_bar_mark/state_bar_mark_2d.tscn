@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bmraovrwblgf1"]
 
 [ext_resource type="Script" uid="uid://bhci7427y3h3q" path="res://GamePlayUI/state_bar/state_bar_mark/StateBarMark2d.cs" id="1_21cjg"]
-[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/hp_state/hp_state_bar.tscn" id="5_wjt61"]
+[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/state_bar_2d/hp_state_bar.tscn" id="5_wjt61"]
 [ext_resource type="Script" uid="uid://b0dwcb0eg8ex3" path="res://GamePlayUI/state_bar/state_bar_mark/StateBarMark2dInterRefs.cs" id="6_statemark2d_interrefs"]
 
 [node name="StateBarSimple2d" type="Control" unique_id=1769225931]

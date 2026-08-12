@@ -1,13 +1,12 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GamePlayUI.Interfaces;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 2D 血条组件，直读 UnitPawn 同步值展示单位生命值、护盾与阵营颜色。
 /// </summary>
-public partial class HP_StateBar : Control, IUIUpdate {
+public partial class HP_StateBar : Control {
     /// <summary>导出引用集合节点。</summary>
     public HP_StateBarInterRefs? InterRefs {
         get; private set;

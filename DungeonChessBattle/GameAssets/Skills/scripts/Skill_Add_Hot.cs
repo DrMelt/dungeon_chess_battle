@@ -2,7 +2,7 @@ using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 附加持续治疗（HOT）的技能。

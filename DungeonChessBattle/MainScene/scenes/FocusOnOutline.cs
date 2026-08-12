@@ -1,6 +1,7 @@
+using DungeonChessBattle.GamePlayUI;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 焦点单位轮廓高亮节点，跟随鼠标悬停的单位更新轮廓网格。

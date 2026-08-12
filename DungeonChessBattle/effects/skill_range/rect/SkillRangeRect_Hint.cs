@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.Effects;
 
 /// <summary>
 /// 矩形范围技能提示，通过着色器展示矩形区域范围，并支持施法进度显示。

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle.GameAssets.Skills;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 技能资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。

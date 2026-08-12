@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 地牢配置资源，提供地牢环境场景的实例化入口。

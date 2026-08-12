@@ -1,8 +1,9 @@
 using System;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.GameAssets;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能按钮：绑定一个技能与施法单位 Pawn，点击时委托给技能列表面板发起施法 RPC。

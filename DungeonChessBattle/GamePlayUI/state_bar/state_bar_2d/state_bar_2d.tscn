@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_Focus.cs" id="1_yhj07"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="2_nayus"]
-[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/hp_state/hp_state_bar.tscn" id="3_odry5"]
+[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/state_bar_2d/hp_state_bar.tscn" id="3_odry5"]
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://GamePlayUI/state_bar/buff_state/buffs_state.tscn" id="4_bln5c"]
-[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progressBar/skill_progress_bar.tscn" id="7_8vcj7"]
+[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progress_bar/skill_progress_bar.tscn" id="7_8vcj7"]
 [ext_resource type="Script" uid="uid://wystpvgpbayv" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_FocusInterRefs.cs" id="8_sb2d_interrefs"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="9_ui_res"]
 

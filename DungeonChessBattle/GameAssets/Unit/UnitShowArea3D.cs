@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 单位交互区域组件，用于捕获鼠标点击/悬停事件并关联所属单位。

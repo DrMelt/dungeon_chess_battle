@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dy0rydxvg8qji"]
 
 [ext_resource type="Script" uid="uid://cf2nf2qebdoth" path="res://GamePlayUI/state_bar/state_bar_mini/StateBarMini.cs" id="1_hd56u"]
-[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/hp_state/hp_state_bar.tscn" id="1_oeal0"]
-[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progressBar/skill_progress_bar.tscn" id="2_hd56u"]
+[ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/state_bar_2d/hp_state_bar.tscn" id="1_oeal0"]
+[ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progress_bar/skill_progress_bar.tscn" id="2_hd56u"]
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://GamePlayUI/state_bar/buff_state/buffs_state.tscn" id="3_ifvqs"]
 [ext_resource type="Script" uid="uid://bokpja5neoako" path="res://GamePlayUI/state_bar/state_bar_mini/StateBarMiniInterRefs.cs" id="4_statemini_interrefs"]
 

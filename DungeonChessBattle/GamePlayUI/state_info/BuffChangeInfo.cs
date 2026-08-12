@@ -1,9 +1,9 @@
 using Godot;
 using System;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.GameAssets.Buffs;
+using DungeonChessBattle.GameAssets;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// Buff 增减提示浮字，带淡出效果，展示 Buff 图标与变化符号。

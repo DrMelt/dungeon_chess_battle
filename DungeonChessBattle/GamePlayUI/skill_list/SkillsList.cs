@@ -1,7 +1,9 @@
-using Godot;
 using System.Collections.Generic;
+using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.MainScene;
+using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能列表面板：展示单位全部技能按钮，并按技能目标类型（单位/位置/无目标）分发施法 RPC。
@@ -20,11 +22,6 @@ public partial class SkillsList : Control {
 
     /// <summary>玩家操作界面资源引用（用于获取当前聚焦单位与鼠标地面位置）。</summary>
     public PlayerInterfaceRes? PlayerInterfaceRes {
-        get; set;
-    }
-
-    /// <summary>ViewModel 引用（由 PlayerUIRoot 在绑定时注入），用于通知目标等待状态。</summary>
-    public PlayerOperationInterfaceInfo? ViewModel {
         get; set;
     }
 
@@ -114,7 +111,7 @@ public partial class SkillsList : Control {
         if (skill.NeedPosTarget) {
             _state = SkillReleaseState.WaitingPosTarget;
             _waitingButton = button;
-            ViewModel?.NotifyWaitingSkillTarget(true);
+            PlayerInterfaceRes?.IsWaitingSkillTarget = true;
             return;
         }
 
@@ -135,7 +132,7 @@ public partial class SkillsList : Control {
         }
 
         if (Input.IsActionJustPressed("Skill_SelectTarget")) {
-            var targetPos = PlayerInterfaceRes?.MouseGoundPosition;
+            var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
             if (targetPos != null) {
                 var v = targetPos.Value;
                 var skill = _waitingButton.BindSkill;
@@ -160,18 +157,12 @@ public partial class SkillsList : Control {
         _waitingButton?.ButtonPressed = false;
         _waitingButton = null;
         _state = SkillReleaseState.Idle;
-        ViewModel?.NotifyWaitingSkillTarget(false);
+        PlayerInterfaceRes?.IsWaitingSkillTarget = false;
     }
 
-    /// <summary>是否处于等待目标选择状态。</summary>
-    public bool IsWaitTarget() {
-        return _state != SkillReleaseState.Idle;
-    }
-
-    /// <summary>获取正在等待位置目标的技能按钮列表。</summary>
-    public List<ButtonSkillBase> WaitingTargetSkillList() {
-        if (_waitingButton != null)
-            return [_waitingButton];
-        return [];
+    /// <summary>清理战斗绑定引用（退出战斗时由 BattleUIRoot 调用）。</summary>
+    public void ClearBindings() {
+        UnitsInGameRef = null;
+        PlayerInterfaceRes = null;
     }
 }

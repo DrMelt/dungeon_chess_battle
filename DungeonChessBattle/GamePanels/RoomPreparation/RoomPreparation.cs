@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -7,7 +7,7 @@ using DungeonChessBattle.Services;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.GamePanels;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 房间准备界面。玩家进入房间后选择阵营单位并准备，房主在全员准备后开始战斗。

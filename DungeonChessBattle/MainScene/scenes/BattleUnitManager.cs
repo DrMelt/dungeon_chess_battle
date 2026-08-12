@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GameAssets.Skills;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePanels;
+using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 战斗单位管理器：单位视图（UnitGameShow）的全生命周期所有者。

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// 房间信息卡片 UI 组件。显示房间 ID、状态，支持点击选中。

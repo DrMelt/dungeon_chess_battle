@@ -1,7 +1,8 @@
-using Godot;
 using System;
+using DungeonChessBattle.GameAssets;
+using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 状态条列表容器，按阵营展示所有单位的迷你状态条，随场景单位变化自动刷新。

@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePanels;
 
 /// <summary>
 /// GameLobby 的房间列表（招募板）UI 处理：列表刷新、卡片创建、选中与状态文字。

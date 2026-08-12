@@ -2,7 +2,7 @@ using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GameAssets;
 
 /// <summary>
 /// 圆形范围伤害技能。

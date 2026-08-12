@@ -1,9 +1,9 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.GameAssets.Buffs;
+using DungeonChessBattle.GameAssets;
 using Godot;
 
-namespace DungeonChessBattle;
+namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// Buff 图标控件，展示单个 Buff 的图标、持续时间与层数，并区分来源颜色。
