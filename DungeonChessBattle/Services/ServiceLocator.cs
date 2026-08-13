@@ -16,6 +16,7 @@ public static class ServiceLocator {
     /// <summary>日志工厂实例（Godot 控制台 Provider）。</summary>
     private static readonly ILoggerFactory LoggerFactoryInstance = LoggerFactory.Create(builder => {
         builder.AddProvider(new GodotLoggerProvider());
+        builder.SetMinimumLevel(LogLevel.Debug);
     });
 
     /// <summary>

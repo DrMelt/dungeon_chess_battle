@@ -13,7 +13,7 @@ bool hasServerPassword = !string.IsNullOrEmpty(Environment.GetEnvironmentVariabl
 
 using var loggerFactory = LoggerFactory.Create(builder => {
     builder.AddConsole();
-    builder.SetMinimumLevel(LogLevel.Information);
+    builder.SetMinimumLevel(LogLevel.Debug);
 });
 
 // 让 LES 网络框架日志进入统一日志体系 Console，并早于任何 EntityManager 创建
