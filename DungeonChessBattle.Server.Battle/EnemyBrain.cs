@@ -1,9 +1,7 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GameConfig;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -90,16 +88,12 @@ public sealed class EnemyBrain(BattleRoom battleRoom, ILogger<EnemyBrain> logger
         if (enemy.GcdRemaining.Value > 0f || enemy.SkillCasting.Value != 0)
             return;
 
-        foreach (ushort skillId in enemy.SkillIds) {
-            var skill = GameConfigDB.GetSkillById(new SkillKeyId(skillId));
-            if (skill == null)
-                continue;
-
-            bool castStarted = _battleRoom.BeginCast(enemy, new SkillKeyId(skillId), target, target.Position.Value);
+        foreach (var skill in enemy.Skills) {
+            bool castStarted = _battleRoom.BeginCast(enemy, skill.SkillId, target, target.Position.Value);
             if (castStarted) {
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("[EnemyBrain] {Enemy} starts casting skill {SkillId} on {Target}.",
-                        enemy.UnitName.Value, skillId, target.UnitName.Value);
+                        enemy.UnitName.Value, skill.SkillId.Id, target.UnitName.Value);
                 return;
             }
         }

@@ -26,6 +26,9 @@ public sealed class BattleRoom(ISkillRepository skills) {
     /// <summary>运行时 Buff 权威，按目标单位分组。</summary>
     private readonly Dictionary<IBattleUnit, List<ActiveBuff>> _buffs = [];
 
+    /// <summary>技能个体冷却权威，Logic 每帧推进后投影回载体，只由本类单向写入。</summary>
+    private readonly Dictionary<IBattleUnit, List<CooldownEntry>> _cooldowns = [];
+
     /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
     private readonly HashSet<IBattleUnit> _dead = [];
 
@@ -50,6 +53,12 @@ public sealed class BattleRoom(ISkillRepository skills) {
 
     private sealed record ActiveBuff(BuffInstance Instance, IBuffEffect Effect);
 
+    /// <summary>冷却项：技能键与剩余秒数。可变以便推进时原地更新，避免每帧分配。</summary>
+    private sealed class CooldownEntry(SkillKeyId skillKey, float remaining) {
+        public SkillKeyId SkillKey = skillKey;
+        public float Remaining = remaining;
+    }
+
     /// <summary>注册一个战斗单位到编排门面。</summary>
     public void AddUnit(IBattleUnit unit) {
         ArgumentNullException.ThrowIfNull(unit);
@@ -62,6 +71,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
         _units.Remove(unit);
         _castTargets.Remove(unit);
         _buffs.Remove(unit);
+        _cooldowns.Remove(unit);
         _dead.Remove(unit);
     }
 
@@ -191,15 +201,23 @@ public sealed class BattleRoom(ISkillRepository skills) {
         _castTargets.Remove(unit);
     }
 
-    private static void TickCooldowns(IBattleUnit unit, double deltaTime) {
+    private void TickCooldowns(IBattleUnit unit, double deltaTime) {
         if (unit.GcdRemaining > 0f)
             unit.GcdRemaining = MathF.Max(0f, unit.GcdRemaining - (float)deltaTime);
-
-        if (unit.SkillCooldowns.Count == 0)
+        if (!_cooldowns.TryGetValue(unit, out var entries) || entries.Count == 0)
             return;
-        foreach (var kv in unit.SkillCooldowns.ToArray()) {
-            var remaining = kv.Value - (float)deltaTime;
-            unit.SetSkillCooldown(kv.Key, MathF.Max(0f, remaining));
+        float dt = (float)deltaTime;
+        for (int i = entries.Count - 1; i >= 0; i--) {
+            CooldownEntry entry = entries[i];
+            float remaining = entry.Remaining - dt;
+            if (remaining <= 0f) {
+                entries.RemoveAt(i);
+                unit.SetSkillCooldown(entry.SkillKey, 0f);
+            }
+            else {
+                entry.Remaining = remaining;
+                unit.SetSkillCooldown(entry.SkillKey, remaining);
+            }
         }
     }
 
@@ -241,8 +259,8 @@ public sealed class BattleRoom(ISkillRepository skills) {
         if (skill == null)
             return;
 
-        // 读条完成：写入个体冷却与全局冷却
-        caster.SetSkillCooldown(caster.SkillCasting, skill.CooldownTime);
+        // 读条完成：写入权威个体冷却并推进全局冷却
+        SetCooldownAuthoritative(caster, caster.SkillCasting, skill.CooldownTime);
         caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
 
         switch (skill) {
@@ -273,6 +291,25 @@ public sealed class BattleRoom(ISkillRepository skills) {
         }
 
         events.Add(new CastCompleted(caster.UnitNetId, skill.SkillId, ctx.Target?.UnitNetId));
+    }
+
+    /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值；权威变化立即投影回载体，保证施放校验即时生效。</summary>
+    private void SetCooldownAuthoritative(IBattleUnit unit, SkillKeyId skillKey, float remaining) {
+        if (!_cooldowns.TryGetValue(unit, out var entries)) {
+            entries = [];
+            _cooldowns[unit] = entries;
+        }
+        foreach (var entry in entries) {
+            if (entry.SkillKey != skillKey)
+                continue;
+            if (remaining <= entry.Remaining)
+                return;
+            entry.Remaining = remaining;
+            unit.SetSkillCooldown(skillKey, remaining);
+            return;
+        }
+        entries.Add(new CooldownEntry(skillKey, remaining));
+        unit.SetSkillCooldown(skillKey, remaining);
     }
 
     private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IDomainEvent> events) {

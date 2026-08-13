@@ -165,8 +165,10 @@ public partial class BattleUnitManager : Node {
         // 注入网络同步 Pawn（setter 先于挂载，_Ready 校验不会误报）
         unitShow.Pawn = pawn;
 
-        // 从配置构建 Godot 技能资源列表（独立于网络技能模型）
+        // 从配置构建 Godot 技能资源列表，并向 Pawn 本地写入技能定义列表（不参与网络同步，两端各自从共享配置读取）
         if (config != null) {
+            pawn.Skills = config.Skills;
+
             foreach (var skillDefinition in config.Skills) {
                 unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillDefinition));
             }

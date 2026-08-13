@@ -109,8 +109,7 @@ public partial class BattleRoomServer {
             entity.CureIntensity.Value = config.CureIntensity;
             entity.BaseSpeed.Value = config.BaseSpeed;
             entity.BodyRadius.Value = config.BodyRadius;
-            foreach (var skill in config.Skills)
-                entity.SkillIds.Add(skill.SkillId.Id);
+            entity.Skills = config.Skills;
         }
 
         // 注册到战斗编排门面，BattleRoom 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn

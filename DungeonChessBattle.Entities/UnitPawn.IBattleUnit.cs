@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Entities.SyncData;
 
@@ -58,13 +57,21 @@ public partial class UnitPawn : IBattleUnit {
     }
 
     /// <inheritdoc />
-    IReadOnlyDictionary<SkillKeyId, float> IBattleUnit.SkillCooldowns {
-        get {
-            var map = new Dictionary<SkillKeyId, float>(SkillCooldowns.Count);
-            foreach (var cd in SkillCooldowns)
-                map[new SkillKeyId(cd.SkillId)] = cd.Remaining;
-            return map;
+    bool IBattleUnit.HasSkill(SkillKeyId skillKey) {
+        foreach (var skill in Skills) {
+            if (skill.SkillId == skillKey)
+                return true;
         }
+        return false;
+    }
+
+    /// <inheritdoc />
+    float IBattleUnit.GetSkillCooldownRemaining(SkillKeyId skillKey) {
+        foreach (var cd in SkillCooldowns) {
+            if (cd.SkillId == skillKey.Id)
+                return cd.Remaining;
+        }
+        return 0f;
     }
 
     /// <inheritdoc />
@@ -81,9 +88,6 @@ public partial class UnitPawn : IBattleUnit {
         if (remaining > 0f)
             SkillCooldowns.Add(new SyncSkillCooldown { SkillId = skillKey.Id, Remaining = remaining });
     }
-
-    /// <inheritdoc />
-    IReadOnlyList<SkillKeyId> IBattleUnit.SkillIds => [.. SkillIds.Select(id => new SkillKeyId(id))];
 
     /// <inheritdoc />
     IReadOnlyList<BuffView> IBattleUnit.Buffs {

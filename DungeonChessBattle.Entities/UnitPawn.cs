@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
@@ -74,8 +75,10 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位当前持有的 Buff 列表。</summary>
     public readonly SyncList<SyncBuffData> BuffsList = [];
 
-    /// <summary>单位拥有的技能类型 ID 列表，对应配置表。</summary>
-    public readonly SyncList<ushort> SkillIds = [];
+    /// <summary>单位拥有的技能定义列表，引用共享单位配置，装配期写入后只读，不参与网络同步。</summary>
+    public IReadOnlyList<SkillDefinition> Skills {
+        get; set;
+    } = [];
 
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
