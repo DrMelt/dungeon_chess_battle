@@ -10,8 +10,8 @@ namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能列表面板：按技能目标类型（单位/位置/无目标）分发施法 RPC。
-/// 每帧从战斗单位管理器直读当前应展示的显示单位：优先本地焦点单位，
-/// 无焦点时回退本地玩家单位；变化时重建全部按钮。施法由服务端权威读条与结算。
+/// 每帧从战斗单位管理器直读本地玩家操控角色作为固定显示单位，变化时重建全部按钮。
+/// 施法由服务端权威读条与结算，施法目标仍取当前选中单位。
 /// </summary>
 public partial class SkillsList : Control {
     /// <summary>日志记录器。</summary>
@@ -66,14 +66,14 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 每帧处理位置目标选择输入，并做显示单位脏检查（变化时重建按钮列表）。
+    /// 每帧处理位置目标选择输入，并对本地玩家角色做脏检查（变化时重建按钮列表）。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         HandleWaitPosTargetInput();
 
         var manager = _unitManagerRef;
-        var showUnit = manager?.LocalFocusUnit ?? manager?.LocalUnitShow;
+        var showUnit = manager?.LocalUnitShow;
         ushort? shownId = showUnit?.Pawn.Id;
         if (shownId == _shownUnitId)
             return;
