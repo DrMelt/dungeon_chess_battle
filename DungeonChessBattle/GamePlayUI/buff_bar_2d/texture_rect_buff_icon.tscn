@@ -9,17 +9,20 @@ outline_size = 6
 outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_vqvhd"]
-font_size = 28
+font_size = 22
 outline_size = 6
 outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 
-[node name="TextureRect_Buff_Icon" type="TextureRect" node_paths=PackedStringArray("superpositionsLabelRef", "durationLabelRef")]
+[node name="TextureRect_Buff_Icon" type="TextureRect" unique_id=532369660 node_paths=PackedStringArray("superpositionsLabelRef", "durationLabelRef")]
+offset_right = 48.0
+offset_bottom = 64.0
 texture = ExtResource("1_otcmx")
+stretch_mode = 5
 script = ExtResource("2_1t7jj")
 superpositionsLabelRef = NodePath("Label_Superposition")
 durationLabelRef = NodePath("Label_Duration")
 
-[node name="Label_Superposition" type="Label" parent="."]
+[node name="Label_Superposition" type="Label" parent="." unique_id=417925175]
 layout_mode = 1
 offset_left = 16.0494
 offset_top = -7.40741
@@ -30,7 +33,7 @@ label_settings = SubResource("LabelSettings_otcmx")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Label_Duration" type="Label" parent="."]
+[node name="Label_Duration" type="Label" parent="." unique_id=740792934]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0

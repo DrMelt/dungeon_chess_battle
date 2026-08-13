@@ -39,6 +39,12 @@ public sealed class BattleRoom(ISkillRepository skills) {
     /// <summary>已判定结束，避免重复产出 BattleEnded。</summary>
     private bool _ended;
 
+    /// <summary>Buff 全局结算间隔，秒；所有存活 Buff 在同一节拍点同时结算。</summary>
+    private const double BuffTickInterval = 3.0;
+
+    /// <summary>距下一次 Buff 全局结算的剩余时间，秒。</summary>
+    private double _buffTickRemaining = BuffTickInterval;
+
     private sealed record CastContext(IBattleUnit? Target, Vector2? TargetPos);
 
     private sealed record ActiveBuff(BuffInstance Instance, IBuffEffect Effect);
@@ -67,6 +73,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
 
         CurrentPhase = BattlePhase.Running;
         ElapsedTime = 0f;
+        _buffTickRemaining = BuffTickInterval;
         return [new BattleStarted()];
     }
 
@@ -119,11 +126,20 @@ public sealed class BattleRoom(ISkillRepository skills) {
             return [];
 
         ElapsedTime += (float)deltaTime;
+
+        // 全局 Buff 节拍：每满一个间隔所有 Buff 同时结算一跳
+        _buffTickRemaining -= deltaTime;
+        int buffJumps = 0;
+        while (_buffTickRemaining <= 0) {
+            _buffTickRemaining += BuffTickInterval;
+            buffJumps++;
+        }
+
         var events = new List<IDomainEvent>();
         foreach (var unit in _units.ToArray()) {
             TickCasting(unit, deltaTime, events);
             TickCooldowns(unit, deltaTime);
-            TickBuffs(unit, deltaTime, events);
+            TickBuffs(unit, deltaTime, events, buffJumps);
         }
 
         // 全量死亡扫描：本帧内所有 Health<=0 的单位统一产出 UnitDied。
@@ -189,14 +205,15 @@ public sealed class BattleRoom(ISkillRepository skills) {
         }
     }
 
-    private void TickBuffs(IBattleUnit target, double deltaTime, List<IDomainEvent> events) {
+    private void TickBuffs(IBattleUnit target, double deltaTime, List<IDomainEvent> events, int buffJumps) {
         if (!_buffs.TryGetValue(target, out var list) || list.Count == 0)
             return;
 
+        double tickSeconds = buffJumps * BuffTickInterval;
         var snapshot = target.Snapshot;
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
-            foreach (var e in BuffTickProcessor.Tick(buff.Effect, buff.Instance, snapshot, deltaTime)) {
+            foreach (var e in BuffTickProcessor.Tick(buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
                 events.Add(e);
                 if (e is DamageOccurred dmg)
                     ApplyHealthDelta(target, -dmg.AppliedDamage);
