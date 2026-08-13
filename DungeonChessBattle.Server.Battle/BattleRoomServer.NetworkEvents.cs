@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
 using DungeonChessBattle.Battle.Domain.Enums;
-using LiteNetLib;
 using LiteEntitySystem.Transport;
+using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;

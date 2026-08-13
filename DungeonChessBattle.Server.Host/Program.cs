@@ -1,6 +1,5 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Server.Host;
-using Microsoft.Extensions.Logging;
 
 // 命令行参数 --port 指定大厅监听端口，默认见 ServerConfig.DefaultPort。
 int port = ServerConfig.DefaultPort;

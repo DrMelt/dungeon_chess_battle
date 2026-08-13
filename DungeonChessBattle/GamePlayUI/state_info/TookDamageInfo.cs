@@ -1,6 +1,5 @@
 using DungeonChessBattle.Services;
 using Godot;
-using DungeonChessBattle.Battle.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 

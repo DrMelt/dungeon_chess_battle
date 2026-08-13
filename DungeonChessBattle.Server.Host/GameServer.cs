@@ -1,9 +1,7 @@
-﻿using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Dtos;
+﻿using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Battle;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.StateStore.Abstractions;
-using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Host;
 

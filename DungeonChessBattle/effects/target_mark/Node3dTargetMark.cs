@@ -1,6 +1,5 @@
 using System;
 using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.GamePlayUI;
 using Godot;
 
 namespace DungeonChessBattle.Effects;

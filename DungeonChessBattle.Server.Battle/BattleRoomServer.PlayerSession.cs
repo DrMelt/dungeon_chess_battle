@@ -136,8 +136,14 @@ public partial class BattleRoomServer {
             return;
         }
 
-        // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API
-        EntityManager.AddController<UnitController>(netPlayer, pawn, c => session.Controller = c);
+        // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API；
+        //    同时把技能施放与聚焦目标的事件请求处理后注入房间权威校验，
+        //    请求到达时框架自动按该控制器所属玩家回发成功/失败回执。
+        EntityManager.AddController<UnitController>(netPlayer, pawn, c => {
+            c.BindServerCastHandler(req => HandleCastSkillRequest(pawn, req));
+            c.BindServerFocusHandler(req => HandleSetFocusTargetRequest(pawn, req.TargetUnitNetId));
+            session.Controller = c;
+        });
         session.ControlledPawn = pawn;
 
         // 4. 同步玩家阵营到 PlayerRoomEntity，客户端可识别自身阵营

@@ -1,11 +1,10 @@
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.Requests;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
-using DungeonChessBattle.Entities.SyncData;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;
 
@@ -193,46 +192,32 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 向服务端发送创建单位 RPC 请求。单位实体由服务端创建并回传 Pawn，
-    /// 客户端不维护本地状态。
-    /// </summary>
-    public void CreateUnit(string roomId, string unitName, string camp) {
-        if (_roomEntity != null) {
-            var req = new SyncCreateUnitRequest { UnitName = unitName, Camp = camp };
-            _roomEntity.RequestCreateUnit(req);
-        }
-        else {
-            if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("CreateUnit: room entity not found for {RoomId}", roomId);
-        }
-    }
-
-    /// <summary>
-    /// 通过 RPC 向服务端发起施法读条，服务端权威结算。
+    /// 经可靠请求通道向服务端发起施法读条，服务端权威校验与结算。
+    /// 施法者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="casterNetId">施法单位网络实体 ID。</param>
+    /// <param name="casterNetId">施法单位网络实体 ID（仅作接口兼容，施法者以控制器为准）。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，范围伤害技能传 0。</param>
     /// <param name="skillId">技能配置 ID。</param>
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
     public void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, ushort skillId,
         float targetPosX = 0f, float targetPosZ = 0f) {
-        if (_entityManager == null)
+        var controller = _localController;
+        if (controller == null)
             return;
 
-        var casterPawn = FindPawnById(casterNetId);
-        if (casterPawn == null)
-            return;
-
-        var req = new SyncSkillRequest {
-            CasterUnitNetId = casterNetId,
-            TargetUnitNetId = targetNetId,
+        var req = new CastSkillRequest {
             SkillTypeId = skillId,
+            TargetNetId = targetNetId,
             TargetPosX = targetPosX,
             TargetPosZ = targetPosZ,
         };
-        casterPawn.RequestCastSkill(req);
+        controller.SendCastSkillRequest(req, onResult => {
+            if (!onResult && _logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("CastSkill rejected by server: skill={SkillId}, target={TargetId}",
+                    skillId, targetNetId);
+        });
     }
 
     /// <summary>判断当前房间战斗是否已结束。</summary>
@@ -241,58 +226,42 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 通过 RPC 请求设置单位聚焦目标，服务端校验并写回权威状态。
+    /// 经可靠请求通道请求设置单位聚焦目标，服务端校验并写回权威状态。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID。</param>
+    /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID（仅作接口兼容，目标以控制器为准）。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
     public void SetFocusTarget(string roomId, ushort unitNetId, ushort targetNetId) {
-        var pawn = FindPawnById(unitNetId);
-        if (pawn == null)
+        var controller = _localController;
+        if (controller == null)
             return;
 
-        pawn.RequestSetFocusTarget(targetNetId);
+        controller.SendSetFocusTargetRequest(new SetFocusTargetRequest { TargetUnitNetId = targetNetId }, onResult => {
+            if (!onResult && _logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("SetFocusTarget rejected by server: target={TargetId}", targetNetId);
+        });
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("SetFocusTarget: unit={UnitId} -> target={TargetId}", unitNetId, targetNetId);
     }
 
-    /// <summary>
-    /// Godot UI 层调用，提交当前帧的玩家输入到 LES 框架。
+    /// <summary>Godot UI 层调用，提交当前帧的移动输入到 LES 框架。
     /// 框架自动进行 Delta 编码、UDP 发送、预测回滚。
     /// </summary>
-    public void SubmitPlayerInput(System.Numerics.Vector2 moveDir, byte skillFlags, System.Numerics.Vector2 aimPos) {
+    public void SubmitPlayerInput(System.Numerics.Vector2 moveDir) {
         if (_localController != null) {
-            _localController.SubmitInput(moveDir, skillFlags, aimPos);
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("Input submitted: dir={MoveDir}, flags={SkillFlags}, aim={AimPos}",
-                    moveDir, skillFlags, aimPos);
+            _localController.SubmitInput(moveDir);
+            if (_logger.IsEnabled(LogLevel.Trace))
+                _logger.LogTrace("Input submitted: dir={MoveDir}", moveDir);
         }
-        else if (_logger.IsEnabled(LogLevel.Warning) && (moveDir != System.Numerics.Vector2.Zero || skillFlags != 0)) {
-            _logger.LogWarning("Local controller not ready, input dropped: dir={MoveDir}, flags={SkillFlags}",
-                moveDir, skillFlags);
-        }
-    }
-
-    /// <summary>通过 RPC 请求开始战斗。</summary>
-    public void RequestStartBattle(string roomId) {
-        if (_roomEntity != null) {
-            _roomEntity.RequestStartBattle();
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("RequestStartBattle via RPC: {RoomId}", roomId);
-        }
-        else {
-            if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("RequestStartBattle: room entity not found for {RoomId}", roomId);
+        else if (_logger.IsEnabled(LogLevel.Warning) && moveDir != System.Numerics.Vector2.Zero) {
+            _logger.LogWarning("Local controller not ready, input dropped: dir={MoveDir}", moveDir);
         }
     }
 
     /// <summary>IClientBattleService 接口的输入提交实现，float 参数版。</summary>
-    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY) {
-        SubmitPlayerInput(
-            new System.Numerics.Vector2(moveX, moveY),
-            skillFlags,
-            new System.Numerics.Vector2(aimX, aimY));
+    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY) {
+        SubmitPlayerInput(new System.Numerics.Vector2(moveX, moveY));
     }
 
     #region 网络状态统计

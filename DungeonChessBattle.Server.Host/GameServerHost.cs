@@ -2,12 +2,7 @@
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.StateStore;
 using DungeonChessBattle.Server.StateStore.Abstractions;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Host;
 

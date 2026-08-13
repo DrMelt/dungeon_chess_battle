@@ -1,11 +1,12 @@
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
-using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Entities;
 
 /// <summary>
 /// 战斗房间的网络同步 Entity。纯数据载体。
+/// 创建单位与开始战斗的请求已由大厅 SignalR 通道（AddPrepareUnit / StartBattle）承担，
+/// 本实体只同步房间级战斗状态。
 /// </summary>
 public class BattleRoomEntity : EntityLogic {
     /// <summary>房间唯一 ID。</summary>
@@ -22,15 +23,6 @@ public class BattleRoomEntity : EntityLogic {
 
     /// <summary>房间创建时间，Unix 秒，UTC，服务端权威。</summary>
     public SyncVar<double> CreatedUnixTime;
-
-    private static RemoteCallSerializable<SyncCreateUnitRequest> CreateUnitRPC;
-    private static RemoteCall StartBattleRPC;
-
-    /// <summary>客户端请求创建单位。参数：房间实体、创建请求数据。</summary>
-    public event Action<BattleRoomEntity, SyncCreateUnitRequest>? CreateUnitRequested;
-
-    /// <summary>客户端请求开始战斗。参数：房间实体。</summary>
-    public event Action<BattleRoomEntity>? StartBattleRequested;
 
     /// <summary>
     /// 初始化战斗房间实体。
@@ -49,31 +41,5 @@ public class BattleRoomEntity : EntityLogic {
         IsFinished.Value = false;
         WinnerCamp.Value = string.Empty;
         CreatedUnixTime.Value = 0;
-    }
-
-    /// <summary>
-    /// 注册 RPC 动作：创建单位请求与开始战斗请求，均在服务端执行。
-    /// </summary>
-    /// <param name="r">RPC 注册器。</param>
-    protected override void RegisterRPC(ref RPCRegistrator r) {
-        base.RegisterRPC(ref r);
-        r.CreateRPCAction<BattleRoomEntity, SyncCreateUnitRequest>(
-            (e, req) => CreateUnitRequested?.Invoke(e, req),
-            ref CreateUnitRPC,
-            ExecuteFlags.ExecuteOnServer);
-        r.CreateRPCAction<BattleRoomEntity>(
-            e => StartBattleRequested?.Invoke(e),
-            ref StartBattleRPC,
-            ExecuteFlags.ExecuteOnServer);
-    }
-
-    /// <summary>客户端调用：请求创建单位。</summary>
-    public void RequestCreateUnit(SyncCreateUnitRequest req) {
-        ExecuteRPC(CreateUnitRPC, req);
-    }
-
-    /// <summary>客户端调用：请求开始战斗。</summary>
-    public void RequestStartBattle() {
-        ExecuteRPC(StartBattleRPC);
     }
 }

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
-using Godot;
 
 namespace DungeonChessBattle.GamePanels;
 

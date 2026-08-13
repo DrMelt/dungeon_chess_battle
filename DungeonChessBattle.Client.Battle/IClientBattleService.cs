@@ -1,4 +1,3 @@
-using DungeonChessBattle.Battle.Domain.Enums;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 
@@ -38,15 +37,7 @@ public interface IClientBattleService {
     long? GetRoomCreatedUnixTime(string roomId);
 
     /// <summary>
-    /// 在指定房间创建单位。
-    /// </summary>
-    /// <param name="roomId">房间 ID。</param>
-    /// <param name="unitName">单位名称。</param>
-    /// <param name="camp">阵营字符串标识，如 "Camp_A"、"Camp_B"。</param>
-    void CreateUnit(string roomId, string unitName, string camp);
-
-    /// <summary>
-    /// 对目标施放技能，客户端发起。通过 RPC 发送，服务端权威读条与结算。
+    /// 对目标施放技能，客户端发起。经可靠请求通道发送，服务端权威读条与结算。
     /// 参数展开为值类型，避免接口层依赖轻量实体类型。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
@@ -59,7 +50,7 @@ public interface IClientBattleService {
         float targetPosX = 0f, float targetPosZ = 0f);
 
     /// <summary>
-    /// 设置单位聚焦目标，客户端发起。通过 RPC 发送，服务端校验后写回权威状态。
+    /// 设置单位聚焦目标，客户端发起。经可靠请求通道发送，服务端校验后写回权威状态。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID。</param>
@@ -73,9 +64,7 @@ public interface IClientBattleService {
     /// <returns>已结束返回 true。</returns>
     bool CheckBattleEnded(string roomId);
 
-    /// <summary>请求开始战斗。</summary>
-    void RequestStartBattle(string roomId);
-
-    /// <summary>提交玩家输入。参数展开为 float 避免接口层依赖 System.Numerics。</summary>
-    void SubmitPlayerInput(float moveX, float moveY, byte skillFlags, float aimX, float aimY);
+    /// <summary>提交玩家移动输入。参数展开为 float 避免接口层依赖 System.Numerics。
+    /// 输入流仅承载移动状态；技能等一次性事件走 CastSkill / SetFocusTarget 请求。</summary>
+    void SubmitPlayerInput(float moveX, float moveY);
 }

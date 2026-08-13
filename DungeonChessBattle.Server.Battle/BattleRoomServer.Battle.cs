@@ -1,13 +1,13 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Battle.Logic.Movement;
+using DungeonChessBattle.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -26,9 +26,6 @@ public partial class BattleRoomServer {
         _roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
-
-        _roomEntity.CreateUnitRequested += OnCreateUnitRequested;
-        _roomEntity.StartBattleRequested += OnStartBattleRequested;
 
         // 注入服务端权威创建时间，房间在构造时创建，此处直接取用；
         // 且不能在 AddEntity initAction 中注入——OnConstructed 会以默认值覆盖运行时值）
@@ -66,10 +63,8 @@ public partial class BattleRoomServer {
             e.Position.Value = spawnPos;
         }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{RoomId}'.");
 
-        // 订阅该 Pawn 的技能 RPC 与玩家输入回调
-        entity.SkillCastRequested += OnPawnSkillCast;
+        // 订阅该 Pawn 的玩家输入回调；技能/聚焦请求改经 UnitController 可靠通道进入
         entity.InputHandler = OnPawnInput;
-        entity.FocusTargetSetRequested += OnPawnSetFocusTarget;
 
         _roomPawns.Add(entity);
 
@@ -117,39 +112,6 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// RPC：客户端请求创建单位。
-    /// </summary>
-    private void OnCreateUnitRequested(BattleRoomEntity roomEntity, SyncCreateUnitRequest req) {
-        // 防御：RPC 数据来自网络，必须校验，Put 超限会静默变空串，必须显式拦截
-        if (string.IsNullOrWhiteSpace(req.UnitName)
-            || req.UnitName.Length > EntityConstants.MaxUnitNameLength
-            || !CampConstants.IsValidCamp(req.Camp)) {
-            _logger.LogWarning("[RoomId: {RoomId}] Rejected create unit RPC: name='{Name}', camp='{Camp}'",
-                RoomId, req.UnitName, req.Camp);
-            return;
-        }
-
-        var spawnPos = req.Camp == CampConstants.CampA
-            ? new Vector2(0, 0)
-            : new Vector2(5, 0);
-
-        CreatePawnEntity(req.UnitName, req.Camp, spawnPos);
-
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Unit created via RPC: {UnitName}, camp={Camp}",
-                RoomId, req.UnitName, req.Camp);
-    }
-
-    /// <summary>
-    /// RPC：客户端请求开始战斗。
-    /// </summary>
-    private void OnStartBattleRequested(BattleRoomEntity roomEntity) {
-        StartBattle();
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Battle started via RPC", RoomId);
-    }
-
-    /// <summary>
     /// 处理通过 UnitPawn 实例事件到达的玩家输入。
     /// 移动已由 UnitPawn.Update() 确定性结算，客户端预测加服务端权威，
     /// 本方法仅作服务端输入钩子，保留日志与未来扩展。
@@ -159,31 +121,31 @@ public partial class BattleRoomServer {
         // 此处驱动移动即打断读条，BattleRoom 保留既有行为。
         _battleRoom.OnUnitMoved(pawn, input.MoveDirection);
 
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
+        if (_logger.IsEnabled(LogLevel.Trace))
+            _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
                 RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
     }
 
     /// <summary>
-    /// 处理通过 UnitPawn 实例事件到达的技能施放请求：由瞬发结算改为发起读条。
+    /// 处理经 UnitController 可靠请求到达的技能施放请求：发起读条。
     /// 服务端设置施法状态，SkillCasting 与 SkillCastRemaining，读条由房间 tick 推进，
-    /// 完成时 Logic 结算并回写。
+    /// 完成时 Logic 结算并回写。返回值作为请求回执发回客户端。
     /// </summary>
-    private void OnPawnSkillCast(UnitPawn casterPawn, SyncSkillRequest req) {
+    private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
         if (_battleRoom.CurrentPhase != BattlePhase.Running) {
-            _logger.LogWarning("[RoomId: {RoomId}] Skill RPC dropped: battle not running.", RoomId);
-            return;
+            _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: battle not running.", RoomId);
+            return false;
         }
 
         // 发起读条：BattleRoom 面向 IBattleUnit 校验冷却并写入读条状态
         IBattleUnit? target = null;
         Vector2? targetPos = null;
-        if (req.TargetUnitNetId != 0) {
-            var targetPawn = FindPawnById(req.TargetUnitNetId);
+        if (req.TargetNetId != 0) {
+            var targetPawn = FindPawnById(req.TargetNetId);
             if (targetPawn == null) {
-                _logger.LogWarning("[RoomId: {RoomId}] Skill RPC: target pawn {TargetId} not found.",
-                    RoomId, req.TargetUnitNetId);
-                return;
+                _logger.LogWarning("[RoomId: {RoomId}] Skill request: target pawn {TargetId} not found.",
+                    RoomId, req.TargetNetId);
+                return false;
             }
             target = targetPawn;
         }
@@ -197,27 +159,28 @@ public partial class BattleRoomServer {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
                     RoomId, casterPawn.UnitName.Value, req.SkillTypeId);
-            return;
+            return false;
         }
         // 读条状态已由 BeginCast 直接写回 Pawn，无需额外回写
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
                 RoomId, casterPawn.UnitName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
+        return true;
     }
 
     /// <summary>
-    /// 处理聚焦目标设置请求：服务端校验目标合法性后写回权威状态。
+    /// 处理经 UnitController 可靠请求到达的聚焦目标设置：服务端校验目标合法性后写回权威状态。
     /// 0 表示清除聚焦目标；目标必须存在且存活；允许目标为自己。
     /// </summary>
-    private void OnPawnSetFocusTarget(UnitPawn pawn, ushort targetNetId) {
+    private bool HandleSetFocusTargetRequest(UnitPawn pawn, ushort targetNetId) {
         if (targetNetId != 0) {
             var targetPawn = FindPawnById(targetNetId);
             if (targetPawn == null || targetPawn.UnitState.Value == 1) {
                 if (_logger.IsEnabled(LogLevel.Warning))
                     _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
                         RoomId, pawn.UnitName.Value, targetNetId);
-                return;
+                return false;
             }
         }
 
@@ -226,6 +189,7 @@ public partial class BattleRoomServer {
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomId: {RoomId}] Focus target set: {Unit} -> {TargetId}",
                 RoomId, pawn.UnitName.Value, targetNetId);
+        return true;
     }
 
     /// <summary>清空所有 Pawn 中对指定单位 ID 的聚焦目标，目标死亡时调用。</summary>

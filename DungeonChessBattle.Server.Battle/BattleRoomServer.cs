@@ -1,14 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using LiteNetLib;
-using LiteEntitySystem;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Server.StateStore.Abstractions;
+using LiteEntitySystem;
+using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -171,17 +168,9 @@ public partial class BattleRoomServer : INetEventListener {
     public void Stop() {
         _running = false;
 
-        // 取消订阅 Entity 事件
-        if (_roomEntity != null) {
-            _roomEntity.CreateUnitRequested -= OnCreateUnitRequested;
-            _roomEntity.StartBattleRequested -= OnStartBattleRequested;
-        }
-
-        // 取消订阅所有 Pawn 的 SkillCast 与输入回调
+        // 取消订阅所有 Pawn 的输入回调，并移除战斗编排注册
         foreach (var pawn in _roomPawns) {
-            pawn.SkillCastRequested -= OnPawnSkillCast;
             pawn.InputHandler = null;
-            pawn.FocusTargetSetRequested -= OnPawnSetFocusTarget;
             _battleRoom.RemoveUnit(pawn);
         }
 

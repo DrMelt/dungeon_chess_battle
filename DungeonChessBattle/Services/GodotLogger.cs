@@ -83,6 +83,12 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
             case LogLevel.Information:
                 GD.Print("[Information] " + full);
                 break;
+            case LogLevel.Debug:
+                GD.Print("[Debug] " + full);
+                break;
+            case LogLevel.Trace:
+                GD.Print("[Trace] " + full);
+                break;
             default:
                 GD.Print(full);
                 break;

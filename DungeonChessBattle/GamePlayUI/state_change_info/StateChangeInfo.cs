@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Services;

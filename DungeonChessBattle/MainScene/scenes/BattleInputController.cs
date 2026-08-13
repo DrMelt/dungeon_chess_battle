@@ -36,10 +36,6 @@ public partial class BattleInputController : Node {
 
     /// <summary>移动输入向量。</summary>
     private Vector2 _moveDir;
-    /// <summary>技能触发标志位。</summary>
-    private byte _skillFlags;
-    /// <summary>瞄准点位置。</summary>
-    private Vector2 _aimPos;
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
@@ -69,10 +65,7 @@ public partial class BattleInputController : Node {
             return;
 
         _moveDir = Input.GetVector("Move_Left", "Move_Right", "Move_Up", "Move_Down");
-        _skillFlags = 0;
-        var mousePos = GetViewport().GetMousePosition();
-        _aimPos = new Vector2(mousePos.X, mousePos.Y);
-        service.SubmitPlayerInput(_moveDir.X, _moveDir.Y, _skillFlags, _aimPos.X, _aimPos.Y);
+        service.SubmitPlayerInput(_moveDir.X, _moveDir.Y);
     }
 
     /// <summary>
@@ -146,7 +139,5 @@ public partial class BattleInputController : Node {
     /// <summary>退出战斗时清零输入缓冲。</summary>
     public void Reset() {
         _moveDir = Vector2.Zero;
-        _skillFlags = 0;
-        _aimPos = Vector2.Zero;
     }
 }

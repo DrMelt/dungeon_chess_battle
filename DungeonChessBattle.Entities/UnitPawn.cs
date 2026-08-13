@@ -1,5 +1,4 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
@@ -12,11 +11,9 @@ namespace DungeonChessBattle.Entities;
 /// 逐步替代 UnitSyncEntity，回合制纯数据载体。
 /// </summary>
 public partial class UnitPawn : PawnLogic {
-    private static RemoteCallSerializable<SyncSkillRequest> CastSkillRPC;
     private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffRemovedRPC;
-    private static RemoteCallSerializable<SyncFocusTargetRequest> SetFocusTargetRPC;
 
     /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
@@ -101,12 +98,6 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>移除 Buff 事件。</summary>
     public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
 
-    /// <summary>技能施放请求事件。</summary>
-    public event Action<UnitPawn, SyncSkillRequest>? SkillCastRequested;
-
-    /// <summary>聚焦目标设置请求事件，服务端订阅并校验写回。</summary>
-    public event Action<UnitPawn, ushort>? FocusTargetSetRequested;
-
     /// <summary>聚焦目标变化事件，客户端同步阶段触发。参数：实体、目标单位网络 ID。</summary>
     public event Action<UnitPawn, ushort>? FocusTargetChanged;
 
@@ -162,16 +153,11 @@ public partial class UnitPawn : PawnLogic {
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
     /// <summary>
-    /// 注册 RPC 动作：技能施放请求，在服务端执行。
+    /// 注册 RPC 动作：服务端到客户端事件广播。
     /// </summary>
     /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {
         base.RegisterRPC(ref r);
-        r.CreateRPCAction<UnitPawn, SyncSkillRequest>(
-            (e, req) => e.OnRpcCastSkill(req),
-            ref CastSkillRPC,
-            ExecuteFlags.ExecuteOnServer);
-
         // 服务端到客户端广播：受击与 Buff 增减事件，瞬时语义，携带完整数据
         r.CreateRPCAction<UnitPawn, SyncDamageData>(
             (e, d) => e.OnRpcDamageTaken(d),
@@ -186,27 +172,12 @@ public partial class UnitPawn : PawnLogic {
             ref BuffRemovedRPC,
             ExecuteFlags.SendToAll);
 
-        // 客户端请求设置聚焦目标，在服务端校验后写回 FocusTargetNetId
-        r.CreateRPCAction<UnitPawn, SyncFocusTargetRequest>(
-            (e, req) => e.OnRpcSetFocusTarget(req),
-            ref SetFocusTargetRPC,
-            ExecuteFlags.ExecuteOnServer);
-
         // 客户端在同步阶段检测聚焦目标变化，SyncVar 原生绑定，零带宽
         r.BindOnChange<UnitPawn, ushort>(ref FocusTargetNetId, (e, t) => e.OnFocusTargetChangedBySync(t), BindOnChangeFlags.ExecuteOnSync);
 
         // 客户端在同步阶段检测血量与死亡状态变化，SyncVar 原生绑定，零带宽
         r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
         r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
-    }
-
-    private void OnRpcCastSkill(SyncSkillRequest req) {
-        SkillCastRequested?.Invoke(this, req);
-    }
-
-    /// <summary>服务端接收：聚焦目标设置请求，转发给房间校验与写回。</summary>
-    private void OnRpcSetFocusTarget(SyncFocusTargetRequest req) {
-        FocusTargetSetRequested?.Invoke(this, req.TargetUnitNetId);
     }
 
     /// <summary>客户端接收：受击事件广播。</summary>
@@ -258,25 +229,8 @@ public partial class UnitPawn : PawnLogic {
     }
 
     /// <summary>
-    /// 客户端调用：请求施放技能。
-    /// </summary>
-    /// <param name="req">技能施放请求数据。</param>
-    public void RequestCastSkill(SyncSkillRequest req) {
-        ExecuteRPC(CastSkillRPC, req);
-    }
-
-    /// <summary>
-    /// 客户端调用：请求设置聚焦目标，0 表示清除聚焦目标。
-    /// 服务端校验目标合法性后写回权威状态。
-    /// </summary>
-    /// <param name="targetNetId">目标单位网络 ID。</param>
-    public void RequestSetFocusTarget(ushort targetNetId) {
-        ExecuteRPC(SetFocusTargetRPC, new SyncFocusTargetRequest { TargetUnitNetId = targetNetId });
-    }
-
-    /// <summary>
     /// 服务端调用：接收控制器转发的玩家输入。仅调用 <see cref="InputHandler"/> 委托，
-    /// 移动逻辑由 Logic 层消费，与 SkillCastRequested 经 Server 到 Logic 的转发模式一致。
+    /// 移动打断读条等消费在 Logic 层。
     /// </summary>
     /// <param name="input">玩家输入包。</param>
     /// <param name="deltaTime">距上一逻辑帧的间隔时间，秒。</param>
