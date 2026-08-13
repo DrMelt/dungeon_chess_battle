@@ -1,5 +1,5 @@
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
 namespace DungeonChessBattle.GameAssets;
@@ -9,6 +9,6 @@ namespace DungeonChessBattle.GameAssets;
 /// </summary>
 [GlobalClass]
 public partial class Skill_Range_Damage : UnitSkillBaseGodot {
-    /// <summary>指向矩形范围伤害的 SkillConfig 配置。</summary>
-    protected override SkillConfig Config => GameConfigDB.SkillRectRangeDamage;
+    /// <summary>指向矩形范围伤害的领域技能定义。</summary>
+    protected override SkillDefinition Config => GameConfigDB.SkillRectRangeDamage;
 }

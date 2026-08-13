@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
@@ -152,10 +153,14 @@ public partial class SkillsList : Control {
         var roomId = unitsManager?.RoomId ?? "";
         var casterNetId = button.BindPawn.Id;
 
-        // NeedUnitTarget：使用已锁定的本地焦点单位，同步发起施法 RPC
+        // NeedUnitTarget：使用已锁定的本地焦点单位，目标阵营需满足技能目标策略，否则拒绝
         if (skill.NeedUnitTarget) {
             var targetUnit = unitsManager?.LocalFocusUnit;
             if (targetUnit == null) {
+                button.ButtonPressed = false;
+                return;
+            }
+            if (!SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy)) {
                 button.ButtonPressed = false;
                 return;
             }

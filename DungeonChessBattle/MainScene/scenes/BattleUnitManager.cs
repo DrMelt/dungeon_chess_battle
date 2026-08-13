@@ -167,8 +167,8 @@ public partial class BattleUnitManager : Node {
 
         // 从配置构建 Godot 技能资源列表（独立于网络技能模型）
         if (entry != null) {
-            foreach (var skillConfig in entry.Config.Skills) {
-                unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillConfig));
+            foreach (var skillDefinition in entry.Config.Skills) {
+                unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillDefinition));
             }
         }
 

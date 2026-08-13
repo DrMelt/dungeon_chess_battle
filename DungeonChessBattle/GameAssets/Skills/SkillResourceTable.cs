@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
@@ -9,7 +10,7 @@ namespace DungeonChessBattle.GameAssets;
 /// 技能资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
 ///
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有技能 .tres 资源到 SkillResources 数组。
-/// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态 SkillConfig 实例）
+/// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态技能定义实例）
 /// 自动构建反向查找字典，无需任何字符串 ID。
 ///
 /// 新增技能时只需在 res_skill_resource_table.tres 中拖入对应的 .tres 资源即可。
@@ -32,13 +33,13 @@ public partial class SkillResourceTable : Resource {
     [Export]
     public Godot.Collections.Array<UnitSkillBaseGodot> SkillResources { get; set; } = [];
 
-    /// <summary>运行时查找字典：SkillConfig → 技能资源副本。</summary>
-    private readonly Dictionary<SkillConfig, UnitSkillBaseGodot> _lookup = [];
+    /// <summary>运行时查找字典：SkillDefinition → 技能资源副本。</summary>
+    private readonly Dictionary<SkillDefinition, UnitSkillBaseGodot> _lookup = [];
     private bool _initialized;
 
     /// <summary>
     /// 初始化查找字典。每个技能资源的 Config 属性返回 GameConfigDB 中的
-    /// 唯一静态 SkillConfig 实例，因此可以用 Config 作为 Key 精准匹配。
+    /// 唯一静态技能定义实例，因此可以用 Config 作为 Key 精准匹配。
     /// </summary>
     private void Initialize() {
         if (_initialized)
@@ -56,21 +57,21 @@ public partial class SkillResourceTable : Resource {
     }
 
     /// <summary>
-    /// 通过 SkillConfig 查找并创建对应的 Godot 技能资源实例。
+    /// 通过技能定义查找并创建对应的 Godot 技能资源实例。
     /// </summary>
-    /// <param name="config">GameConfigDB 中的技能配置</param>
+    /// <param name="config">GameConfigDB 中的技能定义</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本</returns>
     /// <exception cref="KeyNotFoundException">
-    /// 配置未在资源表 .tres 中注册时抛出。
+    /// 定义未在资源表 .tres 中注册时抛出。
     /// </exception>
-    public static UnitSkillBaseGodot LoadResource(SkillConfig config) {
+    public static UnitSkillBaseGodot LoadResource(SkillDefinition config) {
         var table = Instance; // 触发懒加载
 
         if (table._lookup.TryGetValue(config, out var template))
             return (UnitSkillBaseGodot)template.Duplicate();
 
         throw new KeyNotFoundException(
-            $"SkillConfig '{config.GetType().Name}' 未在 res_skill_resource_table.tres 中注册。" +
+            $"SkillDefinition '{config.GetType().Name}' 未在 res_skill_resource_table.tres 中注册。" +
             " 请在 Godot 编辑器中打开该文件，将对应的技能 .tres 资源拖入 SkillResources 数组。");
     }
 

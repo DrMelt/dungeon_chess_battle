@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的战斗编排实例 BattleRoom 与 SkillRepository，并运行在独立线程中，
+/// 独立的战斗编排实例 BattleRoom 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
 /// 战斗流程由 BattleRoom 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
 /// 创建 Entity 时仅该房间内的客户端可见。
@@ -121,7 +121,7 @@ public partial class BattleRoomServer : INetEventListener {
         _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
         _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
-        _battleRoom = new BattleRoom(new SkillRepository());
+        _battleRoom = new BattleRoom(GameConfigDB.Instance);
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         EntityManager = new ServerEntityManager(

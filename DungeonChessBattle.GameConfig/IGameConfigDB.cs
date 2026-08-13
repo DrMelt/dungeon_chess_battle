@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;
@@ -6,43 +7,43 @@ namespace DungeonChessBattle.GameConfig;
 /// 游戏配置数据库的抽象接口，供消费者按契约引用，不依赖静态单例。
 /// </summary>
 public interface IGameConfigDB {
-    /// <summary>魔法持续伤害 Buff 配置。</summary>
-    BuffDOTConfig BuffDotMagic {
+    /// <summary>魔法持续伤害 Buff 定义。</summary>
+    DamageOverTimeBuff BuffDotMagic {
         get;
     }
 
-    /// <summary>物理持续伤害 Buff 配置。</summary>
-    BuffDOTConfig BuffDotPhysical {
+    /// <summary>物理持续伤害 Buff 定义。</summary>
+    DamageOverTimeBuff BuffDotPhysical {
         get;
     }
 
-    /// <summary>持续治疗 Buff 配置。</summary>
-    BuffHOTConfig BuffHot {
+    /// <summary>持续治疗 Buff 定义。</summary>
+    HealOverTimeBuff BuffHot {
         get;
     }
 
-    /// <summary>魔法单体伤害技能配置。</summary>
-    SkillDamageConfig SkillMagicDamage {
+    /// <summary>魔法单体伤害技能定义。</summary>
+    DamageSkillDefinition SkillMagicDamage {
         get;
     }
 
-    /// <summary>治疗技能配置。</summary>
-    SkillCureConfig SkillCure {
+    /// <summary>治疗技能定义。</summary>
+    HealSkillDefinition SkillCure {
         get;
     }
 
-    /// <summary>添加魔法持续伤害 Buff 的技能配置。</summary>
-    SkillAddBuffConfig SkillAddDotMagic {
+    /// <summary>添加魔法持续伤害 Buff 的技能定义。</summary>
+    AddBuffSkillDefinition SkillAddDotMagic {
         get;
     }
 
-    /// <summary>添加持续治疗 Buff 的技能配置。</summary>
-    SkillAddBuffConfig SkillAddHot {
+    /// <summary>添加持续治疗 Buff 的技能定义。</summary>
+    AddBuffSkillDefinition SkillAddHot {
         get;
     }
 
-    /// <summary>矩形范围物理伤害技能配置。</summary>
-    SkillRangeDamageConfig SkillRectRangeDamage {
+    /// <summary>矩形范围物理伤害技能定义。</summary>
+    RangeDamageSkillDefinition SkillRectRangeDamage {
         get;
     }
 

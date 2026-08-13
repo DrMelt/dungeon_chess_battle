@@ -1,120 +1,124 @@
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Range;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;
 
 /// <summary>
-/// 纯 C# 配置数据库，数值对齐客户端 .tres 资源文件。
-/// Server 和 Client 直接引用，零反射，编译期类型安全。
+/// 纯 C# 配置数据库，直接构建领域只读定义（SkillDefinition / BuffDefinition / RangeShape），
+/// 同时实现 ISkillRepository 供战斗编排查询。Server 和 Client 直接引用，零反射，编译期类型安全。
 /// 通过 IGameConfigDB 接口解耦，消费者可选注入。
 /// </summary>
-public class GameConfigDB : IGameConfigDB {
+public class GameConfigDB : IGameConfigDB, ISkillRepository {
     /// <summary>
     /// 全局单例，Godot 脚本通过静态属性访问。
     /// </summary>
     public static readonly GameConfigDB Instance = new();
 
-    /// <summary>魔法持续伤害 Buff 配置。</summary>
-    public static BuffDOTConfig BuffDotMagic {
+    /// <summary>魔法持续伤害 Buff 定义。</summary>
+    public static DamageOverTimeBuff BuffDotMagic {
         get;
     } = new() {
-        Id = 1,
+        BuffTypeId = 1,
         Duration = 30.0,
-        MaxSuperpositions = 1,
+        MaxStacks = 1,
         DamageType = DamageType.Magic,
         DamagePerSec = 10.0f,
     };
 
-    /// <summary>物理持续伤害 Buff 配置。</summary>
-    public static BuffDOTConfig BuffDotPhysical {
+    /// <summary>物理持续伤害 Buff 定义。</summary>
+    public static DamageOverTimeBuff BuffDotPhysical {
         get;
     } = new() {
-        Id = 2,
+        BuffTypeId = 2,
         Duration = 15.0,
-        MaxSuperpositions = 1,
+        MaxStacks = 1,
         DamageType = DamageType.Physical,
         DamagePerSec = 100.0f,
     };
 
-    /// <summary>持续治疗 Buff 配置。</summary>
-    public static BuffHOTConfig BuffHot {
+    /// <summary>持续治疗 Buff 定义。</summary>
+    public static HealOverTimeBuff BuffHot {
         get;
     } = new() {
-        Id = 3,
+        BuffTypeId = 3,
         Duration = 15.0,
-        MaxSuperpositions = 1,
+        MaxStacks = 1,
         HealthPerSec = 100.0f,
     };
 
-    /// <summary>魔法单体伤害技能配置。</summary>
-    public static SkillDamageConfig SkillMagicDamage {
+    /// <summary>魔法单体伤害技能定义。</summary>
+    public static DamageSkillDefinition SkillMagicDamage {
         get;
     } = new() {
-        Id = 1,
-        SkillSpellTime = 2.0f,
-        SkillCooldownTime = 3.0f,
-        GCDTime = 3.0f,
+        SkillId = 1,
+        SpellTime = 2.0f,
+        CooldownTime = 3.0f,
+        GcdTime = 3.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
-        SkillCanAdd = "Different",
+        TargetPolicy = SkillTargetPolicy.Different,
         Damage = 140.0f,
         DamageType = DamageType.Magic,
     };
 
-    /// <summary>治疗技能配置。</summary>
-    public static SkillCureConfig SkillCure {
+    /// <summary>治疗技能定义。</summary>
+    public static HealSkillDefinition SkillCure {
         get;
     } = new() {
-        Id = 2,
-        SkillSpellTime = 0.5f,
-        SkillCooldownTime = 0.5f,
-        GCDTime = 2.0f,
+        SkillId = 2,
+        SpellTime = 0.5f,
+        CooldownTime = 0.5f,
+        GcdTime = 2.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
-        SkillCanAdd = "Same",
+        TargetPolicy = SkillTargetPolicy.Same,
         CurePotency = 500.0f,
     };
 
-    /// <summary>添加魔法持续伤害 Buff 的技能配置。</summary>
-    public static SkillAddBuffConfig SkillAddDotMagic {
+    /// <summary>添加魔法持续伤害 Buff 的技能定义。</summary>
+    public static AddBuffSkillDefinition SkillAddDotMagic {
         get;
     } = new() {
-        Id = 3,
-        SkillSpellTime = 0.0f,
-        SkillCooldownTime = 3.0f,
-        GCDTime = 3.0f,
+        SkillId = 3,
+        SpellTime = 0.0f,
+        CooldownTime = 3.0f,
+        GcdTime = 3.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
-        SkillCanAdd = "Different",
-        BuffConfig = BuffDotMagic,
+        TargetPolicy = SkillTargetPolicy.Different,
+        Buff = BuffDotMagic,
     };
 
-    /// <summary>添加持续治疗 Buff 的技能配置。</summary>
-    public static SkillAddBuffConfig SkillAddHot {
+    /// <summary>添加持续治疗 Buff 的技能定义。</summary>
+    public static AddBuffSkillDefinition SkillAddHot {
         get;
     } = new() {
-        Id = 4,
-        SkillSpellTime = 0.0f,
-        SkillCooldownTime = 1.5f,
-        GCDTime = 2.0f,
+        SkillId = 4,
+        SpellTime = 0.0f,
+        CooldownTime = 1.5f,
+        GcdTime = 2.0f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
-        SkillCanAdd = "Same",
-        BuffConfig = BuffHot,
+        TargetPolicy = SkillTargetPolicy.Same,
+        Buff = BuffHot,
     };
 
-    /// <summary>矩形范围物理伤害技能配置。</summary>
-    public static SkillRangeDamageConfig SkillRectRangeDamage {
+    /// <summary>矩形范围物理伤害技能定义。</summary>
+    public static RangeDamageSkillDefinition SkillRectRangeDamage {
         get;
     } = new() {
-        Id = 5,
-        SkillSpellTime = 2.0f,
-        SkillCooldownTime = 3.0f,
-        GCDTime = 3.0f,
+        SkillId = 5,
+        SpellTime = 2.0f,
+        CooldownTime = 3.0f,
+        GcdTime = 3.0f,
+        NeedUnitTarget = false,
         NeedPosTarget = true,
+        TargetPolicy = SkillTargetPolicy.Different,
         Damage = 200.0f,
         DamageType = DamageType.Physical,
-        Range = new RectRangeConfig {
+        Range = new RectShape {
+            NearClamp = 0f,
             FarClamp = 5.0f,
         },
     };
@@ -141,22 +145,22 @@ public class GameConfigDB : IGameConfigDB {
         ],
     };
 
-    BuffDOTConfig IGameConfigDB.BuffDotMagic => BuffDotMagic;
-    BuffDOTConfig IGameConfigDB.BuffDotPhysical => BuffDotPhysical;
-    BuffHOTConfig IGameConfigDB.BuffHot => BuffHot;
-    SkillDamageConfig IGameConfigDB.SkillMagicDamage => SkillMagicDamage;
-    SkillCureConfig IGameConfigDB.SkillCure => SkillCure;
-    SkillAddBuffConfig IGameConfigDB.SkillAddDotMagic => SkillAddDotMagic;
-    SkillAddBuffConfig IGameConfigDB.SkillAddHot => SkillAddHot;
-    SkillRangeDamageConfig IGameConfigDB.SkillRectRangeDamage => SkillRectRangeDamage;
+    DamageOverTimeBuff IGameConfigDB.BuffDotMagic => BuffDotMagic;
+    DamageOverTimeBuff IGameConfigDB.BuffDotPhysical => BuffDotPhysical;
+    HealOverTimeBuff IGameConfigDB.BuffHot => BuffHot;
+    DamageSkillDefinition IGameConfigDB.SkillMagicDamage => SkillMagicDamage;
+    HealSkillDefinition IGameConfigDB.SkillCure => SkillCure;
+    AddBuffSkillDefinition IGameConfigDB.SkillAddDotMagic => SkillAddDotMagic;
+    AddBuffSkillDefinition IGameConfigDB.SkillAddHot => SkillAddHot;
+    RangeDamageSkillDefinition IGameConfigDB.SkillRectRangeDamage => SkillRectRangeDamage;
     UnitConfig IGameConfigDB.UnitWhiteMage => UnitWhiteMage;
 
     /// <summary>
-    /// 按技能全局 ID 查找技能配置。
+    /// 按技能全局 ID 查找技能定义。
     /// </summary>
     /// <param name="skillId">技能配置 ID。</param>
-    /// <returns>对应的技能配置；未找到返回 null。</returns>
-    public static SkillConfig? GetSkillById(ushort skillId) {
+    /// <returns>对应的技能定义；未找到返回 null。</returns>
+    public static SkillDefinition? GetSkillById(ushort skillId) {
         return skillId switch {
             1 => SkillMagicDamage,
             2 => SkillCure,
@@ -167,4 +171,6 @@ public class GameConfigDB : IGameConfigDB {
         };
     }
 
+    /// <inheritdoc />
+    SkillDefinition? ISkillRepository.Get(ushort skillId) => GetSkillById(skillId);
 }

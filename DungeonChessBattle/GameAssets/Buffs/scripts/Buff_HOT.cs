@@ -1,5 +1,5 @@
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Data;
 using Godot;
 
 namespace DungeonChessBattle.GameAssets;
@@ -9,6 +9,6 @@ namespace DungeonChessBattle.GameAssets;
 /// </summary>
 [GlobalClass]
 public partial class Buff_HOT : BuffBaseGodot {
-    /// <summary>指向持续治疗的 BuffConfig 配置。</summary>
-    protected override BuffConfig Config => GameConfigDB.BuffHot;
+    /// <summary>指向持续治疗的领域 Buff 定义。</summary>
+    protected override BuffDefinition Config => GameConfigDB.BuffHot;
 }

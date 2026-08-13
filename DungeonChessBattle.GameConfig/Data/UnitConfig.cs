@@ -1,3 +1,5 @@
+using DungeonChessBattle.Battle.Domain.Combat;
+
 namespace DungeonChessBattle.GameConfig.Data;
 
 /// <summary>
@@ -28,6 +30,6 @@ public class UnitConfig {
     /// <summary>基础移动速度。</summary>
     public float BaseSpeed { get; set; } = 2.0f;
 
-    /// <summary>单位拥有的技能配置列表。</summary>
-    public SkillConfig[] Skills { get; set; } = [];
+    /// <summary>单位拥有的技能定义列表。</summary>
+    public SkillDefinition[] Skills { get; set; } = [];
 }

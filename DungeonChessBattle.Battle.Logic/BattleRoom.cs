@@ -100,6 +100,12 @@ public sealed class BattleRoom(ISkillRepository skills) {
         if (skill == null)
             return false;
 
+        // 目标限制：需单位目标的技能禁止空目标，且目标必须满足技能的目标阵营策略
+        if (skill.NeedUnitTarget && target == null)
+            return false;
+        if (target != null && !SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy))
+            return false;
+
         caster.SkillCasting = skillId;
         caster.SkillCastRemaining = skill.SpellTime;
         _castTargets[caster] = new CastContext(target, targetPos);
@@ -280,7 +286,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
     private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IDomainEvent> events) {
         var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
         foreach (var unit in _units.ToArray()) {
-            if (unit == caster || IsSameCamp(caster, unit))
+            if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy))
                 continue;
             if (!CastResolver.IsInRange(skill.Range, caster.Snapshot, unit.Snapshot, aim))
                 continue;
@@ -316,9 +322,6 @@ public sealed class BattleRoom(ISkillRepository skills) {
     private static void ApplyHealthDelta(IBattleUnit unit, float delta) {
         unit.Health = System.Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
     }
-
-    private static bool IsSameCamp(IBattleUnit a, IBattleUnit b)
-        => a.Camps.Any(c => b.Camps.Contains(c));
 
     private static byte EffectDamageType(IBuffEffect effect) => effect switch {
         DotEffect dot => (byte)dot.DamageType,

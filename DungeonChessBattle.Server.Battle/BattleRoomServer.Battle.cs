@@ -82,7 +82,7 @@ public partial class BattleRoomServer {
             entity.BaseSpeed.Value = cfg.BaseSpeed;
             entity.BodyRadius.Value = cfg.BodyRadius;
             foreach (var skill in cfg.Skills)
-                entity.SkillIds.Add(skill.Id);
+                entity.SkillIds.Add(skill.SkillId);
         }
 
         // 注册到战斗编排门面，BattleRoom 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn
