@@ -54,10 +54,10 @@ public partial class Node3dTargetMark : Node3D {
     }
 
     /// <summary>
-    /// 根据阵营名称设置目标标记颜色，为空时使用中立颜色。
+    /// 根据阵营名称设置目标标记颜色。
     /// </summary>
     /// <param name="camp">阵营名称。</param>
-    public void SetCampColor(string camp) {
+    public void SetColorByCamp(string camp) {
         SetColor(GetRelation(camp));
     }
 
@@ -65,8 +65,7 @@ public partial class Node3dTargetMark : Node3D {
         CampConstants.CampA => CampRelation.Friendly,
         CampConstants.CampB => CampRelation.Enemy,
         CampConstants.CampBoss => CampRelation.Neutral,
-        "" => CampRelation.Neutral,
-        _ => CampRelation.Friendly,
+        _ => CampRelation.Neutral,
     };
 
 }

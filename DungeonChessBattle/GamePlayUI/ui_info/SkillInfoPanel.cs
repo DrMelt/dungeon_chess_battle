@@ -12,7 +12,7 @@ public partial class SkillInfoPanel : Control {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<SkillInfoPanel> _logger = ServiceLocator.GetLogger<SkillInfoPanel>();
 
-    /// <summary>玩家界面资源引用，用于订阅悬停控件变化事件。</summary>
+    /// <summary>玩家界面资源引用，用于读取悬停控件。</summary>
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
 
@@ -24,8 +24,11 @@ public partial class SkillInfoPanel : Control {
     [Export]
     private Label? skillDescriptionLabel;
 
+    /// <summary>上一帧的悬停控件，用于变化检测。</summary>
+    private Control? _lastMouseOnControl;
+
     /// <summary>
-    /// 节点就绪：订阅悬停控件变化事件并初始化显示。
+    /// 节点就绪：校验导出引用并初始化显示。
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceRes == null)
@@ -35,15 +38,19 @@ public partial class SkillInfoPanel : Control {
         if (skillDescriptionLabel == null)
             _logger.LogError("skillDescriptionLabel is not assigned!");
 
-        playerInterfaceRes?.MouseOnUIControlChanged += UpdateInfo;
         UpdateInfo(null);
     }
 
     /// <summary>
-    /// 节点退出场景树时取消订阅事件。
+    /// 每帧检查悬停控件变化并刷新信息显示。
     /// </summary>
-    public override void _ExitTree() {
-        playerInterfaceRes?.MouseOnUIControlChanged -= UpdateInfo;
+    /// <param name="delta">距上一帧的秒数。</param>
+    public override void _Process(double delta) {
+        var current = playerInterfaceRes?.MouseOnUIControl;
+        if (current == _lastMouseOnControl)
+            return;
+        _lastMouseOnControl = current;
+        UpdateInfo(current);
     }
 
     /// <summary>

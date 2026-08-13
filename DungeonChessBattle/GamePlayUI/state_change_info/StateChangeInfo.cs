@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -46,8 +47,12 @@ public partial class StateChangeInfo : Node {
         InterRefsOrThrow.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()
         ?? throw new InvalidOperationException("[StateChangeInfo] BuffChangeInfoPackedScene is not assigned or instantiation failed.");
 
-    /// <summary>上一帧的单位列表，用于解绑已消失单位的订阅。</summary>
-    private List<UnitPawn>? preUnits;
+    /// <summary>战斗单位管理器引用，提供场景单位集合。</summary>
+    [Export]
+    private BattleUnitManager? _unitManagerRef;
+
+    /// <summary>已订阅 Pawn 事件的单位映射，用于增量同步。</summary>
+    private readonly Dictionary<ushort, UnitPawn> _boundPawns = [];
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
@@ -60,29 +65,33 @@ public partial class StateChangeInfo : Node {
     }
 
     /// <summary>
-    /// 订阅场景单位集合变化事件。
+    /// 每帧将 Pawn 事件订阅同步到当前场景单位集合：新增单位绑定、消失单位退订。
     /// </summary>
-    /// <param name="unitsInSceneRes">场景单位集合。</param>
-    public void BindUnitsInScene(UnitsInScene unitsInSceneRes) {
-        unitsInSceneRes.OnUnitsChangedEvent += OnUnitsInSceneChanged;
-    }
+    /// <param name="delta">距上一帧的秒数。</param>
+    public override void _Process(double delta) {
+        var manager = _unitManagerRef;
+        if (manager == null)
+            return;
 
-    /// <summary>
-    /// 单位集合变化回调：解绑旧单位事件并绑定新单位事件。
-    /// </summary>
-    /// <param name="unitsInScene">场景单位集合。</param>
-    private void OnUnitsInSceneChanged(UnitsInScene unitsInScene) {
-        if (preUnits != null) {
-            foreach (var unit in preUnits) {
-                UnbindWithUnitPawn(unit);
+        var currentIds = new HashSet<ushort>();
+        foreach (var unit in manager.UnitsArr) {
+            currentIds.Add(unit.Id);
+            if (!_boundPawns.ContainsKey(unit.Id)) {
+                BindWithUnitPawn(unit);
+                _boundPawns[unit.Id] = unit;
             }
         }
 
-        List<UnitPawn> units = unitsInScene.UnitsArr;
-        foreach (var unit in units) {
-            BindWithUnitPawn(unit);
+        if (_boundPawns.Count == currentIds.Count)
+            return;
+        List<ushort> gone = [];
+        foreach (var id in _boundPawns.Keys)
+            if (!currentIds.Contains(id))
+                gone.Add(id);
+        foreach (var id in gone) {
+            UnbindWithUnitPawn(_boundPawns[id]);
+            _boundPawns.Remove(id);
         }
-        preUnits = units;
     }
 
     /// <summary>

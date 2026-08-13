@@ -60,8 +60,8 @@ public partial class BattleInputController : Node {
     public void Tick(IClientBattleService service) {
         UpdateRaycast();
 
-        // 等待技能/移动目标选择中，暂停提交战斗输入
-        if (playerInterfaceResRef?.IsWaitingTarget == true)
+        // 等待技能目标选择中，暂停提交战斗输入
+        if (playerInterfaceResRef?.IsWaitingSkillTarget == true)
             return;
 
         _moveDir = Input.GetVector("Move_Left", "Move_Right", "Move_Up", "Move_Down");
@@ -71,7 +71,7 @@ public partial class BattleInputController : Node {
     /// <summary>
     /// 鼠标左键点击：请求设置或清除本地玩家单位的聚焦目标。
     /// 经 RPC 提交服务端，校验后写回服务端权威聚焦目标，
-    /// 由 BattleUnitManager 桥接更新共享交互状态中的 FocusOnUnit。
+    /// 由 BattleUnitManager 投影为本地焦点单位并派发变化事件。
     /// </summary>
     public override void _UnhandledInput(InputEvent @event) {
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })

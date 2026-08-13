@@ -1,7 +1,6 @@
 using DungeonChessBattle.Client.Battle;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using DungeonChessBattle.GamePanels;
-using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -30,9 +29,6 @@ public partial class MainScene : Node {
 
     [Export]
     private Control? _frontUI;
-
-    [Export]
-    private BattleUIRoot? _battleUiRoot;
 
     [Export]
     private BattleUnitManager? _unitManager;
@@ -73,8 +69,6 @@ public partial class MainScene : Node {
     private void ValidateExports() {
         if (_frontUI == null)
             _logger.LogError("_frontUI is not assigned!");
-        if (_battleUiRoot == null)
-            _logger.LogError("_battleUiRoot is not assigned!");
         if (_unitManager == null)
             _logger.LogError("_unitManager is not assigned!");
         if (_inputController == null)
@@ -100,9 +94,6 @@ public partial class MainScene : Node {
             _inputController?.Reset();
         }
 
-        // 绑定战斗 UI（View 层直接初始化子组件）
-        _battleUiRoot?.BindToBattle();
-
         // 隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
         _screenMachine?.EnterBattle();
         _inBattle = true;
@@ -119,9 +110,6 @@ public partial class MainScene : Node {
         // 子组件退订与清理
         _unitManager?.Unbind();
         _inputController?.Reset();
-
-        // 解绑战斗 UI
-        _battleUiRoot?.UnbindFromBattle();
 
         _battleService = null;
         _roomId = "";

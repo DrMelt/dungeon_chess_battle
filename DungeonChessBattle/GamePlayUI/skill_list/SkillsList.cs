@@ -8,8 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
-/// 技能列表面板：展示单位全部技能按钮，并按技能目标类型（单位/位置/无目标）分发施法 RPC。
-/// 施法由服务端权威读条与结算，客户端仅发起请求。
+/// 技能列表面板：按技能目标类型（单位/位置/无目标）分发施法 RPC。
+/// 每帧从战斗单位管理器直读当前应展示的显示单位：优先本地焦点单位，
+/// 无焦点时回退本地玩家单位；变化时重建全部按钮。施法由服务端权威读条与结算。
 /// </summary>
 public partial class SkillsList : Control {
     /// <summary>日志记录器。</summary>
@@ -20,14 +21,14 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
-    /// <summary>战斗单位管理器引用（用于获取可命中单位数组与施法服务）。</summary>
-    public BattleUnitManager? UnitsInGameRef {
-        get; set;
-    }
+    /// <summary>战斗单位管理器引用，提供当前显示单位与施法服务。</summary>
+    [Export]
+    private BattleUnitManager? _unitManagerRef;
 
-    /// <summary>玩家操作界面资源引用（用于获取当前聚焦单位与鼠标地面位置）。</summary>
+    /// <summary>玩家交互状态引用，用于位置目标瞄准时读取鼠标地面位置并写等待标志。</summary>
+    [Export]
     public PlayerInterfaceRes? PlayerInterfaceRes {
-        get; set;
+        get; private set;
     }
 
     /// <summary>技能释放状态机状态。</summary>
@@ -47,20 +48,71 @@ public partial class SkillsList : Control {
     /// <summary>当前面板创建的全部技能按钮列表。</summary>
     private readonly List<ButtonSkillBase> _skillButtonList = [];
 
-    /// <summary>获取技能列表面板子节点引用。</summary>
+    /// <summary>当前展示的技能所属单位 NetId，用于变化检测。</summary>
+    private ushort? _shownUnitId;
+
+    /// <summary>
+    /// 节点就绪：获取引用集合节点并校验导出引用。
+    /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<SkillsListInterRefs>("SkillsListInterRefs");
         if (InterRefs == null) {
             _logger.LogError("SkillsListInterRefs node not found.");
             return;
         }
+        if (_unitManagerRef == null)
+            _logger.LogError("_unitManagerRef is not assigned!");
     }
 
     /// <summary>
-    /// 根据单位更新技能按钮列表（重建全部按钮）。
+    /// 每帧处理位置目标选择输入，并做显示单位脏检查（变化时重建按钮列表）。
     /// </summary>
-    /// <param name="unitShow">目标单位的展示对象。</param>
-    internal void UpdateSkillsList(UnitGameShow unitShow) {
+    /// <param name="delta">距上一帧的秒数。</param>
+    public override void _Process(double delta) {
+        HandleWaitPosTargetInput();
+
+        var manager = _unitManagerRef;
+        var showUnit = manager?.LocalFocusUnit ?? manager?.LocalUnitShow;
+        ushort? shownId = showUnit?.Pawn.Id;
+        if (shownId == _shownUnitId)
+            return;
+        _shownUnitId = shownId;
+        UpdateSkillsList(showUnit);
+    }
+
+    /// <summary>处理等待位置目标时的确认/取消输入。</summary>
+    private void HandleWaitPosTargetInput() {
+        if (_state != SkillReleaseState.WaitingPosTarget || _waitingButton == null)
+            return;
+
+        if (Input.IsActionJustPressed("Skill_UnSelectTarget")) {
+            CancelWait();
+            return;
+        }
+
+        if (Input.IsActionJustPressed("Skill_SelectTarget")) {
+            var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
+            if (targetPos != null) {
+                var v = targetPos.Value;
+                var skill = _waitingButton.BindSkill;
+                var service = _unitManagerRef?.BattleService;
+                service?.CastSkill(
+                        _unitManagerRef?.RoomId ?? "",
+                        _waitingButton.BindPawn.Id,
+                        0,
+                        skill.SkillId,
+                        v.X,
+                        v.Z);
+            }
+            CancelWait();
+        }
+    }
+
+    /// <summary>
+    /// 根据单位更新技能按钮列表（重建全部按钮），无显示单位时清空。
+    /// </summary>
+    /// <param name="unitShow">目标单位的展示对象，无则清空按钮。</param>
+    private void UpdateSkillsList(UnitGameShow? unitShow) {
         CancelWait();
 
         var hBox = InterRefs?.HBoxContainerRef;
@@ -91,7 +143,7 @@ public partial class SkillsList : Control {
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
         var skill = button.BindSkill;
-        var unitsManager = UnitsInGameRef;
+        var unitsManager = _unitManagerRef;
         var service = unitsManager?.BattleService;
         if (service == null) {
             button.ButtonPressed = false;
@@ -100,9 +152,9 @@ public partial class SkillsList : Control {
         var roomId = unitsManager?.RoomId ?? "";
         var casterNetId = button.BindPawn.Id;
 
-        // NeedUnitTarget：使用已锁定的 FocusOnUnit，同步发起施法 RPC
+        // NeedUnitTarget：使用已锁定的本地焦点单位，同步发起施法 RPC
         if (skill.NeedUnitTarget) {
-            var targetUnit = PlayerInterfaceRes?.FocusOnUnit;
+            var targetUnit = unitsManager?.LocalFocusUnit;
             if (targetUnit == null) {
                 button.ButtonPressed = false;
                 return;
@@ -125,49 +177,13 @@ public partial class SkillsList : Control {
         button.ButtonPressed = false;
     }
 
-
-    /// <summary>每帧处理位置目标选择输入（确认/取消）。</summary>
-    public override void _Process(double delta) {
-        if (_state != SkillReleaseState.WaitingPosTarget || _waitingButton == null)
-            return;
-
-        if (Input.IsActionJustPressed("Skill_UnSelectTarget")) {
-            CancelWait();
-            return;
-        }
-
-        if (Input.IsActionJustPressed("Skill_SelectTarget")) {
-            var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
-            if (targetPos != null) {
-                var v = targetPos.Value;
-                var skill = _waitingButton.BindSkill;
-                var unitsManager = UnitsInGameRef;
-                var service = unitsManager?.BattleService;
-                service?.CastSkill(
-                        unitsManager?.RoomId ?? "",
-                        _waitingButton.BindPawn.Id,
-                        0,
-                        skill.SkillId,
-                        v.X,
-                        v.Z);
-            }
-            CancelWait();
-        }
-    }
-
     /// <summary>
-    /// 取消等待位置目标状态并通知 ViewModel。
+    /// 取消等待位置目标状态并通知交互状态。
     /// </summary>
     private void CancelWait() {
         _waitingButton?.ButtonPressed = false;
         _waitingButton = null;
         _state = SkillReleaseState.Idle;
         PlayerInterfaceRes?.IsWaitingSkillTarget = false;
-    }
-
-    /// <summary>清理战斗绑定引用（退出战斗时由 BattleUIRoot 调用）。</summary>
-    public void ClearBindings() {
-        UnitsInGameRef = null;
-        PlayerInterfaceRes = null;
     }
 }

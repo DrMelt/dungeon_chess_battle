@@ -1,13 +1,18 @@
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.MainScene;
 using Godot;
 
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 焦点/悬停单位的 2D 状态栏容器。
-/// 每帧根据鼠标悬停或焦点单位刷新显示 Buff、状态与施法进度。
+/// 每帧根据鼠标悬停或本地焦点单位刷新显示 Buff、状态与施法进度。
 /// </summary>
-public partial class StateBar2d_Focus : Control {
+public partial class StateBar2d_Selected : Control {
+
+    /// <summary>战斗单位管理器引用，提供本地焦点单位视图。</summary>
+    [Export]
+    private BattleUnitManager? _unitManagerRef;
 
     /// <summary>导出引用集合节点。</summary>
     public StateBar2d_FocusInterRefs? InterRefs {
@@ -26,26 +31,25 @@ public partial class StateBar2d_Focus : Control {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        if (!Engine.IsEditorHint()) {
+        if (InterRefs == null)
+            return;
+        UnitGameShow? showUnit = GetUnitShow();
+
+        if (showUnit != null) {
+            Visible = true;
+            var pawn = showUnit.Pawn;
+
+            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(pawn);
+            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn);
+            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(pawn);
+        }
+        else {
             Visible = false;
-            if (InterRefs == null)
-                return;
-            UnitGameShow? showUnit = GetUnitShow();
-
-            if (showUnit != null) {
-                Visible = true;
-                var pawn = showUnit.Pawn;
-
-                InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(pawn);
-                InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn);
-                InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(pawn);
-            }
-
         }
     }
 
     /// <summary>
-    /// 获取需要展示的单位：优先鼠标悬停单位，其次焦点单位。
+    /// 获取需要展示的单位：优先鼠标悬停单位，其次本地焦点单位。
     /// </summary>
     /// <returns>要展示的单位，无则为 null。</returns>
     private UnitGameShow? GetUnitShow() {
@@ -54,7 +58,7 @@ public partial class StateBar2d_Focus : Control {
         if (uiRes == null)
             return null;
         UnitGameShow? mouseOnUnit = uiRes.MouseOnUnit;
-        UnitGameShow? focusOnUnit = uiRes.FocusOnUnit;
+        UnitGameShow? focusOnUnit = _unitManagerRef?.LocalFocusUnit;
         if (mouseOnUnit != null) {
             showUnit = mouseOnUnit;
         }

@@ -4,7 +4,6 @@ using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePanels;
-using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Godot;
@@ -13,9 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.MainScene;
 
 /// <summary>
-/// 战斗单位管理器：单位视图（UnitGameShow）的全生命周期所有者。
-/// 负责订阅单位服务事件、幂等生成/销毁视图。
-/// 展示数据源为网络同步 UnitPawn（直读 SyncVar），本组件仅在单位创建/死亡/血量变化时做视图表现处理。
+/// 战斗单位管理器：单位视图（UnitGameShow）的全生命周期所有者与服务端事件桥。
+/// 仅本组件订阅网络/服务事件；本地玩家单位与聚焦目标（服务端权威
+/// UnitPawn.FocusTargetNetId）投影为只读派生属性供 UI 每帧直读。
 /// 由 MainScene 在进入/退出战斗时 Bind/Unbind。
 /// </summary>
 public partial class BattleUnitManager : Node {
@@ -25,10 +24,6 @@ public partial class BattleUnitManager : Node {
     /// <summary>单位展示场景（unit_game_show.tscn）。</summary>
     [Export]
     private PackedScene? _unitShowScene;
-
-    /// <summary>玩家界面资源引用，桥接服务端聚焦目标到 UI 选中态。</summary>
-    [Export]
-    private PlayerInterfaceRes? playerInterfaceResRef;
 
     /// <summary>场景单位集合资源（UI 层数据源：状态条、技能目标、计时等）。</summary>
     public UnitsInScene UnitsInSceneRes { get; } = new();
@@ -45,14 +40,25 @@ public partial class BattleUnitManager : Node {
     /// <summary>当前房间 ID（供技能链发起施法 RPC）。</summary>
     public string RoomId => _roomId;
 
-    /// <summary>本地玩家控制的单位视图就绪事件，参数为对应的 UnitGameShow。</summary>
-    public event Action<UnitGameShow>? LocalUnitShowReady;
-
     /// <summary>本地玩家控制的单位视图，控制器或视图未就绪时返回 null。</summary>
     public UnitGameShow? LocalUnitShow {
         get {
             var pawn = _roomClient?.LocalUnitPawn;
             return pawn != null ? _unitShows.GetValueOrDefault(pawn.Id) : null;
+        }
+    }
+
+    /// <summary>
+    /// 本地玩家单位的聚焦目标视图。
+    /// 直接从服务端权威 SyncVar UnitPawn.FocusTargetNetId 派生，视图未生成时为 null。
+    /// </summary>
+    public UnitGameShow? LocalFocusUnit {
+        get {
+            var pawn = _roomClient?.LocalUnitPawn;
+            if (pawn == null)
+                return null;
+            ushort targetNetId = pawn.FocusTargetNetId.Value;
+            return targetNetId != 0 ? _unitShows.GetValueOrDefault(targetNetId) : null;
         }
     }
 
@@ -78,7 +84,6 @@ public partial class BattleUnitManager : Node {
         service.UnitDied += OnUnitDied;
         service.UnitBuffAdded += OnBuffAdded;
         service.UnitBuffRemoved += OnBuffRemoved;
-        service.UnitFocusTargetChanged += OnUnitFocusTargetChanged;
 
         // 注入服务端权威房间创建时间（跨端一致的战斗计时起点）
         var createdUnix = service.GetRoomCreatedUnixTime(roomId);
@@ -98,7 +103,6 @@ public partial class BattleUnitManager : Node {
             _battleService.UnitDied -= OnUnitDied;
             _battleService.UnitBuffAdded -= OnBuffAdded;
             _battleService.UnitBuffRemoved -= OnBuffRemoved;
-            _battleService.UnitFocusTargetChanged -= OnUnitFocusTargetChanged;
         }
 
         ClearUnits();
@@ -172,13 +176,6 @@ public partial class BattleUnitManager : Node {
         AddChild(unitShow);
         _unitShows[pawn.Id] = unitShow;
 
-        // 本地玩家单位的视图就绪通知，供 UI 层自动展示自身状态与技能
-        if (pawn == _roomClient?.LocalUnitPawn) {
-            LocalUnitShowReady?.Invoke(unitShow);
-            // 重连场景初始同步的聚焦目标不触发 BindOnChange，主动桥接一次
-            OnUnitFocusTargetChanged(pawn.Id, pawn.FocusTargetNetId.Value);
-        }
-
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
     }
@@ -242,26 +239,5 @@ public partial class BattleUnitManager : Node {
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("SetLocalFocusTarget: selector={UnitId} -> target={TargetId}",
                 pawn.Id, targetNetId);
-    }
-
-    /// <summary>
-    /// 服务端聚焦目标变化桥接：仅本地玩家单位的聚焦变化映射为 UI 选中态。
-    /// 目标单位视图未生成时置空选中，随后续单位生成事件补全。
-    /// </summary>
-    private void OnUnitFocusTargetChanged(ushort unitNetId, ushort targetNetId) {
-        var localPawn = _roomClient?.LocalUnitPawn;
-        if (localPawn == null || localPawn.Id != unitNetId || playerInterfaceResRef == null) {
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug(
-                    "Focus sync ignored: caller={CallerId}, localPawn={LocalPawnId}, hasUi={HasUi}, target={TargetId}",
-                    unitNetId, localPawn?.Id ?? 0, playerInterfaceResRef != null, targetNetId);
-            return;
-        }
-
-        var targetShow = targetNetId != 0 ? _unitShows.GetValueOrDefault(targetNetId) : null;
-        playerInterfaceResRef.FocusOnUnit = targetShow;
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("Focus synced: selector={UnitId} -> {TargetId}, showExists={HasShow}",
-                unitNetId, targetNetId, targetShow != null);
     }
 }

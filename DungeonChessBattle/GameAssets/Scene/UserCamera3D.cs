@@ -1,4 +1,4 @@
-using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -46,9 +46,9 @@ public partial class UserCamera3D : Camera3D {
     [Export]
     private bool _rotationEnabled = true;
 
-    /// <summary>玩家界面资源引用，用于获取焦点单位。</summary>
+    /// <summary>战斗单位管理器引用，用于获取本地焦点单位。</summary>
     [Export]
-    private PlayerInterfaceRes? playerInterfaceRes;
+    private BattleUnitManager? _unitManagerRef;
 
     /// <summary>上一帧的鼠标位置。</summary>
     private Vector2 mousePos;
@@ -57,8 +57,8 @@ public partial class UserCamera3D : Camera3D {
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (playerInterfaceRes == null)
-            _logger.LogError("playerInterfaceRes is not assigned!");
+        if (_unitManagerRef == null)
+            _logger.LogError("_unitManagerRef is not assigned!");
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public partial class UserCamera3D : Camera3D {
 
             Vector3 centerPos = GlobalPosition + cameraPreDir * (GlobalPosition.Y / -cameraPreDir.Y);
 
-            UnitGameShow? focusOn = playerInterfaceRes?.FocusOnUnit;
+            UnitGameShow? focusOn = _unitManagerRef?.LocalFocusUnit;
             if (focusOn != null) {
                 centerPos = focusOn.GlobalPosition;
             }
@@ -116,7 +116,7 @@ public partial class UserCamera3D : Camera3D {
         Vector3 cameraDir = -GlobalTransform.Basis.Z;
 
         if (Input.IsActionJustPressed("Camera_MoveToFocus")) {
-            UnitGameShow? focusOn = playerInterfaceRes?.FocusOnUnit;
+            UnitGameShow? focusOn = _unitManagerRef?.LocalFocusUnit;
             if (focusOn != null) {
                 Vector3 vecToFocus = focusOn.GlobalPosition - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bnyra1mkp6yn2"]
 
-[ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_Focus.cs" id="1_yhj07"]
+[ext_resource type="Script" uid="uid://4imbstvoybv8" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_Selected.cs" id="1_yhj07"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="2_nayus"]
 [ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/state_bar_2d/hp_state_bar.tscn" id="3_odry5"]
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://GamePlayUI/state_bar/buff_state/buffs_state.tscn" id="4_bln5c"]

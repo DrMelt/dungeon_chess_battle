@@ -24,9 +24,6 @@ public partial class UnitsInScene : Resource {
     /// <summary>场景单位数组快照。</summary>
     public List<UnitPawn> UnitsArr => [.. unitsArr];
 
-    /// <summary>单位集合变化事件。</summary>
-    public Action<UnitsInScene>? OnUnitsChangedEvent;
-
     /// <summary>房间创建时间（UTC，服务端权威，由 <see cref="SetRoomCreatedAt"/> 注入）。</summary>
     private DateTime _roomCreatedAt = DateTime.MinValue;
 
@@ -48,31 +45,26 @@ public partial class UnitsInScene : Resource {
         : (DateTime.UtcNow - _roomCreatedAt).TotalSeconds;
 
     /// <summary>
-    /// 添加单位并广播变化事件。
+    /// 添加单位。
     /// </summary>
     /// <param name="pawn">要添加的单位 Pawn。</param>
     public void AddUnit(UnitPawn pawn) {
         unitsArr.Add(pawn);
-        OnUnitsChangedEvent?.Invoke(this);
     }
 
     /// <summary>
-    /// 移除单位并广播变化事件。
+    /// 移除单位。
     /// </summary>
     /// <param name="pawn">要移除的单位 Pawn。</param>
     public void RemoveUnit(UnitPawn pawn) {
         unitsArr.Remove(pawn);
-        OnUnitsChangedEvent?.Invoke(this);
     }
 
     /// <summary>
-    /// 清空全部单位并广播变化事件。
+    /// 清空全部单位。
     /// </summary>
     public void RemoveAll() {
-        if (unitsArr.Count == 0)
-            return;
         unitsArr.Clear();
-        OnUnitsChangedEvent?.Invoke(this);
     }
 
 }

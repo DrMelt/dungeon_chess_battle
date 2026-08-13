@@ -14,14 +14,14 @@ public partial class DungeonTimeLabel : Label {
 
     /// <summary>战斗单位管理器引用，用于获取当前战斗时间。</summary>
     [Export]
-    private BattleUnitManager? unitsInSceneRef;
+    private BattleUnitManager? _unitManagerRef;
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (unitsInSceneRef == null)
-            _logger.LogError("unitsInSceneRef is not assigned!");
+        if (_unitManagerRef == null)
+            _logger.LogError("_unitManagerRef is not assigned!");
     }
 
     /// <summary>
@@ -29,10 +29,10 @@ public partial class DungeonTimeLabel : Label {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        if (unitsInSceneRef == null)
+        if (_unitManagerRef == null)
             return;
 
-        var totalSeconds = (int)unitsInSceneRef.UnitsInSceneRes.SceneTime;
+        var totalSeconds = (int)_unitManagerRef.UnitsInSceneRes.SceneTime;
         Text = $"Time: {totalSeconds / 60:D2}:{totalSeconds % 60:D2}";
     }
 

@@ -12,7 +12,6 @@ outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 [node name="Button_SkillBase" type="Button" unique_id=263879593 node_paths=PackedStringArray("_labelCooldownTimeRef")]
 offset_right = 88.0
 offset_bottom = 88.0
-mouse_filter = 1
 icon = ExtResource("1_xjo8s")
 script = ExtResource("2_rvfo7")
 _playerInterfaceRes = ExtResource("3_m5lm5")

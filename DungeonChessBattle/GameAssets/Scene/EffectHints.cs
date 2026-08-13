@@ -1,4 +1,3 @@
-using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -12,10 +11,6 @@ public partial class EffectHints : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<EffectHints> _logger = ServiceLocator.GetLogger<EffectHints>();
 
-    /// <summary>玩家界面资源引用。</summary>
-    [Export]
-    private PlayerInterfaceRes? playerInterfaceRes;
-
     /// <summary>圆形范围提示使用的场景资源。</summary>
     [Export]
     private PackedScene? _effectCircleRange_PKS;
@@ -28,8 +23,6 @@ public partial class EffectHints : Node {
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (playerInterfaceRes == null)
-            _logger.LogError("playerInterfaceRes is not assigned!");
         if (_effectCircleRange_PKS == null)
             _logger.LogError("_effectCircleRange_PKS is not assigned!");
         if (_effectRectRange_PKS == null)

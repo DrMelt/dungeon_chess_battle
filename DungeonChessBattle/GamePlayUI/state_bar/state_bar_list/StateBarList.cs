@@ -1,11 +1,15 @@
 using System;
-using DungeonChessBattle.GameAssets;
+using System.Collections.Generic;
+using System.Text;
+using DungeonChessBattle.Entities;
+using DungeonChessBattle.MainScene;
 using Godot;
 
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
-/// 状态条列表容器，按阵营展示所有单位的迷你状态条，随场景单位变化自动刷新。
+/// 状态条列表容器，按阵营展示所有单位的迷你状态条。
+/// 每帧从战斗单位管理器直读单位集合与本地阵营，签名变化时重建列表。
 /// </summary>
 public partial class StateBarList : Control {
     /// <summary>导出引用集合节点。</summary>
@@ -15,6 +19,13 @@ public partial class StateBarList : Control {
 
     private StateBarListInterRefs InterRefsOrThrow =>
         InterRefs ?? throw new InvalidOperationException("[StateBarList] InterRefs has not been initialized.");
+
+    /// <summary>战斗单位管理器引用，提供单位集合并派生本地玩家阵营。</summary>
+    [Export]
+    private BattleUnitManager? _unitManagerRef;
+
+    /// <summary>上一帧的列表签名，用于变化检测。</summary>
+    private string _lastSignature = "";
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
@@ -28,47 +39,49 @@ public partial class StateBarList : Control {
         InterRefsOrThrow.StateBarMiniPKS?.Instantiate<StateBarMini>()
         ?? throw new InvalidOperationException("[StateBarList] StateBarMiniPKS is not assigned or instantiation failed.");
 
-    /// <summary>当前绑定的场景单位集合。</summary>
-    private UnitsInScene? bindingUnitsInScene;
-
-    /// <summary>要展示的友方阵营标识，由进入战斗时本地玩家阵营注入。</summary>
-    private string _localCamp = "";
-
     /// <summary>
-    /// 绑定场景单位集合并订阅单位变化事件，立即刷新一次。
+    /// 每帧检查单位列表签名，变化时重建友方状态条列表。
     /// </summary>
-    /// <param name="unitsInScene">场景单位集合。</param>
-    /// <param name="localCamp">本地玩家所在阵营标识，仅展示该阵营的友方单位。</param>
-    public void BindUnitsInScene(UnitsInScene unitsInScene, string localCamp) {
-        bindingUnitsInScene?.OnUnitsChangedEvent -= OnUnitsChanged;
-        bindingUnitsInScene = unitsInScene;
-        _localCamp = localCamp;
+    /// <param name="delta">距上一帧的秒数。</param>
+    public override void _Process(double delta) {
+        var manager = _unitManagerRef;
+        if (manager == null)
+            return;
 
-        bindingUnitsInScene.OnUnitsChangedEvent += OnUnitsChanged;
-        OnUnitsChanged(bindingUnitsInScene);
+        var camp = manager.LocalUnitShow?.Pawn.Camp.Value ?? "";
+        var units = manager.UnitsArr;
+        string signature = BuildSignature(units, camp);
+        if (signature == _lastSignature)
+            return;
+        _lastSignature = signature;
+        Rebuild(units, camp);
     }
 
-    /// <summary>
-    /// 单位集合变化回调：清空并重建属于目标阵营的迷你状态条。
-    /// </summary>
-    /// <param name="scene">场景单位集合。</param>
-    private void OnUnitsChanged(UnitsInScene scene) {
+    /// <summary>构建脏检查签名：本地阵营 + 各单位 Id/Camp。</summary>
+    private static string BuildSignature(List<UnitPawn> units, string camp) {
+        var sb = new StringBuilder();
+        sb.Append(camp).Append('|');
+        foreach (var unit in units)
+            sb.Append(unit.Id).Append(':').Append(unit.Camp.Value).Append(',');
+        return sb.ToString();
+    }
+
+    /// <summary>清空并重建属于目标阵营的迷你状态条。</summary>
+    private void Rebuild(List<UnitPawn> units, string camp) {
         if (InterRefs?.VBoxContainerRef == null)
             return;
+
         var children = InterRefs.VBoxContainerRef.GetChildren();
         foreach (var child in children) {
             child.QueueFree();
         }
 
-        var units = scene.UnitsArr;
         foreach (var unit in units) {
-            if (unit.Camp.Value == _localCamp) {
+            if (unit.Camp.Value == camp) {
                 StateBarMini stateBarMini = NewStateBarMini;
-
                 InterRefs.VBoxContainerRef.AddChild(stateBarMini);
                 stateBarMini.BindUnitState(unit);
             }
         }
     }
-
 }

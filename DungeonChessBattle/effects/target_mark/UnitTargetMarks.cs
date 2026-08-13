@@ -1,7 +1,6 @@
 using System;
 using DungeonChessBattle.Common;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;
@@ -12,7 +11,7 @@ namespace DungeonChessBattle.Effects;
 /// <summary>
 /// 单位目标标记管理器，为场景中单位生成对应的 3D 目标标记并跟随单位位置。
 /// 复用已创建的目标标记，仅在单位增删时创建或销毁。
-/// 仅选中单位显示标记，未选中隐藏。死亡单位仍可被选中，不影响标记显示。
+/// 仅本地焦点单位显示标记，未选中隐藏。死亡单位仍可被选中，不影响标记显示。
 /// </summary>
 public partial class UnitTargetMarks : Node {
     /// <summary>日志记录器。</summary>
@@ -25,10 +24,6 @@ public partial class UnitTargetMarks : Node {
     /// <summary>3D 目标标记使用的场景资源。</summary>
     [Export]
     private PackedScene? _targetMarkPackedScene;
-
-    /// <summary>玩家界面资源引用，用于读取当前选中的单位。</summary>
-    [Export]
-    private PlayerInterfaceRes? _playerInterfaceResRef;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
     private readonly KeyedCache<ushort, UnitPawn, Node3dTargetMark> _marks;
@@ -48,8 +43,6 @@ public partial class UnitTargetMarks : Node {
             _logger.LogError("_unitManagerRef is not assigned!");
         if (_targetMarkPackedScene == null)
             _logger.LogError("_targetMarkPackedScene is not assigned!");
-        if (_playerInterfaceResRef == null)
-            _logger.LogError("_playerInterfaceResRef is not assigned!");
     }
 
     /// <summary>
@@ -78,24 +71,19 @@ public partial class UnitTargetMarks : Node {
     private static void RemoveMark(Node3dTargetMark mark) => mark.QueueFree();
 
     /// <summary>
-    /// 更新目标标记：仅选中单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
-    /// 选中判据仅与 FocusOnUnit 关联，不因单位死亡而变化。
+    /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
+    /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
     private void UpdateMark(Node3dTargetMark mark, UnitPawn pawn) {
-        var focusPawn = _playerInterfaceResRef?.FocusOnUnit?.Pawn;
+        var focusPawn = _unitManagerRef?.LocalFocusUnit?.Pawn;
         bool isFocus = pawn == focusPawn;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
                 pawn.Id, isFocus, pawn.BodyRadius.Value);
 
-        if (!isFocus) {
-            mark.Visible = false;
-            return;
-        }
-
-        mark.Visible = true;
+        mark.Visible = isFocus;
         mark.SetRadius(pawn.BodyRadius.Value);
-        mark.SetCampColor(pawn.Camp.Value);
+        mark.SetColorByCamp(pawn.Camp.Value);
         var pos = pawn.Position.InterpolatedValue;
         mark.GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
