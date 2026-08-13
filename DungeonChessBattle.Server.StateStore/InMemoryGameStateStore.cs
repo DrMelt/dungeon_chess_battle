@@ -54,6 +54,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         var copy = new GameRoom(source.RoomId) {
             Title = source.Title,
             DungeonName = source.DungeonName,
+            DungeonKey = source.DungeonKey,
             Description = source.Description,
             HostName = source.HostName,
             MaxPlayers = source.MaxPlayers,
@@ -140,6 +141,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 RoomId = kvp.Value.RoomId,
                 Title = kvp.Value.Title,
                 DungeonName = kvp.Value.DungeonName,
+                DungeonKey = kvp.Value.DungeonKey,
                 Description = kvp.Value.Description,
                 HostName = kvp.Value.HostName,
                 CurrentPlayers = kvp.Value.CurrentPlayers,
@@ -343,12 +345,13 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         lock (GetRoomLock(roomId)) {
             string hostName = _roomHosts.TryGetValue(roomId, out var host) ? host : "";
             string dungeonName = _roomConfigs.TryGetValue(roomId, out var config) ? config.DungeonName : "";
+            string dungeonKey = config?.DungeonKey ?? Protocol.EntityConstants.DefaultDungeonKey;
             var players = new List<PlayerReadyState>();
             if (_roomReadyStates.TryGetValue(roomId, out var states)) {
                 foreach (var kv in states)
                     players.Add(new PlayerReadyState(kv.Key, kv.Value));
             }
-            return new RoomStateSnapshot(hostName, dungeonName, players);
+            return new RoomStateSnapshot(hostName, dungeonName, dungeonKey, players);
         }
     }
 

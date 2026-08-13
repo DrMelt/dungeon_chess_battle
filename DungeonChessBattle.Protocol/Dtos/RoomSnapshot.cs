@@ -15,6 +15,7 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// <param name="HostName">房主玩家名，服务端权威。</param>
 /// <param name="DungeonName">副本名。</param>
 /// <param name="CurrentPlayers">房间当前玩家数。</param>
+/// <param name="DungeonKey">选中的副本键。</param>
 /// <param name="Players">房间内玩家列表，包含玩家名与准备标志。</param>
 /// <param name="Units">准备单位列表。</param>
 public sealed record RoomSnapshot(
@@ -25,6 +26,7 @@ public sealed record RoomSnapshot(
     RoomStatus Status,
     string HostName,
     string DungeonName,
+    string DungeonKey,
     int CurrentPlayers,
     IReadOnlyList<PlayerReadyDto> Players,
     IReadOnlyList<PrepareUnitDto> Units);

@@ -172,9 +172,9 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         }
         _selectedUnitKey = unitConfigKey;
-        var entry = UnitCatalog.GetByKey(unitConfigKey);
-        if (entry is not null)
-            InterRefs?.StatusLabel?.Text = $"已选择: {entry.DisplayName}";
+        var config = UnitCatalog.GetByKey(unitConfigKey);
+        if (config is not null)
+            InterRefs?.StatusLabel?.Text = $"已选择: {config.ConfigKey}";
         AddUnit();
     }
 
@@ -185,16 +185,16 @@ public partial class RoomPreparation : BaseGamePanel {
         if (string.IsNullOrEmpty(_selectedUnitKey))
             return;
 
-        var entry = UnitCatalog.GetByKey(_selectedUnitKey);
-        if (entry is null)
+        var config = UnitCatalog.GetByKey(_selectedUnitKey);
+        if (config is null)
             return;
-        string displayName = entry.DisplayName;
+        string configKey = config.ConfigKey;
         string camp = _selectedCamp;
 
         // 通过大厅 SignalR 协议发送（经 GameClientService 统一入口）
-        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, displayName, camp);
+        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, configKey, camp);
 
-        InterRefs?.StatusLabel?.Text = $"请求创建 {displayName}...";
+        InterRefs?.StatusLabel?.Text = $"请求创建 {configKey}...";
         RefreshStartButton();
     }
 
@@ -304,10 +304,10 @@ public partial class RoomPreparation : BaseGamePanel {
         foreach (var (playerName, ready) in players) {
             var card = InterRefs.UnitCardScene.Instantiate<UnitCard>();
 
-            if (_playerUnitNames.TryGetValue(playerName, out string? unitDisplayName) && unitDisplayName != null
-                && UnitCatalog.GetByDisplayName(unitDisplayName) is { } entry) {
+            if (_playerUnitNames.TryGetValue(playerName, out string? unitConfigKey) && unitConfigKey != null
+                && UnitCatalog.GetByKey(unitConfigKey) is { } config) {
                 // 已选择职业：展示职业名 + 玩家名 + 真实 HP 数值
-                card.SetupUnit(entry.ConfigKey, unitDisplayName, entry.Config.MaxHealth);
+                card.SetupUnit(config.ConfigKey, config.MaxHealth);
                 card.SetUserName(playerName);
             }
             else {

@@ -32,6 +32,9 @@ public partial class BattleRoomServer {
         _roomEntity?.CreatedUnixTime.Value =
                 new DateTimeOffset(_roomCreatedAt).ToUnixTimeSeconds();
 
+        // 注入服务端权威副本键，客户端据此加载对应的环境场景
+        _roomEntity?.DungeonKey.Value = _dungeonKey;
+
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
         int campAIndex = 0, campBIndex = 0;
@@ -43,8 +46,34 @@ public partial class BattleRoomServer {
             _pawnByPlayerId[selection.PlayerId] = pawn;
         }
 
+        // 按房间选中的副本配置生成敌人（Camp_BOSS 阵营，服务端 AI 驱动）
+        SpawnDungeonEnemies();
+
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.", RoomId, units.Count);
+            _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated, {EnemyCount} enemies spawned.",
+                RoomId, units.Count, _enemyPawns.Count);
+    }
+
+    /// <summary>
+    /// 按房间副本配置生成敌人 Pawn。敌方在场地对侧按纵队排布，阵营固定 CampBoss。
+    /// 仅房间线程调用。
+    /// </summary>
+    private void SpawnDungeonEnemies() {
+        var dungeon = DungeonRegistry.Instance.GetByKey(_dungeonKey);
+        if (dungeon == null)
+            return;
+
+        foreach (var spawn in dungeon.Enemies) {
+            // 敌人生成以注册表权威配置键为准，玩家/敌人沿用同一身份映射，杜绝错配
+            var config = UnitRegistry.Instance.GetByConfig(spawn.Unit)
+                ?? throw new InvalidOperationException(
+                    $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
+            for (int i = 0; i < spawn.Count; i++) {
+                var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
+                var pawn = CreatePawnEntity(config.ConfigKey, CampConstants.CampBoss, spawnPos);
+                _enemyPawns.Add(pawn);
+            }
+        }
     }
 
     /// <summary>
@@ -69,19 +98,18 @@ public partial class BattleRoomServer {
         _roomPawns.Add(entity);
 
         // 从单位配置注入 Pawn 战斗系数，权威由 BattleRoom 直接读写 IBattleUnit 载体
-        var configEntry = UnitRegistry.Instance.GetByDisplayName(unitName);
-        if (configEntry != null) {
-            var cfg = configEntry.Config;
-            entity.MaxHealth.Value = cfg.MaxHealth;
-            entity.Health.Value = cfg.MaxHealth;
-            entity.PhysicalAttackBase.Value = cfg.PhysicalAttackBase;
-            entity.PhysicalTakePercent.Value = cfg.PhysicalTakePercent;
-            entity.MagicAttackBase.Value = cfg.MagicAttackBase;
-            entity.MagicTakePercent.Value = cfg.MagicTakePercent;
-            entity.CureIntensity.Value = cfg.CureIntensity;
-            entity.BaseSpeed.Value = cfg.BaseSpeed;
-            entity.BodyRadius.Value = cfg.BodyRadius;
-            foreach (var skill in cfg.Skills)
+        var config = UnitRegistry.Instance.GetByKey(unitName);
+        if (config != null) {
+            entity.MaxHealth.Value = config.MaxHealth;
+            entity.Health.Value = config.MaxHealth;
+            entity.PhysicalAttackBase.Value = config.PhysicalAttackBase;
+            entity.PhysicalTakePercent.Value = config.PhysicalTakePercent;
+            entity.MagicAttackBase.Value = config.MagicAttackBase;
+            entity.MagicTakePercent.Value = config.MagicTakePercent;
+            entity.CureIntensity.Value = config.CureIntensity;
+            entity.BaseSpeed.Value = config.BaseSpeed;
+            entity.BodyRadius.Value = config.BodyRadius;
+            foreach (var skill in config.Skills)
                 entity.SkillIds.Add(skill.SkillId);
         }
 

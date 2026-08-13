@@ -33,7 +33,7 @@ public partial class UnitCard : Control {
     /// <summary>当前单位配置键。</summary>
     public string UnitConfigKey { get; private set; } = "";
 
-    /// <summary>暂存的职业显示名（_Ready 前写入，进入场景树后应用）。</summary>
+    /// <summary>暂存的职业名（_Ready 前写入，进入场景树后应用）。</summary>
     private string _nameText = "";
     /// <summary>暂存的 HP 数值文本（由 SetupUnit 格式化，仅承载 HP 数值）。</summary>
     private string _hpValueText = "";
@@ -61,14 +61,13 @@ public partial class UnitCard : Control {
 
     /// <summary>
     /// 设置卡片显示的单位信息。可在节点进入场景树前调用，进入后自动生效。
-    /// HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
+    /// 职业名直接使用配置键。HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
     /// </summary>
-    /// <param name="configKey">单位配置键。</param>
-    /// <param name="displayName">单位显示名。</param>
+    /// <param name="configKey">单位配置键，亦是显示名。</param>
     /// <param name="maxHealth">最大生命值。</param>
-    public void SetupUnit(string configKey, string displayName, float maxHealth) {
+    public void SetupUnit(string configKey, float maxHealth) {
         UnitConfigKey = configKey;
-        _nameText = displayName;
+        _nameText = configKey;
         _hpValueText = maxHealth.ToString("F0");
         ApplyTexts();
     }

@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 
@@ -43,6 +46,8 @@ public partial class GameLobby : BaseGamePanel {
     private string? _cachedCreateRoomId;
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
+    /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
+    private string _selectedDungeonKey = DungeonRegistry.DefaultDungeonKey;
 
     #endregion
 
@@ -74,7 +79,40 @@ public partial class GameLobby : BaseGamePanel {
         ServiceLocator.ClientService.OnRoomCreated += OnRoomCreatedHandler;
         SubscribeRoomListEvent();
 
+        PopulateDungeonSelect();
+
         _logger.LogInformation("GameLobby ready");
+    }
+
+    /// <summary>
+    /// 从共享副本目录填充创建房间的副本下拉，并缓存选中键。
+    /// 服务端据此生成对应敌人阵容，客户端据此呈现对应环境。
+    /// </summary>
+    private void PopulateDungeonSelect() {
+        var select = InterRefs?.DungeonSelect;
+        if (select == null)
+            return;
+
+        select.Clear();
+        var dungeons = DungeonRegistry.Instance.All.ToList();
+        for (int i = 0; i < dungeons.Count; i++) {
+            select.AddItem(dungeons[i].DisplayName, i);
+            select.SetItemMetadata(i, dungeons[i].DungeonKey);
+        }
+        if (dungeons.Count > 0) {
+            select.Selected = 0;
+            OnDungeonSelected(0);
+            select.ItemSelected += OnDungeonSelected;
+        }
+    }
+
+    /// <summary>副本下拉选中回调：缓存选中副本键，用于创建房间配置。</summary>
+    private void OnDungeonSelected(long index) {
+        var metadata = InterRefs?.DungeonSelect?.GetItemMetadata((int)index);
+        if (metadata is Godot.Variant variant && variant.VariantType == Variant.Type.String)
+            _selectedDungeonKey = variant.AsString();
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("Selected dungeon: {DungeonKey}", _selectedDungeonKey);
     }
 
     /// <summary>
@@ -102,9 +140,16 @@ public partial class GameLobby : BaseGamePanel {
         InterRefs?.RoomNameInput?.Clear();
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("请求创建房间(网络): {RoomName}", roomName);
+            _logger.LogInformation("请求创建房间(网络): {RoomName}, dungeon={DungeonKey}", roomName, _selectedDungeonKey);
         _cachedCreateRoomId = roomName;
-        ServiceLocator.ClientService.RequestCreateRoom(roomName);
+        var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
+        var config = new RoomConfigDto(
+            Title: roomName,
+            DungeonKey: dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
+            DungeonName: dungeon?.DisplayName ?? string.Empty,
+            Description: dungeon?.Description ?? string.Empty,
+            MaxPlayers: 2);
+        ServiceLocator.ClientService.RequestCreateRoom(roomName, config: config);
     }
 
     /// <summary>
@@ -136,10 +181,13 @@ public partial class GameLobby : BaseGamePanel {
     /// <param name="roomId">创建成功的房间 ID。</param>
     private void OnCreatedDeferred(string roomId) {
         if (_roomPreparation != null) {
-            // 构造 RoomListing 作为进房初始展示（Title 用缓存的房间名）
+            // 构造 RoomListing 作为进房初始展示（Title 用缓存的房间名，副本取本次选中的选择）
+            var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
             var config = new RoomListing {
                 RoomId = roomId,
                 Title = _cachedCreateRoomId ?? roomId,
+                DungeonKey = dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
+                DungeonName = dungeon?.DisplayName ?? string.Empty,
                 HostName = ServiceLocator.ClientService.PlayerName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -171,6 +219,8 @@ public partial class GameLobby : BaseGamePanel {
             var config = _selectedRoomConfig ?? new RoomListing {
                 RoomId = joinedRoomId,
                 Title = joinedRoomId,
+                DungeonKey = EntityConstants.DefaultDungeonKey,
+                DungeonName = string.Empty,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,

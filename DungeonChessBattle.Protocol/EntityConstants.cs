@@ -8,7 +8,7 @@ public static class EntityConstants {
     /// <summary>玩家昵称最大字符数。</summary>
     public const int MaxPlayerNameLength = 16;
 
-    /// <summary>单位显示名最大字符数，与配置表 displayName 对齐。</summary>
+    /// <summary>单位配置键最大字符数，与配置表 ConfigKey 对齐。</summary>
     public const int MaxUnitNameLength = 32;
 
     /// <summary>房间 ID 最大字符数。</summary>
@@ -16,4 +16,10 @@ public static class EntityConstants {
 
     /// <summary>阵营标识最大字符数。</summary>
     public const int MaxCampLength = 16;
+
+    /// <summary>默认副本键，创建房间未指定副本时使用。</summary>
+    public const string DefaultDungeonKey = "dungeon_01";
+
+    /// <summary>副本键最大字符数。</summary>
+    public const int MaxDungeonKeyLength = 32;
 }

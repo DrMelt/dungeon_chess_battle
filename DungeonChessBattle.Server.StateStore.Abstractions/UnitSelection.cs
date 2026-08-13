@@ -3,7 +3,7 @@ namespace DungeonChessBattle.Server.StateStore.Abstractions;
 /// <summary>
 /// 准备阶段的一单位选择记录，只读快照项。
 /// </summary>
-/// <param name="UnitName">单位显示名。</param>
+/// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
 /// <param name="Camp">所属阵营。</param>
 /// <param name="PlayerName">选择该单位的玩家名。</param>
 /// <param name="PlayerId">选择该单位的玩家持久标识，控制器绑定用权威键。</param>

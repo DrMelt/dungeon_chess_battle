@@ -127,6 +127,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static UnitConfig UnitWhiteMage {
         get;
     } = new() {
+        ConfigKey = "WhiteMage",
         BodyRadius = 0.5f,
         MaxHealth = 1000f,
         CureIntensity = 1.0f,
@@ -144,6 +145,73 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
             SkillRectRangeDamage,
         ],
     };
+
+    /// <summary>哥布林敌人单位配置。</summary>
+    public static UnitConfig UnitGoblin {
+        get;
+    } = new() {
+        ConfigKey = "Goblin",
+        BodyRadius = 0.5f,
+        MaxHealth = 800f,
+        CureIntensity = 1.0f,
+        PhysicalAttackBase = 1.2f,
+        PhysicalTakePercent = 1.0f,
+        MagicAttackBase = 1.0f,
+        MagicTakePercent = 1.0f,
+        BaseSpeed = 2.2f,
+        IsPlayerSelectable = false,
+        Skills =
+        [
+            SkillMagicDamage,
+            SkillRectRangeDamage,
+        ],
+    };
+
+    /// <summary>哥布林首领敌人单位配置。</summary>
+    public static UnitConfig UnitGoblinBoss {
+        get;
+    } = new() {
+        ConfigKey = "GoblinBoss",
+        BodyRadius = 0.8f,
+        MaxHealth = 2000f,
+        CureIntensity = 1.0f,
+        PhysicalAttackBase = 1.5f,
+        PhysicalTakePercent = 0.8f,
+        MagicAttackBase = 1.3f,
+        MagicTakePercent = 0.8f,
+        BaseSpeed = 1.8f,
+        IsPlayerSelectable = false,
+        Skills =
+        [
+            SkillAddDotMagic,
+            SkillMagicDamage,
+            SkillRectRangeDamage,
+        ],
+    };
+
+    /// <summary>副本一：哥布林营地，少量哥布林投石兵与一名首领。</summary>
+    public static DungeonConfig Dungeon_01 {
+        get;
+    } = new(
+        DungeonKey: DungeonRegistry.DefaultDungeonKey,
+        DisplayName: "哥布林营地",
+        Description: "哥布林们占据了这片林地，消灭它们并击败首领。",
+        Enemies: [
+            new(Unit: UnitGoblin, Count: 3, SpawnBaseX: 30f, SpawnXSpacing: 3f),
+            new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 42f, SpawnXSpacing: 0f),
+        ]);
+
+    /// <summary>副本二：深邃洞窟，哥布林群与更强首领。</summary>
+    public static DungeonConfig Dungeon_02 {
+        get;
+    } = new(
+        DungeonKey: "dungeon_02",
+        DisplayName: "深邃洞窟",
+        Description: "洞窟深处的哥布林部落更为凶悍，数量更多。",
+        Enemies: [
+            new(Unit: UnitGoblin, Count: 5, SpawnBaseX: 28f, SpawnXSpacing: 2.5f),
+            new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 44f, SpawnXSpacing: 0f),
+        ]);
 
     DamageOverTimeBuff IGameConfigDB.BuffDotMagic => BuffDotMagic;
     DamageOverTimeBuff IGameConfigDB.BuffDotPhysical => BuffDotPhysical;

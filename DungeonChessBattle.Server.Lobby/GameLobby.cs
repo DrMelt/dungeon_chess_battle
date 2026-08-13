@@ -1,5 +1,6 @@
 ﻿using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -47,6 +48,24 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             : $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
     }
 
+    /// <summary>解析权威副本名：副本注册表中配置的显示名，未注册时退回客户端传入的展示名。</summary>
+    /// <param name="dungeonKey">副本键。</param>
+    /// <param name="fallbackName">客户端传入的展示名兜底。</param>
+    /// <returns>权威副本显示名。</returns>
+    public static string ResolveDungeonName(string? dungeonKey, string? fallbackName) {
+        var info = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        return info?.DisplayName
+            ?? (!string.IsNullOrWhiteSpace(fallbackName) ? fallbackName : string.Empty);
+    }
+
+    /// <summary>解析权威副本键：非法键回落默认副本。</summary>
+    /// <param name="dungeonKey">客户端提交的副本键。</param>
+    /// <returns>合法的副本键。</returns>
+    public static string ResolveDungeonKey(string? dungeonKey) {
+        var info = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        return info?.DungeonKey ?? EntityConstants.DefaultDungeonKey;
+    }
+
     /// <summary>
     /// 处理 create_room：注册房间，准备阶段不重定向。
     /// </summary>
@@ -66,7 +85,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (req.Config != null) {
             config = new GameRoom(roomId) {
                 Title = req.Config.Title,
-                DungeonName = req.Config.DungeonName,
+                DungeonKey = ResolveDungeonKey(req.Config.DungeonKey),
+                DungeonName = ResolveDungeonName(req.Config.DungeonKey, req.Config.DungeonName),
                 Description = req.Config.Description,
                 HostName = hostDisplayName,
                 MaxPlayers = req.Config.MaxPlayers > 0 ? req.Config.MaxPlayers : 2,
@@ -74,9 +94,11 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             };
         }
         else {
-            // 无配置时使用默认值，房间标题用 roomId
+            // 启用默认值填充房间，标题使用房间 ID，方便无配置直接进入战斗
             config = new GameRoom(roomId) {
                 Title = roomId,
+                DungeonKey = DungeonRegistry.DefaultDungeonKey,
+                DungeonName = ResolveDungeonName(DungeonRegistry.DefaultDungeonKey, roomId),
                 HostName = hostDisplayName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -257,6 +279,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             config?.Status ?? RoomStatus.Waiting,
             state.HostName,
             state.DungeonName,
+            DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitName, u.Camp, u.PlayerName))]);

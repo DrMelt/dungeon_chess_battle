@@ -153,8 +153,8 @@ public partial class BattleUnitManager : Node {
     private void SpawnUnit(UnitPawn pawn) {
         var unitName = pawn.UnitName.Value;
 
-        // 按显示名取配置（技能资源构建来源）
-        var entry = UnitCatalog.GetByDisplayName(unitName);
+        // 按配置键取配置（技能资源构建来源）
+        var config = UnitCatalog.GetByKey(unitName);
 
         if (_unitShowScene == null)
             return;
@@ -166,8 +166,8 @@ public partial class BattleUnitManager : Node {
         unitShow.Pawn = pawn;
 
         // 从配置构建 Godot 技能资源列表（独立于网络技能模型）
-        if (entry != null) {
-            foreach (var skillDefinition in entry.Config.Skills) {
+        if (config != null) {
+            foreach (var skillDefinition in config.Skills) {
                 unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillDefinition));
             }
         }

@@ -27,6 +27,11 @@ public class GameRoom(string roomId) {
         get; set;
     } = string.Empty;
 
+    /// <summary>选中的副本键，服务端据此解析敌人生成配置。</summary>
+    public string DungeonKey {
+        get; set;
+    } = string.Empty;
+
     /// <summary>招募板展示的房间描述。</summary>
     public string Description {
         get; set;

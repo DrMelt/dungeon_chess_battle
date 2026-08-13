@@ -32,4 +32,12 @@ public class UnitConfig {
 
     /// <summary>单位拥有的技能定义列表。</summary>
     public SkillDefinition[] Skills { get; set; } = [];
+
+    /// <summary>单位配置键，唯一身份标识，注册表与协议身份来源。</summary>
+    public required string ConfigKey {
+        get; init;
+    }
+
+    /// <summary>是否可被玩家在准备阶段选择，敌人单位设为 false。</summary>
+    public bool IsPlayerSelectable { get; set; } = true;
 }

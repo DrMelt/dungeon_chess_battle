@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;

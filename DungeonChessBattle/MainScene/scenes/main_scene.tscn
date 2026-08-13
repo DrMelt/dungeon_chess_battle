@@ -32,6 +32,7 @@
 [ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
 [ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="34_7m0x"]
 [ext_resource type="Script" uid="uid://c83a7urju38u0" path="res://effects/target_mark/UnitTargetMarks.cs" id="35_7m0y"]
+[ext_resource type="Script" uid="uid://br23r02mlsw7q" path="res://GameAssets/Scene/DungeonEnv.cs" id="36_dungeonenv"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -59,11 +60,12 @@ shader_parameter/outline_width = 0.002
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
 bg_color = Color(0, 0, 0, 1)
 
-[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI", "_unitManager", "_inputController")]
+[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI", "_unitManager", "_inputController", "_dungeonEnv")]
 script = ExtResource("1_2n8vo")
 _frontUI = NodePath("Interface/FrontUI")
 _unitManager = NodePath("BattleUnitManager")
 _inputController = NodePath("BattleInputController")
+_dungeonEnv = NodePath("Env/DungeonEnv")
 
 [node name="GameClientDriver" type="Node" parent="." unique_id=64894980]
 script = ExtResource("3_m78bw")
@@ -80,7 +82,11 @@ cameraRef = NodePath("../PlayerCamera3D")
 
 [node name="Env" type="Node" parent="." unique_id=2065306466]
 
-[node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005]
+[node name="DungeonEnv" type="Node3D" parent="Env" unique_id=1893531005 node_paths=PackedStringArray("_groundMesh", "_worldEnv", "_sunLight")]
+script = ExtResource("36_dungeonenv")
+_groundMesh = NodePath("MeshInstance3D_Plan")
+_worldEnv = NodePath("WorldEnvironment")
+_sunLight = NodePath("DirectionalLight3D")
 
 [node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="Env/DungeonEnv" unique_id=1498989808]
 transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
@@ -173,14 +179,14 @@ vertical_alignment = 1
 script = ExtResource("20_bmhqt")
 _unitManagerRef = NodePath("../../../../BattleUnitManager")
 
-[node name="StateBar2d_Selected" parent="Interface/GamePlay/GamePlayUI" unique_id=716113945 instance=ExtResource("21_nqfqb") node_paths=PackedStringArray("_unitManagerRef")]
+[node name="StateBar2d_Selected" parent="Interface/GamePlay/GamePlayUI" unique_id=716113945 node_paths=PackedStringArray("_unitManagerRef") instance=ExtResource("21_nqfqb")]
 layout_mode = 1
 offset_right = 600.0
 offset_bottom = 300.0
 mouse_filter = 2
 _unitManagerRef = NodePath("../../../../BattleUnitManager")
 
-[node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 instance=ExtResource("24_o75dv") node_paths=PackedStringArray("_unitManagerRef")]
+[node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 node_paths=PackedStringArray("_unitManagerRef") instance=ExtResource("24_o75dv")]
 layout_mode = 0
 offset_left = 858.0
 offset_top = 62.0
@@ -189,7 +195,7 @@ offset_bottom = 494.0
 mouse_filter = 2
 _unitManagerRef = NodePath("../../../../BattleUnitManager")
 
-[node name="Skills_List" parent="Interface/GamePlay/GamePlayUI" unique_id=839039226 instance=ExtResource("25_5lst5") node_paths=PackedStringArray("_unitManagerRef")]
+[node name="Skills_List" parent="Interface/GamePlay/GamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_unitManagerRef") instance=ExtResource("25_5lst5")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -205,8 +211,8 @@ grow_vertical = 0
 scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
-PlayerInterfaceRes = ExtResource("6_8ka0p")
 _unitManagerRef = NodePath("../../../../BattleUnitManager")
+PlayerInterfaceRes = ExtResource("6_8ka0p")
 
 [node name="SkillInfoPanel" parent="Interface/GamePlay/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
 layout_mode = 1

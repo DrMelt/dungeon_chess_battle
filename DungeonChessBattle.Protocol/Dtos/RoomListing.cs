@@ -16,6 +16,9 @@ public class RoomListing {
     /// <summary>副本名。</summary>
     public string DungeonName { get; init; } = string.Empty;
 
+    /// <summary>选中的副本键。</summary>
+    public string DungeonKey { get; init; } = EntityConstants.DefaultDungeonKey;
+
     /// <summary>招募板展示的房间描述。</summary>
     public string Description { get; init; } = string.Empty;
 

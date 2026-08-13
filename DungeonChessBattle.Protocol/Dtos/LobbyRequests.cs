@@ -5,11 +5,13 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// 房主 displayName 由服务端权威解析，不随此对象传输。
 /// </summary>
 /// <param name="Title">招募板展示的房间标题。</param>
-/// <param name="DungeonName">副本名。</param>
+/// <param name="DungeonKey">选中的副本键，服务端据此解析敌人生成配置。</param>
+/// <param name="DungeonName">副本名，展示用。</param>
 /// <param name="Description">招募板展示的房间描述。</param>
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 public sealed record RoomConfigDto(
     string Title,
+    string DungeonKey,
     string DungeonName,
     string Description,
     int MaxPlayers);
@@ -44,13 +46,13 @@ public sealed record JoinRoomRequest(
 
 /// <summary>准备阶段：添加单位请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
-/// <param name="UnitName">单位名称。</param>
+/// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
 /// <param name="Camp">阵营。</param>
 public sealed record PrepareAddUnitRequest(string RoomId, string UnitName, string Camp);
 
 /// <summary>准备阶段：移除单位请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
-/// <param name="UnitName">单位名称。</param>
+/// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
 /// <param name="Camp">阵营。</param>
 public sealed record PrepareRemoveUnitRequest(string RoomId, string UnitName, string Camp);
 

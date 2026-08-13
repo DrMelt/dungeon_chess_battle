@@ -11,6 +11,9 @@ namespace DungeonChessBattle.Client.Battle;
 /// 展示层直读 UnitPawn 的 SyncVar，不再维护客户端模型中转。
 /// </summary>
 public partial class RoomBattleClient {
+    /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
+    public string DungeonKey => _roomEntity?.DungeonKey.Value ?? string.Empty;
+
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         lock (_lock) {

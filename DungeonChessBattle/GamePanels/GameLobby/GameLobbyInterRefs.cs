@@ -16,6 +16,11 @@ public partial class GameLobbyInterRefs : Node {
     public LineEdit? RoomNameInput {
         get; private set;
     }
+    /// <summary>副本选择下拉框，创建房间时选定敌人与环境。</summary>
+    [Export]
+    public OptionButton? DungeonSelect {
+        get; private set;
+    }
     /// <summary>创建房间按钮。</summary>
     [Export]
     public Button? CreateButton {
@@ -58,6 +63,8 @@ public partial class GameLobbyInterRefs : Node {
     public override void _Ready() {
         if (RoomNameInput == null)
             _logger.LogError("RoomNameInput is not assigned!");
+        if (DungeonSelect == null)
+            _logger.LogError("DungeonSelect is not assigned!");
         if (CreateButton == null)
             _logger.LogError("CreateButton is not assigned!");
         if (RefreshButton == null)

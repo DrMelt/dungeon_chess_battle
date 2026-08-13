@@ -64,7 +64,7 @@ public partial class Node3dTargetMark : Node3D {
     private static CampRelation GetRelation(string camp) => camp switch {
         CampConstants.CampA => CampRelation.Friendly,
         CampConstants.CampB => CampRelation.Enemy,
-        CampConstants.CampBoss => CampRelation.Neutral,
+        CampConstants.CampBoss => CampRelation.Enemy,
         _ => CampRelation.Neutral,
     };
 

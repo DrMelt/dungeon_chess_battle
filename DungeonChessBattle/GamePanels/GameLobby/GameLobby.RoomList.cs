@@ -39,13 +39,14 @@ public partial class GameLobby {
         // 添加/更新房间卡片
         foreach (var room in rooms) {
             if (!_roomInfoCache.TryGetValue(room.RoomId, out var roomInfo)) {
-                roomInfo = CreateRoomInfoCard(room.RoomId);
+                roomInfo = CreateRoomInfoCard(room);
                 InterRefs.RoomListContainer.AddChild(roomInfo);
                 _roomInfoCache[room.RoomId] = roomInfo;
             }
 
             string statusText = GetRoomStatusText(room);
             roomInfo.UpdateStatus(statusText);
+            roomInfo.UpdateDungeonName(room.DungeonName);
         }
 
         // 空状态提示
@@ -57,13 +58,13 @@ public partial class GameLobby {
     /// <summary>
     /// 实例化并初始化单个房间卡片。
     /// </summary>
-    /// <param name="roomId">房间 ID。</param>
+    /// <param name="room">房间列表条目。</param>
     /// <returns>创建好的房间卡片实例。</returns>
-    private RoomInfo CreateRoomInfoCard(string roomId) {
+    private RoomInfo CreateRoomInfoCard(RoomListing room) {
         if (InterRefs?.RoomInfoScene is null)
             throw new System.InvalidOperationException("RoomInfoScene is not assigned.");
         var instance = InterRefs.RoomInfoScene.Instantiate<RoomInfo>();
-        instance.Setup(roomId, "等待中");
+        instance.Setup(room.RoomId, room.DungeonName, "等待中");
         instance.RoomSelected += OnRoomSelected;
         return instance;
     }
@@ -91,7 +92,8 @@ public partial class GameLobby {
             var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
                 _selectedRoomConfig = listing;
-                InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
+                string dungeon = string.IsNullOrEmpty(listing.DungeonName) ? listing.DungeonKey : listing.DungeonName;
+                InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n副本: {dungeon}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {
                 InterRefs.DetailLabel.Text = $"选中房间: {roomId}\n";

@@ -1,6 +1,8 @@
 using DungeonChessBattle.Client.Battle;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePanels;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -35,6 +37,9 @@ public partial class MainScene : Node {
 
     [Export]
     private BattleInputController? _inputController;
+
+    [Export]
+    private DungeonEnv? _dungeonEnv;
 
     #endregion
 
@@ -98,7 +103,21 @@ public partial class MainScene : Node {
         _screenMachine?.EnterBattle();
         _inBattle = true;
 
+        // 按房间选中副本应用环境主题（地面/天空/光照差异化）
+        ApplyDungeonThemeSafe();
+
         _logger.LogInformation("Entered battle.");
+    }
+
+    /// <summary>
+    /// 应用当前房间副本键对应的环境主题；实体未同步（键为空）时退回默认副本主题。
+    /// 在战斗启动回调与战斗阶段 Running 时各调用一次，覆盖实体同步前后的时序差异。
+    /// </summary>
+    private void ApplyDungeonThemeSafe() {
+        string dungeonKey = ServiceLocator.ClientService.RoomClient.DungeonKey;
+        if (string.IsNullOrEmpty(dungeonKey))
+            dungeonKey = EntityConstants.DefaultDungeonKey;
+        _dungeonEnv?.ApplyDungeonTheme(dungeonKey);
     }
 
     private void ExitBattle() {
@@ -114,6 +133,9 @@ public partial class MainScene : Node {
         _battleService = null;
         _roomId = "";
         _inBattle = false;
+
+        // 恢复默认环境主题，供下次战斗按新副本重新应用
+        _dungeonEnv?.ResetTheme();
 
         // 恢复前厅 UI（FrontUI 容器 + 大厅面板）
         _screenMachine?.ExitBattle();
@@ -148,6 +170,11 @@ public partial class MainScene : Node {
     }
 
     private void DeferredBattlePhase(int phase) {
+        if (phase == (int)BattlePhase.Running) {
+            // 战斗真正开始时房间实体已同步，DungeonKey 可用，应用副本环境主题
+            ApplyDungeonThemeSafe();
+        }
+
         if (phase == (int)BattlePhase.Finished) {
             _logger.LogInformation("Battle finished detected via LES sync.");
             CallDeferred(nameof(ExitBattle));

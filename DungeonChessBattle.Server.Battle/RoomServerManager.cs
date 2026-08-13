@@ -88,7 +88,7 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         // 分配端口并创建 BattleRoomServer
         int port = AllocatePort();
         var server = new BattleRoomServer(port, roomId,
-            _loggerFactory.CreateLogger<BattleRoomServer>(),
+            _loggerFactory,
             _config, _stateStore);
         server.Start();
 

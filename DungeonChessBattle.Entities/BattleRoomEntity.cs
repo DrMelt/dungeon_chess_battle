@@ -24,6 +24,9 @@ public class BattleRoomEntity : EntityLogic {
     /// <summary>房间创建时间，Unix 秒，UTC，服务端权威。</summary>
     public SyncVar<double> CreatedUnixTime;
 
+    /// <summary>房间选中的副本键，服务端权威，客户端据此呈现对应环境场景。</summary>
+    public readonly SyncString DungeonKey = new();
+
     /// <summary>
     /// 初始化战斗房间实体。
     /// </summary>

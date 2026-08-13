@@ -72,6 +72,15 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间创建时间，服务端权威，来自 Store 房间配置。</summary>
     private readonly DateTime _roomCreatedAt;
 
+    /// <summary>本房间选中的副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
+    private readonly string _dungeonKey;
+
+    /// <summary>本房间生成的敌人 Pawn 列表，供服务端 AI 驱动。</summary>
+    private readonly List<UnitPawn> _enemyPawns = [];
+
+    /// <summary>敌人大脑：服务端每 tick 驱动敌方单位移动与施法。</summary>
+    private readonly EnemyBrain _enemyBrain;
+
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
         get;
@@ -110,18 +119,21 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
-    /// <param name="logger">日志器</param>
+    /// <param name="loggerFactory">日志工厂，供 BattleRoomServer 与子组件创建日志器</param>
     /// <param name="config">战斗侧配置切片，连接密钥。</param>
     /// <param name="stateStore">大厅级状态存储，房间线程用于自取初始化数据与成员校验。</param>
-    public BattleRoomServer(int port, string roomId, ILogger<BattleRoomServer> logger,
+    public BattleRoomServer(int port, string roomId, ILoggerFactory loggerFactory,
         BattleServerConfig config, IGameStateStore stateStore) {
         Port = port;
         RoomId = roomId;
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger<BattleRoomServer>();
         _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
         _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
+        _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
+            ?? DungeonRegistry.DefaultDungeonKey;
         _battleRoom = new BattleRoom(GameConfigDB.Instance);
+        _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>());
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();
         EntityManager = new ServerEntityManager(
@@ -227,10 +239,13 @@ public partial class BattleRoomServer : INetEventListener {
                     // 1. 网络事件
                     _netManager.PollEvents();
 
-                    // 2. Entity 同步
+                    // 2. 敌人大脑：先注入移动输入与施法请求，再执行单位位移与读条结算
+                    _enemyBrain.Tick(_enemyPawns, _roomPawns);
+
+                    // 3. Entity 同步
                     EntityManager.Update();
 
-                    // 3. 战斗编排：BattleRoom 统一推进读条/冷却/Buff/结算/阶段，
+                    // 4. 战斗编排：BattleRoom 统一推进读条/冷却/Buff/结算/阶段，
                     //    返回领域事件并由 HandleDomainEvent 翻译为 RPC / SyncVar
                     foreach (var e in _battleRoom.Tick(dt))
                         HandleDomainEvent(e);

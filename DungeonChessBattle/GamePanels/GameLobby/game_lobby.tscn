@@ -28,9 +28,10 @@ grow_vertical = 2
 theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 
-[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
+[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "DungeonSelect", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
 script = ExtResource("4_irfs")
 RoomNameInput = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
+DungeonSelect = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DungeonRow/DungeonSelect")
 CreateButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
 RefreshButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
 JoinButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
@@ -105,6 +106,20 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 placeholder_text = "输入房间名..."
+
+[node name="DungeonRow" type="HBoxContainer" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=204815699]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="DungeonLabel" type="Label" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DungeonRow" unique_id=204815640]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "副本:"
+
+[node name="DungeonSelect" type="OptionButton" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DungeonRow" unique_id=204815641]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 
 [node name="ButtonRow" type="HBoxContainer" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=813572940]
 layout_mode = 2
