@@ -123,7 +123,7 @@ public partial class BattleUnitManager : Node {
         if (eventRoomId != _roomId)
             return;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[MainScene] Unit created via service: {UnitName} (camp={Camp}, netId={NetId})", unitName, camp, netId);
+            _logger.LogInformation("Unit created via service: {UnitName} (camp={Camp}, netId={NetId})", unitName, camp, netId);
         CallDeferred(nameof(SpawnUnitFromCache), netId);
     }
 
@@ -133,7 +133,7 @@ public partial class BattleUnitManager : Node {
         if (pawn is not null)
             TrySpawnUnit(pawn);
         else
-            _logger.LogWarning("[MainScene] Unit netId={NetId} not found in pawn cache; entity may not have arrived yet", netId);
+            _logger.LogWarning("Unit netId={NetId} not found in pawn cache; entity may not have arrived yet", netId);
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ public partial class BattleUnitManager : Node {
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[MainScene] Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
+            _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
     }
 
     private void InitializeUnitsFromPawns() {
@@ -189,7 +189,7 @@ public partial class BattleUnitManager : Node {
 
         var pawns = _roomClient.GetPawns();
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[MainScene] Initializing units: total={Total}", pawns.Count);
+            _logger.LogInformation("Initializing units: total={Total}", pawns.Count);
 
         foreach (var pawn in pawns)
             TrySpawnUnit(pawn);
@@ -212,7 +212,7 @@ public partial class BattleUnitManager : Node {
         if (_unitShows.TryGetValue(netId, out var show)) {
             show.Visible = false;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[MainScene] Unit died: netId={NetId}", netId);
+                _logger.LogInformation("Unit died: netId={NetId}", netId);
         }
     }
 
@@ -231,9 +231,17 @@ public partial class BattleUnitManager : Node {
     /// <param name="targetNetId">目标单位网络 ID，0 表示清除。</param>
     public void SetLocalFocusTarget(ushort targetNetId) {
         var pawn = _roomClient?.LocalUnitPawn;
-        if (pawn == null || _battleService == null)
+        if (pawn == null || _battleService == null) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning(
+                    "Focus RPC dropped: hasPawn={HasPawn}, hasService={HasService}, target={TargetId}",
+                    pawn != null, _battleService != null, targetNetId);
             return;
+        }
         _battleService.SetFocusTarget(_roomId, pawn.Id, targetNetId);
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("SetLocalFocusTarget: selector={UnitId} -> target={TargetId}",
+                pawn.Id, targetNetId);
     }
 
     /// <summary>
@@ -242,10 +250,18 @@ public partial class BattleUnitManager : Node {
     /// </summary>
     private void OnUnitFocusTargetChanged(ushort unitNetId, ushort targetNetId) {
         var localPawn = _roomClient?.LocalUnitPawn;
-        if (localPawn == null || localPawn.Id != unitNetId || playerInterfaceResRef == null)
+        if (localPawn == null || localPawn.Id != unitNetId || playerInterfaceResRef == null) {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug(
+                    "Focus sync ignored: caller={CallerId}, localPawn={LocalPawnId}, hasUi={HasUi}, target={TargetId}",
+                    unitNetId, localPawn?.Id ?? 0, playerInterfaceResRef != null, targetNetId);
             return;
+        }
 
         var targetShow = targetNetId != 0 ? _unitShows.GetValueOrDefault(targetNetId) : null;
         playerInterfaceResRef.FocusOnUnit = targetShow;
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("Focus synced: selector={UnitId} -> {TargetId}, showExists={HasShow}",
+                unitNetId, targetNetId, targetShow != null);
     }
 }

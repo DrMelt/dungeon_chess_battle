@@ -61,7 +61,7 @@ public partial class RoomPreparation : BaseGamePanel {
     public override void _Ready() {
         InterRefs = GetNode<RoomPreparationInterRefs>("RoomPreparationInterRefs");
         if (InterRefs is null) {
-            GD.PrintErr("[RoomPreparation] RoomPreparationInterRefs node not found.");
+            _logger.LogError("RoomPreparationInterRefs node not found.");
             return;
         }
 

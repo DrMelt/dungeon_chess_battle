@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// StateBarList 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateBarListInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateBarListInterRefs> _logger = ServiceLocator.GetLogger<StateBarListInterRefs>();
+
     /// <summary>迷你状态条纵向排列容器。</summary>
     [Export]
     public VBoxContainer? VBoxContainerRef {
@@ -23,8 +28,8 @@ public partial class StateBarListInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (VBoxContainerRef == null)
-            GD.PrintErr("[StateBarListInterRefs] [Export] VBoxContainerRef is not assigned!");
+            _logger.LogError("VBoxContainerRef is not assigned!");
         if (StateBarMiniPKS == null)
-            GD.PrintErr("[StateBarListInterRefs] [Export] StateBarMiniPKS is not assigned!");
+            _logger.LogError("StateBarMiniPKS is not assigned!");
     }
 }

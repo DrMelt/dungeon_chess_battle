@@ -1,7 +1,9 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -10,6 +12,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 数据源为同步 Buff 数据（SyncBuffData），图标按 BuffTypeId 从 BuffResourceTable 匹配。
 /// </summary>
 public partial class TextureRectBuffIcon : TextureRect {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<TextureRectBuffIcon> _logger = ServiceLocator.GetLogger<TextureRectBuffIcon>();
+
     /// <summary>来自焦点单位的 Buff 文字颜色（绿色）。</summary>
     [Export]
     private Color fromFocusUnit = new(0.3f, 0.9f, 0.3f, 1);
@@ -35,9 +40,9 @@ public partial class TextureRectBuffIcon : TextureRect {
     /// </summary>
     public override void _Ready() {
         if (superpositionsLabelRef == null)
-            GD.PrintErr("[TextureRectBuffIcon] [Export] superpositionsLabelRef is not assigned!");
+            _logger.LogError("superpositionsLabelRef is not assigned!");
         if (durationLabelRef == null)
-            GD.PrintErr("[TextureRectBuffIcon] [Export] durationLabelRef is not assigned!");
+            _logger.LogError("durationLabelRef is not assigned!");
     }
 
     /// <summary>

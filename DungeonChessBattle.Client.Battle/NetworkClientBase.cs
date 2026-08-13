@@ -117,14 +117,14 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     void INetEventListener.OnPeerConnected(NetPeer peer) {
         _serverPeer = peer;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Client] Connected. PeerId={PeerId}", peer.Id);
+            _logger.LogInformation("Connected. PeerId={PeerId}", peer.Id);
         OnPeerConnectedInternal(peer);
         OnFullyConnected?.Invoke();
     }
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo info) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Client] Disconnected. Reason={Reason}", info.Reason);
+            _logger.LogInformation("Disconnected. Reason={Reason}", info.Reason);
         OnPeerDisconnectedInternal(peer, info);
         OnFullyDisconnected?.Invoke();
     }

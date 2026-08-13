@@ -1,5 +1,7 @@
 using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GameAssets;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.GameAssets;
 /// 用户控制的 3D 相机，支持旋转、平移、缩放、聚焦单位与俯视操作。
 /// </summary>
 public partial class UserCamera3D : Camera3D {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UserCamera3D> _logger = ServiceLocator.GetLogger<UserCamera3D>();
+
     /// <summary>相机基准移动速度。</summary>
     [Export]
     private float _cameraMoveSpeed = 1;
@@ -53,7 +58,7 @@ public partial class UserCamera3D : Camera3D {
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceRes == null)
-            GD.PrintErr("[UserCamera3D] [Export] playerInterfaceRes is not assigned!");
+            _logger.LogError("playerInterfaceRes is not assigned!");
     }
 
     /// <summary>

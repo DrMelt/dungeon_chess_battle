@@ -266,9 +266,9 @@ public sealed class ServerProcessHost : IServerHost {
         if (string.IsNullOrWhiteSpace(line))
             return;
         if (isError)
-            _logger.LogError("[Server] {Line}", line);
+            _logger.LogError("{Line}", line);
         else if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Server] {Line}", line);
+            _logger.LogInformation("{Line}", line);
     }
 
     /// <summary>终止子进程并等待其退出。</summary>

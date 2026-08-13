@@ -1,5 +1,7 @@
 using DungeonChessBattle.GamePanels;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -8,6 +10,9 @@ namespace DungeonChessBattle.GamePanels;
 /// 选择后发出 UnitSelected 信号并自动返回 RoomPreparation。
 /// </summary>
 public partial class UnitSelectPanel : BaseGamePanel {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitSelectPanel> _logger = ServiceLocator.GetLogger<UnitSelectPanel>();
+
     /// <summary>单位被选中时发出的信号，参数为单位配置键。</summary>
     [Signal]
     public delegate void UnitSelectedEventHandler(string unitConfigKey);
@@ -21,7 +26,7 @@ public partial class UnitSelectPanel : BaseGamePanel {
     public override void _Ready() {
         _refs = GetNode<UnitSelectPanelInterRefs>("UnitSelectPanelInterRefs");
         if (_refs is null) {
-            GD.PrintErr("[UnitSelectPanel] UnitSelectPanelInterRefs node not found.");
+            _logger.LogError("UnitSelectPanelInterRefs node not found.");
             return;
         }
 

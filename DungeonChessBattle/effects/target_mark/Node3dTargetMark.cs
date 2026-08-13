@@ -1,7 +1,5 @@
 using System;
 using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Entities;
-using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePlayUI;
 using Godot;
 
@@ -72,36 +70,4 @@ public partial class Node3dTargetMark : Node3D {
         _ => CampRelation.Friendly,
     };
 
-    /// <summary>
-    /// 根据单位 Pawn 更新目标标记：聚焦单位时显示其阵营颜色，否则使用中立颜色，并同步标记大小。
-    /// </summary>
-    /// <param name="pawn">单位 Pawn。</param>
-    public void UpdateUI_WithUnit(UnitPawn pawn) {
-        var interRefs = InterRefsOrThrow;
-        var uiRes = interRefs.PlayerInterfaceRes
-            ?? throw new InvalidOperationException("[Node3dTargetMark] PlayerInterfaceRes is not assigned.");
-        if (uiRes.FocusOnUnit != null && pawn == uiRes.FocusOnUnit.Pawn) {
-            SetCampColor(pawn.Camp.Value);
-        }
-        else {
-            SetCampColor("");
-        }
-
-        Scale = new Vector3(pawn.BodyRadius.Value, 1, pawn.BodyRadius.Value);
-    }
-
-    /// <summary>
-    /// 将目标标记恢复为默认外观。
-    /// </summary>
-    public void SetMark_Normal() {
-        SetCampColor("");
-    }
-
-    /// <summary>
-    /// 将目标标记设为聚焦状态，使用对应单位的阵营颜色。
-    /// </summary>
-    /// <param name="unitShow">被聚焦的单位显示对象。</param>
-    internal void SetMark_Focus(UnitGameShow unitShow) {
-        SetCampColor(unitShow.Pawn.Camp.Value);
-    }
 }

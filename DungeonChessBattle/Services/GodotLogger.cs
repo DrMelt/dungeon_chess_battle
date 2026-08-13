@@ -51,7 +51,7 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
     public bool IsEnabled(LogLevel logLevel) => true;
 
     /// <summary>
-    /// 按日志等级将消息输出到 Godot 控制台（错误走 PrintErr，警告走 PushWarning，其余 Print）。
+    /// 按日志等级将消息输出到 Godot 控制台（Critical/Error 走 PrintErr，其余 Print）。
     /// 异常存在时输出完整 <c>ToString()</c>（含 Message 与全部 StackTrace），
     /// 避免 Godot 控制台对单行调用只展示摘要而丢失定位信息。
     /// </summary>
@@ -72,10 +72,10 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
 
         switch (logLevel) {
             case LogLevel.Critical:
-                GD.Print("[Critical] " + full);
+                GD.PrintErr("[Critical] " + full);
                 break;
             case LogLevel.Error:
-                GD.Print("[Error] " + full);
+                GD.PrintErr("[Error] " + full);
                 break;
             case LogLevel.Warning:
                 GD.Print("[Warning] " + full);

@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePanels;
 /// UnitCard 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class UnitCardInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitCardInterRefs> _logger = ServiceLocator.GetLogger<UnitCardInterRefs>();
+
     /// <summary>单位名称标签。</summary>
     [Export]
     public Label? NameLabel {
@@ -37,14 +42,14 @@ public partial class UnitCardInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (NameLabel == null)
-            GD.PrintErr("[UnitCardInterRefs] [Export] NameLabel is not assigned!");
+            _logger.LogError("NameLabel is not assigned!");
         if (UserNameLabel == null)
-            GD.PrintErr("[UnitCardInterRefs] [Export] UserNameLabel is not assigned!");
+            _logger.LogError("UserNameLabel is not assigned!");
         if (HpLabel == null)
-            GD.PrintErr("[UnitCardInterRefs] [Export] HpLabel is not assigned!");
+            _logger.LogError("HpLabel is not assigned!");
         if (HpValueLabel == null)
-            GD.PrintErr("[UnitCardInterRefs] [Export] HpValueLabel is not assigned!");
+            _logger.LogError("HpValueLabel is not assigned!");
         if (BgPanel == null)
-            GD.PrintErr("[UnitCardInterRefs] [Export] BgPanel is not assigned!");
+            _logger.LogError("BgPanel is not assigned!");
     }
 }

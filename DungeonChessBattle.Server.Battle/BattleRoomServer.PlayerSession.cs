@@ -20,7 +20,7 @@ public partial class BattleRoomServer {
     public void RegisterPlayer(string playerId, string playerName) {
         _sessions.GetOrAdd(playerId, _ => new PlayerSession(playerId, playerName));
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) pre-registered.", RoomId, playerName, playerId);
+            _logger.LogDebug("[RoomId: {RoomId}] Player '{PlayerName}' ({PlayerId}) pre-registered.", RoomId, playerName, playerId);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public partial class BattleRoomServer {
     /// </summary>
     private void HandleNewPlayerConnect(NetPeer peer, string? connectionKey) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] New player connect: peer={PeerId}, connectionKey={Key}",
+            _logger.LogInformation("[RoomId: {RoomId}] New player connect: peer={PeerId}, connectionKey={Key}",
                 RoomId, peer.Id, connectionKey ?? "(null)");
 
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
@@ -78,7 +78,7 @@ public partial class BattleRoomServer {
             TryBindPlayerController(session, netPlayer, playerEntity);
 
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomServer:{RoomId}] PlayerRoomEntity created: '{PlayerName}', peer={PeerId}",
+                _logger.LogInformation("[RoomId: {RoomId}] PlayerRoomEntity created: '{PlayerName}', peer={PeerId}",
                     RoomId, playerName, peer.Id);
         }
     }
@@ -88,7 +88,7 @@ public partial class BattleRoomServer {
     /// </summary>
     private void HandlePlayerReconnect(NetPeer peer, string playerId) {
         if (!_sessions.TryGetValue(playerId, out var session) || session.Entity == null) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Reconnect: entity not found for playerId '{PlayerId}', treating as new.", RoomId, playerId);
+            _logger.LogWarning("[RoomId: {RoomId}] Reconnect: entity not found for playerId '{PlayerId}', treating as new.", RoomId, playerId);
             HandleNewPlayerConnect(peer, playerId);
             return;
         }
@@ -109,7 +109,7 @@ public partial class BattleRoomServer {
         // 客户端通过 PlayerState SyncVar 从 Disconnected→Connected 的变化检测重连成功
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerName}' ({PlayerId}) reconnected (peer={PeerId}).",
+            _logger.LogInformation("[RoomId: {RoomId}] Player '{PlayerName}' ({PlayerId}) reconnected (peer={PeerId}).",
                 RoomId, session.Entity.PlayerName.Value, playerId, peer.Id);
     }
 
@@ -124,14 +124,14 @@ public partial class BattleRoomServer {
             .FirstOrDefault(s => s.PlayerId == session.PlayerId);
         if (selection == null) {
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("[RoomServer:{RoomId}] Player '{PlayerName}' has no prepare unit, controller skipped.",
+                _logger.LogDebug("[RoomId: {RoomId}] Player '{PlayerName}' has no prepare unit, controller skipped.",
                     RoomId, session.PlayerName);
             return;
         }
 
         // 2. 取该玩家专属 Pawn，重名单位不串绑
         if (!_pawnByPlayerId.TryGetValue(session.PlayerId, out var pawn)) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Player '{PlayerName}' prepare unit '{UnitName}' pawn not found.",
+            _logger.LogWarning("[RoomId: {RoomId}] Player '{PlayerName}' prepare unit '{UnitName}' pawn not found.",
                 RoomId, session.PlayerName, selection.UnitName);
             return;
         }
@@ -144,7 +144,7 @@ public partial class BattleRoomServer {
         playerEntity.Camp.Value = selection.Camp;
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (camp={Camp}).",
+            _logger.LogInformation("[RoomId: {RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (camp={Camp}).",
                 RoomId, session.PlayerName, selection.UnitName, selection.Camp);
     }
 
@@ -167,7 +167,7 @@ public partial class BattleRoomServer {
         session.Controller = null;
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomServer:{RoomId}] Old peer {OldPeerId} disconnected for playerId '{PlayerId}' (replaced by new).",
+            _logger.LogDebug("[RoomId: {RoomId}] Old peer {OldPeerId} disconnected for playerId '{PlayerId}' (replaced by new).",
                 RoomId, oldPeerId, playerId);
     }
 

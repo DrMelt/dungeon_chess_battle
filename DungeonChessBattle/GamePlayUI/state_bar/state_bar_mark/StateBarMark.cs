@@ -2,7 +2,9 @@ using System;
 using DungeonChessBattle.Common;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -11,6 +13,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 复用已创建的状态标记，仅在单位增删时创建或销毁。
 /// </summary>
 public partial class StateBarMark : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateBarMark> _logger = ServiceLocator.GetLogger<StateBarMark>();
+
     /// <summary>战斗单位管理器引用。</summary>
     [Export]
     private BattleUnitManager? unitsInSceneRef;
@@ -33,9 +38,9 @@ public partial class StateBarMark : Control {
     /// </summary>
     public override void _Ready() {
         if (unitsInSceneRef == null)
-            GD.PrintErr("[StateBarMark] [Export] unitsInSceneRef is not assigned!");
+            _logger.LogError("unitsInSceneRef is not assigned!");
         if (stateBarSimple2d_PKD == null)
-            GD.PrintErr("[StateBarMark] [Export] stateBarSimple2d_PKD is not assigned!");
+            _logger.LogError("stateBarSimple2d_PKD is not assigned!");
     }
 
     /// <summary>

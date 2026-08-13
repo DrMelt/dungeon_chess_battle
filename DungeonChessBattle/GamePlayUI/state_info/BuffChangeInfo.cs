@@ -1,7 +1,9 @@
+using DungeonChessBattle.Services;
 using Godot;
 using System;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameAssets;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -9,6 +11,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// Buff 增减提示浮字，带淡出效果，展示 Buff 图标与变化符号。
 /// </summary>
 public partial class BuffChangeInfo : FadeInfo {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<BuffChangeInfo> _logger = ServiceLocator.GetLogger<BuffChangeInfo>();
+
     /// <summary>Buff 变化类型。</summary>
     public enum Enum_BuffChangeType {
         /// <summary>Buff 被添加。</summary>
@@ -31,9 +36,9 @@ public partial class BuffChangeInfo : FadeInfo {
     public override void _Ready() {
         base._Ready();
         if (label_ChangeRef == null)
-            GD.PrintErr("[BuffChangeInfo] [Export] label_ChangeRef is not assigned!");
+            _logger.LogError("label_ChangeRef is not assigned!");
         if (textureRectRef == null)
-            GD.PrintErr("[BuffChangeInfo] [Export] textureRectRef is not assigned!");
+            _logger.LogError("textureRectRef is not assigned!");
     }
 
     /// <summary>

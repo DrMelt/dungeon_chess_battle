@@ -10,7 +10,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 256.0
 offset_bottom = 33.0
-mouse_filter = 1
+mouse_filter = 2
 script = ExtResource("1_x7igp")
 
 [node name="HP_StateBarInterRefs" type="Node" parent="." unique_id=203956991 node_paths=PackedStringArray("ProgressBarRef", "LabelPercentRef", "LabelCurrentValueRef", "LabelObjectNameRef")]
@@ -31,9 +31,11 @@ theme_override_constants/separation = 0
 
 [node name="Control" type="PanelContainer" parent="VBoxContainer" unique_id=392393769]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/Control" unique_id=681524877]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_right = 4
 

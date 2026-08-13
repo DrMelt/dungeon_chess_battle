@@ -1,5 +1,7 @@
 using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 地牢计时标签，定期从场景单位集合读取战斗时间并显示。
 /// </summary>
 public partial class DungeonTimeLabel : Label {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<DungeonTimeLabel> _logger = ServiceLocator.GetLogger<DungeonTimeLabel>();
+
     /// <summary>战斗单位管理器引用，用于获取当前战斗时间。</summary>
     [Export]
     private BattleUnitManager? unitsInSceneRef;
@@ -16,7 +21,7 @@ public partial class DungeonTimeLabel : Label {
     /// </summary>
     public override void _Ready() {
         if (unitsInSceneRef == null)
-            GD.PrintErr("[DungeonTimeLabel] [Export] unitsInSceneRef is not assigned!");
+            _logger.LogError("unitsInSceneRef is not assigned!");
     }
 
     /// <summary>

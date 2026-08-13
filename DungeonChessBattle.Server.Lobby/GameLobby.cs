@@ -31,7 +31,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// </summary>
     private bool ValidateServerPassword(string? serverPassword, string responseDesc, string? roomId) {
         if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword) {
-            _logger.LogWarning("[Game] {Desc}: invalid server password (room '{RoomId}').", responseDesc, roomId);
+            _logger.LogWarning("{Desc}: invalid server password (room '{RoomId}').", responseDesc, roomId);
             return false;
         }
         return true;
@@ -94,7 +94,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         await BroadcastRoomSnapshotAsync(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}), Title={Title}.",
+            _logger.LogInformation("Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}), Title={Title}.",
                 roomId, hostDisplayName, playerId, config.Title);
 
         return new LobbyResult(roomId, true);
@@ -130,7 +130,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         await BroadcastRoomSnapshotAsync(req.RoomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Player '{Player}' ({PlayerId}) joined room '{RoomId}' (prepare).",
+            _logger.LogInformation("Player '{Player}' ({PlayerId}) joined room '{RoomId}' (prepare).",
                 displayName, req.PlayerId, req.RoomId);
 
         return new LobbyResult(req.RoomId, true);
@@ -145,7 +145,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             .Where(r => r.Status == RoomStatus.Waiting)
             .ToList();
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Sent listing of {Count} rooms.", rooms.Count);
+            _logger.LogInformation("Sent listing of {Count} rooms.", rooms.Count);
         return Task.FromResult(new RoomListResult(rooms));
     }
 
@@ -226,13 +226,13 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
         // 未选择角色不能准备
         if (!_stateStore.TrySetPlayerReady(req.RoomId, playerName, req.Ready)) {
-            _logger.LogWarning("[Game] Player '{Player}' set_ready rejected in room '{RoomId}' (ready={Ready}).",
+            _logger.LogWarning("Player '{Player}' set_ready rejected in room '{RoomId}' (ready={Ready}).",
                 playerName, req.RoomId, req.Ready);
             return new LobbyResult(req.RoomId, false, "Select a unit before ready.");
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Player '{Player}' {Action} in room '{RoomId}'.",
+            _logger.LogInformation("Player '{Player}' {Action} in room '{RoomId}'.",
                 playerName, req.Ready ? "ready" : "unready", req.RoomId);
 
         // 广播最新准备状态给房间内所有玩家
@@ -264,7 +264,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[Game] Broadcast room snapshot to room '{RoomId}' ({PlayerCount} players, {UnitCount} units)",
+            _logger.LogDebug("Broadcast room snapshot to room '{RoomId}' ({PlayerCount} players, {UnitCount} units)",
                 roomId, snapshot.Players.Count, snapshot.Units.Count);
     }
 }

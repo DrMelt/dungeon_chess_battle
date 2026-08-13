@@ -153,7 +153,7 @@ public partial class BattleRoomServer : INetEventListener {
         _loopThread.Start();
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer] Room '{RoomId}' started on port {Port} (thread: {ThreadName})",
+            _logger.LogInformation("Room '{RoomId}' started on port {Port} (thread: {ThreadName})",
                 RoomId, Port, _loopThread.Name);
     }
 
@@ -197,7 +197,7 @@ public partial class BattleRoomServer : INetEventListener {
         _initialized.Dispose();
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer] Room '{RoomId}' stopped on port {Port}", RoomId, Port);
+            _logger.LogInformation("Room '{RoomId}' stopped on port {Port}", RoomId, Port);
     }
 
     /// <summary>
@@ -210,7 +210,7 @@ public partial class BattleRoomServer : INetEventListener {
             InitializeFromStore();
         }
         catch (Exception ex) {
-            _logger.LogError(ex, "[RoomServer:{RoomId}] Initialization failed.", RoomId);
+            _logger.LogError(ex, "[RoomId: {RoomId}] Initialization failed.", RoomId);
         }
         finally {
             // 即使初始化失败也放行，避免大厅线程 WaitUntilInitialized 无限等待
@@ -240,7 +240,7 @@ public partial class BattleRoomServer : INetEventListener {
                 }
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "[RoomServer:{RoomId}] Unhandled exception in RunLoop. Room continues.", RoomId);
+                _logger.LogError(ex, "[RoomId: {RoomId}] Unhandled exception in RunLoop. Room continues.", RoomId);
             }
         }
     }

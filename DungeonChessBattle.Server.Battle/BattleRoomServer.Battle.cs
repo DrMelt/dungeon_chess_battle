@@ -47,7 +47,7 @@ public partial class BattleRoomServer {
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Initialized from store: {UnitCount} units migrated.", RoomId, units.Count);
+            _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.", RoomId, units.Count);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public partial class BattleRoomServer {
         if (string.IsNullOrWhiteSpace(req.UnitName)
             || req.UnitName.Length > EntityConstants.MaxUnitNameLength
             || !CampConstants.IsValidCamp(req.Camp)) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Rejected create unit RPC: name='{Name}', camp='{Camp}'",
+            _logger.LogWarning("[RoomId: {RoomId}] Rejected create unit RPC: name='{Name}', camp='{Camp}'",
                 RoomId, req.UnitName, req.Camp);
             return;
         }
@@ -136,7 +136,7 @@ public partial class BattleRoomServer {
         CreatePawnEntity(req.UnitName, req.Camp, spawnPos);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Unit created via RPC: {UnitName}, camp={Camp}",
+            _logger.LogInformation("[RoomId: {RoomId}] Unit created via RPC: {UnitName}, camp={Camp}",
                 RoomId, req.UnitName, req.Camp);
     }
 
@@ -146,7 +146,7 @@ public partial class BattleRoomServer {
     private void OnStartBattleRequested(BattleRoomEntity roomEntity) {
         StartBattle();
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Battle started via RPC", RoomId);
+            _logger.LogInformation("[RoomId: {RoomId}] Battle started via RPC", RoomId);
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public partial class BattleRoomServer {
         _battleRoom.OnUnitMoved(pawn, input.MoveDirection);
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomServer:{RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
+            _logger.LogDebug("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
                 RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
     }
 
@@ -171,7 +171,7 @@ public partial class BattleRoomServer {
     /// </summary>
     private void OnPawnSkillCast(UnitPawn casterPawn, SyncSkillRequest req) {
         if (_battleRoom.CurrentPhase != BattlePhase.Running) {
-            _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC dropped: battle not running.", RoomId);
+            _logger.LogWarning("[RoomId: {RoomId}] Skill RPC dropped: battle not running.", RoomId);
             return;
         }
 
@@ -181,7 +181,7 @@ public partial class BattleRoomServer {
         if (req.TargetUnitNetId != 0) {
             var targetPawn = FindPawnById(req.TargetUnitNetId);
             if (targetPawn == null) {
-                _logger.LogWarning("[RoomServer:{RoomId}] Skill RPC: target pawn {TargetId} not found.",
+                _logger.LogWarning("[RoomId: {RoomId}] Skill RPC: target pawn {TargetId} not found.",
                     RoomId, req.TargetUnitNetId);
                 return;
             }
@@ -195,14 +195,14 @@ public partial class BattleRoomServer {
         bool began = _battleRoom.BeginCast(casterPawn, req.SkillTypeId, target, targetPos);
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomServer:{RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
+                _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
                     RoomId, casterPawn.UnitName.Value, req.SkillTypeId);
             return;
         }
         // 读条状态已由 BeginCast 直接写回 Pawn，无需额外回写
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
+            _logger.LogInformation("[RoomId: {RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
                 RoomId, casterPawn.UnitName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
     }
 
@@ -215,7 +215,7 @@ public partial class BattleRoomServer {
             var targetPawn = FindPawnById(targetNetId);
             if (targetPawn == null || targetPawn.UnitState.Value == 1) {
                 if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning("[RoomServer:{RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
+                    _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
                         RoomId, pawn.UnitName.Value, targetNetId);
                 return;
             }
@@ -224,7 +224,7 @@ public partial class BattleRoomServer {
         pawn.FocusTargetNetId.Value = targetNetId;
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomServer:{RoomId}] Focus target set: {Unit} -> {TargetId}",
+            _logger.LogDebug("[RoomId: {RoomId}] Focus target set: {Unit} -> {TargetId}",
                 RoomId, pawn.UnitName.Value, targetNetId);
     }
 

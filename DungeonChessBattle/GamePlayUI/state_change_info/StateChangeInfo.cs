@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 
 namespace DungeonChessBattle.GamePlayUI;
@@ -12,6 +14,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 状态变化信息管理器，订阅单位 Pawn 事件并在对应位置弹出受击/ Buff 增减提示。
 /// </summary>
 public partial class StateChangeInfo : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateChangeInfo> _logger = ServiceLocator.GetLogger<StateChangeInfo>();
+
     /// <summary>
     /// 将世界坐标投影为屏幕坐标。
     /// </summary>
@@ -51,7 +56,7 @@ public partial class StateChangeInfo : Node {
     public override void _Ready() {
         InterRefs = GetNode<StateChangeInfoInterRefs>("StateChangeInfoInterRefs");
         if (InterRefs == null) {
-            GD.PrintErr("[StateChangeInfo] StateChangeInfoInterRefs node not found.");
+            _logger.LogError("StateChangeInfoInterRefs node not found.");
         }
     }
 

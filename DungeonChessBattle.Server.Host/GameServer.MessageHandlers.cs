@@ -22,30 +22,30 @@ public partial class GameServer {
             return new LobbyResult(req.RoomId, false, "roomId is required.");
 
         if (string.IsNullOrWhiteSpace(req.PlayerName) || req.PlayerName.Length > EntityConstants.MaxPlayerNameLength) {
-            _logger.LogWarning("[Game] start_battle: invalid player name for '{PlayerId}'.", req.PlayerId);
+            _logger.LogWarning("start_battle: invalid player name for '{PlayerId}'.", req.PlayerId);
             return new LobbyResult(req.RoomId, false, "invalid player name.");
         }
 
         if (!_stateStore.RoomExists(req.RoomId)) {
-            _logger.LogWarning("[Game] start_battle: room '{RoomId}' not found.", req.RoomId);
+            _logger.LogWarning("start_battle: room '{RoomId}' not found.", req.RoomId);
             return new LobbyResult(req.RoomId, false, "Room not found.");
         }
 
         // 校验发起者必须是房主，基于连接归属表，不信任客户端提交的 playerName
         if (!_stateStore.IsConnectionRoomHost(connectionId, req.RoomId)) {
-            _logger.LogWarning("[Game] start_battle: connection of room '{RoomId}' is not the host, rejected.", req.RoomId);
+            _logger.LogWarning("start_battle: connection of room '{RoomId}' is not the host, rejected.", req.RoomId);
             return new LobbyResult(req.RoomId, false, "Only room host can start battle.");
         }
 
         // 校验除房主外所有玩家已准备
         if (!_stateStore.IsAllOthersReady(req.RoomId)) {
-            _logger.LogWarning("[Game] start_battle: room '{RoomId}' has not-ready players, rejected.", req.RoomId);
+            _logger.LogWarning("start_battle: room '{RoomId}' has not-ready players, rejected.", req.RoomId);
             return new LobbyResult(req.RoomId, false, "Not all players ready.");
         }
 
         // 校验所有玩家（含房主）都已选择角色
         if (!_stateStore.AreAllPlayersUnitSelected(req.RoomId)) {
-            _logger.LogWarning("[Game] start_battle: room '{RoomId}' has players without unit selection, rejected.", req.RoomId);
+            _logger.LogWarning("start_battle: room '{RoomId}' has players without unit selection, rejected.", req.RoomId);
             return new LobbyResult(req.RoomId, false, "Not all players selected a unit.");
         }
 
@@ -57,7 +57,7 @@ public partial class GameServer {
             new RoomRedirect(req.RoomId, server.Port));
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Room '{RoomId}' battle started on port {Port}.", req.RoomId, server.Port);
+            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}.", req.RoomId, server.Port);
 
         return new LobbyResult(req.RoomId, true);
     }
@@ -84,7 +84,7 @@ public partial class GameServer {
         server.RegisterPlayer(req.PlayerId, req.PlayerName);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
+            _logger.LogInformation("Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
                 req.PlayerName, req.PlayerId, req.RoomId, server.Port);
 
         return new LobbyResult(req.RoomId, true, Port: server.Port);

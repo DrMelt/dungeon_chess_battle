@@ -123,6 +123,7 @@ playerInterfaceRes = ExtResource("6_8ka0p")
 script = ExtResource("35_7m0y")
 _unitManagerRef = NodePath("../../../BattleUnitManager")
 _targetMarkPackedScene = ExtResource("34_7m0x")
+_playerInterfaceResRef = ExtResource("6_8ka0p")
 
 [node name="EffectHints" type="Node" parent="Interface/GamePlay" unique_id=1098280841]
 script = ExtResource("13_cxaww")
@@ -154,18 +155,19 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
+mouse_filter = 2
 theme = ExtResource("18_50oy0")
 script = ExtResource("19_thosv")
 playerInterfaceRes = ExtResource("6_8ka0p")
 unitsInSceneRef = NodePath("../../../BattleUnitManager")
-skillsListRef = NodePath("Skill_UI/Skills_List")
+skillsListRef = NodePath("Skills_List")
 stateChangeInfoRef = NodePath("../StateChange_Info")
 stateBarListRef = NodePath("StateBar_List")
 
 [node name="StateBar_Units" type="Control" parent="Interface/GamePlay/GamePlayUI" unique_id=885250196 node_paths=PackedStringArray("unitsInSceneRef")]
 layout_mode = 1
 anchors_preset = 0
+mouse_filter = 2
 script = ExtResource("22_cdc5x")
 unitsInSceneRef = NodePath("../../../../BattleUnitManager")
 stateBarSimple2d_PKD = ExtResource("23_hfd03")
@@ -181,21 +183,11 @@ vertical_alignment = 1
 script = ExtResource("20_bmhqt")
 unitsInSceneRef = NodePath("../../../../BattleUnitManager")
 
-[node name="NetworkDebugOverlay" type="Label" parent="Interface/GamePlay/GamePlayUI" unique_id=2106499745]
-layout_mode = 0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 420.0
-offset_bottom = 200.0
-theme_override_font_sizes/font_size = 12
-text = "Disconnected"
-script = ExtResource("33_ovly")
-
 [node name="StateBar2d_Focus" parent="Interface/GamePlay/GamePlayUI" unique_id=716113945 instance=ExtResource("21_nqfqb")]
 layout_mode = 1
 offset_right = 600.0
 offset_bottom = 300.0
-mouse_filter = 1
+mouse_filter = 2
 
 [node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 instance=ExtResource("24_o75dv")]
 layout_mode = 0
@@ -203,16 +195,9 @@ offset_left = 858.0
 offset_top = 62.0
 offset_right = 1137.0
 offset_bottom = 494.0
+mouse_filter = 2
 
-[node name="Skill_UI" type="Control" parent="Interface/GamePlay/GamePlayUI" unique_id=1773258382]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Skills_List" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=839039226 instance=ExtResource("25_5lst5")]
+[node name="Skills_List" parent="Interface/GamePlay/GamePlayUI" unique_id=839039226 instance=ExtResource("25_5lst5")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -229,7 +214,7 @@ scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
 
-[node name="SkillInfoPanel" parent="Interface/GamePlay/GamePlayUI/Skill_UI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
+[node name="SkillInfoPanel" parent="Interface/GamePlay/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -238,6 +223,16 @@ offset_left = -307.0
 offset_top = -145.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="NetworkDebugOverlay" type="Label" parent="Interface/GamePlay/GamePlayUI" unique_id=2106499745]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 83.0
+offset_right = 430.0
+offset_bottom = 275.0
+theme_override_font_sizes/font_size = 12
+text = "Disconnected"
+script = ExtResource("33_ovly")
 
 [node name="FrontUI" type="Control" parent="Interface" unique_id=437760611]
 layout_mode = 3

@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// StateChangeInfo 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateChangeInfoInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateChangeInfoInterRefs> _logger = ServiceLocator.GetLogger<StateChangeInfoInterRefs>();
+
     /// <summary>玩家 UI 设置资源。</summary>
     [Export]
     public PlayerUISettings? PlayerUISettingsRes {
@@ -27,10 +32,10 @@ public partial class StateChangeInfoInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (PlayerUISettingsRes == null)
-            GD.PrintErr("[StateChangeInfoInterRefs] [Export] PlayerUISettingsRes is not assigned!");
+            _logger.LogError("PlayerUISettingsRes is not assigned!");
         if (TookDamageInfoPackedScene == null)
-            GD.PrintErr("[StateChangeInfoInterRefs] [Export] TookDamageInfoPackedScene is not assigned!");
+            _logger.LogError("TookDamageInfoPackedScene is not assigned!");
         if (BuffChangeInfoPackedScene == null)
-            GD.PrintErr("[StateChangeInfoInterRefs] [Export] BuffChangeInfoPackedScene is not assigned!");
+            _logger.LogError("BuffChangeInfoPackedScene is not assigned!");
     }
 }

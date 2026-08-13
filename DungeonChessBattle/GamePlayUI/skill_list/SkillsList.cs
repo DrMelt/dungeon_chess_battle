@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -10,6 +12,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 施法由服务端权威读条与结算，客户端仅发起请求。
 /// </summary>
 public partial class SkillsList : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<SkillsList> _logger = ServiceLocator.GetLogger<SkillsList>();
+
     /// <summary>节点引用容器。</summary>
     public SkillsListInterRefs? InterRefs {
         get; private set;
@@ -46,7 +51,7 @@ public partial class SkillsList : Control {
     public override void _Ready() {
         InterRefs = GetNode<SkillsListInterRefs>("SkillsListInterRefs");
         if (InterRefs == null) {
-            GD.PrintErr("[SkillsList] SkillsListInterRefs node not found.");
+            _logger.LogError("SkillsListInterRefs node not found.");
             return;
         }
     }

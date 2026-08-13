@@ -1,5 +1,7 @@
-using Godot;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.Services;
+using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 技能信息面板，悬停技能按钮或 Buff 图标时显示其名称与描述。
 /// </summary>
 public partial class SkillInfoPanel : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<SkillInfoPanel> _logger = ServiceLocator.GetLogger<SkillInfoPanel>();
+
     /// <summary>玩家界面资源引用，用于订阅悬停控件变化事件。</summary>
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
@@ -24,11 +29,11 @@ public partial class SkillInfoPanel : Control {
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceRes == null)
-            GD.PrintErr("[SkillInfoPanel] [Export] playerInterfaceRes is not assigned!");
+            _logger.LogError("playerInterfaceRes is not assigned!");
         if (skillNameLabel == null)
-            GD.PrintErr("[SkillInfoPanel] [Export] skillNameLabel is not assigned!");
+            _logger.LogError("skillNameLabel is not assigned!");
         if (skillDescriptionLabel == null)
-            GD.PrintErr("[SkillInfoPanel] [Export] skillDescriptionLabel is not assigned!");
+            _logger.LogError("skillDescriptionLabel is not assigned!");
 
         playerInterfaceRes?.MouseOnUIControlChanged += UpdateInfo;
         UpdateInfo(null);

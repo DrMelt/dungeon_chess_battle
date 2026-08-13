@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePanels;
 /// GameLobby 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class GameLobbyInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<GameLobbyInterRefs> _logger = ServiceLocator.GetLogger<GameLobbyInterRefs>();
+
     /// <summary>房间名输入框。</summary>
     [Export]
     public LineEdit? RoomNameInput {
@@ -52,20 +57,20 @@ public partial class GameLobbyInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (RoomNameInput == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomNameInput is not assigned!");
+            _logger.LogError("RoomNameInput is not assigned!");
         if (CreateButton == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] CreateButton is not assigned!");
+            _logger.LogError("CreateButton is not assigned!");
         if (RefreshButton == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] RefreshButton is not assigned!");
+            _logger.LogError("RefreshButton is not assigned!");
         if (JoinButton == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] JoinButton is not assigned!");
+            _logger.LogError("JoinButton is not assigned!");
         if (DetailLabel == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] DetailLabel is not assigned!");
+            _logger.LogError("DetailLabel is not assigned!");
         if (RoomListContainer == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomListContainer is not assigned!");
+            _logger.LogError("RoomListContainer is not assigned!");
         if (RoomInfoScene == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] RoomInfoScene is not assigned!");
+            _logger.LogError("RoomInfoScene is not assigned!");
         if (BackButton == null)
-            GD.PrintErr("[GameLobbyInterRefs] [Export] BackButton is not assigned!");
+            _logger.LogError("BackButton is not assigned!");
     }
 }

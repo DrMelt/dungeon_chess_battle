@@ -28,7 +28,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
     public override void _Ready() {
         InterRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
         if (InterRefs is null) {
-            GD.PrintErr("[ServerManagementPanel] ServerManagementPanelInterRefs node not found.");
+            _logger.LogError("ServerManagementPanelInterRefs node not found.");
             return;
         }
 

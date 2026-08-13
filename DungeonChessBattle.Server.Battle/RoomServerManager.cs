@@ -74,7 +74,7 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         _pendingEmptyRooms.Enqueue(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Lobby] Room '{RoomId}' queued for removal (no active connections).", roomId);
+            _logger.LogInformation("Room '{RoomId}' queued for removal (no active connections).", roomId);
     }
 
     // ─── 战斗房间生命周期 ───
@@ -105,7 +105,7 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         _stateStore.UpdateRoomStatus(roomId, RoomStatus.InProgress);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Lobby] Room '{RoomId}' battle started on port {Port}",
+            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}",
                 roomId, port);
 
         return server;
@@ -131,7 +131,7 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
             RecyclePort(server.Port);
             removed = true;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[Lobby] Room '{RoomId}' removed (port {Port} recycled)", roomId, server.Port);
+                _logger.LogInformation("Room '{RoomId}' removed (port {Port} recycled)", roomId, server.Port);
         }
         else {
             removed = false;

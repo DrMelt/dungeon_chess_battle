@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePanels;
 /// MainMenu 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class MainMenuInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<MainMenuInterRefs> _logger = ServiceLocator.GetLogger<MainMenuInterRefs>();
+
     /// <summary>服务器地址输入框。</summary>
     [Export]
     public LineEdit? HostInput {
@@ -47,18 +52,18 @@ public partial class MainMenuInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (HostInput == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] HostInput is not assigned!");
+            _logger.LogError("HostInput is not assigned!");
         if (PortInput == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] PortInput is not assigned!");
+            _logger.LogError("PortInput is not assigned!");
         if (ConnectButton == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] ConnectButton is not assigned!");
+            _logger.LogError("ConnectButton is not assigned!");
         if (ServerManageButton == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] ServerManageButton is not assigned!");
+            _logger.LogError("ServerManageButton is not assigned!");
         if (StatusLabel == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] StatusLabel is not assigned!");
+            _logger.LogError("StatusLabel is not assigned!");
         if (UserNameInput == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] UserNameInput is not assigned!");
+            _logger.LogError("UserNameInput is not assigned!");
         if (PasswordInput == null)
-            GD.PrintErr("[MainMenuInterRefs] [Export] PasswordInput is not assigned!");
+            _logger.LogError("PasswordInput is not assigned!");
     }
 }

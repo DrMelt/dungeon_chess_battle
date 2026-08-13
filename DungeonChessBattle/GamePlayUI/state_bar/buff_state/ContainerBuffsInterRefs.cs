@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// ContainerBuffs 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class ContainerBuffsInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<ContainerBuffsInterRefs> _logger = ServiceLocator.GetLogger<ContainerBuffsInterRefs>();
+
     /// <summary>Buff 图标使用的场景资源。</summary>
     [Export]
     public PackedScene? BuffIconPackedScene {
@@ -23,10 +28,10 @@ public partial class ContainerBuffsInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (BuffIconPackedScene == null) {
-            GD.PrintErr("[ContainerBuffsInterRefs] [Export] BuffIconPackedScene is not assigned!");
+            _logger.LogError("BuffIconPackedScene is not assigned!");
         }
         if (BuffContainer == null) {
-            GD.PrintErr("[ContainerBuffsInterRefs] [Export] BuffContainer is not assigned!");
+            _logger.LogError("BuffContainer is not assigned!");
         }
     }
 }

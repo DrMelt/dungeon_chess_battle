@@ -24,7 +24,7 @@ public partial class RoomBattleClient {
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomBattleClient] Room entity created: {RoomId}", entity.RoomId.Value);
+            _logger.LogInformation("Room entity created: {RoomId}", entity.RoomId.Value);
     }
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
@@ -61,14 +61,14 @@ public partial class RoomBattleClient {
             OnUnitCreated?.Invoke(roomId, pawn.Id, unitName, pawn.Camp.Value);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomBattleClient] UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
+            _logger.LogInformation("UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
                 unitName, pawn.Camp.Value, pawn.Position.Value);
     }
 
     /// <summary>玩家实体创建回调。</summary>
     private void OnPlayerEntityCreated(PlayerRoomEntity player) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomBattleClient] Player entity created: {PlayerName}", player.PlayerName.Value);
+            _logger.LogInformation("Player entity created: {PlayerName}", player.PlayerName.Value);
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public partial class RoomBattleClient {
         var pawnName = controller.ControlledEntity?.UnitName.Value ?? "(null)";
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(
-                "[RoomBattleClient] UnitController constructed: PawnName={PawnName}, IsLocalControlled={IsLocalControlled}, AlreadyBound={AlreadyBound}",
+                "UnitController constructed: PawnName={PawnName}, IsLocalControlled={IsLocalControlled}, AlreadyBound={AlreadyBound}",
                 pawnName, controller.IsLocalControlled, _localController != null);
 
         if (_localController != null)
@@ -89,7 +89,7 @@ public partial class RoomBattleClient {
 
         _localController = controller;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomBattleClient] Local UnitController bound: {PawnName}", pawnName);
+            _logger.LogInformation("Local UnitController bound: {PawnName}", pawnName);
     }
 
     /// <summary>将同步 Buff 数据映射为 UI 事件使用的展示视图。</summary>

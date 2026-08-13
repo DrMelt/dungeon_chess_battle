@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Effects;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.Effects;
 /// 圆形范围技能提示的导出引用集合节点。
 /// </summary>
 public partial class SkillRangeCircular_HintInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<SkillRangeCircular_HintInterRefs> _logger = ServiceLocator.GetLogger<SkillRangeCircular_HintInterRefs>();
+
     /// <summary>
     /// 范围贴花网格实例引用。
     /// </summary>
@@ -19,7 +24,7 @@ public partial class SkillRangeCircular_HintInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (DecalRef == null) {
-            GD.PrintErr("[SkillRangeCircular_HintInterRefs] [Export] DecalRef is not assigned!");
+            _logger.LogError("DecalRef is not assigned!");
         }
     }
 }

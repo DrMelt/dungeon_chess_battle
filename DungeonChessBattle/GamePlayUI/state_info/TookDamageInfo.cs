@@ -1,5 +1,7 @@
+using DungeonChessBattle.Services;
 using Godot;
 using DungeonChessBattle.Battle.Domain.Enums;
+using Microsoft.Extensions.Logging;
 using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 
 namespace DungeonChessBattle.GamePlayUI;
@@ -8,6 +10,8 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 受击伤害提示浮字，按伤害类型着色并带淡出效果。
 /// </summary>
 public partial class TookDamageInfo : FadeInfo {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<TookDamageInfo> _logger = ServiceLocator.GetLogger<TookDamageInfo>();
 
 
     /// <summary>伤害数值标签。</summary>
@@ -21,7 +25,7 @@ public partial class TookDamageInfo : FadeInfo {
     public override void _Ready() {
         base._Ready();
         if (damageLabel == null)
-            GD.PrintErr("[TookDamageInfo] [Export] damageLabel is not assigned!");
+            _logger.LogError("damageLabel is not assigned!");
     }
 
     /// <summary>

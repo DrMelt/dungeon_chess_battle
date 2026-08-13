@@ -1,5 +1,7 @@
+using DungeonChessBattle.Services;
 using Godot;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GameAssets;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.GameAssets;
 /// 单位交互区域组件，用于捕获鼠标点击/悬停事件并关联所属单位。
 /// </summary>
 public partial class UnitShowArea3D : Area3D {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitShowArea3D> _logger = ServiceLocator.GetLogger<UnitShowArea3D>();
+
     /// <summary>所属单位展示组件引用。</summary>
     [Export]
     private UnitGameShow? unitShowRef;
@@ -18,6 +23,6 @@ public partial class UnitShowArea3D : Area3D {
     /// </summary>
     public override void _Ready() {
         if (unitShowRef == null)
-            GD.PrintErr("[UnitShowArea3D] [Export] unitShowRef is not assigned!");
+            _logger.LogError("unitShowRef is not assigned!");
     }
 }

@@ -53,12 +53,12 @@ public partial class GameLobby : BaseGamePanel {
     public override void _Ready() {
         InterRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
         if (InterRefs is null) {
-            GD.PrintErr("[GameLobby] GameLobbyInterRefs node not found.");
+            _logger.LogError("GameLobbyInterRefs node not found.");
             return;
         }
 
         if (_roomPreparation == null)
-            GD.PrintErr("[GameLobby] RoomPreparation reference is not assigned. Room preparation will be unavailable.");
+            _logger.LogError("RoomPreparation reference is not assigned. Room preparation will be unavailable.");
 
         // 连接按钮信号
         InterRefs?.CreateButton?.Pressed += OnCreateRoom;

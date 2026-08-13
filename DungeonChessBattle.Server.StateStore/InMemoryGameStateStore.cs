@@ -79,7 +79,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             _roomPlayerIds[roomId] = [];
 
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[Store] Room '{RoomId}' registered (prepare), HasPassword={HasPwd}, Title={Title}",
+                _logger.LogInformation("Room '{RoomId}' registered (prepare), HasPassword={HasPwd}, Title={Title}",
                     roomId, password != null, config.Title);
             return true;
         }
@@ -102,7 +102,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 RegisterRoomPlayerId(roomId, hostName, hostPlayerId);
 
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[Store] Room '{RoomId}' registered with host '{Host}' (atomic)",
+                _logger.LogInformation("Room '{RoomId}' registered with host '{Host}' (atomic)",
                     roomId, hostName);
             return true;
         }
@@ -421,7 +421,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                         _roomHosts[roomId] = newHost;
                         config.HostName = newHost;
                         if (_logger.IsEnabled(LogLevel.Information))
-                            _logger.LogInformation("[Store] Host of room '{RoomId}' transferred to '{NewHost}' (old host '{OldHost}' left).",
+                            _logger.LogInformation("Host of room '{RoomId}' transferred to '{NewHost}' (old host '{OldHost}' left).",
                                 roomId, newHost, leavingName);
                     }
                     else {
@@ -433,14 +433,14 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 if (config.CurrentPlayers <= 0) {
                     RemoveRoomState(roomId);
                     if (_logger.IsEnabled(LogLevel.Information))
-                        _logger.LogInformation("[Store] Room '{RoomId}' removed (last player '{Player}' left).",
+                        _logger.LogInformation("Room '{RoomId}' removed (last player '{Player}' left).",
                             roomId, leavingName);
                     return null; // 房间已删除，调用方无需广播
                 }
             }
 
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[Store] Player '{Player}' removed from room '{RoomId}' (disconnected)",
+                _logger.LogInformation("Player '{Player}' removed from room '{RoomId}' (disconnected)",
                     leavingName, roomId);
             return roomId;
         }

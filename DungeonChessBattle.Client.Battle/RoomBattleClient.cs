@@ -163,7 +163,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             .SubscribeToConstructed(OnUnitControllerCreated, callOnExisting: true);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomBattleClient] LES EntityManager created for peer {PeerId}", peer.Id);
+            _logger.LogInformation("LES EntityManager created for peer {PeerId}", peer.Id);
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomBattleClient] CreateUnit: room entity not found for {RoomId}", roomId);
+                _logger.LogWarning("CreateUnit: room entity not found for {RoomId}", roomId);
         }
     }
 
@@ -254,7 +254,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         pawn.RequestSetFocusTarget(targetNetId);
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomBattleClient] SetFocusTarget: unit={UnitId} -> target={TargetId}", unitNetId, targetNetId);
+            _logger.LogDebug("SetFocusTarget: unit={UnitId} -> target={TargetId}", unitNetId, targetNetId);
     }
 
     /// <summary>
@@ -265,11 +265,11 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         if (_localController != null) {
             _localController.SubmitInput(moveDir, skillFlags, aimPos);
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("[RoomBattleClient] Input submitted: dir={MoveDir}, flags={SkillFlags}, aim={AimPos}",
+                _logger.LogDebug("Input submitted: dir={MoveDir}, flags={SkillFlags}, aim={AimPos}",
                     moveDir, skillFlags, aimPos);
         }
         else if (_logger.IsEnabled(LogLevel.Warning) && (moveDir != System.Numerics.Vector2.Zero || skillFlags != 0)) {
-            _logger.LogWarning("[RoomBattleClient] Local controller not ready, input dropped: dir={MoveDir}, flags={SkillFlags}",
+            _logger.LogWarning("Local controller not ready, input dropped: dir={MoveDir}, flags={SkillFlags}",
                 moveDir, skillFlags);
         }
     }
@@ -279,11 +279,11 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         if (_roomEntity != null) {
             _roomEntity.RequestStartBattle();
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomBattleClient] RequestStartBattle via RPC: {RoomId}", roomId);
+                _logger.LogInformation("RequestStartBattle via RPC: {RoomId}", roomId);
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomBattleClient] RequestStartBattle: room entity not found for {RoomId}", roomId);
+                _logger.LogWarning("RequestStartBattle: room entity not found for {RoomId}", roomId);
         }
     }
 

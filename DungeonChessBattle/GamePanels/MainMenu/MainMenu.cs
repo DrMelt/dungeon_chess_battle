@@ -43,7 +43,7 @@ public partial class MainMenu : BaseGamePanel {
     public override void _Ready() {
         InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
         if (InterRefs is null) {
-            GD.PrintErr("[MainMenu] MainMenuInterRefs node not found.");
+            _logger.LogError("MainMenuInterRefs node not found.");
             return;
         }
 
@@ -173,10 +173,10 @@ public partial class MainMenu : BaseGamePanel {
     /// </summary>
     private void ValidateExports() {
         if (_gameLobby == null) {
-            GD.PrintErr("[MainMenu] [Export] _gameLobby is not assigned!");
+            _logger.LogError("_gameLobby is not assigned!");
         }
         if (_serverMgmtPanel == null) {
-            GD.PrintErr("[MainMenu] [Export] _serverMgmtPanel is not assigned!");
+            _logger.LogError("_serverMgmtPanel is not assigned!");
         }
     }
 

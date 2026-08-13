@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePanels;
 /// RoomPreparation 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class RoomPreparationInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<RoomPreparationInterRefs> _logger = ServiceLocator.GetLogger<RoomPreparationInterRefs>();
+
     /// <summary>房间副标题：房主标签。</summary>
     [ExportGroup("Labels")]
     [Export]
@@ -77,28 +82,28 @@ public partial class RoomPreparationInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (HostLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] HostLabel is not assigned!");
+            _logger.LogError("HostLabel is not assigned!");
         if (DungeonNameLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] DungeonNameLabel is not assigned!");
+            _logger.LogError("DungeonNameLabel is not assigned!");
         if (PlayersLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] PlayersLabel is not assigned!");
+            _logger.LogError("PlayersLabel is not assigned!");
         if (StatusLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] StatusLabel is not assigned!");
+            _logger.LogError("StatusLabel is not assigned!");
         if (InfoLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] InfoLabel is not assigned!");
+            _logger.LogError("InfoLabel is not assigned!");
         if (TitleLabel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] TitleLabel is not assigned!");
+            _logger.LogError("TitleLabel is not assigned!");
         if (SelectUnitButton == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] SelectUnitButton is not assigned!");
+            _logger.LogError("SelectUnitButton is not assigned!");
         if (StartBattleButton == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] StartBattleButton is not assigned!");
+            _logger.LogError("StartBattleButton is not assigned!");
         if (BackButton == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] BackButton is not assigned!");
+            _logger.LogError("BackButton is not assigned!");
         if (UnitCardGrid == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardGrid is not assigned!");
+            _logger.LogError("UnitCardGrid is not assigned!");
         if (UnitSelectPanel == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitSelectPanel is not assigned!");
+            _logger.LogError("UnitSelectPanel is not assigned!");
         if (UnitCardScene == null)
-            GD.PrintErr("[RoomPreparationInterRefs] [Export] UnitCardScene is not assigned!");
+            _logger.LogError("UnitCardScene is not assigned!");
     }
 }

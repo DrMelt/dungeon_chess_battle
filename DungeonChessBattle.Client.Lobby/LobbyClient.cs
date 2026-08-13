@@ -122,7 +122,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         catch (Exception ex) {
             if (version != _connectionVersion)
                 return;
-            _logger.LogWarning(ex, "[LobbyClient] 连接大厅失败");
+            _logger.LogWarning(ex, "连接大厅失败");
             OnFullyDisconnected?.Invoke();
         }
     }
@@ -131,7 +131,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     private void FireAndForget(Func<Task> op) {
         _ = op().ContinueWith(t => {
             if (t.IsFaulted)
-                _logger.LogWarning(t.Exception?.GetBaseException(), "[LobbyClient] 请求失败");
+                _logger.LogWarning(t.Exception?.GetBaseException(), "请求失败");
         });
     }
 
@@ -155,7 +155,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
                 OnRoomCreated?.Invoke(result.RoomId);
             }
             else if (_logger.IsEnabled(LogLevel.Warning)) {
-                _logger.LogWarning("[LobbyClient] 创建房间失败: {Error}", result.Error);
+                _logger.LogWarning("创建房间失败: {Error}", result.Error);
             }
         });
     }
@@ -172,7 +172,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
                 OnRoomJoined?.Invoke(result.RoomId);
             }
             else if (_logger.IsEnabled(LogLevel.Warning)) {
-                _logger.LogWarning("[LobbyClient] 加入房间失败: {Error}", result.Error);
+                _logger.LogWarning("加入房间失败: {Error}", result.Error);
             }
         });
     }

@@ -1,8 +1,10 @@
 using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.Services;
 using Godot;
 using Godot.Collections;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.MainScene;
 
@@ -12,6 +14,9 @@ namespace DungeonChessBattle.MainScene;
 /// 由 MainScene 在每帧 _Process 中调度 Tick；等待目标选择时暂缓提交移动输入。
 /// </summary>
 public partial class BattleInputController : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<BattleInputController> _logger = ServiceLocator.GetLogger<BattleInputController>();
+
     /// <summary>共享交互状态（读等待阻塞、写悬停单位与地面点）。</summary>
     [Export]
     private PlayerInterfaceRes? playerInterfaceResRef;
@@ -41,11 +46,11 @@ public partial class BattleInputController : Node {
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceResRef == null)
-            GD.PrintErr("[BattleInputController] [Export] playerInterfaceResRef is not assigned!");
+            _logger.LogError("playerInterfaceResRef is not assigned!");
         if (unitManagerRef == null)
-            GD.PrintErr("[BattleInputController] [Export] unitManagerRef is not assigned!");
+            _logger.LogError("unitManagerRef is not assigned!");
         if (cameraRef == null)
-            GD.PrintErr("[BattleInputController] [Export] cameraRef is not assigned!");
+            _logger.LogError("cameraRef is not assigned!");
     }
 
     /// <summary>当前活动相机引用。</summary>
@@ -78,11 +83,16 @@ public partial class BattleInputController : Node {
     public override void _UnhandledInput(InputEvent @event) {
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
             return;
-        if (playerInterfaceResRef == null || unitManagerRef == null)
+        if (unitManagerRef == null) {
+            _logger.LogWarning("unitManagerRef is not assigned!");
             return;
+        }
+
 
         var hit = RaycastUnitFromCamera();
         var targetNetId = hit?.UnitShowRef.Pawn.Id ?? 0;
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
         unitManagerRef.SetLocalFocusTarget(targetNetId);
     }
 

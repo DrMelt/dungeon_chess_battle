@@ -13,6 +13,7 @@ bg_color = Color(0.8776157, 0.8776158, 0.87761563, 1)
 
 [resource]
 default_font = ExtResource("1_pjyip")
+default_font_size = 14
 BoxContainer/constants/separation = 0
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_42c4a")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_pjyip")

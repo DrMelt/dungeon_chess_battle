@@ -5,6 +5,7 @@ using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.GamePlayUI;
 using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.MainScene;
 
@@ -15,6 +16,9 @@ namespace DungeonChessBattle.MainScene;
 /// 全部通过 IClientBattleService 接口消费服务，不再依赖 RoomBattleClient 具体类型。
 /// </summary>
 public partial class MainScene : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<MainScene> _logger = ServiceLocator.GetLogger<MainScene>();
+
     #region Signals
 
     /// <summary>战斗结束信号。</summary>
@@ -64,18 +68,18 @@ public partial class MainScene : Node {
         // 构造屏幕状态机（FrontUI 容器在战斗中整体隐藏）
         _screenMachine = new ScreenStateMachine(_frontUI);
 
-        GD.Print("[MainScene] _Ready Initialized.");
+        _logger.LogInformation("_Ready Initialized.");
     }
 
     private void ValidateExports() {
         if (_frontUI == null)
-            GD.PrintErr("[MainScene] [Export] _frontUI is not assigned!");
+            _logger.LogError("_frontUI is not assigned!");
         if (_battleUiRoot == null)
-            GD.PrintErr("[MainScene] [Export] _battleUiRoot is not assigned!");
+            _logger.LogError("_battleUiRoot is not assigned!");
         if (_unitManager == null)
-            GD.PrintErr("[MainScene] [Export] _unitManager is not assigned!");
+            _logger.LogError("_unitManager is not assigned!");
         if (_inputController == null)
-            GD.PrintErr("[MainScene] [Export] _inputController is not assigned!");
+            _logger.LogError("_inputController is not assigned!");
     }
 
     // =============================================================
@@ -86,7 +90,8 @@ public partial class MainScene : Node {
         _roomId = roomId;
         _battleService = ServiceLocator.ClientService.RoomClient;
 
-        GD.Print($"[MainScene] Battle started for room: {roomId}");
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Battle started for room: {RoomId}", roomId);
 
         // 生命周期事件（战斗阶段）由 MainScene 持有；单位事件归 BattleUnitManager
         if (_battleService != null) {
@@ -103,7 +108,7 @@ public partial class MainScene : Node {
         _screenMachine?.EnterBattle();
         _inBattle = true;
 
-        GD.Print("[MainScene] Entered battle.");
+        _logger.LogInformation("Entered battle.");
     }
 
     private void ExitBattle() {
@@ -127,7 +132,7 @@ public partial class MainScene : Node {
         _screenMachine?.ExitBattle();
 
         EmitSignal(SignalName.BattleEnded);
-        GD.Print("[MainScene] Exited battle.");
+        _logger.LogInformation("Exited battle.");
     }
 
     // =============================================================
@@ -157,7 +162,7 @@ public partial class MainScene : Node {
 
     private void DeferredBattlePhase(int phase) {
         if (phase == (int)BattlePhase.Finished) {
-            GD.Print("[MainScene] Battle finished detected via LES sync.");
+            _logger.LogInformation("Battle finished detected via LES sync.");
             CallDeferred(nameof(ExitBattle));
         }
     }

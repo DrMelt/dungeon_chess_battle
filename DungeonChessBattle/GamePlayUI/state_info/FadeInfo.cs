@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 淡出信息基类，按曲线驱动透明度变化并在结束后自动销毁。
 /// </summary>
 public partial class FadeInfo : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<FadeInfo> _logger = ServiceLocator.GetLogger<FadeInfo>();
+
     /// <summary>透明度随时间变化的曲线。</summary>
     [Export]
     private Curve? fadeCurve;
@@ -20,7 +25,7 @@ public partial class FadeInfo : Control {
     /// </summary>
     public override void _Ready() {
         if (fadeCurve == null)
-            GD.PrintErr("[FadeInfo] [Export] fadeCurve is not assigned!");
+            _logger.LogError("fadeCurve is not assigned!");
     }
 
     /// <summary>

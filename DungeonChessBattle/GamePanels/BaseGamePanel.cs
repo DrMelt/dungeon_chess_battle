@@ -64,11 +64,11 @@ public partial class BaseGamePanel : Control {
     /// </summary>
     /// <param name="target">目标面板实例</param>
     protected void NavigateTo(BaseGamePanel? target) {
+        var logger = ServiceLocator.CreateLogger(GetType().Name);
         if (target == null) {
-            GD.PrintErr($"[{GetType().Name}] NavigateTo failed: target panel is not assigned.");
+            logger.LogError("NavigateTo failed: target panel is not assigned.");
             return;
         }
-        var logger = ServiceLocator.CreateLogger(GetType().Name);
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("Navigate: {From} -> {To}", GetType().Name, target.GetType().Name);
         target.OpenPanelFrom(this);

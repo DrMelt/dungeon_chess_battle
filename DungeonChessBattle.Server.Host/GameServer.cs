@@ -76,7 +76,7 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
         await _lobby.BroadcastRoomSnapshotAsync(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Game] Player left room '{RoomId}'.", req.RoomId);
+            _logger.LogInformation("Player left room '{RoomId}'.", req.RoomId);
 
         return new LobbyResult(req.RoomId, true);
     }

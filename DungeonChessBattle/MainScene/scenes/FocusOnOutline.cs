@@ -1,5 +1,7 @@
 using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.MainScene;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.MainScene;
 /// 焦点单位轮廓高亮节点，跟随鼠标悬停的单位更新轮廓网格。
 /// </summary>
 public partial class FocusOnOutline : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<FocusOnOutline> _logger = ServiceLocator.GetLogger<FocusOnOutline>();
+
     /// <summary>玩家界面资源引用，用于获取鼠标悬停的单位。</summary>
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
@@ -20,9 +25,9 @@ public partial class FocusOnOutline : Node {
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceRes == null)
-            GD.PrintErr("[FocusOnOutline] [Export] playerInterfaceRes is not assigned!");
+            _logger.LogError("playerInterfaceRes is not assigned!");
         if (outLineMeshInstance == null)
-            GD.PrintErr("[FocusOnOutline] [Export] outLineMeshInstance is not assigned!");
+            _logger.LogError("outLineMeshInstance is not assigned!");
     }
 
     /// <summary>

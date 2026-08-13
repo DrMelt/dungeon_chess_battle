@@ -24,7 +24,7 @@ public partial class BattleRoomServer {
         }
         else {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomServer:{RoomId}] Connection rejected: invalid key '{Key}' from {RemoteEP}", RoomId, incomingKey, request.RemoteEndPoint);
+                _logger.LogWarning("[RoomId: {RoomId}] Connection rejected: invalid key '{Key}' from {RemoteEP}", RoomId, incomingKey, request.RemoteEndPoint);
             request.Reject();
         }
     }
@@ -40,7 +40,7 @@ public partial class BattleRoomServer {
             if (existingSession.Entity.PlayerState.Value == (byte)PlayerConnectionState.Connected) {
                 // 替换：清理旧 peer，用新 peer 重连
                 if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("[RoomServer:{RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
+                    _logger.LogInformation("[RoomId: {RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
                     RoomId, connectionKey);
                 ReplaceExistingConnection(connectionKey);
             }
@@ -64,7 +64,7 @@ public partial class BattleRoomServer {
             // 标记为断连状态，保留实体不销毁；玩家可凭 Store 成员身份随时重连
             session.Entity?.PlayerState.Value = (byte)PlayerConnectionState.Disconnected;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomServer:{RoomId}] Player '{PlayerId}' disconnected (entity retained).",
+                _logger.LogInformation("[RoomId: {RoomId}] Player '{PlayerId}' disconnected (entity retained).",
                     RoomId, playerId);
         }
 
@@ -75,7 +75,7 @@ public partial class BattleRoomServer {
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomServer:{RoomId}] Peer disconnected: {PeerId}, playerId={PlayerId}, Reason={Reason}",
+            _logger.LogInformation("[RoomId: {RoomId}] Peer disconnected: {PeerId}, playerId={PlayerId}, Reason={Reason}",
                 RoomId, peer.Id, playerId, disconnectInfo.Reason);
 
         OnClientDisconnected?.Invoke(peer.Id);
@@ -88,7 +88,7 @@ public partial class BattleRoomServer {
     }
 
     void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError) {
-        _logger.LogError("[RoomServer:{RoomId}] Error: {SocketError} from {EndPoint}", RoomId, socketError, endPoint);
+        _logger.LogError("[RoomId: {RoomId}] Error: {SocketError} from {EndPoint}", RoomId, socketError, endPoint);
     }
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {

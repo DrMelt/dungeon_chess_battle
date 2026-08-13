@@ -1,6 +1,8 @@
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -10,6 +12,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// 并接收 MainScene 直接调用的战斗绑定/解绑以初始化子组件。
 /// </summary>
 public partial class BattleUIRoot : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<BattleUIRoot> _logger = ServiceLocator.GetLogger<BattleUIRoot>();
+
     #region Exports
 
     /// <summary>共享交互状态引用。</summary>
@@ -49,7 +54,7 @@ public partial class BattleUIRoot : Control {
         };
 
         if (playerInterfaceRes == null) {
-            GD.PrintErr("[BattleUIRoot] playerInterfaceRes is not assigned!");
+            _logger.LogError("playerInterfaceRes is not assigned!");
             return;
         }
         playerInterfaceRes.FocusOnUnitChanged += UpdateSkillList;

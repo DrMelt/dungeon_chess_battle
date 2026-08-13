@@ -1,5 +1,7 @@
 using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Effects;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.Effects;
 /// 目标标记节点的资源引用集合，用于集中管理场景中引用的 UI 资源与贴花。
 /// </summary>
 public partial class Node3dTargetMarkInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<Node3dTargetMarkInterRefs> _logger = ServiceLocator.GetLogger<Node3dTargetMarkInterRefs>();
+
     /// <summary>
     /// 玩家界面资源。
     /// </summary>
@@ -36,10 +41,10 @@ public partial class Node3dTargetMarkInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (PlayerInterfaceRes == null)
-            GD.PrintErr("[Node3dTargetMarkInterRefs] [Export] PlayerInterfaceRes is not assigned!");
+            _logger.LogError("PlayerInterfaceRes is not assigned!");
         if (TargetDecalRef == null)
-            GD.PrintErr("[Node3dTargetMarkInterRefs] [Export] TargetDecalRef is not assigned!");
+            _logger.LogError("TargetDecalRef is not assigned!");
         if (PlayerUISettingsRes == null)
-            GD.PrintErr("[Node3dTargetMarkInterRefs] [Export] PlayerUISettingsRes is not assigned!");
+            _logger.LogError("PlayerUISettingsRes is not assigned!");
     }
 }

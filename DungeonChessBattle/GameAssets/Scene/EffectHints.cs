@@ -1,5 +1,7 @@
 using DungeonChessBattle.GamePlayUI;
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GameAssets;
 
@@ -7,6 +9,9 @@ namespace DungeonChessBattle.GameAssets;
 /// 技能效果提示管理器，持有圆形/矩形范围提示场景资源。
 /// </summary>
 public partial class EffectHints : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<EffectHints> _logger = ServiceLocator.GetLogger<EffectHints>();
+
     /// <summary>玩家界面资源引用。</summary>
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
@@ -24,11 +29,11 @@ public partial class EffectHints : Node {
     /// </summary>
     public override void _Ready() {
         if (playerInterfaceRes == null)
-            GD.PrintErr("[EffectHints] [Export] playerInterfaceRes is not assigned!");
+            _logger.LogError("playerInterfaceRes is not assigned!");
         if (_effectCircleRange_PKS == null)
-            GD.PrintErr("[EffectHints] [Export] _effectCircleRange_PKS is not assigned!");
+            _logger.LogError("_effectCircleRange_PKS is not assigned!");
         if (_effectRectRange_PKS == null)
-            GD.PrintErr("[EffectHints] [Export] _effectRectRange_PKS is not assigned!");
+            _logger.LogError("_effectRectRange_PKS is not assigned!");
     }
 
 }

@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// StateBarMark2d 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateBarMark2dInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateBarMark2dInterRefs> _logger = ServiceLocator.GetLogger<StateBarMark2dInterRefs>();
+
     /// <summary>单位血条状态组件。</summary>
     [Export]
     public HP_StateBar? PanelUnitStateBarRef {
@@ -17,6 +22,6 @@ public partial class StateBarMark2dInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (PanelUnitStateBarRef == null)
-            GD.PrintErr("[StateBarMark2dInterRefs] [Export] PanelUnitStateBarRef is not assigned!");
+            _logger.LogError("PanelUnitStateBarRef is not assigned!");
     }
 }

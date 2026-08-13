@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// StateBarMini 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class StateBarMiniInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<StateBarMiniInterRefs> _logger = ServiceLocator.GetLogger<StateBarMiniInterRefs>();
+
     /// <summary>Buff 图标容器组件。</summary>
     [Export]
     public ContainerBuffs? ContainerBuffsRef {
@@ -35,12 +40,12 @@ public partial class StateBarMiniInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (ContainerBuffsRef == null)
-            GD.PrintErr("[StateBarMiniInterRefs] [Export] ContainerBuffsRef is not assigned!");
+            _logger.LogError("ContainerBuffsRef is not assigned!");
         if (OutlineRef == null)
-            GD.PrintErr("[StateBarMiniInterRefs] [Export] OutlineRef is not assigned!");
+            _logger.LogError("OutlineRef is not assigned!");
         if (HpStateBarRef == null)
-            GD.PrintErr("[StateBarMiniInterRefs] [Export] HpStateBarRef is not assigned!");
+            _logger.LogError("HpStateBarRef is not assigned!");
         if (SkillProgressBarRef == null)
-            GD.PrintErr("[StateBarMiniInterRefs] [Export] SkillProgressBarRef is not assigned!");
+            _logger.LogError("SkillProgressBarRef is not assigned!");
     }
 }

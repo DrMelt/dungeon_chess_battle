@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -8,6 +10,9 @@ namespace DungeonChessBattle.GamePanels;
 /// 使用 InterRefs 模式分离 [Export] 引用。
 /// </summary>
 public partial class UnitCard : Control {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitCard> _logger = ServiceLocator.GetLogger<UnitCard>();
+
     /// <summary>单位被点击选中时发出的信号，参数为单位配置键。</summary>
     [Signal]
     public delegate void UnitSelectedEventHandler(string unitConfigKey);
@@ -41,7 +46,7 @@ public partial class UnitCard : Control {
     public override void _Ready() {
         _refs = GetNode<UnitCardInterRefs>("UnitCardInterRefs");
         if (_refs is null) {
-            GD.PrintErr("[UnitCard] UnitCardInterRefs node not found.");
+            _logger.LogError("UnitCardInterRefs node not found.");
             return;
         }
 

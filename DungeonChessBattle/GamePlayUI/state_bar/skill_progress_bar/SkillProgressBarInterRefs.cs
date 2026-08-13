@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// SkillProgressBar 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class SkillProgressBarInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<SkillProgressBarInterRefs> _logger = ServiceLocator.GetLogger<SkillProgressBarInterRefs>();
+
     /// <summary>施法进度条。</summary>
     [Export]
     public ProgressBar? ProgressBarRef {
@@ -29,10 +34,10 @@ public partial class SkillProgressBarInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (ProgressBarRef == null)
-            GD.PrintErr("[SkillProgressBarInterRefs] [Export] ProgressBarRef is not assigned!");
+            _logger.LogError("ProgressBarRef is not assigned!");
         if (LabelSkillNameRef == null)
-            GD.PrintErr("[SkillProgressBarInterRefs] [Export] LabelSkillNameRef is not assigned!");
+            _logger.LogError("LabelSkillNameRef is not assigned!");
         if (LabelRemainingTimeRef == null)
-            GD.PrintErr("[SkillProgressBarInterRefs] [Export] LabelRemainingTimeRef is not assigned!");
+            _logger.LogError("LabelRemainingTimeRef is not assigned!");
     }
 }

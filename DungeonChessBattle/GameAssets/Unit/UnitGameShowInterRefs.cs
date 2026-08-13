@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GameAssets;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GameAssets;
 /// UnitGameShow 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class UnitGameShowInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitGameShowInterRefs> _logger = ServiceLocator.GetLogger<UnitGameShowInterRefs>();
+
     /// <summary>单位网格实例。</summary>
     [Export]
     public MeshInstance3D? UnitMeshInstanceRef {
@@ -22,8 +27,8 @@ public partial class UnitGameShowInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (UnitMeshInstanceRef == null)
-            GD.PrintErr("[UnitGameShowInterRefs] [Export] UnitMeshInstanceRef is not assigned!");
+            _logger.LogError("UnitMeshInstanceRef is not assigned!");
         if (UnitShowAreaRef == null)
-            GD.PrintErr("[UnitGameShowInterRefs] [Export] UnitShowAreaRef is not assigned!");
+            _logger.LogError("UnitShowAreaRef is not assigned!");
     }
 }

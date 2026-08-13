@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePanels;
 /// UnitSelectPanel 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class UnitSelectPanelInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<UnitSelectPanelInterRefs> _logger = ServiceLocator.GetLogger<UnitSelectPanelInterRefs>();
+
     /// <summary>面板标题标签。</summary>
     [Export]
     public Label? TitleLabel {
@@ -32,12 +37,12 @@ public partial class UnitSelectPanelInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (TitleLabel == null)
-            GD.PrintErr("[UnitSelectPanelInterRefs] [Export] TitleLabel is not assigned!");
+            _logger.LogError("TitleLabel is not assigned!");
         if (UnitCardGrid == null)
-            GD.PrintErr("[UnitSelectPanelInterRefs] [Export] UnitCardGrid is not assigned!");
+            _logger.LogError("UnitCardGrid is not assigned!");
         if (BackButton == null)
-            GD.PrintErr("[UnitSelectPanelInterRefs] [Export] BackButton is not assigned!");
+            _logger.LogError("BackButton is not assigned!");
         if (UnitCardScene == null)
-            GD.PrintErr("[UnitSelectPanelInterRefs] [Export] UnitCardScene is not assigned!");
+            _logger.LogError("UnitCardScene is not assigned!");
     }
 }

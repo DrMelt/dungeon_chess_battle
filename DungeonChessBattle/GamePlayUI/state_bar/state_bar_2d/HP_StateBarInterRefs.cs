@@ -1,4 +1,6 @@
+using DungeonChessBattle.Services;
 using Godot;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.GamePlayUI;
 
@@ -6,6 +8,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// HP_StateBar 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
 public partial class HP_StateBarInterRefs : Node {
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<HP_StateBarInterRefs> _logger = ServiceLocator.GetLogger<HP_StateBarInterRefs>();
+
     /// <summary>玩家 UI 设置资源，用于获取阵营颜色。</summary>
     [Export]
     public PlayerUISettings? PlayerUISettingsRef {
@@ -41,14 +46,14 @@ public partial class HP_StateBarInterRefs : Node {
     /// </summary>
     public override void _Ready() {
         if (PlayerUISettingsRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] PlayerUISettingsRef is not assigned!");
+            _logger.LogError("PlayerUISettingsRef is not assigned!");
         if (ProgressBarRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] ProgressBarRef is not assigned!");
+            _logger.LogError("ProgressBarRef is not assigned!");
         if (LabelPercentRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] LabelPercentRef is not assigned!");
+            _logger.LogError("LabelPercentRef is not assigned!");
         if (LabelCurrentValueRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] LabelCurrentValueRef is not assigned!");
+            _logger.LogError("LabelCurrentValueRef is not assigned!");
         if (LabelObjectNameRef == null)
-            GD.PrintErr("[HP_StateBarInterRefs] [Export] LabelObjectNameRef is not assigned!");
+            _logger.LogError("LabelObjectNameRef is not assigned!");
     }
 }
