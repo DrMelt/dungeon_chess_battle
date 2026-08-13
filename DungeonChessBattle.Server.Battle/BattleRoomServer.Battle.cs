@@ -110,7 +110,7 @@ public partial class BattleRoomServer {
             entity.BaseSpeed.Value = config.BaseSpeed;
             entity.BodyRadius.Value = config.BodyRadius;
             foreach (var skill in config.Skills)
-                entity.SkillIds.Add(skill.SkillId);
+                entity.SkillIds.Add(skill.SkillId.Id);
         }
 
         // 注册到战斗编排门面，BattleRoom 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn
@@ -182,7 +182,7 @@ public partial class BattleRoomServer {
             targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
         }
 
-        bool began = _battleRoom.BeginCast(casterPawn, req.SkillTypeId, target, targetPos);
+        bool began = _battleRoom.BeginCast(casterPawn, new SkillKeyId(req.SkillTypeId), target, targetPos);
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",

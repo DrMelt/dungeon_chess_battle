@@ -1,6 +1,7 @@
 using System;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GamePlayUI.skill_list;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -102,7 +103,7 @@ public partial class ButtonSkillBase : Button {
         if (pawn == null)
             return;
 
-        float remaining = GetSkillCooldownRemaining(pawn);
+        float remaining = SkillCooldownHelper.Remaining(pawn, _bindingSkill!.SkillId);
         if (remaining > 0f) {
             SelfModulate = _coolingColor;
             if (_labelCooldownTimeRef != null) {
@@ -116,17 +117,4 @@ public partial class ButtonSkillBase : Button {
         }
     }
 
-    /// <summary>
-    /// 计算该技能按钮当前的冷却剩余秒数（GCD 与个体技能冷却取较大者）。
-    /// </summary>
-    /// <param name="pawn">施法单位 Pawn。</param>
-    /// <returns>剩余冷却秒数；无冷却返回 0。</returns>
-    private float GetSkillCooldownRemaining(UnitPawn pawn) {
-        float remaining = pawn.GcdRemaining.Value;
-        foreach (var cd in pawn.SkillCooldowns) {
-            if (cd.SkillId == _bindingSkill!.SkillId && cd.Remaining > remaining)
-                remaining = cd.Remaining;
-        }
-        return remaining;
-    }
 }

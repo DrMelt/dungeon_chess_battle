@@ -42,7 +42,7 @@ public partial class UnitGameShow : Node3D {
 
     /// <summary>
     /// 获取当前正在施放的单位技能，用于施法进度展示。
-    /// 按 Pawn.SkillCasting（技能配置 ID）匹配 SkillsList。
+    /// 按 Pawn.SkillCasting（技能配置键）匹配 SkillsList。
     /// </summary>
     /// <returns>匹配的 Godot 技能资源；无施法返回 null。</returns>
     public UnitSkillBaseGodot? GetSpellingSkill() {
@@ -50,7 +50,7 @@ public partial class UnitGameShow : Node3D {
         if (castingId == 0)
             return null;
         foreach (var skill in SkillsList) {
-            if (skill.SkillId == castingId)
+            if (skill.SkillId.Id == castingId)
                 return skill;
         }
         return null;

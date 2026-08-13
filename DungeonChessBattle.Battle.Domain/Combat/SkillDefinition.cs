@@ -18,8 +18,8 @@ public enum SkillTargetPolicy {
 /// 领域结算直接消费数值，不再生成可变运行时模型。
 /// </summary>
 public abstract class SkillDefinition {
-    /// <summary>技能全局唯一 ID。</summary>
-    public required ushort SkillId {
+    /// <summary>技能全局唯一强类型 ID。</summary>
+    public required SkillKeyId SkillId {
         get; init;
     }
 

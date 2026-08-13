@@ -19,7 +19,7 @@ public readonly record struct BuffApplied(ushort TargetNetId, ushort BuffTypeId,
 public readonly record struct BuffExpired(ushort TargetNetId, ushort BuffTypeId) : IDomainEvent;
 
 /// <summary>技能读条完成并完成结算。</summary>
-public readonly record struct CastCompleted(ushort CasterNetId, ushort SkillId, ushort? TargetNetId) : IDomainEvent;
+public readonly record struct CastCompleted(ushort CasterNetId, SkillKeyId SkillId, ushort? TargetNetId) : IDomainEvent;
 
 /// <summary>单位死亡。</summary>
 public readonly record struct UnitDied(ushort UnitNetId) : IDomainEvent;

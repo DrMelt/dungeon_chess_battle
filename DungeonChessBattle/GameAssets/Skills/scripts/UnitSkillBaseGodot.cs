@@ -19,8 +19,8 @@ public partial class UnitSkillBaseGodot : Resource {
     /// </summary>
     internal SkillDefinition? InternalConfig => Config;
 
-    /// <summary>技能全局唯一 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
-    public ushort SkillId => Config?.SkillId ?? 0;
+    /// <summary>技能强类型 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
+    public SkillKeyId SkillId => Config?.SkillId ?? default;
 
     /// <summary>技能图标。</summary>
     [Export]

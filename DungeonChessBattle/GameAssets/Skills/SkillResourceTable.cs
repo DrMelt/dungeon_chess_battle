@@ -76,12 +76,12 @@ public partial class SkillResourceTable : Resource {
     }
 
     /// <summary>
-    /// 通过技能全局 ID 查找并创建对应的 Godot 技能资源实例。
+    /// 通过技能强类型 ID 查找并创建对应的 Godot 技能资源实例。
     /// </summary>
-    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="skillKey">技能配置键。</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本；未找到返回 null。</returns>
-    public static UnitSkillBaseGodot? GetResourceBySkillId(ushort skillId) {
-        var config = GameConfig.GameConfigDB.GetSkillById(skillId);
+    public static UnitSkillBaseGodot? GetResourceBySkillId(SkillKeyId skillKey) {
+        var config = GameConfig.GameConfigDB.GetSkillById(skillKey);
         if (config == null)
             return null;
         try {

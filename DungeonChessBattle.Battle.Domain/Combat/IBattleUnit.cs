@@ -36,8 +36,8 @@ public interface IBattleUnit {
         get;
     }
 
-    /// <summary>当前施法技能 ID，0 表示无施法。</summary>
-    ushort SkillCasting {
+    /// <summary>当前施法技能，default 表示无施法。</summary>
+    SkillKeyId SkillCasting {
         get; set;
     }
 
@@ -51,13 +51,18 @@ public interface IBattleUnit {
         get; set;
     }
 
-    /// <summary>技能个体冷却快照，技能 ID 到剩余秒数。</summary>
-    IReadOnlyDictionary<ushort, float> SkillCooldowns {
+    /// <summary>技能个体冷却快照，技能到剩余秒数。</summary>
+    IReadOnlyDictionary<SkillKeyId, float> SkillCooldowns {
         get;
     }
 
     /// <summary>写入单个技能的个体冷却，剩余秒数。</summary>
-    void SetSkillCooldown(ushort skillId, float remaining);
+    void SetSkillCooldown(SkillKeyId skillKey, float remaining);
+
+    /// <summary>单位拥有的技能类型列表，服务端权威，判定施放归属。</summary>
+    IReadOnlyList<SkillKeyId> SkillIds {
+        get;
+    }
 
     /// <summary>当前 Buff 快照，展示投影。</summary>
     IReadOnlyList<BuffView> Buffs {

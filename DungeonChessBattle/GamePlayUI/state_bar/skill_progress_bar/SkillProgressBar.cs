@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
 using Godot;
@@ -34,7 +35,7 @@ public partial class SkillProgressBar : Control {
             return;
         }
 
-        var skill = SkillResourceTable.GetResourceBySkillId(castingId);
+        var skill = SkillResourceTable.GetResourceBySkillId(new SkillKeyId(castingId));
         if (skill == null) {
             Visible = false;
             return;

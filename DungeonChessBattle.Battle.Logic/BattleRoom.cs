@@ -17,6 +17,7 @@ namespace DungeonChessBattle.Battle.Logic;
 /// </summary>
 public sealed class BattleRoom(ISkillRepository skills) {
     private readonly ISkillRepository _skills = skills ?? throw new ArgumentNullException(nameof(skills));
+
     private readonly List<IBattleUnit> _units = [];
 
     /// <summary>读条目标权威，服务端私有，不参与同步。</summary>
@@ -87,26 +88,17 @@ public sealed class BattleRoom(ISkillRepository skills) {
     }
 
     /// <summary>
-    /// 发起读条施法：冷却校验通过后写入读条状态并暂存目标。
+    /// 发起读条施法：技能存在、归属、状态与目标/位置校验通过后写入读条状态并暂存目标。
     /// </summary>
-    /// <returns>冷却校验通过并成功发起返回 true。</returns>
-    public bool BeginCast(IBattleUnit caster, ushort skillId, IBattleUnit? target, Vector2? targetPos) {
-        if (caster.GcdRemaining > 0f)
-            return false;
-        if (caster.SkillCooldowns.TryGetValue(skillId, out var remaining) && remaining > 0f)
-            return false;
-
-        var skill = _skills.Get(skillId);
+    /// <returns>校验通过并成功发起返回 true。</returns>
+    public bool BeginCast(IBattleUnit caster, SkillKeyId skillKey, IBattleUnit? target, Vector2? targetPos) {
+        var skill = _skills.Get(skillKey);
         if (skill == null)
             return false;
-
-        // 目标限制：需单位目标的技能禁止空目标，且目标必须满足技能的目标阵营策略
-        if (skill.NeedUnitTarget && target == null)
-            return false;
-        if (target != null && !SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy))
+        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos))
             return false;
 
-        caster.SkillCasting = skillId;
+        caster.SkillCasting = skillKey;
         caster.SkillCastRemaining = skill.SpellTime;
         _castTargets[caster] = new CastContext(target, targetPos);
         return true;
@@ -116,9 +108,9 @@ public sealed class BattleRoom(ISkillRepository skills) {
     /// 单位发生移动：保留既定行为"移动即打断读条"。
     /// </summary>
     public void OnUnitMoved(IBattleUnit unit, Vector2 moveDir) {
-        if (moveDir.LengthSquared() <= 0.0001f || unit.SkillCasting == 0)
+        if (moveDir.LengthSquared() <= 0.0001f || unit.SkillCasting == default)
             return;
-        unit.SkillCasting = 0;
+        unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         _castTargets.Remove(unit);
     }
@@ -186,7 +178,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
     #region Tick 内部
 
     private void TickCasting(IBattleUnit unit, double deltaTime, List<IDomainEvent> events) {
-        if (unit.SkillCasting == 0)
+        if (unit.SkillCasting == default)
             return;
 
         unit.SkillCastRemaining -= (float)deltaTime;
@@ -194,7 +186,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
             return;
 
         ResolveCast(unit, events);
-        unit.SkillCasting = 0;
+        unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         _castTargets.Remove(unit);
     }

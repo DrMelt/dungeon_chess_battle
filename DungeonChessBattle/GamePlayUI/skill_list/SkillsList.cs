@@ -1,6 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GamePlayUI.skill_list;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;
@@ -52,6 +56,9 @@ public partial class SkillsList : Control {
     /// <summary>当前展示的技能所属单位 NetId，用于变化检测。</summary>
     private ushort? _shownUnitId;
 
+    /// <summary>技能预输入缓冲，不可施放时缓存按键并在可施放时自动施放。</summary>
+    private SkillPreInput? _preInput;
+
     /// <summary>
     /// 节点就绪：获取引用集合节点并校验导出引用。
     /// </summary>
@@ -61,8 +68,39 @@ public partial class SkillsList : Control {
             _logger.LogError("SkillsListInterRefs node not found.");
             return;
         }
-        if (_unitManagerRef == null)
+        if (_unitManagerRef == null) {
             _logger.LogError("_unitManagerRef is not assigned!");
+            return;
+        }
+        _preInput = CreatePreInput();
+    }
+
+    /// <summary>
+    /// 组装预输入缓冲：判定直接消费按钮持有的技能定义，走领域共享静态判定
+    /// SkillCastValidator（目标/位置由本地场景解析），施放经当前战斗服务发送。
+    /// </summary>
+    private SkillPreInput? CreatePreInput() {
+        var manager = _unitManagerRef;
+        if (manager == null)
+            return null;
+        return new SkillPreInput(
+            (skill, targetNetId, posX, posZ) =>
+                CanCastLocal(manager, skill, targetNetId, posX, posZ),
+            new BattleSkillCaster(
+                () => manager.BattleService,
+                () => manager.RoomId,
+                () => manager.LocalUnitShow?.Pawn.Id ?? 0),
+            clock: null);
+    }
+
+    /// <summary>本地位施放判定：本地方单位状态 + 解析目标后统一走 SkillCastValidator。</summary>
+    private static bool CanCastLocal(BattleUnitManager manager, SkillDefinition skill,
+        ushort targetNetId, float posX, float posZ) {
+        var pawn = manager.LocalUnitShow?.Pawn;
+        if (pawn == null)
+            return false;
+        var target = targetNetId != 0 ? manager.UnitsArr.FirstOrDefault(u => u.Id == targetNetId) : null;
+        return SkillCastValidator.CanCast(pawn, skill, target, new System.Numerics.Vector2(posX, posZ));
     }
 
     /// <summary>
@@ -71,6 +109,7 @@ public partial class SkillsList : Control {
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         HandleWaitPosTargetInput();
+        _preInput?.Refresh();
 
         var manager = _unitManagerRef;
         var showUnit = manager?.LocalUnitShow;
@@ -95,15 +134,9 @@ public partial class SkillsList : Control {
             var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
             if (targetPos != null) {
                 var v = targetPos.Value;
-                var skill = _waitingButton.BindSkill;
-                var service = _unitManagerRef?.BattleService;
-                service?.CastSkill(
-                        _unitManagerRef?.RoomId ?? "",
-                        _waitingButton.BindPawn.Id,
-                        0,
-                        skill.SkillId,
-                        v.X,
-                        v.Z);
+                var skill = _waitingButton.BindSkill.InternalConfig;
+                if (skill != null)
+                    SubmitCast(skill, 0, v.X, v.Z, _waitingButton);
             }
             CancelWait();
         }
@@ -115,6 +148,7 @@ public partial class SkillsList : Control {
     /// <param name="unitShow">目标单位的展示对象，无则清空按钮。</param>
     private void UpdateSkillsList(UnitGameShow? unitShow) {
         CancelWait();
+        _preInput?.Clear();
 
         var hBox = InterRefs?.HBoxContainerRef;
         if (hBox == null)
@@ -143,33 +177,28 @@ public partial class SkillsList : Control {
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
-        var skill = button.BindSkill;
+        var skill = button.BindSkill.InternalConfig;
         var unitsManager = _unitManagerRef;
-        var service = unitsManager?.BattleService;
-        if (service == null) {
+        if (skill == null || unitsManager == null) {
             button.ButtonPressed = false;
             return;
         }
-        var roomId = unitsManager?.RoomId ?? "";
-        var casterNetId = button.BindPawn.Id;
 
         // NeedUnitTarget：优先使用已锁定的本地焦点单位，目标阵营需满足技能目标策略
         if (skill.NeedUnitTarget) {
-            var targetUnit = unitsManager?.LocalFocusUnit;
-            var selfPawn = unitsManager?.LocalUnitShow?.Pawn;
+            var targetUnit = unitsManager.LocalFocusUnit;
+            var selfPawn = unitsManager.LocalUnitShow?.Pawn;
 
             // 焦点目标合法时直接施放到焦点目标
             if (targetUnit != null
                 && SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy)) {
-                service.CastSkill(roomId, casterNetId, targetUnit.Pawn.Id, skill.SkillId);
-                button.ButtonPressed = false;
+                SubmitCast(skill, targetUnit.Pawn.Id, 0f, 0f, button);
                 return;
             }
 
             // 无焦点目标或焦点目标不合法：允许对友方释放的技能回退为对自身施放
             if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfPawn != null) {
-                service.CastSkill(roomId, casterNetId, selfPawn.Id, skill.SkillId);
-                button.ButtonPressed = false;
+                SubmitCast(skill, selfPawn.Id, 0f, 0f, button);
                 return;
             }
 
@@ -185,8 +214,13 @@ public partial class SkillsList : Control {
             return;
         }
 
-        // 无目标需求：同步发起施法 RPC
-        service.CastSkill(roomId, casterNetId, 0, skill.SkillId);
+        // 无目标需求：提交施法意图
+        SubmitCast(skill, 0, 0f, 0f, button);
+    }
+
+    /// <summary>提交施法意图到预输入缓冲：可施放立即施放，否则入队并在可施放时自动施放。</summary>
+    private void SubmitCast(SkillDefinition skill, ushort targetNetId, float posX, float posZ, ButtonSkillBase button) {
+        _preInput?.Submit(skill, targetNetId, posX, posZ);
         button.ButtonPressed = false;
     }
 

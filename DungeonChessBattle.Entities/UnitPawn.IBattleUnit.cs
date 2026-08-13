@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Entities.SyncData;
 
@@ -39,9 +40,9 @@ public partial class UnitPawn : IBattleUnit {
     float IBattleUnit.MaxHealth => MaxHealth.Value;
 
     /// <inheritdoc />
-    ushort IBattleUnit.SkillCasting {
-        get => SkillCasting.Value;
-        set => SkillCasting.Value = value;
+    SkillKeyId IBattleUnit.SkillCasting {
+        get => new(SkillCasting.Value);
+        set => SkillCasting.Value = value.Id;
     }
 
     /// <inheritdoc />
@@ -57,29 +58,32 @@ public partial class UnitPawn : IBattleUnit {
     }
 
     /// <inheritdoc />
-    IReadOnlyDictionary<ushort, float> IBattleUnit.SkillCooldowns {
+    IReadOnlyDictionary<SkillKeyId, float> IBattleUnit.SkillCooldowns {
         get {
-            var map = new Dictionary<ushort, float>(SkillCooldowns.Count);
+            var map = new Dictionary<SkillKeyId, float>(SkillCooldowns.Count);
             foreach (var cd in SkillCooldowns)
-                map[cd.SkillId] = cd.Remaining;
+                map[new SkillKeyId(cd.SkillId)] = cd.Remaining;
             return map;
         }
     }
 
     /// <inheritdoc />
-    void IBattleUnit.SetSkillCooldown(ushort skillId, float remaining) {
+    void IBattleUnit.SetSkillCooldown(SkillKeyId skillKey, float remaining) {
         for (int i = 0; i < SkillCooldowns.Count; i++) {
-            if (SkillCooldowns[i].SkillId != skillId)
+            if (SkillCooldowns[i].SkillId != skillKey.Id)
                 continue;
             if (remaining <= 0f)
                 SkillCooldowns.RemoveAt(i);
             else
-                SkillCooldowns[i] = new SyncSkillCooldown { SkillId = skillId, Remaining = remaining };
+                SkillCooldowns[i] = new SyncSkillCooldown { SkillId = skillKey.Id, Remaining = remaining };
             return;
         }
         if (remaining > 0f)
-            SkillCooldowns.Add(new SyncSkillCooldown { SkillId = skillId, Remaining = remaining });
+            SkillCooldowns.Add(new SyncSkillCooldown { SkillId = skillKey.Id, Remaining = remaining });
     }
+
+    /// <inheritdoc />
+    IReadOnlyList<SkillKeyId> IBattleUnit.SkillIds => [.. SkillIds.Select(id => new SkillKeyId(id))];
 
     /// <inheritdoc />
     IReadOnlyList<BuffView> IBattleUnit.Buffs {

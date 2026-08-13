@@ -51,7 +51,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static DamageSkillDefinition SkillMagicDamage {
         get;
     } = new() {
-        SkillId = 1,
+        SkillId = new SkillKeyId(1),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -66,7 +66,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static HealSkillDefinition SkillCure {
         get;
     } = new() {
-        SkillId = 2,
+        SkillId = new SkillKeyId(2),
         SpellTime = 0.5f,
         CooldownTime = 0.5f,
         GcdTime = 2.0f,
@@ -80,7 +80,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static AddBuffSkillDefinition SkillAddDotMagic {
         get;
     } = new() {
-        SkillId = 3,
+        SkillId = new SkillKeyId(3),
         SpellTime = 0.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -94,7 +94,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static AddBuffSkillDefinition SkillAddHot {
         get;
     } = new() {
-        SkillId = 4,
+        SkillId = new SkillKeyId(4),
         SpellTime = 0.0f,
         CooldownTime = 1.5f,
         GcdTime = 2.0f,
@@ -108,7 +108,7 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     public static RangeDamageSkillDefinition SkillRectRangeDamage {
         get;
     } = new() {
-        SkillId = 5,
+        SkillId = new SkillKeyId(5),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -224,12 +224,12 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     UnitConfig IGameConfigDB.UnitWhiteMage => UnitWhiteMage;
 
     /// <summary>
-    /// 按技能全局 ID 查找技能定义。
+    /// 按技能强类型 ID 查找技能定义。
     /// </summary>
-    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="skillKey">技能配置键。</param>
     /// <returns>对应的技能定义；未找到返回 null。</returns>
-    public static SkillDefinition? GetSkillById(ushort skillId) {
-        return skillId switch {
+    public static SkillDefinition? GetSkillById(SkillKeyId skillKey) {
+        return skillKey.Id switch {
             1 => SkillMagicDamage,
             2 => SkillCure,
             3 => SkillAddDotMagic,
@@ -240,5 +240,5 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
     }
 
     /// <inheritdoc />
-    SkillDefinition? ISkillRepository.Get(ushort skillId) => GetSkillById(skillId);
+    SkillDefinition? ISkillRepository.Get(SkillKeyId skillKey) => GetSkillById(skillKey);
 }
