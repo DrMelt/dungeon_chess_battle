@@ -153,18 +153,26 @@ public partial class SkillsList : Control {
         var roomId = unitsManager?.RoomId ?? "";
         var casterNetId = button.BindPawn.Id;
 
-        // NeedUnitTarget：使用已锁定的本地焦点单位，目标阵营需满足技能目标策略，否则拒绝
+        // NeedUnitTarget：优先使用已锁定的本地焦点单位，目标阵营需满足技能目标策略
         if (skill.NeedUnitTarget) {
             var targetUnit = unitsManager?.LocalFocusUnit;
-            if (targetUnit == null) {
+            var selfPawn = unitsManager?.LocalUnitShow?.Pawn;
+
+            // 焦点目标合法时直接施放到焦点目标
+            if (targetUnit != null
+                && SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy)) {
+                service.CastSkill(roomId, casterNetId, targetUnit.Pawn.Id, skill.SkillId);
                 button.ButtonPressed = false;
                 return;
             }
-            if (!SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy)) {
+
+            // 无焦点目标或焦点目标不合法：允许对友方释放的技能回退为对自身施放
+            if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfPawn != null) {
+                service.CastSkill(roomId, casterNetId, selfPawn.Id, skill.SkillId);
                 button.ButtonPressed = false;
                 return;
             }
-            service.CastSkill(roomId, casterNetId, targetUnit.Pawn.Id, skill.SkillId);
+
             button.ButtonPressed = false;
             return;
         }
