@@ -69,7 +69,10 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
 
                 var builder = WebApplication.CreateBuilder();
                 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-                builder.Logging.AddConsole();
+                builder.Logging.AddSimpleConsole(options => {
+                    options.SingleLine = true;
+                    options.TimestampFormat = "HH:mm:ss.fff ";
+                });
                 builder.Services.AddSingleton(new LobbyServerConfig { ServerPassword = config.ServerPassword });
                 builder.Services.AddSingleton(new BattleServerConfig {
                     ConnectionKey = config.ServerPassword ?? config.ConnectionKey,

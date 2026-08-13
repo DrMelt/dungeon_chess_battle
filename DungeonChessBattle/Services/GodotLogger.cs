@@ -66,7 +66,8 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
             return;
 
         string message = formatter(state, exception);
-        string full = $"[{_categoryName}] {message}";
+        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        string full = $"[{timestamp}] [{_categoryName}] {message}";
         if (exception != null)
             full += $"\n{exception}";
 

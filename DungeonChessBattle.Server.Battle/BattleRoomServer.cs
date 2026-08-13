@@ -206,6 +206,17 @@ public partial class BattleRoomServer : INetEventListener {
             _initialized.Set();
         }
 
+        // 房间一经初始化即开战：阶段机 Waiting → Running 并同步 BattlePhase。
+        // 战斗只允许在房间线程启动，与 Tick / EntityManager.Update 保持线程所有权一致；
+        // 大厅 StartRoomBattle 等待 _initialized 后才广播重定向，
+        // 客户端连入时 BattlePhase 已为 Running，技能请求不会被阶段校验拒绝。
+        try {
+            StartBattle();
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, "[RoomId: {RoomId}] StartBattle failed.", RoomId);
+        }
+
         while (_running) {
             try {
                 double now = _tickWatch.Elapsed.TotalSeconds;

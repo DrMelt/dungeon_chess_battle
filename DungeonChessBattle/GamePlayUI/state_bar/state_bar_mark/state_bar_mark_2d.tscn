@@ -8,6 +8,7 @@
 layout_mode = 3
 anchors_preset = 0
 scale = Vector2(0.5, 0.5)
+mouse_filter = 2
 script = ExtResource("1_21cjg")
 
 [node name="StateBarMark2dInterRefs" type="Node" parent="." unique_id=254009468 node_paths=PackedStringArray("PanelUnitStateBarRef")]
@@ -27,4 +28,3 @@ offset_right = 130.0
 offset_bottom = 19.5
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2

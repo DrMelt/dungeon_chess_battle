@@ -11,7 +11,10 @@ if (int.TryParse(portArg, out int parsedPort) && parsedPort is > 0 and <= 65535)
 bool hasServerPassword = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DCB_SERVER_PASSWORD"));
 
 using var loggerFactory = LoggerFactory.Create(builder => {
-    builder.AddConsole();
+    builder.AddSimpleConsole(options => {
+        options.SingleLine = true;
+        options.TimestampFormat = "HH:mm:ss.fff ";
+    });
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
