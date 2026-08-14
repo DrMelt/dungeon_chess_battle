@@ -4,6 +4,18 @@
 [ext_resource type="Script" uid="uid://0uvgvvb764ni" path="res://GamePlayUI/skill_list/skill_button/ButtonSkillBase.cs" id="2_rvfo7"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="3_m5lm5"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d0enr"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_blend = true
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [sub_resource type="LabelSettings" id="LabelSettings_byone"]
 font_size = 28
 outline_size = 6
@@ -14,6 +26,7 @@ offset_right = 88.0
 offset_bottom = 88.0
 focus_mode = 0
 focus_behavior_recursive = 1
+theme_override_styles/hover = SubResource("StyleBoxFlat_d0enr")
 icon = ExtResource("1_xjo8s")
 script = ExtResource("2_rvfo7")
 _playerInterfaceRes = ExtResource("3_m5lm5")
