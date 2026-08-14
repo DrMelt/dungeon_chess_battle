@@ -139,7 +139,7 @@ public partial class BattleRoomServer : INetEventListener {
         _battleRoom = new BattleRoom();
         _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>());
 
-        var typesMap = EntityTypesRegistry.GetOrCreateMap();
+        var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
             typesMap,
             PacketHeader,

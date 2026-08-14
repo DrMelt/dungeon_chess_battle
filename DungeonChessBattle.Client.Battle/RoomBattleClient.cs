@@ -199,7 +199,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var countingPeer = new CountingNetPeer(lesPeer);
         _countingPeer = countingPeer;
-        var typesMap = EntityTypesRegistry.GetOrCreateMap();
+        var typesMap = EntityTypesRegistry.EntityTypesMap;
         _entityManager = new ClientEntityManager(typesMap, countingPeer, PacketHeader);
 
         // 订阅所有同步 Entity 类型的创建事件
