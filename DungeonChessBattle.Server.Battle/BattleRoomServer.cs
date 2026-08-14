@@ -68,7 +68,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的 BattleRoomEntity，SEM 创建后填充。</summary>
     private BattleRoomEntity? _roomEntity;
 
-    /// <summary>本房间的战斗编排门面，面向 IBattleUnit，只依赖 Domain 与 GameConfig 仓库。</summary>
+    /// <summary>本房间的战斗编排门面，面向 IBattleUnit，不依赖网络载体与配置仓库。</summary>
     private readonly BattleRoom _battleRoom;
 
     /// <summary>本房间创建时间，服务端权威，来自 Store 房间配置。</summary>
@@ -136,7 +136,7 @@ public partial class BattleRoomServer : INetEventListener {
         _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
         _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
             ?? DungeonRegistry.DefaultDungeonKey;
-        _battleRoom = new BattleRoom(GameConfigDB.Instance);
+        _battleRoom = new BattleRoom();
         _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>());
 
         var typesMap = EntityTypesRegistry.GetOrCreateMap();

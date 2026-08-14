@@ -6,11 +6,11 @@ using DungeonChessBattle.Battle.Domain.Movement;
 namespace DungeonChessBattle.GameConfig;
 
 /// <summary>
-/// 纯 C# 配置数据库，直接构建领域只读定义（SkillDefinition / BuffDefinition / RangeShape），
-/// 同时实现 ISkillRepository 供战斗编排查询。Server 和 Client 直接引用，零反射，编译期类型安全。
+/// 纯 C# 配置数据库，直接构建领域只读定义（SkillDefinition / BuffDefinition / RangeShape）。
+/// Server 和 Client 直接引用，零反射，编译期类型安全。
 /// 通过 IGameConfigDB 接口解耦，消费者可选注入。
 /// </summary>
-public class GameConfigDB : IGameConfigDB, ISkillRepository {
+public class GameConfigDB : IGameConfigDB {
     /// <summary>
     /// 全局单例，Godot 脚本通过静态属性访问。
     /// </summary>
@@ -251,6 +251,4 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
         };
     }
 
-    /// <inheritdoc />
-    SkillDefinition? ISkillRepository.Get(SkillKeyId skillKey) => GetSkillById(skillKey);
-}
+    }

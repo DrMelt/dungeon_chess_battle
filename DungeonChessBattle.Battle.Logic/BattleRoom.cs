@@ -12,12 +12,10 @@ namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
 /// 战斗编排门面：统一驱动读条、冷却、Buff 推进与技能结算。
-/// 只依赖 Domain 接口 IBattleUnit、ISkillRepository 与 IMovementScene，不依赖具体网络载体。
+/// 面向 Domain 接口 IBattleUnit 读写单位状态，不依赖网络载体与全局配置仓库。
 /// 服务端每帧调用 <see cref="Tick"/> 推进状态，并消费返回的领域事件做网络广播。
 /// </summary>
-public sealed class BattleRoom(ISkillRepository skills) {
-    private readonly ISkillRepository _skills = skills ?? throw new ArgumentNullException(nameof(skills));
-
+public sealed class BattleRoom {
     private readonly List<IBattleUnit> _units = [];
 
     /// <summary>读条目标权威，服务端私有，不参与同步。</summary>
@@ -102,7 +100,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
     /// </summary>
     /// <returns>校验通过并成功发起返回 true。</returns>
     public bool BeginCast(IBattleUnit caster, SkillKeyId skillKey, IBattleUnit? target, Vector2? targetPos) {
-        var skill = _skills.Get(skillKey);
+        var skill = caster.GetSkill(skillKey);
         if (skill == null)
             return false;
         if (!SkillCastValidator.CanCast(caster, skill, target, targetPos))
@@ -255,7 +253,7 @@ public sealed class BattleRoom(ISkillRepository skills) {
         if (!_castTargets.TryGetValue(caster, out var ctx))
             return;
 
-        var skill = _skills.Get(caster.SkillCasting);
+        var skill = caster.GetSkill(caster.SkillCasting);
         if (skill == null)
             return;
 

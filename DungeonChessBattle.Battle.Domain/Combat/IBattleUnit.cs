@@ -57,6 +57,9 @@ public interface IBattleUnit {
     /// <summary>单位是否拥有该技能，服务端权威归属判定。</summary>
     bool HasSkill(SkillKeyId skillKey);
 
+    /// <summary>按技能 ID 获取技能定义，单位未装备该技能时返回 null。</summary>
+    SkillDefinition? GetSkill(SkillKeyId skillKey);
+
     /// <summary>读取单个技能的个体冷却剩余秒数，无此技能的冷却时返回 0。</summary>
     float GetSkillCooldownRemaining(SkillKeyId skillKey);
 

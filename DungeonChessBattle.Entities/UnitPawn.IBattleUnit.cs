@@ -66,6 +66,15 @@ public partial class UnitPawn : IBattleUnit {
     }
 
     /// <inheritdoc />
+    SkillDefinition? IBattleUnit.GetSkill(SkillKeyId skillKey) {
+        foreach (var skill in Skills) {
+            if (skill.SkillId == skillKey)
+                return skill;
+        }
+        return null;
+    }
+
+    /// <inheritdoc />
     float IBattleUnit.GetSkillCooldownRemaining(SkillKeyId skillKey) {
         foreach (var cd in SkillCooldowns) {
             if (cd.SkillId == skillKey.Id)

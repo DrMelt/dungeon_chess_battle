@@ -14,7 +14,7 @@ public enum SkillTargetPolicy {
 }
 
 /// <summary>
-/// 技能只读定义，纯数据无运行时状态。由配置层 ISkillRepository 提供，
+/// 技能只读定义，纯数据无运行时状态。由配置层 GameConfig 提供并装配到战斗单位。
 /// 领域结算直接消费数值，不再生成可变运行时模型。
 /// </summary>
 public abstract class SkillDefinition {
