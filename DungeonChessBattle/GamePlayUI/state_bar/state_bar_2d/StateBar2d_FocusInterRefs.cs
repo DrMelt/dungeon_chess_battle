@@ -11,12 +11,6 @@ public partial class StateBar2d_FocusInterRefs : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<StateBar2d_FocusInterRefs> _logger = ServiceLocator.GetLogger<StateBar2d_FocusInterRefs>();
 
-    /// <summary>玩家界面资源，提供焦点/悬停单位数据。</summary>
-    [Export]
-    public PlayerInterfaceRes? PlayerInterfaceRes {
-        get; set;
-    }
-
     /// <summary>玩家 UI 设置资源。</summary>
     [Export]
     public PlayerUISettings? PlayerUISettingsRef {
@@ -45,8 +39,6 @@ public partial class StateBar2d_FocusInterRefs : Node {
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
     /// </summary>
     public override void _Ready() {
-        if (PlayerInterfaceRes == null)
-            _logger.LogError("PlayerInterfaceRes is not assigned!");
         if (PlayerUISettingsRef == null)
             _logger.LogError("PlayerUISettingsRef is not assigned!");
         if (HboxContainerBuffsRef == null)

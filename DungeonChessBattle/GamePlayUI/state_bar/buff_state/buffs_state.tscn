@@ -21,4 +21,3 @@ BuffContainer = NodePath("../HFlowContainer")
 
 [node name="HFlowContainer" type="HFlowContainer" parent="." unique_id=173098243]
 layout_mode = 2
-offset_transform_enabled = true

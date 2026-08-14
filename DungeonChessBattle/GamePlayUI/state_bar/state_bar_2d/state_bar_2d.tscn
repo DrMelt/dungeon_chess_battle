@@ -6,7 +6,6 @@
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://GamePlayUI/state_bar/buff_state/buffs_state.tscn" id="4_bln5c"]
 [ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progress_bar/skill_progress_bar.tscn" id="7_8vcj7"]
 [ext_resource type="Script" uid="uid://wystpvgpbayv" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_FocusInterRefs.cs" id="8_sb2d_interrefs"]
-[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="9_ui_res"]
 
 [node name="State_Bar_2D" type="MarginContainer" unique_id=1634240238]
 offset_right = 454.0
@@ -19,9 +18,8 @@ script = ExtResource("1_yhj07")
 
 [node name="StateBar2d_FocusInterRefs" type="Node" parent="." unique_id=560142546 node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
 script = ExtResource("8_sb2d_interrefs")
-PlayerInterfaceRes = ExtResource("9_ui_res")
 PlayerUISettingsRef = ExtResource("2_nayus")
-HboxContainerBuffsRef = NodePath("../VBoxContainer/Control/HBoxContainer_Buffs")
+HboxContainerBuffsRef = NodePath("../VBoxContainer/HBoxContainer_Buffs")
 PanelFocusStateRef = NodePath("../VBoxContainer/HBoxContainer/HP_StateBar")
 PanelSkillProgressBarRef = NodePath("../VBoxContainer/HBoxContainer/Panel_Skill_ProgressBar")
 
@@ -39,17 +37,6 @@ layout_mode = 2
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="Control" type="Control" parent="VBoxContainer" unique_id=547026059]
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-offset_transform_enabled = true
-
-[node name="HBoxContainer_Buffs" parent="VBoxContainer/Control" unique_id=1095143621 instance=ExtResource("4_bln5c")]
+[node name="HBoxContainer_Buffs" parent="VBoxContainer" unique_id=1095143621 instance=ExtResource("4_bln5c")]
 custom_minimum_size = Vector2(480, 64)
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 2.0
-anchor_bottom = 2.0
-offset_right = 0.0
-offset_bottom = 0.0
-scale = Vector2(0.5, 0.5)
+layout_mode = 2

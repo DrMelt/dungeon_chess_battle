@@ -1,12 +1,11 @@
-using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.MainScene;
 using Godot;
 
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
-/// 焦点/悬停单位的 2D 状态栏容器。
-/// 每帧根据鼠标悬停或本地焦点单位刷新显示 Buff、状态与施法进度。
+/// 焦点/选中单位的 2D 状态栏容器。
+/// 每帧按本地焦点单位刷新显示 Buff、状态与施法进度，无选中时隐藏。
 /// </summary>
 public partial class StateBar2d_Selected : Control {
 
@@ -27,13 +26,13 @@ public partial class StateBar2d_Selected : Control {
     }
 
     /// <summary>
-    /// 每帧检查鼠标悬停/焦点单位，有则显示状态栏并刷新子组件，无则隐藏。
+    /// 每帧检查选中单位，无选中则隐藏，否则显示并刷新子组件。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         if (InterRefs == null)
             return;
-        UnitGameShow? showUnit = GetUnitShow();
+        var showUnit = _unitManagerRef?.LocalFocusUnit;
 
         if (showUnit != null) {
             Visible = true;
@@ -46,25 +45,5 @@ public partial class StateBar2d_Selected : Control {
         else {
             Visible = false;
         }
-    }
-
-    /// <summary>
-    /// 获取需要展示的单位：优先鼠标悬停单位，其次本地焦点单位。
-    /// </summary>
-    /// <returns>要展示的单位，无则为 null。</returns>
-    private UnitGameShow? GetUnitShow() {
-        UnitGameShow? showUnit = null;
-        var uiRes = InterRefs?.PlayerInterfaceRes;
-        if (uiRes == null)
-            return null;
-        UnitGameShow? mouseOnUnit = uiRes.MouseOnUnit;
-        UnitGameShow? focusOnUnit = _unitManagerRef?.LocalFocusUnit;
-        if (mouseOnUnit != null) {
-            showUnit = mouseOnUnit;
-        }
-        else if (focusOnUnit != null) {
-            showUnit = focusOnUnit;
-        }
-        return showUnit;
     }
 }
