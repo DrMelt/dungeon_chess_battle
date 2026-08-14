@@ -19,7 +19,7 @@ public partial class StateBarListInterRefs : Node {
 
     /// <summary>迷你状态条使用的场景资源。</summary>
     [Export]
-    public PackedScene? StateBarMiniPKS {
+    public PackedScene? ClickableStateBarPKS {
         get; set;
     }
 
@@ -29,7 +29,7 @@ public partial class StateBarListInterRefs : Node {
     public override void _Ready() {
         if (VBoxContainerRef == null)
             _logger.LogError("VBoxContainerRef is not assigned!");
-        if (StateBarMiniPKS == null)
-            _logger.LogError("StateBarMiniPKS is not assigned!");
+        if (ClickableStateBarPKS == null)
+            _logger.LogError("ClickableStateBarPKS is not assigned!");
     }
 }

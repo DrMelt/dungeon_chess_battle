@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
-/// StateBarMini 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
+/// ClickableStateBar 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
-public partial class StateBarMiniInterRefs : Node {
+public partial class ClickableStateBarInterRefs : Node {
     /// <summary>日志记录器。</summary>
-    private static readonly ILogger<StateBarMiniInterRefs> _logger = ServiceLocator.GetLogger<StateBarMiniInterRefs>();
+    private static readonly ILogger<ClickableStateBarInterRefs> _logger = ServiceLocator.GetLogger<ClickableStateBarInterRefs>();
 
     /// <summary>Buff 图标容器组件。</summary>
     [Export]

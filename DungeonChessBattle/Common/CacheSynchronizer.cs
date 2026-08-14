@@ -16,7 +16,7 @@ namespace DungeonChessBattle.Common;
 /// <param name="create">创建缓存对象的工厂回调。</param>
 /// <param name="remove">移除缓存对象的回调。</param>
 /// <param name="update">更新缓存对象的回调。</param>
-public class KeyedCache<TKey, TItem, TValue>(
+public class CacheSynchronizer<TKey, TItem, TValue>(
     Func<TItem, TKey> getKey,
     Func<TValue> create,
     Action<TValue> remove,

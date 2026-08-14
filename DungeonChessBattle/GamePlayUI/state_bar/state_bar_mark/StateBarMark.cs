@@ -24,7 +24,7 @@ public partial class StateBarMark : Control {
     private PackedScene? stateBarSimple2d_PKD;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
-    private readonly KeyedCache<ushort, UnitPawn, StateBarMark2d> _marks;
+    private readonly CacheSynchronizer<ushort, UnitPawn, StateBarMark2d> _marks;
 
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。

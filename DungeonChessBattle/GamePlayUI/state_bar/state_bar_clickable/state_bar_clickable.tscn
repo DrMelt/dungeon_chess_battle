@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://dy0rydxvg8qji"]
 
-[ext_resource type="Script" uid="uid://cf2nf2qebdoth" path="res://GamePlayUI/state_bar/state_bar_mini/StateBarMini.cs" id="1_hd56u"]
+[ext_resource type="Script" uid="uid://cf2nf2qebdoth" path="res://GamePlayUI/state_bar/state_bar_clickable/ClickableStateBar.cs" id="1_hd56u"]
 [ext_resource type="PackedScene" uid="uid://djjaubphsavfy" path="res://GamePlayUI/state_bar/state_bar_2d/hp_state_bar.tscn" id="1_oeal0"]
 [ext_resource type="PackedScene" uid="uid://dy3y0pqqsp3sd" path="res://GamePlayUI/state_bar/skill_progress_bar/skill_progress_bar.tscn" id="2_hd56u"]
 [ext_resource type="PackedScene" uid="uid://23p073tbgnak" path="res://GamePlayUI/state_bar/buff_state/buffs_state.tscn" id="3_ifvqs"]
-[ext_resource type="Script" uid="uid://bokpja5neoako" path="res://GamePlayUI/state_bar/state_bar_mini/StateBarMiniInterRefs.cs" id="4_statemini_interrefs"]
+[ext_resource type="Script" uid="uid://bokpja5neoako" path="res://GamePlayUI/state_bar/state_bar_clickable/ClickableStateBarInterRefs.cs" id="4_statemini_interrefs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uiego"]
 bg_color = Color(0.36282945, 0.36282948, 0.36282933, 0.09019608)
@@ -13,7 +13,14 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[node name="StateBarMini" type="PanelContainer" unique_id=381497290]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3d2fa"]
+bg_color = Color(1, 1, 1, 0.05882353)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ClickableStateBar" type="PanelContainer" unique_id=381497290]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -24,11 +31,17 @@ focus_behavior_recursive = 1
 theme_override_styles/panel = SubResource("StyleBoxFlat_uiego")
 script = ExtResource("1_hd56u")
 
-[node name="StateBarMiniInterRefs" type="Node" parent="." unique_id=254225466 node_paths=PackedStringArray("ContainerBuffsRef", "HpStateBarRef", "SkillProgressBarRef")]
+[node name="ClickableStateBarInterRefs" type="Node" parent="." unique_id=254225466 node_paths=PackedStringArray("ContainerBuffsRef", "OutlineRef", "HpStateBarRef", "SkillProgressBarRef")]
 script = ExtResource("4_statemini_interrefs")
 ContainerBuffsRef = NodePath("../MarginContainer/VBoxContainer/HBoxContainer_Buffs")
+OutlineRef = NodePath("../Panel")
 HpStateBarRef = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/Panel_HP_State")
 SkillProgressBarRef = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/Skill_ProgressBar")
+
+[node name="Panel" type="Panel" parent="." unique_id=28156686]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3d2fa")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=473903445]
 custom_minimum_size = Vector2(400, 85)

@@ -26,7 +26,7 @@ public partial class UnitTargetMarks : Node {
     private PackedScene? _targetMarkPackedScene;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
-    private readonly KeyedCache<ushort, UnitPawn, Node3dTargetMark> _marks;
+    private readonly CacheSynchronizer<ushort, UnitPawn, Node3dTargetMark> _marks;
 
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
