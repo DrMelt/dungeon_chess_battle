@@ -2,6 +2,7 @@ using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
@@ -34,6 +35,8 @@ public partial class BattleRoomServer {
 
         // 注入服务端权威副本键，客户端据此加载对应的环境场景
         _roomEntity?.DungeonKey.Value = _dungeonKey;
+        // 构建移动物理场景：按副本键取战场布局，静态障碍写入 Aether World；单位后续注册进场景做互斥
+        _movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(_dungeonKey));
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -116,9 +119,12 @@ public partial class BattleRoomServer {
         _battleRoom.AddUnit(entity);
 
         // 注入碰撞半径与移动管线，Logic 层 MovementResolver，含场景交互。
-        // 场景两端口径一致，OpenMovementScene 无碰撞，保证预测与权威确定性一致。
+        // 场景两端口径一致，从同一副本布局构建 Aether 世界，保证预测与权威确定性一致；
+        // 半径与位置延迟读取，规避实体构造时同步未完成的时序。
+        var scene = _movementScene ?? throw new InvalidOperationException($"Room '{RoomId}' movement scene not initialized.");
         entity.MoveResolver = (pos, dir, speed, dt) =>
-            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, OpenMovementScene.Instance);
+            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, scene, entity.Id);
+        scene.AddActor(entity.Id, () => entity.BodyRadius.Value, () => entity.Position.Value);
 
         return entity;
     }
@@ -269,7 +275,7 @@ public partial class BattleRoomServer {
                 break;
 
             case BuffExpired buffExp:
-                BroadcastBuffChanged(buffExp.TargetNetId, buffExp.BuffTypeId, (ushort)0, added: false);
+                BroadcastBuffChanged(buffExp.TargetNetId, buffExp.BuffTypeId, 0, added: false);
                 break;
 
             case CastCompleted:

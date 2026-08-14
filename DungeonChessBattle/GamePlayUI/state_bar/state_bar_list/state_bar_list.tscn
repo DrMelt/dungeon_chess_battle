@@ -4,18 +4,37 @@
 [ext_resource type="PackedScene" uid="uid://dy0rydxvg8qji" path="res://GamePlayUI/state_bar/state_bar_mini/state_bar_mini.tscn" id="2_uuyu1"]
 [ext_resource type="Script" uid="uid://b7dgqaman60f5" path="res://GamePlayUI/state_bar/state_bar_list/StateBarListInterRefs.cs" id="3_interrefs"]
 
-[node name="StateBar_List" type="Control" unique_id=882237536]
-layout_mode = 3
-anchors_preset = 0
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uiego"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="StateBar_List" type="MarginContainer" unique_id=1675577504]
+offset_right = 404.0
+offset_bottom = 93.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 script = ExtResource("1_eyf7q")
 
 [node name="StateBarListInterRefs" type="Node" parent="." unique_id=928252537 node_paths=PackedStringArray("VBoxContainerRef")]
 script = ExtResource("3_interrefs")
-VBoxContainerRef = NodePath("../VBoxContainer")
+VBoxContainerRef = NodePath("../PanelContainer/VBoxContainer")
 StateBarMiniPKS = ExtResource("2_uuyu1")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1511520905]
-layout_mode = 1
-offset_right = 400.0
-offset_bottom = 91.0
-scale = Vector2(0.7, 0.7)
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1197408755]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uiego")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=1511520905]
+layout_mode = 2
+
+[node name="StateBarMini" parent="PanelContainer/VBoxContainer" unique_id=381497290 instance=ExtResource("2_uuyu1")]
+layout_mode = 2

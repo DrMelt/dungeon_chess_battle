@@ -32,10 +32,12 @@ public partial class RoomBattleClient {
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
-        // 注入移动管线，Logic 层 MovementResolver，含场景交互。
-        // 与服务端注入同一实现；延迟读 BodyRadius.Value，规避实体构造时同步未完成的时序。
+        // 注入移动管线，Logic 层 MovementResolver，含场景交互，并注册单位互斥。
+        // 与服务端注入同一实现；场景在副本键同步后就绪，就绪前按自由移动回退；
+        // 半径与位置延迟读取，规避实体构造时同步未完成的时序。
         pawn.MoveResolver = (pos, dir, speed, dt) =>
-            MovementResolver.Move(pos, dir, speed, dt, pawn.BodyRadius.Value, OpenMovementScene.Instance);
+            MovementResolver.Move(pos, dir, speed, dt, pawn.BodyRadius.Value, GetOrCreateMovementScene(), pawn.Id);
+        TryRegisterPawn(pawn);
 
         var unitName = pawn.UnitName.Value;
         lock (_lock) {

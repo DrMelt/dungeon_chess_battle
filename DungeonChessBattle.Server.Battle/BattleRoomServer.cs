@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
@@ -80,6 +82,8 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>敌人大脑：服务端每 tick 驱动敌方单位移动与施法。</summary>
     private readonly EnemyBrain _enemyBrain;
+    /// <summary>本房间的移动物理场景，房间线程首帧初始化后只读，null 表示尚未构建。</summary>
+    private PhysicsMovementScene? _movementScene;
 
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
@@ -184,6 +188,7 @@ public partial class BattleRoomServer : INetEventListener {
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
             _battleRoom.RemoveUnit(pawn);
+            _movementScene?.RemoveActor(pawn.Id);
         }
 
         // 先等待房间线程退出，再销毁保留实体，避免大厅线程在房间线程

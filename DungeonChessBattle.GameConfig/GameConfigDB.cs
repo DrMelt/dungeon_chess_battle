@@ -1,6 +1,7 @@
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Range;
 using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.Battle.Domain.Movement;
 
 namespace DungeonChessBattle.GameConfig;
 
@@ -199,7 +200,12 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
         Enemies: [
             new(Unit: UnitGoblin, Count: 3, SpawnBaseX: 30f, SpawnXSpacing: 3f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 42f, SpawnXSpacing: 0f),
-        ]);
+        ],
+        Layout: new BattlefieldLayout(
+            50f, 30f,
+            [
+                new ObstacleRect(MinX: 14f, MinY: 9f, MaxX: 18f, MaxY: 11f),
+            ]));
 
     /// <summary>副本二：深邃洞窟，哥布林群与更强首领。</summary>
     public static DungeonConfig Dungeon_02 {
@@ -211,7 +217,13 @@ public class GameConfigDB : IGameConfigDB, ISkillRepository {
         Enemies: [
             new(Unit: UnitGoblin, Count: 5, SpawnBaseX: 28f, SpawnXSpacing: 2.5f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 44f, SpawnXSpacing: 0f),
-        ]);
+        ],
+        Layout: new BattlefieldLayout(
+            50f, 30f,
+            [
+                new ObstacleRect(MinX: 8f, MinY: -14f, MaxX: 12f, MaxY: -12f),
+                new ObstacleRect(MinX: 18f, MinY: 8f, MaxX: 21f, MaxY: 14f),
+            ]));
 
     DamageOverTimeBuff IGameConfigDB.BuffDotMagic => BuffDotMagic;
     DamageOverTimeBuff IGameConfigDB.BuffDotPhysical => BuffDotPhysical;

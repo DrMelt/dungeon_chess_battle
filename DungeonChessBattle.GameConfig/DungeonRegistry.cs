@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.GameConfig.Data;
 
 namespace DungeonChessBattle.GameConfig;
@@ -45,6 +46,10 @@ public sealed class DungeonRegistry {
     /// <summary>按副本键获取配置；不存在或为空返回 null。</summary>
     public DungeonConfig? GetByKey(string? dungeonKey) =>
         string.IsNullOrWhiteSpace(dungeonKey) ? null : _byKey.GetValueOrDefault(dungeonKey);
+
+    /// <summary>按副本键获取移动场景布局；副本未配置或不存在时返回默认竞技场。</summary>
+    public BattlefieldLayout GetMovementLayout(string? dungeonKey) =>
+        GetByKey(dungeonKey)?.Layout ?? BattlefieldLayout.Default;
 
     /// <summary>按副本键获取显示名；配置缺失时返回 null。</summary>
     public string? GetDisplayName(string? dungeonKey) => GetByKey(dungeonKey)?.DisplayName;

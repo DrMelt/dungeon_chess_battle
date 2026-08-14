@@ -1,3 +1,5 @@
+using DungeonChessBattle.Battle.Domain.Movement;
+
 namespace DungeonChessBattle.GameConfig.Data;
 
 /// <summary>
@@ -15,11 +17,12 @@ public sealed record EnemySpawnConfig(
     float SpawnXSpacing = 3f);
 
 /// <summary>
-/// 副本配置：副本键、显示名与敌人生成阵容。
+/// 副本配置：副本键、显示名、敌人生成阵容与战场布局。
 /// 纯 C# 共享配置，服务端据此生成敌人，客户端据此决定环境表现。
 /// </summary>
 public sealed record DungeonConfig(
     string DungeonKey,
     string DisplayName,
     string Description,
-    IReadOnlyList<EnemySpawnConfig> Enemies);
+    IReadOnlyList<EnemySpawnConfig> Enemies,
+    BattlefieldLayout? Layout = null);

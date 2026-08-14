@@ -9,6 +9,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 150.0
 offset_bottom = 32.0
+mouse_filter = 2
 script = ExtResource("1_ytur1")
 
 [node name="SkillProgressBarInterRefs" type="Node" parent="." unique_id=1493960129 node_paths=PackedStringArray("ProgressBarRef", "LabelSkillNameRef", "LabelRemainingTimeRef")]

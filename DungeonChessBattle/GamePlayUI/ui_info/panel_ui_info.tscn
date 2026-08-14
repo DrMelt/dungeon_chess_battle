@@ -33,11 +33,11 @@ layout_mode = 2
 
 [node name="Label_Skill_Name" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=2078599679]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Label_Skill_Name"
 vertical_alignment = 1
 
 [node name="Label_Skill_Description" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=1069378686]
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "Label_Skill_Description"

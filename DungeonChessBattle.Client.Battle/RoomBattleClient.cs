@@ -3,6 +3,9 @@ using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
+using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Logic.Movement;
+using DungeonChessBattle.GameConfig;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
@@ -69,12 +72,55 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private int _packetsOutPerSecond;
     private long _bytesOutPerSecond;
     private CountingNetPeer? _countingPeer;
+    /// <summary>客户端权威移动物理场景，按房间副本键构建，与服务端同源；断开/重连时置空重建。</summary>
+    private PhysicsMovementScene? _movementScene;
+
+    /// <summary>副本键同步前尚未注册进场景的 Pawn，场景创建时统一补注册。</summary>
+    private readonly List<UnitPawn> _pendingScenePawns = [];
+
+    /// <summary>已注册进场景的单位网络 ID 集合，幂等防重注册。</summary>
+    private readonly HashSet<ushort> _registeredActorIds = [];
+
+    /// <summary>
+    /// 获取或创建客户端权威移动物理场景：仅在副本键同步后就绪时按布局构建并缓存，
+    /// 未同步时返回 null，由移动管线按自由移动回退，规避副本键迟到导致固化错误布局。
+    /// 构建时统一补注册等待中的 Pawn；房间断开/重连时置空重建。
+    /// </summary>
+    private PhysicsMovementScene? GetOrCreateMovementScene() {
+        if (_movementScene != null)
+            return _movementScene;
+        if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
+            return null;
+
+        var scene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(room.DungeonKey.Value));
+        _movementScene = scene;
+        foreach (var pawn in _pendingScenePawns)
+            scene.AddActor(pawn.Id, () => pawn.BodyRadius.Value, () => pawn.Position.Value);
+        _pendingScenePawns.Clear();
+        return scene;
+    }
+
+    /// <summary>
+    /// 将 Pawn 注册进移动场景参与互斥：场景未就绪时挂入等待队列，
+    /// 由场景创建时的统一补注册接管。幂等，重复调用仅首次生效。
+    /// </summary>
+    private void TryRegisterPawn(UnitPawn pawn) {
+        if (!_registeredActorIds.Add(pawn.Id))
+            return;
+        if (GetOrCreateMovementScene() is { } scene)
+            scene.AddActor(pawn.Id, () => pawn.BodyRadius.Value, () => pawn.Position.Value);
+        else
+            _pendingScenePawns.Add(pawn);
+    }
 
     /// <summary>重连时清理实体缓存与传输统计。</summary>
     protected override void OnReconnectCleanup() {
         base.OnReconnectCleanup();
         _entityManager = null;
         _localController = null;
+        _movementScene = null;
+        _pendingScenePawns.Clear();
+        _registeredActorIds.Clear();
         ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
@@ -91,6 +137,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         base.OnDisconnectCleanup();
         _entityManager = null;
         _localController = null;
+        _movementScene = null;
+        _pendingScenePawns.Clear();
+        _registeredActorIds.Clear();
         ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
@@ -102,6 +151,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>轮询网络事件后更新实体、结算每秒流量并检测战斗阶段变化。</summary>
     protected override void UpdateAfterPollEvents(float delta) {
+        // 副本键同步后构建移动场景并补注册等待单位；未同步时为空操作，随下一帧重试
+        GetOrCreateMovementScene();
         _entityManager?.Update();
 
         // 每秒流量统计结算，每秒一次，换算并重置累加器
@@ -173,6 +224,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
         _entityManager = null;
         _localController = null;
+        _movementScene = null;
+        _pendingScenePawns.Clear();
+        _registeredActorIds.Clear();
         lock (_lock) {
             _roomEntity = null;
             _roomPawns.Clear();
