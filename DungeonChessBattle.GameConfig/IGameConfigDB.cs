@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GameConfig;
 

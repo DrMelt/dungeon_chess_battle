@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Domain.Combat;
 
-namespace DungeonChessBattle.GameConfig.Data;
+namespace DungeonChessBattle.GameConfig.Models;
 
 /// <summary>
 /// 单位配置，仅包含策划配表参数，不含运行时状态。

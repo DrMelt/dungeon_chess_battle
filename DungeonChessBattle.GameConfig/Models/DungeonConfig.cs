@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Movement;
 
-namespace DungeonChessBattle.GameConfig.Data;
+namespace DungeonChessBattle.GameConfig.Models;
 
 /// <summary>
 /// 敌人阵容条目：单位配置引用与出生点参数。
@@ -18,13 +18,11 @@ public sealed record EnemySpawnConfig(
     float SpawnXSpacing = 3f);
 
 /// <summary>
-/// 副本配置：副本键、显示名、敌人生成阵容与战场布局。
+/// 副本配置：副本键、敌人生成阵容与战场布局。
 /// 纯 C# 共享配置，服务端据此生成敌人，客户端据此决定环境表现。
 /// </summary>
 public sealed record DungeonConfig(
     string DungeonKey,
-    string DisplayName,
-    string Description,
     IReadOnlyList<EnemySpawnConfig> Enemies,
     CampRelationResolver RelationsResolver,
     BattlefieldLayout? Layout = null);

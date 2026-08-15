@@ -48,16 +48,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             : $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
     }
 
-    /// <summary>解析权威副本名：副本注册表中配置的显示名，未注册时退回客户端传入的展示名。</summary>
-    /// <param name="dungeonKey">副本键。</param>
-    /// <param name="fallbackName">客户端传入的展示名兜底。</param>
-    /// <returns>权威副本显示名。</returns>
-    public static string ResolveDungeonName(string? dungeonKey, string? fallbackName) {
-        var info = DungeonRegistry.Instance.GetByKey(dungeonKey);
-        return info?.DisplayName
-            ?? (!string.IsNullOrWhiteSpace(fallbackName) ? fallbackName : string.Empty);
-    }
-
     /// <summary>解析权威副本键：非法键回落默认副本。</summary>
     /// <param name="dungeonKey">客户端提交的副本键。</param>
     /// <returns>合法的副本键。</returns>
@@ -85,7 +75,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (req.Config != null) {
             config = new GameRoom(roomId) {
                 DungeonKey = ResolveDungeonKey(req.Config.DungeonKey),
-                DungeonName = ResolveDungeonName(req.Config.DungeonKey, req.Config.DungeonName),
                 Description = req.Config.Description,
                 HostName = hostDisplayName,
                 MaxPlayers = req.Config.MaxPlayers > 0 ? req.Config.MaxPlayers : 2,
@@ -95,8 +84,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         else {
             // 启用默认值填充房间，无配置直接进入战斗
             config = new GameRoom(roomId) {
-                DungeonKey = DungeonRegistry.DefaultDungeonKey,
-                DungeonName = ResolveDungeonName(DungeonRegistry.DefaultDungeonKey, roomId),
+                DungeonKey = EntityConstants.DefaultDungeonKey,
                 HostName = hostDisplayName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -275,7 +263,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             config?.MaxPlayers ?? 2,
             config?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            state.DungeonName,
             DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],

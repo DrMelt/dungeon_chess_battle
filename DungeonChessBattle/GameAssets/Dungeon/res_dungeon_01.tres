@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DungeonGoblinCamp" format=3]
+
+[ext_resource type="Script" path="res://GameAssets/Dungeon/scripts/DungeonGoblinCamp.cs" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+DisplayName = "哥布林营地"
+Description = "哥布林们占据了这片林地，消灭它们并击败首领。"

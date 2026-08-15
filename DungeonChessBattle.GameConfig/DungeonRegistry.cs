@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Movement;
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GameConfig;
 
@@ -18,14 +18,11 @@ public sealed class DungeonRegistry {
 
     private readonly Dictionary<string, DungeonConfig> _byKey;
 
-    /// <summary>默认副本键，配置缺失时退回。</summary>
-    public const string DefaultDungeonKey = "dungeon_01";
-
     private DungeonRegistry() {
         // 新增副本在此登记，唯一注册点
         var entries = new[] {
-            GameConfigDB.Dungeon_01,
-            GameConfigDB.Dungeon_02,
+            GameConfigDB.DungeonGoblinCamp,
+            GameConfigDB.DungeonDeepCave,
         };
 
         // fail-fast：敌人生成引用必须在 UnitRegistry 已注册，且敌人单位必填阵营，配错配置即启动失败
@@ -53,9 +50,6 @@ public sealed class DungeonRegistry {
     /// <summary>按副本键获取移动场景布局；副本未配置或不存在时返回默认竞技场。</summary>
     public BattlefieldLayout GetMovementLayout(string? dungeonKey) =>
         GetByKey(dungeonKey)?.Layout ?? BattlefieldLayout.Default;
-
-    /// <summary>按副本键获取显示名；配置缺失时返回 null。</summary>
-    public string? GetDisplayName(string? dungeonKey) => GetByKey(dungeonKey)?.DisplayName;
 
     /// <summary>按权威副本键获取阵营关系函数；未知键抛异常，杜绝静默回退默认副本。</summary>
     public CampRelationResolver GetRelations(string dungeonKey) =>

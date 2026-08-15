@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Protocol.Dtos;
 
 namespace DungeonChessBattle.GamePanels;
@@ -89,7 +90,7 @@ public partial class GameLobby {
             var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
                 _selectedRoomConfig = listing;
-                string dungeon = string.IsNullOrEmpty(listing.DungeonName) ? listing.DungeonKey : listing.DungeonName;
+                string dungeon = DungeonResourceTable.GetDisplayName(listing.DungeonKey) ?? listing.DungeonKey;
                 InterRefs.DetailLabel.Text = $"副本: {dungeon}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {

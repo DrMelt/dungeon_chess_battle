@@ -5,12 +5,10 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// 房主 displayName 由服务端权威解析，不随此对象传输。
 /// </summary>
 /// <param name="DungeonKey">选中的副本键，服务端据此解析敌人生成配置。</param>
-/// <param name="DungeonName">副本名，展示用。</param>
 /// <param name="Description">招募板展示的房间描述。</param>
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 public sealed record RoomConfigDto(
     string DungeonKey,
-    string DungeonName,
     string Description,
     int MaxPlayers);
 

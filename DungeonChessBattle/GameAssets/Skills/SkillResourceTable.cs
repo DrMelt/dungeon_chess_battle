@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 using Godot;
 
 namespace DungeonChessBattle.GameAssets;

@@ -17,7 +17,7 @@ public partial class RoomPreparationInterRefs : Node {
     public Label? HostLabel {
         get; private set;
     }
-    /// <summary>房间副标题：副本名标签。</summary>
+    /// <summary>房间副标题：副本键标签，显示客户端映射表解析的副本名。</summary>
     [Export]
     public Label? DungeonNameLabel {
         get; private set;

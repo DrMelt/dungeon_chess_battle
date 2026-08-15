@@ -26,13 +26,13 @@ public partial class DungeonEnv : Node3D {
     /// <param name="dungeonKey">房间选中的副本键。</param>
     public void ApplyDungeonTheme(string dungeonKey) {
         switch (dungeonKey) {
-            case "dungeon_02":
+            case "deep_cave":
                 ApplyTheme(new Color(0.18f, 0.20f, 0.28f, 1f), // 洞窟地面
                     new Color(0.10f, 0.12f, 0.22f, 1f),        // 洞窟天空
                     new Color(0.60f, 0.65f, 1.00f, 1f));       // 青色补光
                 break;
 
-            case "dungeon_01":
+            case "goblin_camp":
             default:
                 ApplyTheme(new Color(0.28f, 0.38f, 0.24f, 1f), // 林地地面
                     new Color(0.60f, 0.78f, 0.72f, 1f),        // 林地天空

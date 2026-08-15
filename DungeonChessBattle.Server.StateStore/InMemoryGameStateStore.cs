@@ -52,7 +52,6 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// </summary>
     private static GameRoom CloneRoom(GameRoom source) {
         var copy = new GameRoom(source.RoomId) {
-            DungeonName = source.DungeonName,
             DungeonKey = source.DungeonKey,
             Description = source.Description,
             HostName = source.HostName,
@@ -138,7 +137,6 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             .Where(kvp => kvp.Value.Status != RoomStatus.Finished)
             .Select(kvp => new RoomListing {
                 RoomId = kvp.Value.RoomId,
-                DungeonName = kvp.Value.DungeonName,
                 DungeonKey = kvp.Value.DungeonKey,
                 Description = kvp.Value.Description,
                 HostName = kvp.Value.HostName,
@@ -342,14 +340,15 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     public RoomStateSnapshot GetRoomState(string roomId) {
         lock (GetRoomLock(roomId)) {
             string hostName = _roomHosts.TryGetValue(roomId, out var host) ? host : "";
-            string dungeonName = _roomConfigs.TryGetValue(roomId, out var config) ? config.DungeonName : "";
-            string dungeonKey = config?.DungeonKey ?? Protocol.EntityConstants.DefaultDungeonKey;
+            string dungeonKey = _roomConfigs.TryGetValue(roomId, out var config)
+                ? config.DungeonKey ?? Protocol.EntityConstants.DefaultDungeonKey
+                : Protocol.EntityConstants.DefaultDungeonKey;
             var players = new List<PlayerReadyState>();
             if (_roomReadyStates.TryGetValue(roomId, out var states)) {
                 foreach (var kv in states)
                     players.Add(new PlayerReadyState(kv.Key, kv.Value));
             }
-            return new RoomStateSnapshot(hostName, dungeonName, dungeonKey, players);
+            return new RoomStateSnapshot(hostName, dungeonKey, players);
         }
     }
 

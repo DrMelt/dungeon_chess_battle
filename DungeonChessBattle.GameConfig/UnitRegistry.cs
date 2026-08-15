@@ -1,4 +1,4 @@
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GameConfig;
 

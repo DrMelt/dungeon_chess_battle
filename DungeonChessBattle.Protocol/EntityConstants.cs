@@ -18,7 +18,7 @@ public static class EntityConstants {
     public const int MaxCampLength = 16;
 
     /// <summary>默认副本键，创建房间未指定副本时使用。</summary>
-    public const string DefaultDungeonKey = "dungeon_01";
+    public const string DefaultDungeonKey = "goblin_camp";
 
     /// <summary>副本键最大字符数。</summary>
     public const int MaxDungeonKeyLength = 32;

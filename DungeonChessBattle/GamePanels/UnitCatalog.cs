@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GamePanels;
 

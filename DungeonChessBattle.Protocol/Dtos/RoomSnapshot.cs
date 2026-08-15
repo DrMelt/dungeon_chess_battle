@@ -12,7 +12,6 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 /// <param name="Status">房间状态，阶段。</param>
 /// <param name="HostName">房主玩家名，服务端权威。</param>
-/// <param name="DungeonName">副本名。</param>
 /// <param name="CurrentPlayers">房间当前玩家数。</param>
 /// <param name="DungeonKey">选中的副本键。</param>
 /// <param name="Players">房间内玩家列表，包含玩家名与准备标志。</param>
@@ -23,7 +22,6 @@ public sealed record RoomSnapshot(
     int MaxPlayers,
     RoomStatus Status,
     string HostName,
-    string DungeonName,
     string DungeonKey,
     int CurrentPlayers,
     IReadOnlyList<PlayerReadyDto> Players,

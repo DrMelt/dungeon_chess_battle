@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="DungeonResourceTable" format=3]
+
+[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_01.tres" id="1_dungeon01"]
+[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_02.tres" id="2_dungeon02"]
+[ext_resource type="Script" path="res://GameAssets/Dungeon/scripts/DungeonResourceBaseGodot.cs" id="3_base"]
+[ext_resource type="Script" path="res://GameAssets/Dungeon/DungeonResourceTable.cs" id="4_table"]
+
+[resource]
+script = ExtResource("4_table")
+DungeonResources = Array[ExtResource("3_base")]([ExtResource("1_dungeon01"), ExtResource("2_dungeon02")])

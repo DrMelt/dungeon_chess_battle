@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 using Godot;
@@ -80,7 +81,7 @@ public partial class RoomInfo : Container {
     /// <param name="room">房间列表条目。</param>
     public void UpdateListing(RoomListing room) {
         RoomId = room.RoomId;
-        _dungeonText = string.IsNullOrEmpty(room.DungeonName) ? room.DungeonKey : room.DungeonName;
+        _dungeonText = DungeonResourceTable.GetDisplayName(room.DungeonKey) ?? room.DungeonKey;
         _passwordText = room.HasPassword ? "🔒" : "";
         _statusText = GetStatusText(room.Status);
         _hostText = $"房主: {room.HostName}";

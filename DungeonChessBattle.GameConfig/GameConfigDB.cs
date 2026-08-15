@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Range;
-using DungeonChessBattle.GameConfig.Data;
+using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Battle.Domain.Movement;
 
 namespace DungeonChessBattle.GameConfig;
@@ -194,12 +194,11 @@ public class GameConfigDB : IGameConfigDB {
     };
 
     /// <summary>副本一：哥布林营地，少量哥布林投石兵与一名首领。</summary>
-    public static DungeonConfig Dungeon_01 {
+    public static DungeonConfig DungeonGoblinCamp {
         get;
     } = new(
-        DungeonKey: DungeonRegistry.DefaultDungeonKey,
-        DisplayName: "哥布林营地",
-        Description: "哥布林们占据了这片林地，消灭它们并击败首领。",
+        // 副本键对齐 Protocol.EntityConstants.DefaultDungeonKey，GameConfig 不反向依赖协议层
+        DungeonKey: "goblin_camp",
         Enemies: [
             new(Unit: UnitGoblin, Count: 3, SpawnBaseX: 30f, SpawnXSpacing: 3f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 42f, SpawnXSpacing: 0f),
@@ -212,12 +211,10 @@ public class GameConfigDB : IGameConfigDB {
             ]));
 
     /// <summary>副本二：深邃洞窟，哥布林群与更强首领。</summary>
-    public static DungeonConfig Dungeon_02 {
+    public static DungeonConfig DungeonDeepCave {
         get;
     } = new(
-        DungeonKey: "dungeon_02",
-        DisplayName: "深邃洞窟",
-        Description: "洞窟深处的哥布林部落更为凶悍，数量更多。",
+        DungeonKey: "deep_cave",
         Enemies: [
             new(Unit: UnitGoblin, Count: 5, SpawnBaseX: 28f, SpawnXSpacing: 2.5f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 44f, SpawnXSpacing: 0f),

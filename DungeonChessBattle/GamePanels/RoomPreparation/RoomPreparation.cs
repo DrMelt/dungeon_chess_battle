@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 using DungeonChessBattle.Battle.Domain.Enums;
@@ -42,8 +43,8 @@ public partial class RoomPreparation : BaseGamePanel {
 
     /// <summary>房主玩家名（副标题展示）。</summary>
     private string _hostName = "";
-    /// <summary>副本名（副标题展示）。</summary>
-    private string _dungeonName = "";
+    /// <summary>副本键（副标题展示，显示名经客户端映射表解析）。</summary>
+    private string _dungeonKey = "";
     /// <summary>房间最大玩家数。</summary>
     private int _maxPlayers = 2;
 
@@ -120,7 +121,7 @@ public partial class RoomPreparation : BaseGamePanel {
         if (config != null) {
             // 副标题三标签并列：房主 / 副本名 / 人数
             _hostName = config.HostName;
-            _dungeonName = config.DungeonName;
+            _dungeonKey = config.DungeonKey;
             _maxPlayers = config.MaxPlayers;
             UpdateRoomInfoLabels(config.CurrentPlayers);
 
@@ -134,7 +135,7 @@ public partial class RoomPreparation : BaseGamePanel {
         }
         else {
             _hostName = "";
-            _dungeonName = "";
+            _dungeonKey = "";
             _maxPlayers = 2;
             UpdateRoomInfoLabels(0);
             if (InterRefs?.InfoLabel != null)
@@ -223,7 +224,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 房间静态信息
         _hostName = snapshot.HostName;
-        _dungeonName = snapshot.DungeonName;
+        _dungeonKey = snapshot.DungeonKey;
         _maxPlayers = snapshot.MaxPlayers;
 
         // 准备状态与玩家快照
@@ -262,14 +263,15 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 刷新副标题三标签并列显示：房主 / 副本名 / 人数。
+    /// 刷新副标题三标签并列显示：房主 / 副本键 / 人数。
     /// </summary>
     /// <param name="currentPlayers">房间当前玩家数。</param>
     private void UpdateRoomInfoLabels(int currentPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(_hostName) ? "房主: --" : $"房主: {_hostName}";
+        string dungeonText = DungeonResourceTable.GetDisplayName(_dungeonKey) ?? _dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
-            InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(_dungeonName) ? "副本: --" : $"副本: {_dungeonName}";
+            InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)
             InterRefs.PlayersLabel.Text = $"人数: {currentPlayers}/{_maxPlayers}";
     }

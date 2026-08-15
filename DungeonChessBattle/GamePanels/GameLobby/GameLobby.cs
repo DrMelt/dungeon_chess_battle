@@ -3,6 +3,7 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
@@ -45,7 +46,7 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
     /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
-    private string _selectedDungeonKey = DungeonRegistry.DefaultDungeonKey;
+    private string _selectedDungeonKey = EntityConstants.DefaultDungeonKey;
 
     #endregion
 
@@ -94,7 +95,7 @@ public partial class GameLobby : BaseGamePanel {
         select.Clear();
         var dungeons = DungeonRegistry.Instance.All.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
-            select.AddItem(dungeons[i].DisplayName, i);
+            select.AddItem(DungeonResourceTable.GetDisplayName(dungeons[i].DungeonKey) ?? dungeons[i].DungeonKey, i);
             select.SetItemMetadata(i, dungeons[i].DungeonKey);
         }
         if (dungeons.Count > 0) {
@@ -133,9 +134,8 @@ public partial class GameLobby : BaseGamePanel {
             _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
-            DungeonKey: dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
-            DungeonName: dungeon?.DisplayName ?? string.Empty,
-            Description: dungeon?.Description ?? string.Empty,
+            DungeonKey: dungeon?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
+            Description: DungeonResourceTable.GetDescription(_selectedDungeonKey) ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config: config);
     }
@@ -173,8 +173,7 @@ public partial class GameLobby : BaseGamePanel {
             var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
             var config = new RoomListing {
                 RoomId = roomId,
-                DungeonKey = dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
-                DungeonName = dungeon?.DisplayName ?? string.Empty,
+                DungeonKey = dungeon?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
                 HostName = ServiceLocator.ClientService.PlayerName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -205,7 +204,6 @@ public partial class GameLobby : BaseGamePanel {
             var config = _selectedRoomConfig ?? new RoomListing {
                 RoomId = joinedRoomId,
                 DungeonKey = EntityConstants.DefaultDungeonKey,
-                DungeonName = string.Empty,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
