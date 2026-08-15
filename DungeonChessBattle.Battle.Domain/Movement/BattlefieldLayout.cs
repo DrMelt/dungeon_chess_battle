@@ -20,8 +20,7 @@ public sealed record ObstacleRect(float MinX, float MinY, float MaxX, float MaxY
 public sealed record BattlefieldLayout(
     float HalfWidth,
     float HalfHeight,
-    IReadOnlyList<ObstacleRect> Obstacles)
-{
+    IReadOnlyList<ObstacleRect> Obstacles) {
     /// <summary>副本未配置布局时使用的默认竞技场。</summary>
     public static readonly BattlefieldLayout Default = new(50f, 30f, []);
 }

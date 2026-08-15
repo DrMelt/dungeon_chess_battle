@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dmgtnoig1aqc3"]
 
 [ext_resource type="Script" uid="uid://20ygcps2r68o" path="res://GamePanels/RoomInfo/RoomInfo.cs" id="1_vmdyc"]
+[ext_resource type="Script" uid="uid://b32qfm7lbm41h" path="res://GamePanels/RoomInfo/RoomInfoInterRefs.cs" id="2_irfs"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vmdyc"]
 bg_color = Color(0.8776157, 0.8776158, 0.87761563, 1)
@@ -14,14 +15,32 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[node name="RoomInfo" type="Container" unique_id=296642957]
-custom_minimum_size = Vector2(300, 60)
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 0
+[node name="RoomInfo" type="Control" unique_id=1405442275]
+custom_minimum_size = Vector2(300, 72)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 579.0
+offset_bottom = 72.0
 script = ExtResource("1_vmdyc")
-_label = NodePath("MarginContainer/Label")
-_bgPanel = NodePath("MarginContainer/Panel")
+
+[node name="RoomInfoInterRefs" type="Node" parent="." unique_id=1017458899 node_paths=PackedStringArray("DungeonLabel", "PasswordLabel", "StatusLabel", "HostLabel", "PlayersLabel", "DescriptionLabel", "BgPanel")]
+script = ExtResource("2_irfs")
+DungeonLabel = NodePath("../MarginContainer/VBoxContainer/HBoxRow1/DungeonLabel")
+PasswordLabel = NodePath("../MarginContainer/VBoxContainer/HBoxRow1/PasswordLabel")
+StatusLabel = NodePath("../MarginContainer/VBoxContainer/HBoxRow1/StatusLabel")
+HostLabel = NodePath("../MarginContainer/VBoxContainer/HBoxRow2/HostLabel")
+PlayersLabel = NodePath("../MarginContainer/VBoxContainer/HBoxRow2/PlayersLabel")
+DescriptionLabel = NodePath("../MarginContainer/VBoxContainer/DescriptionLabel")
+BgPanel = NodePath("../Panel")
+
+[node name="Panel" type="Panel" parent="." unique_id=200373368]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_vmdyc")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=246050559]
 layout_mode = 1
@@ -30,32 +49,67 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 
-[node name="Panel" type="Panel" parent="MarginContainer" unique_id=200373368]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 1
-theme_override_styles/panel = SubResource("StyleBoxFlat_vmdyc")
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1619403561]
+layout_mode = 2
+theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="MarginContainer" unique_id=280717608]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 1
+[node name="HBoxRow1" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1584847465]
+layout_mode = 2
+
+[node name="DungeonLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxRow1" unique_id=787813047]
+layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 16
-text = "房间名"
-horizontal_alignment = 1
+text = "副本名"
 vertical_alignment = 1
+
+[node name="PasswordLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxRow1" unique_id=1118531966]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 16
+vertical_alignment = 1
+
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/HBoxRow1" unique_id=1120890198]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxRow1" unique_id=1163963288]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 14
+text = "等待中"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="HBoxRow2" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1948549518]
+layout_mode = 2
+
+[node name="HostLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxRow2" unique_id=307499313]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 13
+text = "房主: --"
+
+[node name="PlayersLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxRow2" unique_id=1528674108]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 13
+text = "人数: 0/2"
+horizontal_alignment = 2
+
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=690377590]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.056291588, 0.056291603, 0.056291595, 1)
+theme_override_font_sizes/font_size = 9
+text = "RoomInfo"
+autowrap_mode = 1
+clip_text = true

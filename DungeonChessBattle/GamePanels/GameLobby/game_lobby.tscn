@@ -28,15 +28,14 @@ grow_vertical = 2
 theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 
-[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("RoomNameInput", "DungeonSelect", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
+[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("DungeonSelect", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
 script = ExtResource("4_irfs")
-RoomNameInput = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/RoomNameInput")
 DungeonSelect = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DungeonRow/DungeonSelect")
 CreateButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
-RefreshButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/RefreshButton")
+RefreshButton = NodePath("../MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer/RefreshButton")
 JoinButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/JoinButton")
 DetailLabel = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/MarginContainer/DetailLabel")
-RoomListContainer = NodePath("../MarginContainer/BoxContainer/PanelRight/MarginContainer/RoomScroll/RoomListContainer")
+RoomListContainer = NodePath("../MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer/RoomScroll/RoomListContainer")
 RoomInfoScene = ExtResource("2_wj6uy")
 BackButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/BackButton")
 
@@ -102,11 +101,6 @@ horizontal_alignment = 1
 [node name="HSeparator" type="HSeparator" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=593841207]
 layout_mode = 2
 
-[node name="RoomNameInput" type="LineEdit" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=204815639]
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-placeholder_text = "输入房间名..."
-
 [node name="DungeonRow" type="HBoxContainer" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=204815699]
 layout_mode = 2
 theme_override_constants/separation = 6
@@ -130,11 +124,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "创建房间"
 
-[node name="RefreshButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow" unique_id=582741639]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "刷新"
-
 [node name="HSeparator2" type="HSeparator" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=372819405]
 layout_mode = 2
 
@@ -151,8 +140,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="DetailLabel" type="Label" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DetailPanel/MarginContainer" unique_id=174820563]
+custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 size_flags_vertical = 1
 theme_override_font_sizes/font_size = 14
@@ -163,10 +157,6 @@ autowrap_mode = 3
 layout_mode = 2
 size_flags_horizontal = 3
 text = "加入房间"
-
-[node name="Spacer" type="Control" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=760293415]
-layout_mode = 2
-size_flags_vertical = 3
 
 [node name="VSeparator" type="VSeparator" parent="MarginContainer/BoxContainer" unique_id=1167169560]
 layout_mode = 2
@@ -187,10 +177,19 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 21
 theme_override_constants/margin_bottom = 5
 
-[node name="RoomScroll" type="ScrollContainer" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer" unique_id=1793043363]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer" unique_id=931830194]
 layout_mode = 2
 
-[node name="RoomListContainer" type="BoxContainer" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer/RoomScroll" unique_id=1840921331]
+[node name="RefreshButton" type="Button" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer" unique_id=582741639]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "刷新"
+
+[node name="RoomScroll" type="ScrollContainer" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer" unique_id=1793043363]
+layout_mode = 2
+
+[node name="RoomListContainer" type="BoxContainer" parent="MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer/RoomScroll" unique_id=1840921331]
 layout_mode = 2
 size_flags_horizontal = 3
 vertical = true

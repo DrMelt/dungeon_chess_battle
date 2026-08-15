@@ -42,8 +42,6 @@ public partial class GameLobby : BaseGamePanel {
     private readonly Dictionary<string, RoomInfo> _roomInfoCache = [];
     /// <summary>缓存的服务端房间列表。</summary>
     private List<RoomListing>? _lastRoomListings;
-    /// <summary>缓存创建房间时输入的房间名。</summary>
-    private string? _cachedCreateRoomId;
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
     /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
@@ -128,28 +126,18 @@ public partial class GameLobby : BaseGamePanel {
     #region Button Handlers
 
     /// <summary>
-    /// 点击创建房间按钮：校验房间名后，发送创建请求。
+    /// 点击创建房间按钮：以当前选中副本为配置发送创建请求，房间 ID 由服务端生成。
     /// </summary>
     private void OnCreateRoom() {
-        string roomName = InterRefs?.RoomNameInput?.Text?.Trim() ?? "";
-        if (string.IsNullOrWhiteSpace(roomName)) {
-            _logger.LogWarning("创建房间失败: 房间名为空");
-            return;
-        }
-
-        InterRefs?.RoomNameInput?.Clear();
-
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("请求创建房间(网络): {RoomName}, dungeon={DungeonKey}", roomName, _selectedDungeonKey);
-        _cachedCreateRoomId = roomName;
+            _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
-            Title: roomName,
             DungeonKey: dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
             DungeonName: dungeon?.DisplayName ?? string.Empty,
             Description: dungeon?.Description ?? string.Empty,
             MaxPlayers: 2);
-        ServiceLocator.ClientService.RequestCreateRoom(roomName, config: config);
+        ServiceLocator.ClientService.RequestCreateRoom(config: config);
     }
 
     /// <summary>
@@ -181,11 +169,10 @@ public partial class GameLobby : BaseGamePanel {
     /// <param name="roomId">创建成功的房间 ID。</param>
     private void OnCreatedDeferred(string roomId) {
         if (_roomPreparation != null) {
-            // 构造 RoomListing 作为进房初始展示（Title 用缓存的房间名，副本取本次选中的选择）
+            // 构造 RoomListing 作为进房初始展示，副本取本次选中的选择
             var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
             var config = new RoomListing {
                 RoomId = roomId,
-                Title = _cachedCreateRoomId ?? roomId,
                 DungeonKey = dungeon?.DungeonKey ?? DungeonRegistry.DefaultDungeonKey,
                 DungeonName = dungeon?.DisplayName ?? string.Empty,
                 HostName = ServiceLocator.ClientService.PlayerName,
@@ -193,7 +180,6 @@ public partial class GameLobby : BaseGamePanel {
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
             };
-            _cachedCreateRoomId = null;
             _roomPreparation.EnterRoom(roomId, config, isHost: true);
             NavigateTo(_roomPreparation);
         }
@@ -218,7 +204,6 @@ public partial class GameLobby : BaseGamePanel {
             // 使用缓存的选中房间配置，或构造默认配置
             var config = _selectedRoomConfig ?? new RoomListing {
                 RoomId = joinedRoomId,
-                Title = joinedRoomId,
                 DungeonKey = EntityConstants.DefaultDungeonKey,
                 DungeonName = string.Empty,
                 MaxPlayers = 2,

@@ -144,11 +144,11 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求创建房间，含招募板配置。
+    /// 请求创建房间，房间 ID 由服务端生成并回传。
     /// </summary>
-    public void RequestCreateRoom(string roomId, string playerName, string playerId,
+    public void RequestCreateRoom(string playerName, string playerId,
         string? roomPassword, RoomConfigDto? config, string? serverPassword = null) {
-        var dto = new CreateRoomRequest(roomId, playerId, playerName, roomPassword, config, serverPassword);
+        var dto = new CreateRoomRequest(playerId, playerName, roomPassword, config, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.CreateRoom, dto);
             if (result.Success) {

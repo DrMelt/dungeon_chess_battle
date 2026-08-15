@@ -165,14 +165,12 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>
-    /// 请求创建房间，通过大厅 SignalR 协议，含招募板配置。
+    /// 请求创建房间，房间 ID 由服务端生成，经 OnRoomCreated 事件回调。含招募板配置。
     /// </summary>
-    public void RequestCreateRoom(string roomId, string? roomPassword = null, RoomConfigDto? config = null) {
-        _cachedRoomId = roomId;
+    public void RequestCreateRoom(string? roomPassword = null, RoomConfigDto? config = null) {
         _cachedRoomPassword = roomPassword;
 
-        LobbyClient.RequestCreateRoom(roomId, PlayerName, PlayerId,
-            roomPassword, config, _serverPassword);
+        LobbyClient.RequestCreateRoom(PlayerName, PlayerId, roomPassword, config, _serverPassword);
     }
 
     /// <summary>
@@ -318,7 +316,11 @@ public sealed partial class GameClientService {
             OnRoomSnapshotUpdated?.Invoke(roomId, snapshot);
         });
         LobbyClient.OnRoomJoined += (roomId) => EnqueueMainThread(() => OnRoomJoined?.Invoke(roomId));
-        LobbyClient.OnRoomCreated += (roomId) => EnqueueMainThread(() => OnRoomCreated?.Invoke(roomId));
+        LobbyClient.OnRoomCreated += (roomId) => EnqueueMainThread(() => {
+            // 房间 ID 服务端生成，创建成功后才可缓存用于断线重连
+            _cachedRoomId = roomId;
+            OnRoomCreated?.Invoke(roomId);
+        });
         LobbyClient.OnRoomListReceived += (rooms) => EnqueueMainThread(() => OnRoomListReceived?.Invoke(rooms));
 
         // 房间客户端，LiteNetLib 回调在主线程 PollEvents 内触发

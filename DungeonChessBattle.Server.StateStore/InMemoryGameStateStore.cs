@@ -52,7 +52,6 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// </summary>
     private static GameRoom CloneRoom(GameRoom source) {
         var copy = new GameRoom(source.RoomId) {
-            Title = source.Title,
             DungeonName = source.DungeonName,
             DungeonKey = source.DungeonKey,
             Description = source.Description,
@@ -80,8 +79,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             _roomPlayerIds[roomId] = [];
 
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Room '{RoomId}' registered (prepare), HasPassword={HasPwd}, Title={Title}",
-                    roomId, password != null, config.Title);
+                _logger.LogInformation("Room '{RoomId}' registered (prepare), HasPassword={HasPwd}",
+                    roomId, password != null);
             return true;
         }
     }
@@ -139,7 +138,6 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             .Where(kvp => kvp.Value.Status != RoomStatus.Finished)
             .Select(kvp => new RoomListing {
                 RoomId = kvp.Value.RoomId,
-                Title = kvp.Value.Title,
                 DungeonName = kvp.Value.DungeonName,
                 DungeonKey = kvp.Value.DungeonKey,
                 Description = kvp.Value.Description,

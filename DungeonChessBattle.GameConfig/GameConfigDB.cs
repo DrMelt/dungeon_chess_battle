@@ -251,4 +251,4 @@ public class GameConfigDB : IGameConfigDB {
         };
     }
 
-    }
+}

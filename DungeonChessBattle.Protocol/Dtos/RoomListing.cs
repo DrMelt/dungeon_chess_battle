@@ -10,9 +10,6 @@ public class RoomListing {
     /// <summary>房间唯一 ID。</summary>
     public string RoomId { get; init; } = string.Empty;
 
-    /// <summary>房间标题。</summary>
-    public string Title { get; init; } = string.Empty;
-
     /// <summary>副本名。</summary>
     public string DungeonName { get; init; } = string.Empty;
 

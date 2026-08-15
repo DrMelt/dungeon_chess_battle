@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol.Dtos;
 
 namespace DungeonChessBattle.GamePanels;
@@ -44,9 +43,7 @@ public partial class GameLobby {
                 _roomInfoCache[room.RoomId] = roomInfo;
             }
 
-            string statusText = GetRoomStatusText(room);
-            roomInfo.UpdateStatus(statusText);
-            roomInfo.UpdateDungeonName(room.DungeonName);
+            roomInfo.UpdateListing(room);
         }
 
         // 空状态提示
@@ -64,7 +61,7 @@ public partial class GameLobby {
         if (InterRefs?.RoomInfoScene is null)
             throw new System.InvalidOperationException("RoomInfoScene is not assigned.");
         var instance = InterRefs.RoomInfoScene.Instantiate<RoomInfo>();
-        instance.Setup(room.RoomId, room.DungeonName, "等待中");
+        instance.Setup(room);
         instance.RoomSelected += OnRoomSelected;
         return instance;
     }
@@ -93,7 +90,7 @@ public partial class GameLobby {
             if (listing != null) {
                 _selectedRoomConfig = listing;
                 string dungeon = string.IsNullOrEmpty(listing.DungeonName) ? listing.DungeonKey : listing.DungeonName;
-                InterRefs.DetailLabel.Text = $"房间: {listing.Title}\n副本: {dungeon}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
+                InterRefs.DetailLabel.Text = $"副本: {dungeon}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {
                 InterRefs.DetailLabel.Text = $"选中房间: {roomId}\n";
@@ -103,14 +100,6 @@ public partial class GameLobby {
         // 启用加入按钮
         InterRefs?.JoinButton?.Disabled = false;
     }
-
-    /// <summary>
-    /// 生成房间状态文字（等待中 / 已结束）。
-    /// </summary>
-    /// <param name="room">房间实例。</param>
-    /// <returns>状态文字。</returns>
-    private static string GetRoomStatusText(RoomListing room) =>
-        room.Status != RoomStatus.Finished ? "等待中" : "已结束";
 
     #endregion
 }

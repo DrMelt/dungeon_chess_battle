@@ -11,11 +11,6 @@ public partial class GameLobbyInterRefs : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<GameLobbyInterRefs> _logger = ServiceLocator.GetLogger<GameLobbyInterRefs>();
 
-    /// <summary>房间名输入框。</summary>
-    [Export]
-    public LineEdit? RoomNameInput {
-        get; private set;
-    }
     /// <summary>副本选择下拉框，创建房间时选定敌人与环境。</summary>
     [Export]
     public OptionButton? DungeonSelect {
@@ -61,8 +56,6 @@ public partial class GameLobbyInterRefs : Node {
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
     /// </summary>
     public override void _Ready() {
-        if (RoomNameInput == null)
-            _logger.LogError("RoomNameInput is not assigned!");
         if (DungeonSelect == null)
             _logger.LogError("DungeonSelect is not assigned!");
         if (CreateButton == null)

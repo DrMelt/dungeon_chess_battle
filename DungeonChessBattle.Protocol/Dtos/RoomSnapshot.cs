@@ -8,7 +8,6 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// 客户端以它为准、无需自行组装或拼接。
 /// </summary>
 /// <param name="RoomId">房间 ID。</param>
-/// <param name="Title">房间标题。</param>
 /// <param name="Description">房间描述。</param>
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 /// <param name="Status">房间状态，阶段。</param>
@@ -20,7 +19,6 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// <param name="Units">准备单位列表。</param>
 public sealed record RoomSnapshot(
     string RoomId,
-    string Title,
     string Description,
     int MaxPlayers,
     RoomStatus Status,

@@ -70,11 +70,11 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 create_room：注册房间，准备阶段不重定向。
     /// </summary>
     public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req) {
-        if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", null)
-            || string.IsNullOrWhiteSpace(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "roomId is required.");
+        if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", null))
+            return new LobbyResult(string.Empty, false, "invalid server password.");
 
-        string roomId = req.RoomId;
+        // 房间 ID 由服务端权威生成，客户端不提交，避免碰撞与伪造
+        string roomId = Guid.NewGuid().ToString("N");
         string playerId = req.PlayerId;
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
 
@@ -84,7 +84,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         GameRoom config;
         if (req.Config != null) {
             config = new GameRoom(roomId) {
-                Title = req.Config.Title,
                 DungeonKey = ResolveDungeonKey(req.Config.DungeonKey),
                 DungeonName = ResolveDungeonName(req.Config.DungeonKey, req.Config.DungeonName),
                 Description = req.Config.Description,
@@ -94,9 +93,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             };
         }
         else {
-            // 启用默认值填充房间，标题使用房间 ID，方便无配置直接进入战斗
+            // 启用默认值填充房间，无配置直接进入战斗
             config = new GameRoom(roomId) {
-                Title = roomId,
                 DungeonKey = DungeonRegistry.DefaultDungeonKey,
                 DungeonName = ResolveDungeonName(DungeonRegistry.DefaultDungeonKey, roomId),
                 HostName = hostDisplayName,
@@ -116,8 +114,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         await BroadcastRoomSnapshotAsync(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}), Title={Title}.",
-                roomId, hostDisplayName, playerId, config.Title);
+            _logger.LogInformation("Room '{RoomId}' created (prepare), player='{Player}' ({PlayerId}).",
+                roomId, hostDisplayName, playerId);
 
         return new LobbyResult(roomId, true);
     }
@@ -273,7 +271,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
         var snapshot = new RoomSnapshot(
             roomId,
-            config?.Title ?? roomId,
             config?.Description ?? string.Empty,
             config?.MaxPlayers ?? 2,
             config?.Status ?? RoomStatus.Waiting,

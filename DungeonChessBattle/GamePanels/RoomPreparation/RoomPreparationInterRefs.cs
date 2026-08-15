@@ -37,11 +37,6 @@ public partial class RoomPreparationInterRefs : Node {
     public Label? InfoLabel {
         get; private set;
     }
-    /// <summary>房间标题标签（大字标题）。</summary>
-    [Export]
-    public Label? TitleLabel {
-        get; private set;
-    }
     /// <summary>打开单位选择面板按钮。</summary>
     [ExportGroup("Buttons")]
     [Export]
@@ -91,8 +86,6 @@ public partial class RoomPreparationInterRefs : Node {
             _logger.LogError("StatusLabel is not assigned!");
         if (InfoLabel == null)
             _logger.LogError("InfoLabel is not assigned!");
-        if (TitleLabel == null)
-            _logger.LogError("TitleLabel is not assigned!");
         if (SelectUnitButton == null)
             _logger.LogError("SelectUnitButton is not assigned!");
         if (StartBattleButton == null)

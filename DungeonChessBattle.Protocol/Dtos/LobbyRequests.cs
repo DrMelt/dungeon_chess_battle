@@ -4,27 +4,23 @@ namespace DungeonChessBattle.Protocol.Dtos;
 /// 客房招募板配置传输对象，create_room 的可选配置。
 /// 房主 displayName 由服务端权威解析，不随此对象传输。
 /// </summary>
-/// <param name="Title">招募板展示的房间标题。</param>
 /// <param name="DungeonKey">选中的副本键，服务端据此解析敌人生成配置。</param>
 /// <param name="DungeonName">副本名，展示用。</param>
 /// <param name="Description">招募板展示的房间描述。</param>
 /// <param name="MaxPlayers">房间最大玩家数。</param>
 public sealed record RoomConfigDto(
-    string Title,
     string DungeonKey,
     string DungeonName,
     string Description,
     int MaxPlayers);
 
-/// <summary>创建房间请求。</summary>
-/// <param name="RoomId">房间 ID。</param>
+/// <summary>创建房间请求，房间 ID 由服务端生成，经 LobbyResult.RoomId 返回。</summary>
 /// <param name="PlayerId">房主玩家 ID。</param>
 /// <param name="PlayerName">房主显示名。</param>
 /// <param name="RoomPassword">房间密码；空表示无密码。</param>
 /// <param name="Config">招募板配置；空表示使用默认值。</param>
 /// <param name="ServerPassword">服务器密码；空表示无密码模式。</param>
 public sealed record CreateRoomRequest(
-    string RoomId,
     string PlayerId,
     string PlayerName,
     string? RoomPassword,

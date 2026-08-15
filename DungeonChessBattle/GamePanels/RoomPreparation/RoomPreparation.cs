@@ -118,10 +118,6 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 显示招募板信息
         if (config != null) {
-            // TitleLabel：金色大字标题
-            if (InterRefs?.TitleLabel != null)
-                InterRefs.TitleLabel.Text = string.IsNullOrEmpty(config.Title) ? roomId : config.Title;
-
             // 副标题三标签并列：房主 / 副本名 / 人数
             _hostName = config.HostName;
             _dungeonName = config.DungeonName;
@@ -137,8 +133,6 @@ public partial class RoomPreparation : BaseGamePanel {
                 InterRefs.StatusLabel.Text = "请选择单位...";
         }
         else {
-            if (InterRefs?.TitleLabel != null)
-                InterRefs.TitleLabel.Text = $"房间: {roomId}";
             _hostName = "";
             _dungeonName = "";
             _maxPlayers = 2;

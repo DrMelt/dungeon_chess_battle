@@ -165,8 +165,8 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         foreach (var listing in _stateStore.ListActiveRooms()) {
             bool isBattle = _roomServers.ContainsKey(listing.RoomId);
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("  {RoomId}: Title={Title}, Phase={Phase}, HasPassword={HasPwd}",
-                    listing.RoomId, listing.Title, isBattle ? "Battle" : "Prepare", listing.HasPassword);
+                _logger.LogInformation("  {RoomId}: Phase={Phase}, HasPassword={HasPwd}",
+                    listing.RoomId, isBattle ? "Battle" : "Prepare", listing.HasPassword);
         }
     }
 }
