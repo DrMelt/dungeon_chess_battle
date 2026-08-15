@@ -20,11 +20,11 @@ public partial class Node3dTargetMark : Node3D {
     public Decal? TargetDecalRef => InterRefsOrThrow.TargetDecalRef;
 
     /// <summary>
-    /// 节点就绪时初始化引用，并应用默认颜色。
+    /// 节点就绪时初始化引用，并应用未判定灰色（此时尚无任何关系信息）。
     /// </summary>
     public override void _Ready() {
         InterRefs = GetNode<Node3dTargetMarkInterRefs>("Node3dTargetMarkInterRefs");
-        SetColor(CampRelation.Neutral);
+        SetColor(CampRelation.Unknown);
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public partial class Node3dTargetMark : Node3D {
     /// <summary>
     /// 根据阵营关系设置目标标记颜色。
     /// </summary>
-    /// <param name="relation">阵营关系：友方、中立、敌方。</param>
+    /// <param name="relation">阵营关系：友方、中立、敌方、未判定。</param>
     public void SetColor(CampRelation relation) {
         var interRefs = InterRefsOrThrow;
         var uiSettings = interRefs.PlayerUISettingsRes
@@ -46,26 +46,6 @@ public partial class Node3dTargetMark : Node3D {
         var targetDecal = interRefs.TargetDecalRef
             ?? throw new InvalidOperationException("[Node3dTargetMark] TargetDecalRef is not assigned.");
 
-        targetDecal.Modulate = relation switch {
-            CampRelation.Friendly => uiSettings.AllyCampColor,
-            CampRelation.Enemy => uiSettings.EnemyCampColor,
-            _ => uiSettings.NeutralCampColor,
-        };
+        targetDecal.Modulate = uiSettings.GetRelationColor(relation);
     }
-
-    /// <summary>
-    /// 根据阵营名称设置目标标记颜色。
-    /// </summary>
-    /// <param name="camp">阵营名称。</param>
-    public void SetColorByCamp(string camp) {
-        SetColor(GetRelation(camp));
-    }
-
-    private static CampRelation GetRelation(string camp) => camp switch {
-        CampConstants.CampA => CampRelation.Friendly,
-        CampConstants.CampB => CampRelation.Enemy,
-        CampConstants.CampBoss => CampRelation.Enemy,
-        _ => CampRelation.Neutral,
-    };
-
 }

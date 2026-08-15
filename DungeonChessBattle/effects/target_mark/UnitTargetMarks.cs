@@ -1,4 +1,5 @@
 using System;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Common;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.MainScene;
@@ -70,12 +71,17 @@ public partial class UnitTargetMarks : Node {
     /// <summary>移除目标标记。</summary>
     private static void RemoveMark(Node3dTargetMark mark) => mark.QueueFree();
 
+    /// <summary>阵营判定未就绪一次性告警标记，避免刷屏。</summary>
+    private bool _relationsNotReadyLogged;
+
     /// <summary>
     /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
     /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
     private void UpdateMark(Node3dTargetMark mark, UnitPawn pawn) {
-        var focusPawn = _unitManagerRef?.LocalFocusUnit?.Pawn;
+        // _Process 已对 _unitManagerRef 判空并抛出，Sync 回调内引用必然非空
+        var manager = _unitManagerRef!;
+        var focusPawn = manager.LocalFocusUnit?.Pawn;
         bool isFocus = pawn == focusPawn;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
@@ -83,7 +89,16 @@ public partial class UnitTargetMarks : Node {
 
         mark.Visible = isFocus;
         mark.SetRadius(pawn.BodyRadius.Value);
-        mark.SetColorByCamp(pawn.Camp.Value);
+        if (manager.TryResolveLocalCampRelation(pawn.Camp.Value, out var relation)) {
+            mark.SetColor(relation);
+        }
+        else {
+            mark.SetColor(CampRelation.Unknown);
+            if (!_relationsNotReadyLogged) {
+                _relationsNotReadyLogged = true;
+                _logger.LogWarning("[UnitTargetMarks] 阵营判定未就绪，目标标记着色置灰。");
+            }
+        }
         var pos = pawn.Position.InterpolatedValue;
         mark.GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 

@@ -171,7 +171,9 @@ public partial class MainScene : Node {
 
     private void DeferredBattlePhase(int phase) {
         if (phase == (int)BattlePhase.Running) {
-            // 战斗真正开始时房间实体已同步，DungeonKey 可用，应用副本环境主题
+            // 战斗真正开始时房间实体已同步，DungeonKey 可用。
+            // 阵营关系仍未装配属时序故障，先响亮校验再应用副本环境主题。
+            _unitManager?.AssertCampRelationsReady();
             ApplyDungeonThemeSafe();
         }
 

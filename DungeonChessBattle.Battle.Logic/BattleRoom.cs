@@ -1,6 +1,7 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Buffs;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
@@ -15,7 +16,11 @@ namespace DungeonChessBattle.Battle.Logic;
 /// 面向 Domain 接口 IBattleUnit 读写单位状态，不依赖网络载体与全局配置仓库。
 /// 服务端每帧调用 <see cref="Tick"/> 推进状态，并消费返回的领域事件做网络广播。
 /// </summary>
-public sealed class BattleRoom {
+/// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
+public sealed class BattleRoom(CampRelationResolver relations) {
+    /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
+    private readonly CampRelationResolver _relations = relations;
+
     private readonly List<IBattleUnit> _units = [];
 
     /// <summary>读条目标权威，服务端私有，不参与同步。</summary>
@@ -103,7 +108,7 @@ public sealed class BattleRoom {
         var skill = caster.GetSkill(skillKey);
         if (skill == null)
             return false;
-        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos))
+        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
             return false;
 
         caster.SkillCasting = skillKey;
@@ -313,7 +318,7 @@ public sealed class BattleRoom {
     private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IDomainEvent> events) {
         var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
         foreach (var unit in _units.ToArray()) {
-            if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy))
+            if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
                 continue;
             if (!CastResolver.IsInRange(skill.Range, caster.Snapshot, unit.Snapshot, aim))
                 continue;

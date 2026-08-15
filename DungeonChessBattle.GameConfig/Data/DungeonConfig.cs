@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Movement;
 
 namespace DungeonChessBattle.GameConfig.Data;
@@ -25,4 +26,5 @@ public sealed record DungeonConfig(
     string DisplayName,
     string Description,
     IReadOnlyList<EnemySpawnConfig> Enemies,
+    CampRelationResolver RelationsResolver,
     BattlefieldLayout? Layout = null);

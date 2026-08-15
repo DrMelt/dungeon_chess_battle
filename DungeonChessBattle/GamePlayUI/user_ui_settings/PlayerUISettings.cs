@@ -34,19 +34,20 @@ public partial class PlayerUISettings : Resource {
     [Export]
     public Color EnemyCampColor { get; private set; } = new(1, 1, 1, 1);
 
+    /// <summary>阵营判定未就绪/未知时的灰色，表示关系尚未观测到。</summary>
+    [Export]
+    public Color UndeterminedColor { get; private set; } = new(0.5f, 0.5f, 0.5f, 1f);
+
     /// <summary>
-    /// 根据阵营标识获取对应颜色；空或未知阵营返回中立色。
+    /// 按目标相对本地玩家的阵营关系取色，关系色唯一的映射点。
+    /// 未判定（Unknown）映射到灰色，不借用中立色。
     /// </summary>
-    /// <param name="camp">阵营标识。</param>
+    /// <param name="relation">目标相对本地玩家的阵营关系。</param>
     /// <returns>对应的阵营颜色。</returns>
-    public Color? GetCampColor(string camp) {
-        if (string.IsNullOrEmpty(camp))
-            return NeutralCampColor;
-        return camp switch {
-            CampConstants.CampA => AllyCampColor,
-            CampConstants.CampB => EnemyCampColor,
-            CampConstants.CampBoss => NeutralCampColor,
-            _ => AllyCampColor
-        };
-    }
+    public Color GetRelationColor(CampRelation relation) => relation switch {
+        CampRelation.Friendly => AllyCampColor,
+        CampRelation.Enemy => EnemyCampColor,
+        CampRelation.Unknown => UndeterminedColor,
+        _ => NeutralCampColor,
+    };
 }

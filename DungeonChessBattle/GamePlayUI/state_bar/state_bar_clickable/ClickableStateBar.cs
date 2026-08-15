@@ -82,7 +82,7 @@ public partial class ClickableStateBar : Control {
         if (InterRefs == null || bindingPawn == null)
             return;
         InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingPawn);
-        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingPawn);
+        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingPawn, UnitManagerRef);
         InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingPawn);
     }
 }

@@ -69,7 +69,7 @@ public partial class StateBarMark : Control {
     private static void RemoveMark(StateBarMark2d mark) => mark.QueueFree();
 
     /// <summary>更新状态标记的位置与血条显示。</summary>
-    private static void UpdateMark(StateBarMark2d mark, UnitPawn pawn) {
-        mark.UpdateUI_WithUnit(pawn);
+    private void UpdateMark(StateBarMark2d mark, UnitPawn pawn) {
+        mark.UpdateUI_WithUnit(pawn, _unitManagerRef);
     }
 }

@@ -16,12 +16,16 @@ namespace DungeonChessBattle.Server.Battle;
 /// </remarks>
 /// <param name="battleRoom">本房间的战斗编排实例。</param>
 /// <param name="logger">日志器。</param>
-public sealed class EnemyBrain(BattleRoom battleRoom, ILogger<EnemyBrain> logger) {
+/// <param name="relations">副本配置的阵营关系函数，决定敌人寻找的敌对目标。</param>
+public sealed class EnemyBrain(BattleRoom battleRoom, ILogger<EnemyBrain> logger, CampRelationResolver relations) {
     /// <summary>敌人大脑日志器。</summary>
     private readonly ILogger<EnemyBrain> _logger = logger;
 
     /// <summary>战斗编排引用，驱动读条与结算。</summary>
     private readonly BattleRoom _battleRoom = battleRoom;
+
+    /// <summary>副本配置的阵营关系函数，决定敌人把哪些阵营视作可攻击目标。</summary>
+    private readonly CampRelationResolver _relations = relations;
 
     /// <summary>敌方开始施法的最远距离，超出则移动逼近。</summary>
     private const float AttackRange = 10f;
@@ -65,13 +69,13 @@ public sealed class EnemyBrain(BattleRoom battleRoom, ILogger<EnemyBrain> logger
     }
 
     /// <summary>锁定距离最近且存活的玩家单位；无目标返回 null。</summary>
-    private static UnitPawn? FindNearestAlivePlayer(UnitPawn enemy, IReadOnlyList<UnitPawn> allPawns) {
+    private UnitPawn? FindNearestAlivePlayer(UnitPawn enemy, IReadOnlyList<UnitPawn> allPawns) {
         UnitPawn? nearest = null;
         float nearestDistance = float.MaxValue;
         foreach (var pawn in allPawns) {
             if (pawn == enemy || pawn.UnitState.Value != 0)
                 continue;
-            if (pawn.Camp.Value == CampConstants.CampBoss)
+            if (_relations.Invoke([enemy.Camp.Value], [pawn.Camp.Value]) != CampRelation.Enemy)
                 continue;
 
             float distance = Vector2.DistanceSquared(enemy.Position.Value, pawn.Position.Value);

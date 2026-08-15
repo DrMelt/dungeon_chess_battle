@@ -39,7 +39,7 @@ public partial class StateBar2d_Selected : Control {
             var pawn = showUnit.Pawn;
 
             InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(pawn);
-            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn);
+            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn, _unitManagerRef);
             InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(pawn);
         }
         else {

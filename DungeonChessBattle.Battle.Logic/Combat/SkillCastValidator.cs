@@ -1,5 +1,6 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Enums;
 
 namespace DungeonChessBattle.Battle.Logic.Combat;
 
@@ -15,13 +16,15 @@ public static class SkillCastValidator {
     /// <param name="skill">目标技能定义。</param>
     /// <param name="target">已解析的单位目标；无单位目标需求时传 null。</param>
     /// <param name="targetPos">已解析的位置目标；无位置目标需求时传 null。</param>
-    public static bool CanCast(IBattleUnit caster, SkillDefinition skill, IBattleUnit? target, Vector2? targetPos) {
+    /// <param name="relations">副本配置的阵营关系函数。</param>
+    public static bool CanCast(IBattleUnit caster, SkillDefinition skill, IBattleUnit? target, Vector2? targetPos,
+        CampRelationResolver relations) {
         if (!caster.HasSkill(skill.SkillId))
             return false;
         if (!CanCastState(caster, skill.SkillId))
             return false;
         if (skill.NeedUnitTarget)
-            return target != null && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy);
+            return target != null && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy, relations);
         if (skill.NeedPosTarget)
             return IsTargetPosInRange(caster, skill, targetPos);
         return true;

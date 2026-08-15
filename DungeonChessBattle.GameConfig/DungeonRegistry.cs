@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.GameConfig.Data;
 
@@ -27,13 +28,15 @@ public sealed class DungeonRegistry {
             GameConfigDB.Dungeon_02,
         };
 
-        // fail-fast：敌人生成引用必须在 UnitRegistry 已注册，配错配置即启动失败，杜绝静默降级
+        // fail-fast：敌人生成引用必须在 UnitRegistry 已注册，且敌人单位必填阵营，配错配置即启动失败
         foreach (var dungeon in entries) {
             foreach (var spawn in dungeon.Enemies) {
-                if (UnitRegistry.Instance.GetByConfig(spawn.Unit) == null) {
-                    throw new InvalidOperationException(
+                var config = UnitRegistry.Instance.GetByConfig(spawn.Unit)
+                    ?? throw new InvalidOperationException(
                         $"Dungeon '{dungeon.DungeonKey}' enemy spawn references unregistered unit config.");
-                }
+                if (string.IsNullOrWhiteSpace(config.Camp))
+                    throw new InvalidOperationException(
+                        $"Dungeon '{dungeon.DungeonKey}' enemy unit '{config.ConfigKey}' does not declare a camp.");
             }
         }
 
@@ -53,4 +56,9 @@ public sealed class DungeonRegistry {
 
     /// <summary>按副本键获取显示名；配置缺失时返回 null。</summary>
     public string? GetDisplayName(string? dungeonKey) => GetByKey(dungeonKey)?.DisplayName;
+
+    /// <summary>按权威副本键获取阵营关系函数；未知键抛异常，杜绝静默回退默认副本。</summary>
+    public CampRelationResolver GetRelations(string dungeonKey) =>
+        GetByKey(dungeonKey)?.RelationsResolver
+        ?? throw new InvalidOperationException($"Unknown dungeon key: {dungeonKey}");
 }

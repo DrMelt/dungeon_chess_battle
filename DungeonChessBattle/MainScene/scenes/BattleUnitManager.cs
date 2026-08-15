@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.Services;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
@@ -39,6 +41,12 @@ public partial class BattleUnitManager : Node {
 
     /// <summary>当前房间 ID（供技能链发起施法 RPC）。</summary>
     public string RoomId => _roomId;
+
+    /// <summary>阵营关系函数，Bind 后按权威副本键装配并随房间实体同步收敛；null 表示未就绪。</summary>
+    private CampRelationResolver? _relations;
+
+    /// <summary>循环切换目标的客户端游标，乐观推进容忍聚焦回包延迟，手动选择时对齐。</summary>
+    private ushort _cycleTargetId;
 
     /// <summary>本地玩家控制的单位视图，控制器或视图未就绪时返回 null。</summary>
     public UnitGameShow? LocalUnitShow {
@@ -78,6 +86,7 @@ public partial class BattleUnitManager : Node {
         _battleService = service;
         _roomClient = roomClient;
         _roomId = roomId;
+        _relations = TryAssembleRelations(roomClient.DungeonKey);
 
         service.OnUnitCreated += OnServiceUnitCreated;
         service.UnitHealthChanged += OnUnitHealth;
@@ -111,7 +120,10 @@ public partial class BattleUnitManager : Node {
         UnitsInSceneRes.SetRoomCreatedAt(DateTime.MinValue);
 
         _battleService = null;
+        _roomClient = null;
         _roomId = "";
+        _relations = null;
+        _cycleTargetId = 0;
     }
 
     /// <summary>节点退出场景树：兜底退订（防止战斗中途场景被释放导致事件悬挂）。</summary>
@@ -238,8 +250,107 @@ public partial class BattleUnitManager : Node {
             return;
         }
         _battleService.SetFocusTarget(_roomId, pawn.Id, targetNetId);
+        _cycleTargetId = targetNetId;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("SetLocalFocusTarget: selector={UnitId} -> target={TargetId}",
                 pawn.Id, targetNetId);
+    }
+
+    /// <summary>
+    /// 切换本地聚焦目标为下一个存活敌方单位。
+    /// 从当前循环游标之后的单位开始轮询；游标失效时回退服务端权威焦点，
+    /// 仍不可用时从第一个敌方单位开始；没有存活敌方单位时不发起请求。
+    /// </summary>
+    public void CycleEnemyTarget() {
+        var pawn = _roomClient?.LocalUnitPawn;
+        if (pawn == null || _battleService == null) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning(
+                    "CycleEnemyTarget dropped: hasPawn={HasPawn}, hasService={HasService}",
+                    pawn != null, _battleService != null);
+            return;
+        }
+
+        var enemies = GetLivingEnemies(pawn);
+        if (enemies.Count == 0) {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("CycleEnemyTarget: no living enemy targets.");
+            return;
+        }
+
+        int index = enemies.FindIndex(e => e.Id == _cycleTargetId);
+        if (index < 0)
+            index = enemies.FindIndex(e => e.Id == pawn.FocusTargetNetId.Value);
+        ushort next = enemies[(index + 1) % enemies.Count].Id;
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("CycleEnemyTarget: cycle={CycleId}, focus={FocusId} -> next={NextId}",
+                _cycleTargetId, pawn.FocusTargetNetId.Value, next);
+        SetLocalFocusTarget(next);
+    }
+
+    /// <summary>
+    /// 尝试按权威副本键装配阵营关系函数；键未同步时返回 null，由调用方按未就绪处理。
+    /// 未知键抛异常（配置故障响亮暴露），绝不静默回退到其他语义。
+    /// </summary>
+    private static CampRelationResolver? TryAssembleRelations(string? dungeonKey)
+        => string.IsNullOrWhiteSpace(dungeonKey) ? null : DungeonRegistry.Instance.GetRelations(dungeonKey);
+
+    /// <summary>
+    /// 阵营关系函数读取：未就绪且权威副本键已同步时即收敛装配。
+    /// 房间实体同步到达后，任意一次判定访问都会自动取得实战关系，无需轮询。
+    /// </summary>
+    private CampRelationResolver? RelationsOrResolve() {
+        var relations = _relations;
+        if (relations == null && _roomClient != null) {
+            var dungeonKey = _roomClient.DungeonKey;
+            if (!string.IsNullOrWhiteSpace(dungeonKey))
+                relations = _relations = DungeonRegistry.Instance.GetRelations(dungeonKey);
+        }
+        return relations;
+    }
+
+    /// <summary>
+    /// 获取阵营关系函数用于领域判定（技能预拦等）；未就绪返回 false。
+    /// 调用方取得函数后必须转交领域校验器，不得自行判敌我。
+    /// </summary>
+    public bool TryGetCampRelations(out CampRelationResolver relations) {
+        var resolved = RelationsOrResolve();
+        relations = resolved ?? null!;
+        return resolved != null;
+    }
+
+    /// <summary>解析目标阵营相对本地玩家的关系；本地单位或关系函数未就绪返回 false。</summary>
+    public bool TryResolveLocalCampRelation(string targetCamp, out CampRelation relation) {
+        var relations = RelationsOrResolve();
+        var localPawn = _roomClient?.LocalUnitPawn;
+        if (relations == null || localPawn == null) {
+            relation = default;
+            return false;
+        }
+        relation = relations.Invoke([localPawn.Camp.Value], [targetCamp]);
+        return true;
+    }
+
+    /// <summary>Running 阶段就绪校验：战斗已开始仍无阵营判定能力属时序故障，响亮报告。</summary>
+    public void AssertCampRelationsReady() {
+        if (_relations == null) {
+            _logger.LogError(
+                "[BattleUnitManager] 战斗 Running 阶段阵营关系仍未装配（DungeonKey 未同步），技能预拦将被拒绝。");
+        }
+    }
+
+    /// <summary>收集与本地单位阵营敌对且存活（UnitState==0）的单位，按场景单位顺序排列。</summary>
+    private List<UnitPawn> GetLivingEnemies(UnitPawn self) {
+        List<UnitPawn> enemies = [];
+        foreach (var candidate in UnitsArr) {
+            if (candidate.Id == self.Id || candidate.UnitState.Value == 1)
+                continue;
+            if (!TryResolveLocalCampRelation(candidate.Camp.Value, out var relation)
+                || relation != CampRelation.Enemy)
+                continue;
+            enemies.Add(candidate);
+        }
+        return enemies;
     }
 }

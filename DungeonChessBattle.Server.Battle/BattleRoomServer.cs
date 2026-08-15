@@ -135,9 +135,11 @@ public partial class BattleRoomServer : INetEventListener {
         _stateStore = stateStore;
         _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
         _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
-            ?? DungeonRegistry.DefaultDungeonKey;
-        _battleRoom = new BattleRoom();
-        _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>());
+            ?? throw new InvalidOperationException(
+                $"Room '{roomId}' references unknown dungeon key.");
+        var campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
+        _battleRoom = new BattleRoom(campRelations);
+        _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>(), campRelations);
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(

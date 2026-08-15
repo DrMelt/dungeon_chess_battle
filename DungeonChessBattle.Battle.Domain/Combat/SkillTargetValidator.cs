@@ -1,24 +1,29 @@
+using DungeonChessBattle.Battle.Domain.Enums;
+
 namespace DungeonChessBattle.Battle.Domain.Combat;
 
 /// <summary>
 /// 技能目标阵营关系校验。服务端权威校验与客户端预拦共用同一判定逻辑。
+/// 敌我关系由副本配置的 CampRelationResolver 决定，调用方必须就绪后注入。
+/// Unknown 视为不可判定，受阵营策略限定的技能一律拒绝。
 /// </summary>
 public static class SkillTargetValidator {
-    /// <summary>
-    /// 判断两个单位是否属于同一阵营，存在任一共同阵营即视为友方。
-    /// </summary>
-    public static bool IsSameCamp(IBattleUnit source, IBattleUnit target)
-        => source.Camps.Any(c => target.Camps.Contains(c));
-
     /// <summary>
     /// 判定按目标阵营关系限定的技能能否作用于目标。
     /// Same 仅限友方，Different 仅限敌方，None 不可主动选择单位目标。
     /// </summary>
-    public static bool CanAffect(IBattleUnit source, IBattleUnit target, SkillTargetPolicy policy) {
+    /// <param name="source">施法单位。</param>
+    /// <param name="target">目标单位。</param>
+    /// <param name="policy">技能目标阵营策略。</param>
+    /// <param name="resolver">副本配置的阵营关系函数。</param>
+    public static bool CanAffect(IBattleUnit source, IBattleUnit target, SkillTargetPolicy policy,
+        CampRelationResolver resolver) {
         if (policy == SkillTargetPolicy.None)
             return false;
-        bool sameCamp = IsSameCamp(source, target);
-        return (sameCamp && policy.HasFlag(SkillTargetPolicy.Same))
-            || (!sameCamp && policy.HasFlag(SkillTargetPolicy.Different));
+        if (source.Camps.Count == 0 || target.Camps.Count == 0)
+            throw new InvalidOperationException("无阵营单位不可参与敌我判定。");
+        var relation = resolver.Invoke(source.Camps, target.Camps);
+        return (relation == CampRelation.Friendly && policy.HasFlag(SkillTargetPolicy.Same))
+            || (relation == CampRelation.Enemy && policy.HasFlag(SkillTargetPolicy.Different));
     }
 }

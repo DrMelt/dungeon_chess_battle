@@ -73,7 +73,7 @@ public partial class BattleRoomServer {
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                var pawn = CreatePawnEntity(config.ConfigKey, CampConstants.CampBoss, spawnPos);
+                var pawn = CreatePawnEntity(config.ConfigKey, config.Camp!, spawnPos);
                 _enemyPawns.Add(pawn);
             }
         }
@@ -87,7 +87,7 @@ public partial class BattleRoomServer {
         if (unitName.Length > EntityConstants.MaxUnitNameLength)
             unitName = unitName[..EntityConstants.MaxUnitNameLength];
         if (!CampConstants.IsValidCamp(camp))
-            camp = CampConstants.CampA;
+            throw new InvalidOperationException($"Invalid camp '{camp}' for unit '{unitName}' in room '{RoomId}'.");
 
         var entity = EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitName.Value = unitName;

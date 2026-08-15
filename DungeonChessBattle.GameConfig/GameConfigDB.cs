@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Range;
 using DungeonChessBattle.GameConfig.Data;
 using DungeonChessBattle.Battle.Domain.Movement;
@@ -152,6 +153,7 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "Goblin",
+        Camp = CampConstants.CampBoss,
         BodyRadius = 0.5f,
         MaxHealth = 800f,
         CureIntensity = 1.0f,
@@ -173,6 +175,7 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "GoblinBoss",
+        Camp = CampConstants.CampBoss,
         BodyRadius = 0.8f,
         MaxHealth = 2000f,
         CureIntensity = 1.0f,
@@ -201,6 +204,7 @@ public class GameConfigDB : IGameConfigDB {
             new(Unit: UnitGoblin, Count: 3, SpawnBaseX: 30f, SpawnXSpacing: 3f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 42f, SpawnXSpacing: 0f),
         ],
+        RelationsResolver: CampRelationsPve,
         Layout: new BattlefieldLayout(
             50f, 30f,
             [
@@ -218,6 +222,7 @@ public class GameConfigDB : IGameConfigDB {
             new(Unit: UnitGoblin, Count: 5, SpawnBaseX: 28f, SpawnXSpacing: 2.5f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 44f, SpawnXSpacing: 0f),
         ],
+        RelationsResolver: CampRelationsPve,
         Layout: new BattlefieldLayout(
             50f, 30f,
             [
@@ -249,6 +254,25 @@ public class GameConfigDB : IGameConfigDB {
             5 => SkillRectRangeDamage,
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// 副本关系函数：同阵营为友，任一方为 Boss 阵营即敌对，其余组合为友（A、B 玩家组队共斗）。
+    /// 兜底返回 Unknown 显式表示未覆盖组合，绝不猜成错误的敌我关系。
+    /// </summary>
+    private static CampRelation CampRelationsPve(
+        IReadOnlyList<string> sourceCamps, IReadOnlyList<string> targetCamps) {
+        if (sourceCamps.Count == 1 && targetCamps.Count == 1 && sourceCamps[0] == targetCamps[0])
+            return CampRelation.Friendly;
+        foreach (var camp in sourceCamps) {
+            if (camp == CampConstants.CampBoss)
+                return CampRelation.Enemy;
+        }
+        foreach (var camp in targetCamps) {
+            if (camp == CampConstants.CampBoss)
+                return CampRelation.Enemy;
+        }
+        return CampRelation.Unknown;
     }
 
 }

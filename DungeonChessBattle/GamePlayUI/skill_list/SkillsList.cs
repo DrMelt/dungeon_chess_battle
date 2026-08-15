@@ -98,8 +98,10 @@ public partial class SkillsList : Control {
         var pawn = manager.LocalUnitShow?.Pawn;
         if (pawn == null)
             return false;
+        if (!manager.TryGetCampRelations(out var relations))
+            return false;
         var target = targetNetId != 0 ? manager.UnitsArr.FirstOrDefault(u => u.Id == targetNetId) : null;
-        return SkillCastValidator.CanCast(pawn, skill, target, new System.Numerics.Vector2(posX, posZ));
+        return SkillCastValidator.CanCast(pawn, skill, target, new System.Numerics.Vector2(posX, posZ), relations);
     }
 
     /// <summary>
@@ -190,7 +192,8 @@ public partial class SkillsList : Control {
 
             // 焦点目标合法时直接施放到焦点目标
             if (targetUnit != null
-                && SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy)) {
+                && unitsManager.TryGetCampRelations(out var relations)
+                && SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy, relations)) {
                 SubmitCast(skill, targetUnit.Pawn.Id, 0f, 0f, button);
                 return;
             }

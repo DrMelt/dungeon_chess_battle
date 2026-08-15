@@ -74,6 +74,11 @@ public partial class BattleInputController : Node {
     /// 由 BattleUnitManager 投影为本地焦点单位并派发变化事件。
     /// </summary>
     public override void _UnhandledInput(InputEvent @event) {
+        if (@event.IsActionPressed("SwitchTarget")) {
+            SwitchToNextEnemy();
+            return;
+        }
+
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
             return;
         if (unitManagerRef == null) {
@@ -81,12 +86,24 @@ public partial class BattleInputController : Node {
             return;
         }
 
-
         var hit = RaycastUnitFromCamera();
         var targetNetId = hit?.UnitShowRef.Pawn.Id ?? 0;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
         unitManagerRef.SetLocalFocusTarget(targetNetId);
+    }
+
+    /// <summary>
+    /// 切换到下一个敌方聚焦目标；等待技能位置目标选择时不触发，避免与位置瞄准冲突。
+    /// </summary>
+    private void SwitchToNextEnemy() {
+        if (unitManagerRef == null) {
+            _logger.LogWarning("unitManagerRef is not assigned!");
+            return;
+        }
+        if (playerInterfaceResRef?.IsWaitingSkillTarget == true)
+            return;
+        unitManagerRef.CycleEnemyTarget();
     }
 
     /// <summary>
