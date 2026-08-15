@@ -23,7 +23,6 @@
     <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   </Folder>
 
-  <Folder Name="/Tests/" />
 
   <Folder Name="/Server/">
     <Project Path="DungeonChessBattle.Server.StateStore.Abstractions\DungeonChessBattle.Server.StateStore.Abstractions.csproj" />
