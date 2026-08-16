@@ -14,6 +14,6 @@
 - 不感知状态存储实现，经 `IGameStateStore` 读写。
 - 战斗房间生命周期不在此范围，由 `RoomServerManager` 承担。
 
-## 与周边协作
+## 依赖项
 
-- 上游：`Server.Host` 的 `GameServer` 协调器，经 `ILobbyBroadcaster` 与 `IGameStateStore` 注入。
+- Protocol、Server.StateStore.Abstractions、Battle.Domain、GameConfig（副本键解析）。

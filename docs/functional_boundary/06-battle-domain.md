@@ -13,6 +13,6 @@
 - 不实现具体编排，战斗推进与 AI 由 Battle.Logic 承担。
 - 不猜未知关系：阵营组合未覆盖时返回 `Unknown`。
 
-## 与周边协作
+## 依赖项
 
-- 下游：Battle.Logic（引擎实现）、GameConfig（构建领域定义）、Protocol（引用状态枚举）、Entities（网络实体实现领域接口）。
+- 无：纯 .NET 类库，零项目引用。

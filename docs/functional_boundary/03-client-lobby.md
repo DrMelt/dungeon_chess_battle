@@ -15,7 +15,6 @@
 - 不定义协议契约，Hub 方法名、DTO 与字段约束归 Protocol。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：`GameClientService` 门面持有并驱动，负责后台线程事件转主线程。
-- 服务端对应：`Server.Host` 的 `LobbyHub` 与 `GameServer` 业务协调器。
+- Protocol（Hub 方法名、DTO 与字段约束）。

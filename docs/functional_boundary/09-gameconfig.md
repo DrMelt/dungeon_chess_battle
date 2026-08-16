@@ -14,6 +14,6 @@
 - 不做运行时行为与反射，配置即数据。
 - 不越过登记点，新增单位/副本必须经 Registry 登记。
 
-## 与周边协作
+## 依赖项
 
-- 下游：Server.Lobby（副本键解析）、Server.Battle（敌人生成与布局）、Client.Battle（移动场景）、Godot 主工程（单位展示）。
+- Battle.Domain。

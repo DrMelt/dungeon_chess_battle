@@ -6,7 +6,7 @@
 
 - 持有 `LobbyClient` 与 `RoomBattleClient` 两个持久实例，经 `IClientConnectionFactory` 创建，门面不依赖传输实现。
 - 维护连接状态机 `ClientConnectionState`：Idle、ConnectingLobby、InLobby、ConnectingRoom、InRoom、Reconnecting。
-- 断线重连：缓存 `playerId`、`roomId`、`roomPort` 与房间密码，经 SignalR `ReconnectRoom` 校验资格后重连房间端口。
+- 断线重连：以持久 `playerId` 为身份，缓存 `roomId`、`roomPort` 与房间密码，经 SignalR `ReconnectRoom` 校验资格后重连房间端口。
 - 把两端客户端事件转换为 C# 事件，向 Godot 层暴露请求入口。
 
 ## 不负责
@@ -16,6 +16,6 @@
 - 不在后台线程操作 LiteNetLib，回调只入队主线程动作队列。
 
 
-## 与周边协作
+## 依赖项
 
-- 消费方：Godot 主工程的 `ServiceLocator.ClientService` 与 `GameClientDriver`。
+- Protocol 契约；Client.Lobby 与 Client.Battle 两端经 `IClientConnectionFactory` 创建。

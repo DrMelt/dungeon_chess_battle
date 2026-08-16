@@ -15,7 +15,6 @@
 - 不含子进程管理：拉起/停止由 Godot 端 `ServerProcessHost` 承担，本侧只响应父进程看护契约。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：Godot 客户端 Debug 构建自动构建；`ServerProcessHost` 拉起子进程。
-- 下游：Server.Lobby、Server.Battle、Server.StateStore 与共享层契约。
+- Server.Lobby、Server.Battle、Server.StateStore、Server.StateStore.Abstractions 与共享层契约（Protocol、Entities、Battle.Logic）。

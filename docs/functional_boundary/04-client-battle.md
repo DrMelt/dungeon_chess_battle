@@ -16,7 +16,6 @@
 - 不含大厅阶段能力。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：`GameClientService` 门面持有并每帧驱动 `Update`。
-- 服务端对应：`Server.Battle` 的 `BattleRoomServer` 与 `Entities` 网络实体。
+- Protocol、Entities、Battle.Logic、GameConfig。

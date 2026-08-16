@@ -18,7 +18,6 @@
 - UI 不直接持有网络对象，只消费 `IClientBattleService` 接口与 C# 事件。
 
 
-## 与周边协作
+## 依赖项
 
-- 消费 `IClientBattleService` 契约与 GameClientService 门面事件。
-- 引用 Protocol、GameConfig、Entities、Battle.Domain 与 Battle.Logic 共享层。
+- Client 及其 Lobby/Battle 两端；共享层 Protocol、GameConfig、Entities、Battle.Domain 与 Battle.Logic。

@@ -17,7 +17,6 @@
 - 战斗周期消息结构由 LES 实体类型系统表述，不定义于本层。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游消费方：Godot 主工程、Client 及其 Lobby/Battle 两端、Entities、Server 系列。
-- 下游依赖：仅 Battle.Domain。
+- 仅 Battle.Domain。

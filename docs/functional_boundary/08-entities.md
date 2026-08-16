@@ -15,6 +15,6 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 - 不映射为 UI 事件，翻译由 Client.Battle 实体映射层承担。
 - 不含连接管理与会话逻辑。
 
-## 与周边协作
+## 依赖项
 
-- 上游：Server.Battle（房间创建实体）、Client.Battle（映射为 UI 事件）。
+- Protocol、Battle.Domain。

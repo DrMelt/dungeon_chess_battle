@@ -16,7 +16,6 @@
 - 大厅线程不触碰 EntityManager，只做生命周期控制。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：`Server.Host` 的 `GameServer` 协调器与 `RoomServerManager`。
-- 下游：共享层 Engine/Domain/Entities/GameConfig；存储层经 `IGameStateStore`。
+- 共享层 Battle.Logic、Battle.Domain、Entities、GameConfig 与 Protocol；存储层经 `IGameStateStore`。

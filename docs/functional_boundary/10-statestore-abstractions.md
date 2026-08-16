@@ -16,7 +16,6 @@
 - 战斗单位状态不在此模型，由 BattleEngine 面向 `IBattleUnit` 权威持有。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：Server.Host（DI 注入）、Server.Lobby（大厅业务）、Server.Battle（取准备单位、重连资格校验）。
-- 下游实现：`Server.StateStore` 的 `InMemoryGameStateStore`。
+- Protocol（DTO 模型）、Battle.Domain（状态枚举）。

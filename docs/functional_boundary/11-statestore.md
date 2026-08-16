@@ -14,6 +14,6 @@
 - 锁条目不随房间删除回收，避免 ABA 竞态。
 
 
-## 与周边协作
+## 依赖项
 
-- 上游：Server.Host 装配层注入；Server.Lobby 与 Server.Battle 业务消费。
+- Server.StateStore.Abstractions（契约）、Protocol（DTO 模型）。
