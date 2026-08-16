@@ -1,10 +1,11 @@
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Entities;
 
 // UnitPawn 对 IBattleUnit 接口的适配：把 LES SyncVar/SyncList 映射为领域读写通道。
-// 领域结算 BattleRoom 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
+// 领域结算 BattleEngine 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
 public partial class UnitPawn : IBattleUnit {
     /// <inheritdoc />
     string IBattleUnit.UnitName => UnitName.Value;
@@ -66,6 +67,9 @@ public partial class UnitPawn : IBattleUnit {
     }
 
     /// <inheritdoc />
+    IReadOnlyList<SkillDefinition> IBattleUnit.Skills => Skills;
+
+    /// <inheritdoc />
     SkillDefinition? IBattleUnit.GetSkill(SkillKeyId skillKey) {
         foreach (var skill in Skills) {
             if (skill.SkillId == skillKey)
@@ -119,6 +123,34 @@ public partial class UnitPawn : IBattleUnit {
                 StackCount = view.StackCount,
                 MaxStackCount = StackFor(view.StackCount),
                 DamageType = view.DamageType,
+            });
+        }
+    }
+
+    /// <inheritdoc />
+    float IBattleUnit.HateFactor => HateFactor;
+
+    /// <inheritdoc />
+    IHateRule IBattleUnit.HateRule => HateRule;
+
+    /// <inheritdoc />
+    IReadOnlyList<HateSnapshot> IBattleUnit.Hates {
+        get {
+            var snapshots = new List<HateSnapshot>(HatesList.Count);
+            foreach (var h in HatesList)
+                snapshots.Add(new HateSnapshot(h.TargetUnitNetId, h.HateValue));
+            return snapshots;
+        }
+    }
+
+    /// <inheritdoc />
+    void IBattleUnit.ReplaceHates(IReadOnlyList<HateSnapshot> hates) {
+        while (HatesList.Count > 0)
+            HatesList.RemoveAt(HatesList.Count - 1);
+        foreach (var snapshot in hates) {
+            HatesList.Add(new SyncHateData {
+                TargetUnitNetId = snapshot.TargetNetId,
+                HateValue = snapshot.Value,
             });
         }
     }

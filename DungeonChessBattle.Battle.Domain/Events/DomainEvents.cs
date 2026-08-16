@@ -6,11 +6,14 @@ namespace DungeonChessBattle.Battle.Domain.Events;
 public interface IDomainEvent {
 }
 
-/// <summary>单位受到伤害。</summary>
-public readonly record struct DamageOccurred(ushort TargetNetId, float AppliedDamage, DamageType DamageType) : IDomainEvent;
+/// <summary>单位受到伤害。SourceNetId 为伤害来源，0 表示无来源不记仇。</summary>
+public readonly record struct DamageOccurred(ushort SourceNetId, ushort TargetNetId, float AppliedDamage, DamageType DamageType) : IDomainEvent;
 
-/// <summary>单位接受治疗。</summary>
-public readonly record struct HealOccurred(ushort TargetNetId, float ActualHeal) : IDomainEvent;
+/// <summary>单位接受治疗。SourceNetId 为治疗来源，0 表示无来源不记仇。</summary>
+public readonly record struct HealOccurred(ushort SourceNetId, ushort TargetNetId, float ActualHeal) : IDomainEvent;
+
+/// <summary>仇恨修改请求：由仇恨技能结算产出，目标单位按自身仇恨规则决定是否响应。</summary>
+public readonly record struct HateRequested(ushort HolderNetId, ushort SourceNetId, HateEffectOp Op, float Value) : IDomainEvent;
 
 /// <summary>单位获得 Buff。</summary>
 public readonly record struct BuffApplied(ushort TargetNetId, ushort BuffTypeId, int StackCount) : IDomainEvent;

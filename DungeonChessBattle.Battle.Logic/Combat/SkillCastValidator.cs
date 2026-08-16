@@ -24,10 +24,20 @@ public static class SkillCastValidator {
         if (!CanCastState(caster, skill.SkillId))
             return false;
         if (skill.NeedUnitTarget)
-            return target != null && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy, relations);
+            return target != null
+                && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy, relations)
+                && IsUnitTargetInRange(caster, target, skill);
         if (skill.NeedPosTarget)
             return IsTargetPosInRange(caster, skill, targetPos);
         return true;
+    }
+
+    /// <summary>单位目标距离因素：CastRange 大于 0 时要求中心距含双方碰撞半径不超过射程，0 视为不设限。</summary>
+    private static bool IsUnitTargetInRange(IBattleUnit caster, IBattleUnit target, SkillDefinition skill) {
+        if (skill.CastRange <= 0f)
+            return true;
+        float reach = skill.CastRange + caster.Snapshot.BodyRadius + target.Snapshot.BodyRadius;
+        return Vector2.Distance(caster.Snapshot.Position, target.Snapshot.Position) <= reach;
     }
 
     /// <summary>状态因素聚合：存活、非读条与全局/个体冷却均就绪。单值查询，无托管对象分配。</summary>

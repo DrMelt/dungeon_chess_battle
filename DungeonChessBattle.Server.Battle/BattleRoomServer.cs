@@ -3,6 +3,7 @@ using System.Diagnostics;
 using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Logic.Ai;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Server.StateStore.Abstractions;
@@ -14,9 +15,9 @@ namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的战斗编排实例 BattleRoom 与领域技能仓库 GameConfigDB，并运行在独立线程中，
+/// 独立的战斗编排实例 BattleEngine 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
-/// 战斗流程由 BattleRoom 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
+/// 战斗流程由 BattleEngine 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>，房间存续期间
 /// 登记成员可连接；断线玩家实体保留直至房间销毁，无宽限期机制。
@@ -69,7 +70,7 @@ public partial class BattleRoomServer : INetEventListener {
     private BattleRoomEntity? _roomEntity;
 
     /// <summary>本房间的战斗编排门面，面向 IBattleUnit，不依赖网络载体与配置仓库。</summary>
-    private readonly BattleRoom _battleRoom;
+    private readonly BattleEngine _battleEngine;
 
     /// <summary>本房间创建时间，服务端权威，来自 Store 房间配置。</summary>
     private readonly DateTime _roomCreatedAt;
@@ -138,8 +139,8 @@ public partial class BattleRoomServer : INetEventListener {
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");
         var campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
-        _battleRoom = new BattleRoom(campRelations);
-        _enemyBrain = new EnemyBrain(_battleRoom, loggerFactory.CreateLogger<EnemyBrain>(), campRelations);
+        _battleEngine = new BattleEngine(campRelations);
+        _enemyBrain = new EnemyBrain(_battleEngine, loggerFactory.CreateLogger<EnemyBrain>(), new EnemyIntelligence(campRelations));
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
@@ -153,7 +154,7 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>
     /// 启动房间服务器：启动网络与独立线程主循环。
-    /// 根实体创建、Logic 房间创建与准备期单位迁移均在房间线程首帧执行，
+    /// 根实体创建、战斗引擎创建与准备期单位迁移均在房间线程首帧执行，
     /// 保证 EntityManager 的所有操作收敛到单一线程。
     /// </summary>
     public void Start() {
@@ -173,7 +174,7 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>
-    /// 等待房间线程完成首帧初始化，根实体、Logic 房间与单位迁移。
+    /// 等待房间线程完成首帧初始化，根实体、战斗引擎与单位迁移。
     /// 配合 StartRoomBattle：初始化完成后才广播重定向，保证客户端连入时
     /// 房间已就绪。返回 false 表示等待超时。
     /// </summary>
@@ -189,7 +190,7 @@ public partial class BattleRoomServer : INetEventListener {
         // 取消订阅所有 Pawn 的输入回调，并移除战斗编排注册
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
-            _battleRoom.RemoveUnit(pawn);
+            _battleEngine.RemoveUnit(pawn);
             _movementScene?.RemoveActor(pawn.Id);
         }
 
@@ -213,7 +214,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// 驱动实体同步与战斗逻辑。
     /// </summary>
     private void RunLoop() {
-        // 首帧初始化：根实体、Logic 房间与准备期单位迁移全部在房间线程完成
+        // 首帧初始化：根实体、战斗引擎与准备期单位迁移全部在房间线程完成
         try {
             InitializeFromStore();
         }
@@ -252,9 +253,9 @@ public partial class BattleRoomServer : INetEventListener {
                     // 3. Entity 同步
                     EntityManager.Update();
 
-                    // 4. 战斗编排：BattleRoom 统一推进读条/冷却/Buff/结算/阶段，
+                    // 4. 战斗编排：BattleEngine 统一推进读条/冷却/Buff/结算/阶段，
                     //    返回领域事件并由 HandleDomainEvent 翻译为 RPC / SyncVar
-                    foreach (var e in _battleRoom.Tick(dt))
+                    foreach (var e in _battleEngine.Tick(dt))
                         HandleDomainEvent(e);
                 }
                 else {

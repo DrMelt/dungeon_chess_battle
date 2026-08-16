@@ -1,5 +1,6 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Domain.Movement;
@@ -19,7 +20,7 @@ namespace DungeonChessBattle.Server.Battle;
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 房间线程首帧初始化：创建根实体、订阅实体事件、创建 Logic 房间、
+    /// 房间线程首帧初始化：创建根实体、订阅实体事件、创建战斗引擎、
     /// 从 Store 迁移准备期单位。此后 EntityManager 不再被其他线程触碰。
     /// </summary>
     private void InitializeFromStore() {
@@ -100,7 +101,7 @@ public partial class BattleRoomServer {
 
         _roomPawns.Add(entity);
 
-        // 从单位配置注入 Pawn 战斗系数，权威由 BattleRoom 直接读写 IBattleUnit 载体
+        // 从单位配置注入 Pawn 战斗系数，权威由 BattleEngine 直接读写 IBattleUnit 载体
         var config = UnitRegistry.Instance.GetByKey(unitName);
         if (config != null) {
             entity.MaxHealth.Value = config.MaxHealth;
@@ -113,10 +114,12 @@ public partial class BattleRoomServer {
             entity.BaseSpeed.Value = config.BaseSpeed;
             entity.BodyRadius.Value = config.BodyRadius;
             entity.Skills = config.Skills;
+            entity.HateFactor = config.HateFactor;
+            entity.HateRule = config.HateRule ?? DefaultHateRule.Instance;
         }
 
-        // 注册到战斗编排门面，BattleRoom 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn
-        _battleRoom.AddUnit(entity);
+        // 注册到战斗编排门面，BattleEngine 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn
+        _battleEngine.AddUnit(entity);
 
         // 注入碰撞半径与移动管线，Logic 层 MovementResolver，含场景交互。
         // 场景两端口径一致，从同一副本布局构建 Aether 世界，保证预测与权威确定性一致；
@@ -137,10 +140,10 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 在本房间启动战斗：委托 BattleRoom 阶段机，并将阶段事件翻译为网络同步。
+    /// 在本房间启动战斗：委托 BattleEngine 阶段机，并将阶段事件翻译为网络同步。
     /// </summary>
     public void StartBattle() {
-        foreach (var e in _battleRoom.StartBattle())
+        foreach (var e in _battleEngine.StartBattle())
             HandleDomainEvent(e);
     }
 
@@ -151,8 +154,8 @@ public partial class BattleRoomServer {
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
         // 移动已由 UnitPawn.Update() 确定性结算，客户端预测加服务端权威。
-        // 此处驱动移动即打断读条，BattleRoom 保留既有行为。
-        _battleRoom.OnUnitMoved(pawn, input.MoveDirection);
+        // 此处驱动移动即打断读条，BattleEngine 保留既有行为。
+        _battleEngine.OnUnitMoved(pawn, input.MoveDirection);
 
         if (_logger.IsEnabled(LogLevel.Trace))
             _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
@@ -165,12 +168,12 @@ public partial class BattleRoomServer {
     /// 完成时 Logic 结算并回写。返回值作为请求回执发回客户端。
     /// </summary>
     private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
-        if (_battleRoom.CurrentPhase != BattlePhase.Running) {
+        if (_battleEngine.CurrentPhase != BattlePhase.Running) {
             _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: battle not running.", RoomId);
             return false;
         }
 
-        // 发起读条：BattleRoom 面向 IBattleUnit 校验冷却并写入读条状态
+        // 发起读条：BattleEngine 面向 IBattleUnit 校验冷却并写入读条状态
         IBattleUnit? target = null;
         Vector2? targetPos = null;
         if (req.TargetNetId != 0) {
@@ -187,7 +190,7 @@ public partial class BattleRoomServer {
             targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
         }
 
-        bool began = _battleRoom.BeginCast(casterPawn, new SkillKeyId(req.SkillTypeId), target, targetPos);
+        bool began = _battleEngine.BeginCast(casterPawn, new SkillKeyId(req.SkillTypeId), target, targetPos);
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
@@ -234,8 +237,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 领域事件 → 网络翻译：把 BattleRoom 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
-    /// Health、读条、冷却与 Buff 全量已由 BattleRoom 直接写 IBattleUnit 的 Pawn SyncVar，
+    /// 领域事件 → 网络翻译：把 BattleEngine 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
+    /// Health、读条、冷却与 Buff 全量已由 BattleEngine 直接写 IBattleUnit 的 Pawn SyncVar，
     /// 此处仅处理瞬时事件，阶段、受击、死亡、Buff 增减。
     /// </summary>
     private void HandleDomainEvent(IDomainEvent domainEvent) {
@@ -280,6 +283,10 @@ public partial class BattleRoomServer {
 
             case CastCompleted:
                 // 日志级事件，无网络投影
+                break;
+
+            case HateRequested:
+                // 仇恨指令由目标单位自身规则消费，属战斗结算内部驱动，无网络投影
                 break;
         }
     }

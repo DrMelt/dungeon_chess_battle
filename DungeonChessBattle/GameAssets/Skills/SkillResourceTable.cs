@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.GameConfig.Models;
+using DungeonChessBattle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.GameAssets;
@@ -93,29 +93,18 @@ public partial class SkillResourceTable : Resource {
     }
 
     /// <summary>
-    /// 启动时自检：验证所有 UnitConfig 中引用的技能都在资源表中有注册。
-    /// 在游戏启动时调用一次，效果等同于编译期检查。
+    /// 自检：验证 UnitRegistry 全部单位引用的技能都在资源表注册。
+    /// 客户端启动时调用一次，未注册技能启动即报错而非进副本后崩溃。
     /// </summary>
     public static void Validate() {
         var table = Instance;
-
-        // 反射扫描 GameConfigDB 中所有 UnitConfig 静态属性
-        var unitConfigType = typeof(GameConfig.GameConfigDB);
-        foreach (var prop in unitConfigType.GetProperties(
-                     System.Reflection.BindingFlags.Public |
-                     System.Reflection.BindingFlags.Static)) {
-            if (prop.PropertyType != typeof(UnitConfig))
-                continue;
-
-            var unitConfig = (UnitConfig?)prop.GetValue(null)
-                ?? throw new InvalidOperationException(
-                    $"自检失败：无法获取单位配置 '{prop.Name}' 的值。");
-            foreach (var skill in unitConfig.Skills) {
-                if (!table._lookup.ContainsKey(skill)) {
-                    throw new InvalidOperationException(
-                        $"自检失败：单位 '{prop.Name}' 引用的技能 '{skill.GetType().Name}' " +
-                        "未在 res_skill_resource_table.tres 的 SkillResources 中注册。");
-                }
+        foreach (var unit in UnitRegistry.Instance.All) {
+            foreach (var skill in unit.Skills) {
+                if (table._lookup.ContainsKey(skill))
+                    continue;
+                throw new InvalidOperationException(
+                    $"自检失败：单位 '{unit.ConfigKey}' 引用的技能 SkillId={skill.SkillId.Id} " +
+                    $"({skill.GetType().Name}) 未在 res_skill_resource_table.tres 的 SkillResources 中注册。");
             }
         }
     }

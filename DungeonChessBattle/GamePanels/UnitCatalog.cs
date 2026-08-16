@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Models;
 
@@ -14,8 +15,10 @@ public static class UnitCatalog {
 
     /// <summary>
     /// 从 UnitRegistry 构建客户端目录：单位配置共享服务端来源。
+    /// 构建前执行技能资源自检，配置与客户端资源的漂移在首次使用即暴露。
     /// </summary>
     private static Dictionary<string, UnitConfig> BuildByKey() {
+        SkillResourceTable.Validate();
         var dict = new Dictionary<string, UnitConfig>();
         foreach (var config in UnitRegistry.Instance.All)
             dict[config.ConfigKey] = config;

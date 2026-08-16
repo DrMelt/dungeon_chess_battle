@@ -3,6 +3,7 @@ using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Range;
 using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 
 namespace DungeonChessBattle.GameConfig;
 
@@ -60,6 +61,7 @@ public class GameConfigDB : IGameConfigDB {
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
+        CastRange = 10f,
         Damage = 140.0f,
         DamageType = DamageType.Magic,
     };
@@ -75,6 +77,7 @@ public class GameConfigDB : IGameConfigDB {
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
+        CastRange = 8f,
         CurePotency = 500.0f,
     };
 
@@ -89,6 +92,7 @@ public class GameConfigDB : IGameConfigDB {
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
+        CastRange = 10f,
         Buff = BuffDotMagic,
     };
 
@@ -103,6 +107,7 @@ public class GameConfigDB : IGameConfigDB {
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
+        CastRange = 8f,
         Buff = BuffHot,
     };
 
@@ -125,6 +130,22 @@ public class GameConfigDB : IGameConfigDB {
         },
     };
 
+    /// <summary>单体嘲讽仇恨技能定义：把目标敌人对本单位的仇恨抬到最高之上。</summary>
+    public static HateSkillDefinition SkillTaunt {
+        get;
+    } = new() {
+        SkillId = new SkillKeyId(6),
+        SpellTime = 0.5f,
+        CooldownTime = 8.0f,
+        GcdTime = 3.0f,
+        NeedUnitTarget = true,
+        NeedPosTarget = false,
+        TargetPolicy = SkillTargetPolicy.Different,
+        CastRange = 5f,
+        Op = HateEffectOp.SetTop,
+        Value = 1000.0f,
+    };
+
     /// <summary>白法师单位配置。</summary>
     public static UnitConfig UnitWhiteMage {
         get;
@@ -138,6 +159,8 @@ public class GameConfigDB : IGameConfigDB {
         MagicAttackBase = 1.0f,
         MagicTakePercent = 1.0f,
         BaseSpeed = 2.0f,
+        HateFactor = 0.8f,
+        HateRule = DefaultHateRule.Instance,
         Skills =
         [
             SkillAddHot,
@@ -145,6 +168,7 @@ public class GameConfigDB : IGameConfigDB {
             SkillAddDotMagic,
             SkillMagicDamage,
             SkillRectRangeDamage,
+            SkillTaunt,
         ],
     };
 
@@ -163,6 +187,7 @@ public class GameConfigDB : IGameConfigDB {
         MagicTakePercent = 1.0f,
         BaseSpeed = 2.2f,
         IsPlayerSelectable = false,
+        HateRule = DefaultHateRule.Instance,
         Skills =
         [
             SkillMagicDamage,
@@ -185,6 +210,7 @@ public class GameConfigDB : IGameConfigDB {
         MagicTakePercent = 0.8f,
         BaseSpeed = 1.8f,
         IsPlayerSelectable = false,
+        HateRule = BossHateRule.Instance,
         Skills =
         [
             SkillAddDotMagic,
@@ -249,6 +275,7 @@ public class GameConfigDB : IGameConfigDB {
             3 => SkillAddDotMagic,
             4 => SkillAddHot,
             5 => SkillRectRangeDamage,
+            6 => SkillTaunt,
             _ => null,
         };
     }

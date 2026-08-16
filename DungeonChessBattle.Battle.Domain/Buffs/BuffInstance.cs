@@ -20,6 +20,11 @@ public sealed class BuffInstance {
         get; init;
     }
 
+    /// <summary>施加该 Buff 的来源单位网络 ID，0 表示无来源；仇恨归属用。</summary>
+    public required ushort FromNetId {
+        get; init;
+    }
+
     /// <summary>施加该 Buff 的来源单位快照；可能为 null。</summary>
     public UnitSnapshot? From {
         get; set;

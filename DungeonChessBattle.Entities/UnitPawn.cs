@@ -4,6 +4,7 @@ using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 
 namespace DungeonChessBattle.Entities;
 
@@ -79,6 +80,16 @@ public partial class UnitPawn : PawnLogic {
     public IReadOnlyList<SkillDefinition> Skills {
         get; set;
     } = [];
+
+    /// <summary>仇恨生成倍率，引用单位配置，装配期写入后只读，不参与网络同步。</summary>
+    public float HateFactor {
+        get; set;
+    } = 1f;
+
+    /// <summary>仇恨规则，按单位配置注入，装配期写入后只读，不参与网络同步。</summary>
+    public IHateRule HateRule {
+        get; set;
+    } = DefaultHateRule.Instance;
 
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];

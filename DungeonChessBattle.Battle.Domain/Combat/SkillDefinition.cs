@@ -52,6 +52,14 @@ public abstract class SkillDefinition {
     public required SkillTargetPolicy TargetPolicy {
         get; init;
     }
+
+    /// <summary>
+    /// 单位目标技能的最大施法距离，施法者中心到目标中心的距离上限。
+    /// 0 表示不设射程限制，兼容未配置射程的旧技能定义；位置目标技能射程由 RangeShape 表达。
+    /// </summary>
+    public float CastRange {
+        get; init;
+    } = 0f;
 }
 
 /// <summary>单体伤害技能定义。</summary>
@@ -71,6 +79,22 @@ public sealed class DamageSkillDefinition : SkillDefinition {
 public sealed class HealSkillDefinition : SkillDefinition {
     /// <summary>治疗基础值，经施法者治疗强度换算。</summary>
     public required float CurePotency {
+        get; init;
+    }
+}
+
+/// <summary>
+/// 仇恨修改技能定义，与攻击技能同管线施放。
+/// 继承 SkillDefinition 获得读条、冷却、目标策略与敌我校验，结算时直接修改目标仇恨表。
+/// </summary>
+public sealed class HateSkillDefinition : SkillDefinition {
+    /// <summary>仇恨修改操作。</summary>
+    public required HateEffectOp Op {
+        get; init;
+    }
+
+    /// <summary>操作数值：Add 为增量，Multiply 为倍率，SetTop 为超越最高仇恨的附加值。</summary>
+    public required float Value {
         get; init;
     }
 }

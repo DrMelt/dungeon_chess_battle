@@ -1,10 +1,12 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Buffs;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
+using DungeonChessBattle.Battle.Logic.Hates;
 // 过渡期：Battle.Logic 全局 using 旧 Battle.Enums 含同名 BattlePhase，此处显式指向 Domain 权威枚举。
 // 删除旧 Battle 项目后该别名可一并移除。
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
@@ -12,14 +14,25 @@ using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
-/// 战斗编排门面：统一驱动读条、冷却、Buff 推进与技能结算。
+/// 战斗编排门面：统一驱动读条、冷却、Buff、仇恨与技能结算。
 /// 面向 Domain 接口 IBattleUnit 读写单位状态，不依赖网络载体与全局配置仓库。
 /// 服务端每帧调用 <see cref="Tick"/> 推进状态，并消费返回的领域事件做网络广播。
+/// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
-public sealed class BattleRoom(CampRelationResolver relations) {
+/// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
+public sealed class BattleEngine(CampRelationResolver relations, HateSettings? hateSettings = null) {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
+
+    /// <summary>仇恨系统参数，未注入时用默认。</summary>
+    private readonly HateSettings _hateSettings = hateSettings ?? new HateSettings();
+
+    /// <summary>服务端权威仇恨账本。</summary>
+    private readonly HateSystem _hates = new();
+
+    /// <summary>网络 ID 到单位的索引，仇恨投影用。</summary>
+    private readonly Dictionary<ushort, IBattleUnit> _unitById = [];
 
     private readonly List<IBattleUnit> _units = [];
 
@@ -65,17 +78,21 @@ public sealed class BattleRoom(CampRelationResolver relations) {
     /// <summary>注册一个战斗单位到编排门面。</summary>
     public void AddUnit(IBattleUnit unit) {
         ArgumentNullException.ThrowIfNull(unit);
-        if (!_units.Contains(unit))
+        if (!_units.Contains(unit)) {
             _units.Add(unit);
+            _unitById[unit.UnitNetId] = unit;
+        }
     }
 
     /// <summary>移除已注册的战斗单位。</summary>
     public void RemoveUnit(IBattleUnit unit) {
         _units.Remove(unit);
+        _unitById.Remove(unit.UnitNetId);
         _castTargets.Remove(unit);
         _buffs.Remove(unit);
         _cooldowns.Remove(unit);
         _dead.Remove(unit);
+        _hates.RemoveUnit(unit.UnitNetId);
     }
 
     /// <summary>
@@ -155,6 +172,7 @@ public sealed class BattleRoom(CampRelationResolver relations) {
 
         // 全量死亡扫描：本帧内所有 Health<=0 的单位统一产出 UnitDied。
         // 若在单位迭代内判定，同帧互杀时后死者可能因战斗已切 Finished 而丢失死亡事件。
+        // 仇恨账本清理延迟到增量推衍之后，避免本帧死者因自身伤害事件重写进账本。
         foreach (var unit in _units.ToArray()) {
             if (unit.Health <= 0f && _dead.Add(unit))
                 events.Add(new UnitDied(unit.UnitNetId));
@@ -162,6 +180,18 @@ public sealed class BattleRoom(CampRelationResolver relations) {
 
         if (TryEndBattle(out string? winnerCamp))
             events.Add(new BattleEnded(winnerCamp));
+
+        // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；仇恨状态经投影同步
+        foreach (var effect in HateDispatcher.Dispatch(events, _units, _unitById, _hateSettings, _relations))
+            _hates.ApplyEffect(effect);
+
+        // 死亡清理：本帧死者从仇恨账本移除，含其持有表与他表对其条目，保证死者不残留
+        foreach (var unit in _units.ToArray()) {
+            if (unit.Health <= 0f)
+                _hates.RemoveUnit(unit.UnitNetId);
+        }
+        ProjectHates();
+
         return events;
     }
 
@@ -271,7 +301,7 @@ public sealed class BattleRoom(CampRelationResolver relations) {
                 if (ctx.Target is { } target) {
                     var res = CastResolver.ComputeDamage(caster.Snapshot, target.Snapshot, d.Damage, d.DamageType);
                     target.Health = res.RemainingHealth;
-                    events.Add(new DamageOccurred(target.UnitNetId, res.AppliedDamage, d.DamageType));
+                    events.Add(new DamageOccurred(caster.UnitNetId, target.UnitNetId, res.AppliedDamage, d.DamageType));
                 }
                 break;
 
@@ -279,7 +309,7 @@ public sealed class BattleRoom(CampRelationResolver relations) {
                 if (ctx.Target is { } healTarget) {
                     var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
                     healTarget.Health = heal.RemainingHealth;
-                    events.Add(new HealOccurred(healTarget.UnitNetId, heal.ActualHeal));
+                    events.Add(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
                 }
                 break;
 
@@ -290,6 +320,11 @@ public sealed class BattleRoom(CampRelationResolver relations) {
             case AddBuffSkillDefinition ab:
                 if (ctx.Target is { } buffTarget)
                     AddBuff(buffTarget, ab.Buff, caster, events);
+                break;
+
+            case HateSkillDefinition t:
+                if (ctx.Target is { } hateTarget)
+                    events.Add(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
                 break;
         }
 
@@ -325,7 +360,7 @@ public sealed class BattleRoom(CampRelationResolver relations) {
 
             var res = CastResolver.ComputeDamage(caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);
             unit.Health = res.RemainingHealth;
-            events.Add(new DamageOccurred(unit.UnitNetId, res.AppliedDamage, skill.DamageType));
+            events.Add(new DamageOccurred(caster.UnitNetId, unit.UnitNetId, res.AppliedDamage, skill.DamageType));
         }
     }
 
@@ -343,7 +378,7 @@ public sealed class BattleRoom(CampRelationResolver relations) {
             stacks = existing.Instance.Stacks;
         }
         else {
-            list.Add(new ActiveBuff(BuffFactory.CreateInstance(def, target.UnitNetId, caster.Snapshot),
+            list.Add(new ActiveBuff(BuffFactory.CreateInstance(def, target.UnitNetId, caster.Snapshot, caster.UnitNetId),
                 BuffFactory.CreateEffect(def)));
             stacks = 1;
         }
@@ -359,6 +394,15 @@ public sealed class BattleRoom(CampRelationResolver relations) {
         DotEffect dot => (byte)dot.DamageType,
         _ => 0,
     };
+
+    /// <summary>把脏仇恨表全量投影到单位载体，供网络同步。无变化的单位被跳过。</summary>
+    private void ProjectHates() {
+        foreach (var holderId in _hates.GetDirtyAndClear()) {
+            if (!_unitById.TryGetValue(holderId, out var holder))
+                continue;
+            holder.ReplaceHates(_hates.Snapshot(holderId));
+        }
+    }
 
     #endregion
 }

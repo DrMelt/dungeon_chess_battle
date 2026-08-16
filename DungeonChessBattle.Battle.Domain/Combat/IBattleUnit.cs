@@ -1,3 +1,5 @@
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
+
 namespace DungeonChessBattle.Battle.Domain.Combat;
 
 /// <summary>
@@ -57,6 +59,11 @@ public interface IBattleUnit {
     /// <summary>单位是否拥有该技能，服务端权威归属判定。</summary>
     bool HasSkill(SkillKeyId skillKey);
 
+    /// <summary>单位装备的全部技能定义，装配期写入后只读；AI 决策按配置顺序枚举。</summary>
+    IReadOnlyList<SkillDefinition> Skills {
+        get;
+    }
+
     /// <summary>按技能 ID 获取技能定义，单位未装备该技能时返回 null。</summary>
     SkillDefinition? GetSkill(SkillKeyId skillKey);
 
@@ -70,4 +77,22 @@ public interface IBattleUnit {
 
     /// <summary>以全量投影方式同步 Buff 列表，服务端权威。</summary>
     void ReplaceBuffs(IReadOnlyList<BuffView> buffs);
+
+    /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨。</summary>
+    float HateFactor {
+        get;
+    }
+
+    /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；装配期由载体写入，不参与网络同步。</summary>
+    IHateRule HateRule {
+        get;
+    }
+
+    /// <summary>当前仇恨快照，服务端权威投影；查询者只读，不含写通道。</summary>
+    IReadOnlyList<HateSnapshot> Hates {
+        get;
+    }
+
+    /// <summary>以全量投影方式同步仇恨列表，服务端权威。</summary>
+    void ReplaceHates(IReadOnlyList<HateSnapshot> hates);
 }

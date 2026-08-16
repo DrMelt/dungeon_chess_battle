@@ -24,7 +24,7 @@ public sealed class DotEffect : IBuffEffect {
 
         float baseDps = DamagePerSec * (float)accumulatedSeconds;
         var result = DamageProcessor.Process(from, target, baseDps, DamageType);
-        yield return new DamageOccurred(instance.TargetNetId, result.AppliedDamage, DamageType);
+        yield return new DamageOccurred(instance.FromNetId, instance.TargetNetId, result.AppliedDamage, DamageType);
     }
 }
 
@@ -42,7 +42,7 @@ public sealed class HotEffect : IBuffEffect {
 
         float baseHps = HealthPerSec * (float)accumulatedSeconds;
         var result = HealProcessor.Process(from, target, baseHps);
-        yield return new HealOccurred(instance.TargetNetId, result.ActualHeal);
+        yield return new HealOccurred(instance.FromNetId, instance.TargetNetId, result.ActualHeal);
     }
 }
 

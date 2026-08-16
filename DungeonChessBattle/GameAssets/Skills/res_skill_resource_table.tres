@@ -7,7 +7,8 @@
 [ext_resource type="Resource" uid="uid://ki4rvmooffx3" path="res://GameAssets/Skills/res_skill_magic_damage.tres" id="4_magicdamage"]
 [ext_resource type="Resource" uid="uid://dkyowavmc04rk" path="res://GameAssets/Skills/rect_range_damage/res_skill_rect_range_damage.tres" id="5_rangedamage"]
 [ext_resource type="Script" uid="uid://dbpdsyg0buv1r" path="res://GameAssets/Skills/SkillResourceTable.cs" id="6_script"]
+[ext_resource type="Resource" uid="uid://cwhwi52yso5g4" path="res://GameAssets/Skills/res_skill_taunt.tres" id="6_taunt"]
 
 [resource]
 script = ExtResource("6_script")
-SkillResources = Array[ExtResource("1_wdvdq")]([ExtResource("1_addhot"), ExtResource("2_cure"), ExtResource("3_dotmagic"), ExtResource("4_magicdamage"), ExtResource("5_rangedamage")])
+SkillResources = Array[ExtResource("1_wdvdq")]([ExtResource("1_addhot"), ExtResource("2_cure"), ExtResource("3_dotmagic"), ExtResource("4_magicdamage"), ExtResource("5_rangedamage"), ExtResource("6_taunt")])

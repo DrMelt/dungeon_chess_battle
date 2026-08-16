@@ -9,6 +9,11 @@ namespace DungeonChessBattle.Battle.Domain.Range;
 public abstract class RangeShape {
     /// <summary>判断检测点是否处于以锚点为基准、给定朝向的范围内。</summary>
     public abstract bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius);
+
+    /// <summary>该形状沿朝向的最远有效判定距离，供 AI 逼近决策读取。</summary>
+    public abstract float FarReach {
+        get;
+    }
 }
 
 /// <summary>扇形环形范围，以锚点为圆心、沿朝向的角度与半径区间。</summary>
@@ -28,6 +33,9 @@ public sealed class SectorShape : RangeShape {
 
     /// <summary>扇形结束角，弧度，以朝向为 0。</summary>
     public float RadianTo { get; init; } = MathF.PI;
+
+    /// <inheritdoc />
+    public override float FarReach => FarClamp;
 
     /// <inheritdoc />
     public override bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
@@ -98,6 +106,9 @@ public sealed class RectShape : RangeShape {
 
     /// <summary>右侧横向边界。</summary>
     public float ToRight { get; init; } = 1.0f;
+
+    /// <inheritdoc />
+    public override float FarReach => FarClamp;
 
     /// <inheritdoc />
     public override bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {

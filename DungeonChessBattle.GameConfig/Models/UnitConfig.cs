@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Domain.Combat.Hates;
 
 namespace DungeonChessBattle.GameConfig.Models;
 
@@ -37,6 +38,14 @@ public class UnitConfig {
 
     /// <summary>单位拥有的技能定义列表。</summary>
     public SkillDefinition[] Skills { get; set; } = [];
+
+    /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨，默认 1.0。</summary>
+    public float HateFactor { get; set; } = 1.0f;
+
+    /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；null 表示使用默认规则。</summary>
+    public IHateRule? HateRule {
+        get; set;
+    }
 
     /// <summary>单位配置键，唯一身份标识，注册表与协议身份来源。</summary>
     public required string ConfigKey {
