@@ -11,15 +11,6 @@ public static class EntityConstants {
     /// <summary>单位配置键最大字符数，与配置表 ConfigKey 对齐。</summary>
     public const int MaxUnitNameLength = 32;
 
-    /// <summary>房间 ID 最大字符数。</summary>
-    public const int MaxRoomIdLength = 32;
-
-    /// <summary>阵营标识最大字符数。</summary>
-    public const int MaxCampLength = 16;
-
     /// <summary>默认副本键，创建房间未指定副本时使用。</summary>
     public const string DefaultDungeonKey = "goblin_camp";
-
-    /// <summary>副本键最大字符数。</summary>
-    public const int MaxDungeonKeyLength = 32;
 }

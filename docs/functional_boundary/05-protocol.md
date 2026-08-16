@@ -1,0 +1,23 @@
+# DungeonChessBattle.Protocol
+
+网络契约唯一权威来源，所属分组 Shared。服务端与客户端两侧共用，消除协议字符串、端口与字段长度魔法值。
+
+## 职责范围
+
+- Hub 方法名常量：客户端 InvokeAsync 方法与服务端广播回调；服务端 `LobbyHub` 经 `[HubMethodName]` 绑定该常量。
+- 网络默认值：大厅监听端口、房间端口 LES 二进制包头与默认连接密钥，客户端与服务端共读。
+- 协议字符串字段长度约束与默认副本键，服务端校验与客户端 UI 限制共享；默认副本键在 GameConfig 配置表存在注释对齐的同步副本，GameConfig 不反向依赖本层。
+- 网络 DTO：大厅请求、请求结果、招募板条目、房间快照。
+- `IClientConnection` 客户端连接最小契约，供门面统一驱动。
+
+## 不负责
+
+- 不含业务实现与运行时逻辑，纯 .NET 类库，无第三方运行时依赖。
+- 不受理连接建立与重连：`Connect`/`Reconnect` 与完全连接/断开事件由大厅与房间两端实现各自提供，契约仅保留 `IsConnected` 与 `Disconnect` 最小状态与断连口。
+- 战斗周期消息结构由 LES 实体类型系统表述，不定义于本层。
+
+
+## 与周边协作
+
+- 上游消费方：Godot 主工程、Client 及其 Lobby/Battle 两端、Entities、Server 系列。
+- 下游依赖：仅 Battle.Domain。

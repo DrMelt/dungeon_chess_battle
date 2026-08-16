@@ -16,7 +16,7 @@ public sealed record ServerConfig {
     public int LobbyPort { get; init; } = DefaultPort;
 
     /// <summary>默认连接密钥，客户端连接服务器时的握手密钥；有服务器密码时优先用密码。</summary>
-    public string ConnectionKey { get; init; } = "DungeonChessBattle";
+    public string ConnectionKey { get; init; } = NetworkDefaults.ConnectionKey;
 
     /// <summary>服务器访问密码；为空表示不启用。</summary>
     public string? ServerPassword {

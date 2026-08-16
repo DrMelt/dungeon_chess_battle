@@ -19,8 +19,8 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     /// <summary>日志记录器。</summary>
     protected readonly ILogger _logger;
 
-    /// <summary>默认连接密钥。</summary>
-    public const string ConnectionKey = "DungeonChessBattle";
+    /// <summary>默认连接密钥，收口于 Protocol.NetworkDefaults。</summary>
+    public const string ConnectionKey = NetworkDefaults.ConnectionKey;
     /// <summary>默认服务端端口。</summary>
     protected const int DefaultPort = NetworkDefaults.LobbyPort;
 

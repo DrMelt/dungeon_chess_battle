@@ -1,3 +1,5 @@
+using DungeonChessBattle.Protocol;
+
 namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace DungeonChessBattle.Server.Battle;
 /// </summary>
 public sealed record BattleServerConfig {
     /// <summary>默认连接密钥，客户端连接房间时的握手密钥；优先级计算在装配层完成。</summary>
-    public string ConnectionKey { get; init; } = "DungeonChessBattle";
+    public string ConnectionKey { get; init; } = NetworkDefaults.ConnectionKey;
 
     /// <summary>房间端口池起点，大厅端口之后。</summary>
     public int FirstRoomPort { get; init; } = 10171;

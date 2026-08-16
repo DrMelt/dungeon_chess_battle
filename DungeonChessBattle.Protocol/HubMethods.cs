@@ -38,9 +38,6 @@ public static class HubMethods {
     /// <summary>准备阶段战斗启动重定向。</summary>
     public const string OnPrepareBattleRedirect = "OnPrepareBattleRedirect";
 
-    /// <summary>大厅重定向到房间端口。</summary>
-    public const string OnRedirectToRoom = "OnRedirectToRoom";
-
     /// <summary>房间完整状态快照广播，服务端组装单发。</summary>
     public const string OnRoomSnapshot = "OnRoomSnapshot";
 }

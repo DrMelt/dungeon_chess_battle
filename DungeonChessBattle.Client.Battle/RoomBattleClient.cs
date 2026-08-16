@@ -6,6 +6,7 @@ using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Protocol;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
@@ -21,8 +22,6 @@ namespace DungeonChessBattle.Client.Battle;
 /// </summary>
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
-
-    private const byte PacketHeader = 0xDC;
 
     // 单房间 Entity 缓存，P2-7 替代 Dictionary
     private BattleRoomEntity? _roomEntity;
@@ -185,7 +184,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
         _bytesIn += data.Length;
         _packetsIn++;
-        if (data.Length > 0 && data[0] == PacketHeader) {
+        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader) {
             _entityManager?.Deserialize(data);
         }
         // 房间端口不处理 JSON，其余丢弃
@@ -200,7 +199,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         var countingPeer = new CountingNetPeer(lesPeer);
         _countingPeer = countingPeer;
         var typesMap = EntityTypesRegistry.EntityTypesMap;
-        _entityManager = new ClientEntityManager(typesMap, countingPeer, PacketHeader);
+        _entityManager = new ClientEntityManager(typesMap, countingPeer, NetworkDefaults.PacketHeader);
 
         // 订阅所有同步 Entity 类型的创建事件
         _entityManager.GetEntities<BattleRoomEntity>()

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Protocol;
 using LiteEntitySystem.Transport;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
@@ -93,7 +94,7 @@ public partial class BattleRoomServer {
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
         var data = reader.GetRemainingBytes();
-        if (data.Length > 0 && data[0] == PacketHeader) {
+        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader) {
             if (peer.Tag is LiteNetLibNetPeer lesPeer)
                 EntityManager.Deserialize(lesPeer, data);
         }

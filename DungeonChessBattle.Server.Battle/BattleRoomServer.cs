@@ -6,6 +6,7 @@ using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Ai;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using LiteEntitySystem;
 using LiteNetLib;
@@ -31,7 +32,6 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly ILogger<BattleRoomServer> _logger;
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
-    private const byte PacketHeader = 0xDC;
 
     private const int FramesPerSecond = 50;
     private const double TickInterval = 1.0 / FramesPerSecond;
@@ -145,7 +145,7 @@ public partial class BattleRoomServer : INetEventListener {
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
             typesMap,
-            PacketHeader,
+            NetworkDefaults.PacketHeader,
             framesPerSecond: FramesPerSecond,
             sendRate: ServerSendRate.EqualToFPS);
 

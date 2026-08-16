@@ -1,0 +1,109 @@
+# DungeonChessBattle 总体架构
+
+客户端使用 Godot 4.7 C#，游戏服务器为独立 .NET 子进程，大厅走 SignalR，战斗走 LiteNetLib + LiteEntitySystem 实体同步。
+
+本文档只说明项目划分与项目职责；运行机制与项目内部细节见各项目文档。
+
+## 解决方案划分
+
+下图按实际 `ProjectReference` 依赖方向从上到下分层，`A --> B` 表示 A 依赖 B；底层为纯领域、中间为库、上层为装配与入口。
+
+```mermaid
+graph TD
+    subgraph AppLayer["装配与入口"]
+        Host["Server.Host<br>Kestrel + SignalR 装配"]
+        Godot["DungeonChessBattle（Godot）<br>场景 / UI / 资源装配"]
+    end
+
+    subgraph ClientLayer["客户端库 Client"]
+        Client["Client<br>门面与连接状态机"]
+        LobbyClient["Client.Lobby<br>SignalR 大厅客户端"]
+        BattleClient["Client.Battle<br>LES 房间客户端"]
+    end
+
+    subgraph ServerLayer["服务端库 Server"]
+        LobbySrv["Server.Lobby<br>大厅业务"]
+        BattleSrv["Server.Battle<br>战斗房间服务"]
+        Store["Server.StateStore<br>状态存储实现"]
+        StoreAbst["Server.StateStore.Abstractions<br>状态存储抽象"]
+    end
+
+    subgraph SharedLayer["共享库 Shared"]
+        Protocol["Protocol<br>网络契约与 DTO"]
+        Logic["Battle.Logic<br>战斗引擎"]
+        Entities["Entities<br>LES 网络实体"]
+        GameConfig["GameConfig<br>单位 / 副本配置"]
+    end
+
+    subgraph DomainLayer["纯领域模型"]
+        Domain["Battle.Domain<br>战斗 / Buff / 仇恨 / 阵营 / 事件"]
+    end
+
+    Godot --> Client
+    Godot --> LobbyClient
+    Godot --> BattleClient
+    Godot --> Protocol
+    Godot --> Logic
+    Godot --> Entities
+    Godot --> GameConfig
+    Godot --> Domain
+
+    Client --> LobbyClient
+    Client --> BattleClient
+    Client --> Protocol
+    LobbyClient --> Protocol
+    BattleClient --> Protocol
+    BattleClient --> Logic
+    BattleClient --> Entities
+    BattleClient --> GameConfig
+
+    Host --> LobbySrv
+    Host --> BattleSrv
+    Host --> Store
+    Host --> StoreAbst
+    Host --> Protocol
+    Host --> Logic
+    Host --> Entities
+
+    LobbySrv --> StoreAbst
+    LobbySrv --> GameConfig
+    LobbySrv --> Protocol
+    LobbySrv --> Domain
+    BattleSrv --> StoreAbst
+    BattleSrv --> Logic
+    BattleSrv --> Entities
+    BattleSrv --> GameConfig
+    BattleSrv --> Protocol
+
+    Store --> StoreAbst
+    Store --> Protocol
+    StoreAbst --> Protocol
+    StoreAbst --> Domain
+
+    Protocol --> Domain
+    Logic --> Domain
+    Entities --> Protocol
+    Entities --> Domain
+    GameConfig --> Domain
+```
+
+## 项目文档索引
+
+| 项目 | 职责 | 文档 |
+| --- | --- | --- |
+| `DungeonChessBattle` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-dungeonchessbattle](functional_boundary/01-dungeonchessbattle.md) |
+| `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) |
+| `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) |
+| `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) |
+| `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) |
+| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件 | [06-battle-domain](functional_boundary/06-battle-domain.md) |
+| `DungeonChessBattle.Battle.Logic` | 战斗引擎 `BattleEngine` 与 AI、Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
+| `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) |
+| `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) |
+| `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) |
+| `DungeonChessBattle.Server.StateStore` | 内存状态存储实现 | [11-statestore](functional_boundary/11-statestore.md) |
+| `DungeonChessBattle.Server.Lobby` | 大厅业务 `GameLobby` | [12-server-lobby](functional_boundary/12-server-lobby.md) |
+| `DungeonChessBattle.Server.Battle` | 战斗房间服务与生命周期 | [13-server-battle](functional_boundary/13-server-battle.md) |
+| `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与业务协调 | [14-server-host](functional_boundary/14-server-host.md) |
+
+

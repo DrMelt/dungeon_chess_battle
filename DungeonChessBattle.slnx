@@ -15,13 +15,11 @@
     <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
   </Folder>
 
-  <Folder Name="/Shared/">
-    <Project Path="DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
-    <Project Path="DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
-    <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
-    <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-    <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
-  </Folder>
+  <Project Path="DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
+  <Project Path="DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
+  <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+  <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
 
 
   <Folder Name="/Server/">

@@ -28,3 +28,5 @@ mono_crash.*.json
 obj/
 bin/
 .doc/
+
+.clinerules/docs.md
