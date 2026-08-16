@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
+using DungeonChessBattle.Battle.Domain.Intelligence;
 
 namespace DungeonChessBattle.GameConfig.Models;
 
@@ -38,6 +39,11 @@ public class UnitConfig {
 
     /// <summary>单位拥有的技能定义列表。</summary>
     public SkillDefinition[] Skills { get; set; } = [];
+
+    /// <summary>敌人单位智能，装配期直接引用领域行为实例，无状态实例可多单位共享；玩家可选单位不配。</summary>
+    public IUnitIntelligence? Intelligence {
+        get; set;
+    }
 
     /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨，默认 1.0。</summary>
     public float HateFactor { get; set; } = 1.0f;

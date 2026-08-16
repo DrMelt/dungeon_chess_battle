@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePlayUI.skill_list;
 using DungeonChessBattle.MainScene;

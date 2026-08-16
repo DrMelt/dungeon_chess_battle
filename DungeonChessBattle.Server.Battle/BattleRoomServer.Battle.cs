@@ -75,6 +75,7 @@ public partial class BattleRoomServer {
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
                 var pawn = CreatePawnEntity(config.ConfigKey, config.Camp!, spawnPos);
+                pawn.Intelligence = config.Intelligence;
                 _enemyPawns.Add(pawn);
             }
         }
@@ -269,6 +270,7 @@ public partial class BattleRoomServer {
 
             case UnitDied died:
                 var deadPawn = FindPawnById(died.UnitNetId);
+                deadPawn?.SetMovementInput(System.Numerics.Vector2.Zero);
                 deadPawn?.UnitState.Value = 1;
                 ClearFocusTargetsTo(died.UnitNetId);
                 break;

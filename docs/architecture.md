@@ -36,7 +36,7 @@ graph TD
     end
 
     subgraph DomainLayer["纯领域模型"]
-        Domain["Battle.Domain<br>战斗 / Buff / 仇恨 / 阵营 / 事件"]
+        Domain["Battle.Domain<br>战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策"]
     end
 
     Godot --> Client
@@ -96,8 +96,8 @@ graph TD
 | `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) |
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) |
 | `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) |
-| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件 | [06-battle-domain](functional_boundary/06-battle-domain.md) |
-| `DungeonChessBattle.Battle.Logic` | 战斗引擎 `BattleEngine` 与 AI、Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
+| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) |
+| `DungeonChessBattle.Battle.Logic` | 战斗引擎 `BattleEngine` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
 | `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) |
 | `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) |
 | `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) |

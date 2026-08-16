@@ -2,10 +2,10 @@ using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 
-namespace DungeonChessBattle.Battle.Logic.Combat;
+namespace DungeonChessBattle.Battle.Domain.Combat;
 
 /// <summary>
-/// 技能施放静态判定，服务端权威校验与客户端预输入共用同一实现。
+/// 技能施放静态判定唯一来源，服务端权威校验、客户端预输入与 AI 决策共用同一实现。
 /// 基于施法单位状态、技能定义与已解析的目标/位置判断，不接触技能仓库。
 /// </summary>
 public static class SkillCastValidator {

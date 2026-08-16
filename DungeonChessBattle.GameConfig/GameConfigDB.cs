@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Battle.Domain.Intelligence;
 using DungeonChessBattle.Battle.Domain.Range;
 using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Battle.Domain.Movement;
@@ -188,6 +189,7 @@ public class GameConfigDB : IGameConfigDB {
         BaseSpeed = 2.2f,
         IsPlayerSelectable = false,
         HateRule = DefaultHateRule.Instance,
+        Intelligence = new EnemyIntelligence(),
         Skills =
         [
             SkillMagicDamage,
@@ -211,6 +213,7 @@ public class GameConfigDB : IGameConfigDB {
         BaseSpeed = 1.8f,
         IsPlayerSelectable = false,
         HateRule = BossHateRule.Instance,
+        Intelligence = new EnemyIntelligence(),
         Skills =
         [
             SkillAddDotMagic,

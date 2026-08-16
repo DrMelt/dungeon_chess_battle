@@ -3,7 +3,6 @@ using System.Diagnostics;
 using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Battle.Logic.Ai;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
@@ -83,6 +82,7 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>敌人大脑：服务端每 tick 驱动敌方单位移动与施法。</summary>
     private readonly EnemyBrain _enemyBrain;
+
     /// <summary>本房间的移动物理场景，房间线程首帧初始化后只读，null 表示尚未构建。</summary>
     private PhysicsMovementScene? _movementScene;
 
@@ -140,7 +140,7 @@ public partial class BattleRoomServer : INetEventListener {
                 $"Room '{roomId}' references unknown dungeon key.");
         var campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
         _battleEngine = new BattleEngine(campRelations);
-        _enemyBrain = new EnemyBrain(_battleEngine, loggerFactory.CreateLogger<EnemyBrain>(), new EnemyIntelligence(campRelations));
+        _enemyBrain = new EnemyBrain(_battleEngine, campRelations, loggerFactory.CreateLogger<EnemyBrain>());
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
