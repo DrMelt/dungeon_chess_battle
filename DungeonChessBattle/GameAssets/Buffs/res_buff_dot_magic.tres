@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("2_j8fmd")
-icon = ExtResource("1_j8fmd")
+Icon = ExtResource("1_j8fmd")
 BuffName = "持续魔法伤害"
 BuffDescription = ""
 metadata/_custom_type_script = "uid://cb8wkicsguayw"
