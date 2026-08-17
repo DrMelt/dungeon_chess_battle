@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bi3ny8t6ws32m" path="res://GamePlayUI/ui_info/SkillInfoPanel.cs" id="1_n541s"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="2_ixeth"]
+[ext_resource type="Resource" uid="uid://bbrt0bufres01" path="res://GameAssets/Buffs/res_buff_resource_table.tres" id="3_bftbl"]
 
 [node name="SkillInfoPanel" type="Control" unique_id=875853006 node_paths=PackedStringArray("skillNameLabel", "skillDescriptionLabel")]
 layout_mode = 3
@@ -12,6 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_n541s")
 playerInterfaceRes = ExtResource("2_ixeth")
+buffResourceTable = ExtResource("3_bftbl")
 skillNameLabel = NodePath("PanelContainer/MarginContainer/VBoxContainer/Label_Skill_Name")
 skillDescriptionLabel = NodePath("PanelContainer/MarginContainer/VBoxContainer/Label_Skill_Description")
 

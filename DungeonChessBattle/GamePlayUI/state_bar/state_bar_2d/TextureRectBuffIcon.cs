@@ -15,6 +15,10 @@ public partial class TextureRectBuffIcon : TextureRect {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<TextureRectBuffIcon> _logger = ServiceLocator.GetLogger<TextureRectBuffIcon>();
 
+    /// <summary>Buff 资源表，用于按 BuffTypeId 匹配图标。</summary>
+    [Export]
+    private BuffResourceTable? buffResourceTable;
+
     /// <summary>来自焦点单位的 Buff 文字颜色（绿色）。</summary>
     [Export]
     private Color fromFocusUnit = new(0.3f, 0.9f, 0.3f, 1);
@@ -43,6 +47,8 @@ public partial class TextureRectBuffIcon : TextureRect {
             _logger.LogError("superpositionsLabelRef is not assigned!");
         if (durationLabelRef == null)
             _logger.LogError("durationLabelRef is not assigned!");
+        if (buffResourceTable == null)
+            _logger.LogError("buffResourceTable is not assigned!");
     }
 
     /// <summary>
@@ -63,6 +69,6 @@ public partial class TextureRectBuffIcon : TextureRect {
             buffData.SourceUnitNetId == focusPawn.Id ? fromFocusUnit : fromOther;
 
         // 图标按 BuffTypeId 从资源表匹配；未注册时留空
-        Texture = BuffResourceTable.GetResourceByBuffTypeId(buffData.BuffTypeId)?.icon;
+        Texture = buffResourceTable?.GetResourceByBuffTypeId(buffData.BuffTypeId)?.Icon;
     }
 }

@@ -11,23 +11,11 @@ namespace DungeonChessBattle.GameAssets;
 /// </summary>
 [GlobalClass]
 public partial class BuffResourceTable : Resource {
-    private static BuffResourceTable Instance {
-        get {
-            if (field != null)
-                return field;
-
-            field = GD.Load<BuffResourceTable>(
-                "res://GameAssets/Buffs/res_buff_resource_table.tres");
-            field.Initialize();
-            return field;
-        }
-    }
-
     /// <summary>在 Godot 编辑器中拖拽的全部 Buff 资源。</summary>
     [Export]
     public Godot.Collections.Array<BuffBaseGodot> BuffResources { get; set; } = [];
 
-    /// <summary>运行时查找字典：BuffTypeId → Buff 资源副本。</summary>
+    /// <summary>运行时查找字典：BuffTypeId → Buff 资源。</summary>
     private readonly System.Collections.Generic.Dictionary<ushort, BuffBaseGodot> _lookup = [];
     private bool _initialized;
 
@@ -55,11 +43,9 @@ public partial class BuffResourceTable : Resource {
     /// 通过 Buff 类型 ID 查找对应的 Buff 资源实例。
     /// </summary>
     /// <param name="buffTypeId">Buff 配置 ID。</param>
-    /// <returns>Buff 资源新副本；未注册返回 null。</returns>
-    public static BuffBaseGodot? GetResourceByBuffTypeId(ushort buffTypeId) {
-        var table = Instance; // 触发懒加载
-        if (table._lookup.TryGetValue(buffTypeId, out var template))
-            return (BuffBaseGodot)template.Duplicate();
-        return null;
+    /// <returns>Buff 资源实例；未注册返回 null。</returns>
+    public BuffBaseGodot? GetResourceByBuffTypeId(ushort buffTypeId) {
+        Initialize();
+        return _lookup.TryGetValue(buffTypeId, out var template) ? template : null;
     }
 }
