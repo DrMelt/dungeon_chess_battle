@@ -16,9 +16,9 @@ public partial class UnitStateChangeInfo : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitStateChangeInfo> _logger = ServiceLocator.GetLogger<UnitStateChangeInfo>();
 
-    /// <summary>战斗单位管理器引用，提供场景单位集合。</summary>
+    /// <summary>战斗会话上下文引用，提供场景单位集合。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>状态变化提示的缩放系数。</summary>
     [Export]
@@ -53,6 +53,8 @@ public partial class UnitStateChangeInfo : Node {
         if (InterRefs == null) {
             _logger.LogError("StateChangeInfoInterRefs node not found.");
         }
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
     }
 
     /// <summary>
@@ -60,12 +62,12 @@ public partial class UnitStateChangeInfo : Node {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        var manager = _unitManagerRef;
-        if (manager == null)
+        var session = _sessionRef;
+        if (session == null)
             return;
 
         var currentIds = new HashSet<ushort>();
-        foreach (var unit in manager.UnitsArr) {
+        foreach (var unit in session.Units) {
             currentIds.Add(unit.Id);
             if (!_boundPawns.ContainsKey(unit.Id)) {
                 BindWithUnitPawn(unit);

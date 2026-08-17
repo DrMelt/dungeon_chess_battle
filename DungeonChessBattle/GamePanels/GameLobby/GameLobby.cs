@@ -26,6 +26,10 @@ public partial class GameLobby : BaseGamePanel {
     [Export]
     private RoomPreparation? _roomPreparation;
 
+    /// <summary>副本资源表引用，解析副本显示名与描述。</summary>
+    [Export]
+    private DungeonResourceTable? _dungeonResourceTable;
+
     /// <summary>
     /// 公开服务实例，供外部组件获取。
     /// </summary>
@@ -62,6 +66,8 @@ public partial class GameLobby : BaseGamePanel {
 
         if (_roomPreparation == null)
             _logger.LogError("RoomPreparation reference is not assigned. Room preparation will be unavailable.");
+        if (_dungeonResourceTable == null)
+            _logger.LogError("_dungeonResourceTable is not assigned!");
 
         // 连接按钮信号
         InterRefs?.CreateButton?.Pressed += OnCreateRoom;
@@ -95,7 +101,7 @@ public partial class GameLobby : BaseGamePanel {
         select.Clear();
         var dungeons = DungeonRegistry.Instance.All.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
-            select.AddItem(DungeonResourceTable.GetDisplayName(dungeons[i].DungeonKey) ?? dungeons[i].DungeonKey, i);
+            select.AddItem(_dungeonResourceTable?.GetDisplayName(dungeons[i].DungeonKey) ?? dungeons[i].DungeonKey, i);
             select.SetItemMetadata(i, dungeons[i].DungeonKey);
         }
         if (dungeons.Count > 0) {
@@ -135,7 +141,7 @@ public partial class GameLobby : BaseGamePanel {
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
             DungeonKey: dungeon?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
-            Description: DungeonResourceTable.GetDescription(_selectedDungeonKey) ?? string.Empty,
+            Description: _dungeonResourceTable?.GetDescription(_selectedDungeonKey) ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config: config);
     }

@@ -55,7 +55,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private UnitController? _localController;
 
     /// <summary>上一次已知的战斗阶段值，用于检测 SyncVar 变化。</summary>
-    private BattlePhase _lastKnownPhase;
+    private BattlePhase _lastKnownPhase = BattlePhase.Waiting;
 
     // 传输统计，仅房间链路，主线程驱动，无并发
     private long _bytesIn;
@@ -107,14 +107,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _pendingScenePawns.Add(pawn);
     }
 
-    /// <summary>重连时清理实体缓存与传输统计。</summary>
-    protected override void OnReconnectCleanup() {
-        base.OnReconnectCleanup();
+    /// <summary>清理房间会话本地状态：实体缓存、移动场景、阶段检测基准与传输统计。</summary>
+    private void ClearRoomSessionState() {
         _entityManager = null;
         _localController = null;
         _movementScene = null;
         _pendingScenePawns.Clear();
         _registeredActorIds.Clear();
+        _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
@@ -123,22 +123,16 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>
-    /// 断开连接时清理实体管理器、房间缓存与传输统计。
-    /// </summary>
+    /// <summary>重连时清理房间会话状态。</summary>
+    protected override void OnReconnectCleanup() {
+        base.OnReconnectCleanup();
+        ClearRoomSessionState();
+    }
+
+    /// <summary>断开连接时清理房间会话状态。</summary>
     protected override void OnDisconnectCleanup() {
         base.OnDisconnectCleanup();
-        _entityManager = null;
-        _localController = null;
-        _movementScene = null;
-        _pendingScenePawns.Clear();
-        _registeredActorIds.Clear();
-        ResetTrafficCounters();
-        lock (_lock) {
-            _roomEntity = null;
-            _roomPawns.Clear();
-            _currentRoomId = null;
-        }
+        ClearRoomSessionState();
     }
 
     /// <summary>轮询网络事件后更新实体、结算每秒流量并检测战斗阶段变化。</summary>
@@ -208,22 +202,12 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _logger.LogInformation("LES EntityManager created for peer {PeerId}", peer.Id);
     }
 
-    /// <summary>
-    /// 对端断开时清理实体管理器与房间缓存。
-    /// </summary>
+    /// <summary>对端断开时清理房间会话状态。</summary>
     /// <param name="peer">断开的对端。</param>
     /// <param name="info">断开信息。</param>
     protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
-        _entityManager = null;
-        _localController = null;
-        _movementScene = null;
-        _pendingScenePawns.Clear();
-        _registeredActorIds.Clear();
-        lock (_lock) {
-            _roomEntity = null;
-            _roomPawns.Clear();
-            _currentRoomId = null;
-        }
+        base.OnPeerDisconnectedInternal(peer, info);
+        ClearRoomSessionState();
     }
 
     /// <summary>

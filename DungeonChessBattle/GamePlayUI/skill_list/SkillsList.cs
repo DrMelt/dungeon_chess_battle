@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GamePanels;
 using DungeonChessBattle.GamePlayUI.skill_list;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
@@ -12,8 +14,8 @@ namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 技能列表面板：按技能目标类型（单位/位置/无目标）分发施法 RPC。
-/// 每帧从战斗单位管理器直读本地玩家操控角色作为固定显示单位，变化时重建全部按钮。
-/// 施法由服务端权威读条与结算，施法目标仍取当前选中单位。
+/// 每帧从战斗会话上下文直读本地玩家操控角色作为固定显示单位，变化时重建全部按钮。
+/// 施法经战斗会话上下文发起，服务端权威读条与结算，施法目标仍取当前选中单位。
 /// </summary>
 public partial class SkillsList : Control {
     /// <summary>日志记录器。</summary>
@@ -24,9 +26,9 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
-    /// <summary>战斗单位管理器引用，提供当前显示单位与施法服务。</summary>
+    /// <summary>战斗会话上下文引用，提供施法服务、阵营判定与当前显示单位。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>玩家交互状态引用，用于位置目标瞄准时读取鼠标地面位置并写等待标志。</summary>
     [Export]
@@ -66,8 +68,8 @@ public partial class SkillsList : Control {
             _logger.LogError("SkillsListInterRefs node not found.");
             return;
         }
-        if (_unitManagerRef == null) {
-            _logger.LogError("_unitManagerRef is not assigned!");
+        if (_sessionRef == null) {
+            _logger.LogError("_sessionRef is not assigned!");
             return;
         }
         _preInput = CreatePreInput();
@@ -78,28 +80,28 @@ public partial class SkillsList : Control {
     /// SkillCastValidator（目标/位置由本地场景解析），施放经当前战斗服务发送。
     /// </summary>
     private SkillPreInput? CreatePreInput() {
-        var manager = _unitManagerRef;
-        if (manager == null)
+        var session = _sessionRef;
+        if (session == null)
             return null;
         return new SkillPreInput(
             (skill, targetNetId, posX, posZ) =>
-                CanCastLocal(manager, skill, targetNetId, posX, posZ),
+                CanCastLocal(session, skill, targetNetId, posX, posZ),
             new BattleSkillCaster(
-                () => manager.BattleService,
-                () => manager.RoomId,
-                () => manager.LocalUnitShow?.Pawn.Id ?? 0),
+                () => session.BattleService,
+                () => session.RoomId,
+                () => session.LocalUnitPawn?.Id ?? 0),
             clock: null);
     }
 
     /// <summary>本地位施放判定：本地方单位状态 + 解析目标后统一走 SkillCastValidator。</summary>
-    private static bool CanCastLocal(BattleUnitManager manager, SkillDefinition skill,
+    private static bool CanCastLocal(BattleSessionContext session, SkillDefinition skill,
         ushort targetNetId, float posX, float posZ) {
-        var pawn = manager.LocalUnitShow?.Pawn;
+        var pawn = session.LocalUnitPawn;
         if (pawn == null)
             return false;
-        if (!manager.TryGetCampRelations(out var relations))
+        if (!session.TryGetCampRelations(out var relations))
             return false;
-        var target = targetNetId != 0 ? manager.UnitsArr.FirstOrDefault(u => u.Id == targetNetId) : null;
+        var target = targetNetId != 0 ? session.Units.FirstOrDefault(u => u.Id == targetNetId) : null;
         return SkillCastValidator.CanCast(pawn, skill, target, new System.Numerics.Vector2(posX, posZ), relations);
     }
 
@@ -111,13 +113,12 @@ public partial class SkillsList : Control {
         HandleWaitPosTargetInput();
         _preInput?.Refresh();
 
-        var manager = _unitManagerRef;
-        var showUnit = manager?.LocalUnitShow;
-        ushort? shownId = showUnit?.Pawn.Id;
+        var showPawn = _sessionRef?.LocalUnitPawn;
+        ushort? shownId = showPawn?.Id;
         if (shownId == _shownUnitId)
             return;
         _shownUnitId = shownId;
-        UpdateSkillsList(showUnit);
+        UpdateSkillsList(showPawn);
     }
 
     /// <summary>处理等待位置目标时的确认/取消输入。</summary>
@@ -143,10 +144,11 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 根据单位更新技能按钮列表（重建全部按钮），无显示单位时清空。
+    /// 按本地单位 Pawn 重建技能按钮列表，无显示单位时清空。
+    /// 技能展示资源经 UnitCatalog 配置与 SkillResourceTable 装配，不依赖视图层。
     /// </summary>
-    /// <param name="unitShow">目标单位的展示对象，无则清空按钮。</param>
-    private void UpdateSkillsList(UnitGameShow? unitShow) {
+    /// <param name="pawn">本地单位的 Pawn，无则清空按钮。</param>
+    private void UpdateSkillsList(UnitPawn? pawn) {
         CancelWait();
         _preInput?.Clear();
 
@@ -161,12 +163,17 @@ public partial class SkillsList : Control {
         _skillButtonList.Clear();
 
         var packedScene = InterRefs?.SkillButtonPackedScene;
-        if (unitShow?.SkillsList == null || packedScene == null)
+        if (pawn == null || packedScene == null)
             return;
 
-        foreach (UnitSkillBaseGodot skill in unitShow.SkillsList) {
+        var config = UnitCatalog.GetByKey(pawn.UnitName.Value);
+        if (config == null)
+            return;
+
+        foreach (var skillDefinition in config.Skills) {
+            var skill = SkillResourceTable.LoadResource(skillDefinition);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
-            buttonSkill.Init(skill, unitShow.Pawn, this);
+            buttonSkill.Init(skill, pawn, this);
             hBox.AddChild(buttonSkill);
             _skillButtonList.Add(buttonSkill);
         }
@@ -178,22 +185,22 @@ public partial class SkillsList : Control {
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
         var skill = button.BindSkill.InternalConfig;
-        var unitsManager = _unitManagerRef;
-        if (skill == null || unitsManager == null) {
+        var session = _sessionRef;
+        if (skill == null || session == null) {
             button.ButtonPressed = false;
             return;
         }
 
         // NeedUnitTarget：优先使用已锁定的本地焦点单位，目标阵营需满足技能目标策略
         if (skill.NeedUnitTarget) {
-            var targetUnit = unitsManager.LocalFocusUnit;
-            var selfPawn = unitsManager.LocalUnitShow?.Pawn;
+            var focusPawn = session.LocalFocusPawn;
+            var selfPawn = session.LocalUnitPawn;
 
             // 焦点目标合法时直接施放到焦点目标
-            if (targetUnit != null
-                && unitsManager.TryGetCampRelations(out var relations)
-                && SkillTargetValidator.CanAffect(button.BindPawn, targetUnit.Pawn, skill.TargetPolicy, relations)) {
-                SubmitCast(skill, targetUnit.Pawn.Id, 0f, 0f, button);
+            if (focusPawn != null
+                && session.TryGetCampRelations(out var relations)
+                && SkillTargetValidator.CanAffect(button.BindPawn, focusPawn, skill.TargetPolicy, relations)) {
+                SubmitCast(skill, focusPawn.Id, 0f, 0f, button);
                 return;
             }
 

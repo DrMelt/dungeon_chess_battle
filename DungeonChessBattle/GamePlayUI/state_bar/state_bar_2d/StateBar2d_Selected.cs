@@ -9,9 +9,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// </summary>
 public partial class StateBar2d_Selected : Control {
 
-    /// <summary>战斗单位管理器引用，提供本地焦点单位视图。</summary>
+    /// <summary>战斗会话上下文引用，提供本地焦点单位 Pawn 并向下传递给血条做阵营关系着色。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>导出引用集合节点。</summary>
     public StateBar2d_FocusInterRefs? InterRefs {
@@ -32,15 +32,14 @@ public partial class StateBar2d_Selected : Control {
     public override void _Process(double delta) {
         if (InterRefs == null)
             return;
-        var showUnit = _unitManagerRef?.LocalFocusUnit;
+        var focusPawn = _sessionRef?.LocalFocusPawn;
 
-        if (showUnit != null) {
+        if (focusPawn != null) {
             Visible = true;
-            var pawn = showUnit.Pawn;
 
-            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(pawn);
-            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(pawn, _unitManagerRef);
-            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(pawn);
+            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(focusPawn);
+            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(focusPawn, _sessionRef);
+            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(focusPawn);
         }
         else {
             Visible = false;

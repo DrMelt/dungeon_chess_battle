@@ -20,8 +20,8 @@ public partial class ClickableStateBar : Control {
         get; private set;
     }
 
-    /// <summary>战斗单位管理器引用，点击状态条时经其请求选中绑定单位。</summary>
-    public BattleUnitManager? UnitManagerRef {
+    /// <summary>战斗会话上下文引用，点击状态条时经其请求选中绑定单位。</summary>
+    public BattleSessionContext? SessionRef {
         get; set;
     }
 
@@ -58,10 +58,10 @@ public partial class ClickableStateBar : Control {
             && mouseBtn.ButtonIndex == MouseButton.Left
             && mouseBtn.Pressed
             && bindingPawn != null) {
-            if (UnitManagerRef == null)
-                _logger.LogWarning("UnitManagerRef is not assigned!");
+            if (SessionRef == null)
+                _logger.LogWarning("SessionRef is not assigned!");
             else
-                UnitManagerRef.SetLocalFocusTarget(bindingPawn.Id);
+                SessionRef.SetLocalFocusTarget(bindingPawn.Id);
             AcceptEvent();
         }
     }
@@ -82,7 +82,7 @@ public partial class ClickableStateBar : Control {
         if (InterRefs == null || bindingPawn == null)
             return;
         InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingPawn);
-        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingPawn, UnitManagerRef);
+        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingPawn, SessionRef);
         InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingPawn);
     }
 }

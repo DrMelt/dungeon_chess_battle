@@ -90,7 +90,7 @@ public partial class GameLobby {
             var listing = _lastRoomListings?.FirstOrDefault(r => r.RoomId == roomId);
             if (listing != null) {
                 _selectedRoomConfig = listing;
-                string dungeon = DungeonResourceTable.GetDisplayName(listing.DungeonKey) ?? listing.DungeonKey;
+                string dungeon = _dungeonResourceTable?.GetDisplayName(listing.DungeonKey) ?? listing.DungeonKey;
                 InterRefs.DetailLabel.Text = $"副本: {dungeon}\n房主: {listing.HostName}\n人数: {listing.CurrentPlayers}/{listing.MaxPlayers}";
             }
             else {

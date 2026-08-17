@@ -24,13 +24,13 @@ public partial class StateBarMark2d : Control {
     /// 将单位头顶位置投影到屏幕坐标，并刷新状态条显示。
     /// </summary>
     /// <param name="pawn">目标单位 Pawn。</param>
-    /// <param name="manager">战斗单位管理器，向下传递给血条做阵营关系着色。</param>
-    public void UpdateUI_WithUnit(UnitPawn pawn, BattleUnitManager? manager) {
+    /// <param name="session">战斗会话上下文，向下传递给血条做阵营关系着色。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn, BattleSessionContext? session) {
         var camera3D = GetViewport().GetCamera3D();
         var pos = pawn.Position.InterpolatedValue;
         var screenPos = camera3D.UnprojectPosition(new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
         GlobalPosition = screenPos;
 
-        InterRefs?.PanelUnitStateBarRef?.UpdateUI_WithUnit(pawn, manager);
+        InterRefs?.PanelUnitStateBarRef?.UpdateUI_WithUnit(pawn, session);
     }
 }

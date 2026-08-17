@@ -25,6 +25,9 @@ public partial class RoomPreparation : BaseGamePanel {
     public RoomPreparationInterRefs? InterRefs {
         get; private set;
     }
+    /// <summary>副本资源表引用，解析副本显示名。</summary>
+    [Export]
+    private DungeonResourceTable? _dungeonResourceTable;
     /// <summary>当前房间 ID。</summary>
     private string _roomId = "";
     /// <summary>当前选择的阵营（当前仅支持 A 方 Camp_A，协议已预留 Camp_A/B/Boss）。</summary>
@@ -64,6 +67,9 @@ public partial class RoomPreparation : BaseGamePanel {
             _logger.LogError("RoomPreparationInterRefs node not found.");
             return;
         }
+
+        if (_dungeonResourceTable == null)
+            _logger.LogError("_dungeonResourceTable is not assigned!");
 
         InterRefs?.SelectUnitButton?.Pressed += () => {
             // UnitSelectPanel 为本面板的子节点覆盖层，直接打开而不隐藏本面板
@@ -269,7 +275,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void UpdateRoomInfoLabels(int currentPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(_hostName) ? "房主: --" : $"房主: {_hostName}";
-        string dungeonText = DungeonResourceTable.GetDisplayName(_dungeonKey) ?? _dungeonKey;
+        string dungeonText = _dungeonResourceTable?.GetDisplayName(_dungeonKey) ?? _dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
             InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)

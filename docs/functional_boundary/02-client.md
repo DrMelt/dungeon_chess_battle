@@ -7,6 +7,7 @@
 - 持有 `LobbyClient` 与 `RoomBattleClient` 两个持久实例，经 `IClientConnectionFactory` 创建，门面不依赖传输实现。
 - 维护连接状态机 `ClientConnectionState`：Idle、ConnectingLobby、InLobby、ConnectingRoom、InRoom、Reconnecting。
 - 断线重连：以持久 `playerId` 为身份，缓存 `roomId`、`roomPort` 与房间密码，经 SignalR `ReconnectRoom` 校验资格后重连房间端口。
+- 战斗会话生命周期：连接房间成功触发 `OnBattleStarted`，重连成功恢复战斗；重连失败、连接超时或完全断开统一经 `ResetToNonRoomState` 触发 `OnBattleSessionLost`，战斗编排层据此退出战斗。
 - 把两端客户端事件转换为 C# 事件，向 Godot 层暴露请求入口。
 
 ## 不负责

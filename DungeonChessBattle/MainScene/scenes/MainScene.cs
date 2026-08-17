@@ -1,8 +1,4 @@
-using DungeonChessBattle.Client.Battle;
-using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
-using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePanels;
-using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -11,9 +7,8 @@ namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 主场景入口脚本，挂载到 MainScene 根节点。
-/// 负责服务装配与战斗生命周期编排（进入/退出/结束检测）。
-/// 帧循环委托子组件：输入采集（BattleInputController）、单位同步（BattleUnitManager）。
-/// 全部通过 IClientBattleService 接口消费服务，不再依赖 RoomBattleClient 具体类型。
+/// 负责服务事件订阅转发、战斗进出路由与屏幕状态机仲裁；
+/// 战斗子系统生命周期编排归 BattleCoordinator，数据投影归 BattleSessionContext。
 /// </summary>
 public partial class MainScene : Node {
     /// <summary>日志记录器。</summary>
@@ -21,7 +16,7 @@ public partial class MainScene : Node {
 
     #region Signals
 
-    /// <summary>战斗结束信号。</summary>
+    /// <summary>战斗结束信号：通知外部监听方（如 UI）战斗编排已退出、回到前厅。</summary>
     [Signal]
     public delegate void BattleEndedEventHandler();
 
@@ -33,40 +28,34 @@ public partial class MainScene : Node {
     private Control? _frontUI;
 
     [Export]
-    private BattleUnitManager? _unitManager;
-
-    [Export]
-    private BattleInputController? _inputController;
-
-    [Export]
-    private DungeonEnv? _dungeonEnv;
+    private BattleCoordinator? _coordinator;
 
     #endregion
 
     #region State
 
-    /// <summary>战斗服务（接口类型，通过 ServiceLocator 获取）。唯一服务引用。</summary>
-    private IClientBattleService? _battleService;
-
     /// <summary>前端屏幕状态机，统一仲裁 FrontUI 容器显隐与屏幕态。</summary>
     private ScreenStateMachine? _screenMachine;
-
-    private string _roomId = "";
-    private bool _inBattle;
 
     #endregion
 
     /// <summary>
-    /// 节点就绪：校验导出引用、订阅战斗开始信号并显示主菜单。
+    /// 节点就绪：校验导出引用、订阅战斗信号并挂载战斗完成回调。
     /// </summary>
     public override void _Ready() {
         ValidateExports();
 
         // 订阅战斗启动事件（服务层事实源，GameLobby 为纯显示层不桥接）
         ServiceLocator.ClientService.OnBattleStarted += OnBattleStarted;
+        // 订阅战斗会话终结事件：重连失败或完全断开时退出战斗
+        ServiceLocator.ClientService.OnBattleSessionLost += OnBattleSessionLost;
 
         // 构造屏幕状态机（FrontUI 容器在战斗中整体隐藏）
         _screenMachine = new ScreenStateMachine(_frontUI);
+
+        // 战斗完成通知：Finished 阶段由 BattleCoordinator 转发，走应用级退出流程
+        if (_coordinator != null)
+            _coordinator.OnBattleFinished = ExitBattle;
 
         _logger.LogInformation("_Ready Initialized.");
     }
@@ -74,10 +63,8 @@ public partial class MainScene : Node {
     private void ValidateExports() {
         if (_frontUI == null)
             _logger.LogError("_frontUI is not assigned!");
-        if (_unitManager == null)
-            _logger.LogError("_unitManager is not assigned!");
-        if (_inputController == null)
-            _logger.LogError("_inputController is not assigned!");
+        if (_coordinator == null)
+            _logger.LogError("_coordinator is not assigned!");
     }
 
     // =============================================================
@@ -85,57 +72,31 @@ public partial class MainScene : Node {
     // =============================================================
 
     private void OnBattleStarted(string roomId) {
-        _roomId = roomId;
-        _battleService = ServiceLocator.ClientService.RoomClient;
+        // 战斗重连恢复由 BattleCoordinator.EnterBattle 内部处理（先退出旧绑定再重入）
+        bool wasInBattle = _coordinator?.IsInBattle ?? false;
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Battle started for room: {RoomId}", roomId);
 
-        // 生命周期事件（战斗阶段）由 MainScene 持有；单位事件归 BattleUnitManager
-        if (_battleService != null) {
-            _battleService.BattlePhaseChanged += OnBattlePhase;
+        _coordinator?.EnterBattle(roomId);
 
-            _unitManager?.Bind(_battleService, ServiceLocator.ClientService.RoomClient, roomId);
-            _inputController?.Reset();
+        if (!wasInBattle) {
+            // 首次进入：隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
+            _screenMachine?.EnterBattle();
         }
-
-        // 隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
-        _screenMachine?.EnterBattle();
-        _inBattle = true;
-
-        // 按房间选中副本应用环境主题（地面/天空/光照差异化）
-        ApplyDungeonThemeSafe();
 
         _logger.LogInformation("Entered battle.");
     }
 
-    /// <summary>
-    /// 应用当前房间副本键对应的环境主题；实体未同步（键为空）时退回默认副本主题。
-    /// 在战斗启动回调与战斗阶段 Running 时各调用一次，覆盖实体同步前后的时序差异。
-    /// </summary>
-    private void ApplyDungeonThemeSafe() {
-        string? dungeonKey = ServiceLocator.ClientService.RoomClient.DungeonKey;
-        if (string.IsNullOrEmpty(dungeonKey))
-            dungeonKey = EntityConstants.DefaultDungeonKey;
-        _dungeonEnv?.ApplyDungeonTheme(dungeonKey);
-    }
-
     private void ExitBattle() {
+        // 幂等保护：战斗结束回调与会话终结可能先后触发，仅首次生效
+        if (_coordinator == null || !_coordinator.IsInBattle)
+            return;
+
         // 主动断开房间连接并清空会话缓存，防止后续房间意外断开时误重连已离开的房间
         ServiceLocator.ClientService.LeaveRoom();
 
-        _battleService?.BattlePhaseChanged -= OnBattlePhase;
-
-        // 子组件退订与清理
-        _unitManager?.Unbind();
-        _inputController?.Reset();
-
-        _battleService = null;
-        _roomId = "";
-        _inBattle = false;
-
-        // 恢复默认环境主题，供下次战斗按新副本重新应用
-        _dungeonEnv?.ResetTheme();
+        _coordinator.ExitBattle();
 
         // 恢复前厅 UI（FrontUI 容器 + 大厅面板）
         _screenMachine?.ExitBattle();
@@ -144,43 +105,24 @@ public partial class MainScene : Node {
         _logger.LogInformation("Exited battle.");
     }
 
+    /// <summary>战斗会话终结：重连失败或完全断开时退出战斗，避免被困在无响应的战斗画面。</summary>
+    private void OnBattleSessionLost() {
+        if (_coordinator == null || !_coordinator.IsInBattle)
+            return;
+        _logger.LogInformation("战斗会话终结，退出战斗。");
+        ExitBattle();
+    }
+
     // =============================================================
-    // 帧循环：委托子组件
+    // 帧循环：委托战斗编排器
     // =============================================================
 
     /// <summary>
-    /// 每帧处理战斗输入收集并提交到战斗服务。
+    /// 每帧推进战斗输入收集并提交到战斗服务。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        if (!_inBattle || _battleService == null)
-            return;
-
-        _inputController?.Tick(_battleService);
-    }
-
-    // =============================================================
-    // 战斗阶段
-    // =============================================================
-
-    private void OnBattlePhase(string roomId, BattlePhase phase) {
-        if (roomId != _roomId)
-            return;
-        CallDeferred(nameof(DeferredBattlePhase), (int)phase);
-    }
-
-    private void DeferredBattlePhase(int phase) {
-        if (phase == (int)BattlePhase.Running) {
-            // 战斗真正开始时房间实体已同步，DungeonKey 可用。
-            // 阵营关系仍未装配属时序故障，先响亮校验再应用副本环境主题。
-            _unitManager?.AssertCampRelationsReady();
-            ApplyDungeonThemeSafe();
-        }
-
-        if (phase == (int)BattlePhase.Finished) {
-            _logger.LogInformation("Battle finished detected via LES sync.");
-            CallDeferred(nameof(ExitBattle));
-        }
+        _coordinator?.Tick();
     }
 
     /// <summary>
@@ -188,6 +130,6 @@ public partial class MainScene : Node {
     /// </summary>
     public override void _ExitTree() {
         ServiceLocator.ClientService.OnBattleStarted -= OnBattleStarted;
-        _battleService?.BattlePhaseChanged -= OnBattlePhase;
+        ServiceLocator.ClientService.OnBattleSessionLost -= OnBattleSessionLost;
     }
 }

@@ -9,7 +9,7 @@ namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
 /// 状态条列表容器，按阵营展示所有单位的迷你状态条。
-/// 每帧从战斗单位管理器直读单位集合与本地阵营，签名变化时重建列表。
+/// 每帧从战斗会话上下文直读单位集合与本地阵营，签名变化时重建列表。
 /// </summary>
 public partial class StateBarList : Control {
     /// <summary>导出引用集合节点。</summary>
@@ -20,9 +20,9 @@ public partial class StateBarList : Control {
     private StateBarListInterRefs InterRefsOrThrow =>
         InterRefs ?? throw new InvalidOperationException("[StateBarList] InterRefs has not been initialized.");
 
-    /// <summary>战斗单位管理器引用，提供单位集合并派生本地玩家阵营。</summary>
+    /// <summary>战斗会话上下文引用，提供单位集合并向下传递给可点击状态条做聚焦与着色。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>可点击状态条缓存，键为单位网络实体 ID，仅在单位增删时建/删条。</summary>
     private readonly CacheSynchronizer<ushort, UnitPawn, ClickableStateBar> _bars;
@@ -51,7 +51,7 @@ public partial class StateBarList : Control {
             ?? throw new InvalidOperationException("[StateBarList] ClickableStateBarPKS is not assigned or instantiation failed.");
         var container = InterRefsOrThrow.VBoxContainerRef
             ?? throw new InvalidOperationException("[StateBarList] VBoxContainerRef is not assigned.");
-        bar.UnitManagerRef = _unitManagerRef;
+        bar.SessionRef = _sessionRef;
         container.AddChild(bar);
         return bar;
     }
@@ -67,13 +67,13 @@ public partial class StateBarList : Control {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        var manager = _unitManagerRef;
-        if (manager == null || InterRefs == null)
+        var session = _sessionRef;
+        if (session == null || InterRefs == null)
             return;
 
-        var camp = manager.LocalUnitShow?.Pawn.Camp.Value ?? "";
+        var camp = session.LocalUnitPawn?.Camp.Value ?? "";
         _filteredUnits.Clear();
-        foreach (var unit in manager.UnitsArr) {
+        foreach (var unit in session.Units) {
             if (unit.Camp.Value == camp)
                 _filteredUnits.Add(unit);
         }

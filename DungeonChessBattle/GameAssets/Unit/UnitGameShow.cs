@@ -8,10 +8,10 @@ namespace DungeonChessBattle.GameAssets;
 /// <summary>
 /// 单位 3D 展示组件。
 /// 持有网络同步 UnitPawn（LES SyncVar，服务端权威），每帧直读位置/朝向驱动网格。
-/// 技能展示资源（UnitSkillBaseGodot）由 BattleUnitManager 注入。
+/// 技能展示资源（UnitSkillBaseGodot）由 UnitShowManager 注入。
 /// </summary>
 public partial class UnitGameShow : Node3D {
-    /// <summary>网络同步单位 Pawn（运行时注入，由 BattleUnitManager.SpawnUnit 赋值）。</summary>
+    /// <summary>网络同步单位 Pawn（运行时注入，由 UnitShowManager.SpawnUnit 赋值）。</summary>
     private UnitPawn? _pawn;
 
     /// <summary>网络同步单位 Pawn。</summary>
@@ -20,7 +20,7 @@ public partial class UnitGameShow : Node3D {
         set => _pawn = value;
     }
 
-    /// <summary>单位技能展示列表（Godot Resource，由 BattleUnitManager 注入）。</summary>
+    /// <summary>单位技能展示列表（Godot Resource，由 UnitShowManager 注入）。</summary>
     public Array<UnitSkillBaseGodot> SkillsList { get; set; } = [];
 
     /// <summary>导出引用集合节点。</summary>

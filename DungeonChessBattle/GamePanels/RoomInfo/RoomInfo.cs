@@ -22,6 +22,10 @@ public partial class RoomInfo : Container {
     /// <summary>导出引用集合节点。</summary>
     private RoomInfoInterRefs? _refs;
 
+    /// <summary>副本资源表引用，解析副本显示名。</summary>
+    [Export]
+    private DungeonResourceTable? _dungeonResourceTable;
+
     /// <summary>是否处于选中状态。</summary>
     private bool _isSelected;
 
@@ -56,6 +60,9 @@ public partial class RoomInfo : Container {
             return;
         }
 
+        if (_dungeonResourceTable == null)
+            _logger.LogError("_dungeonResourceTable is not assigned!");
+
         if (_refs.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
             _normalBgColor = flat.BgColor;
         }
@@ -81,7 +88,7 @@ public partial class RoomInfo : Container {
     /// <param name="room">房间列表条目。</param>
     public void UpdateListing(RoomListing room) {
         RoomId = room.RoomId;
-        _dungeonText = DungeonResourceTable.GetDisplayName(room.DungeonKey) ?? room.DungeonKey;
+        _dungeonText = _dungeonResourceTable?.GetDisplayName(room.DungeonKey) ?? room.DungeonKey;
         _passwordText = room.HasPassword ? "🔒" : "";
         _statusText = GetStatusText(room.Status);
         _hostText = $"房主: {room.HostName}";

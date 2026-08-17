@@ -13,16 +13,16 @@ public partial class DungeonTimeLabel : Label {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<DungeonTimeLabel> _logger = ServiceLocator.GetLogger<DungeonTimeLabel>();
 
-    /// <summary>战斗单位管理器引用，用于获取战斗开始时刻。</summary>
+    /// <summary>战斗会话上下文引用，用于获取战斗开始时刻。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (_unitManagerRef == null)
-            _logger.LogError("_unitManagerRef is not assigned!");
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public partial class DungeonTimeLabel : Label {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        long? startUnix = _unitManagerRef?.BattleStartUnixTime;
+        long? startUnix = _sessionRef?.BattleStartUnixTime;
         if (startUnix is not { } start || start <= 0) {
             Text = "Time: --:--";
             return;

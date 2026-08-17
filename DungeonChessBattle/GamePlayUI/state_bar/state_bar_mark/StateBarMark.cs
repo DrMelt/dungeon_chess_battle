@@ -16,9 +16,9 @@ public partial class StateBarMark : Control {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<StateBarMark> _logger = ServiceLocator.GetLogger<StateBarMark>();
 
-    /// <summary>战斗单位管理器引用。</summary>
+    /// <summary>战斗会话上下文引用，提供单位集合并向下传递给血条做阵营关系着色。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
     /// <summary>2D 状态标记使用的场景资源。</summary>
     [Export]
     private PackedScene? stateBarSimple2d_PKD;
@@ -37,8 +37,8 @@ public partial class StateBarMark : Control {
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (_unitManagerRef == null)
-            _logger.LogError("_unitManagerRef is not assigned!");
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
         if (stateBarSimple2d_PKD == null)
             _logger.LogError("stateBarSimple2d_PKD is not assigned!");
     }
@@ -48,10 +48,7 @@ public partial class StateBarMark : Control {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        var manager = _unitManagerRef
-            ?? throw new InvalidOperationException("[StateBarMark] _unitManagerRef is not assigned!");
-
-        _marks.Sync(manager.UnitsArr);
+        _marks.Sync(_sessionRef?.Units ?? []);
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
@@ -70,6 +67,6 @@ public partial class StateBarMark : Control {
 
     /// <summary>更新状态标记的位置与血条显示。</summary>
     private void UpdateMark(StateBarMark2d mark, UnitPawn pawn) {
-        mark.UpdateUI_WithUnit(pawn, _unitManagerRef);
+        mark.UpdateUI_WithUnit(pawn, _sessionRef);
     }
 }

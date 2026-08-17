@@ -108,10 +108,10 @@ public partial class RoomBattleClient {
         }
     }
 
-    /// <summary>获取本房间全部 Pawn 实体的只读快照，展示层枚举数据源。</summary>
+    /// <summary>获取本房间全部 Pawn 实体的只读视图。返回内部列表引用，实体变更统一在主线程网络更新阶段发生，调用方仅允许枚举。</summary>
     public IReadOnlyList<UnitPawn> GetPawns() {
         lock (_lock) {
-            return [.. _roomPawns];
+            return _roomPawns;
         }
     }
 

@@ -6,3 +6,6 @@
 script = ExtResource("1_script")
 DisplayName = "哥布林营地"
 Description = "哥布林们占据了这片林地，消灭它们并击败首领。"
+GroundColor = Color(0.28, 0.38, 0.24, 1)
+SkyColor = Color(0.6, 0.78, 0.72, 1)
+LightColor = Color(1, 0.95, 0.85, 1)

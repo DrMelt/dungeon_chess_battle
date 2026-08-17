@@ -102,7 +102,7 @@ public sealed partial class GameClientService {
     private void AttemptReconnectToRoom() {
         if (string.IsNullOrEmpty(_cachedRoomId)) {
             _logger.LogWarning("无法自动重连：缺少缓存的 roomId");
-            SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+            ResetToNonRoomState();
             return;
         }
 
@@ -148,6 +148,23 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>
+    /// 终结房间会话并复位状态机：清会话缓存与待办重定向、按当前所处状态复位，
+    /// 原先处于房间会话（含重连中）时通知战斗编排层退出战斗。
+    /// 重连失败、房间无缓存断开、连接超时与完全断开统一收敛至此，OnBattleSessionLost 仅由此触发。
+    /// </summary>
+    private void ResetToNonRoomState() {
+        bool wasInRoom = _state is ClientConnectionState.ConnectingRoom
+            or ClientConnectionState.InRoom
+            or ClientConnectionState.Reconnecting;
+        ClearRoomSessionCache();
+        _pendingJoinRoomId = null;
+        _pendingBattleRoomId = null;
+        SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+        if (wasInRoom)
+            OnBattleSessionLost?.Invoke();
+    }
+
+    /// <summary>
     /// 完全断开回调：仅在大厅与房间都断开时视为完全断开并通知 UI。
     /// 更新循环由 Godot 主线程 GameClientDriver 驱动，断开时无需停止后台线程。
     /// </summary>
@@ -155,9 +172,7 @@ public sealed partial class GameClientService {
         if (LobbyClient.IsConnected || RoomClient.IsConnected)
             return;
 
-        if (_state is ClientConnectionState.InLobby or ClientConnectionState.InRoom)
-            SetState(ClientConnectionState.Idle);
-
+        ResetToNonRoomState();
         _logger.LogInformation("连接已断开");
         ConnectionChanged?.Invoke(Host, Port, false);
     }
@@ -165,7 +180,7 @@ public sealed partial class GameClientService {
     #region Update
 
     /// <summary>
-    /// 连接超时兜底：断开活动客户端、清会话缓存并复位状态。
+    /// 连接超时兜底：断开活动客户端并终结房间会话，清缓存、复位状态、按需通知退出战斗。
     /// 覆盖 连接大厅/连接房间/自动重连 三个进行中状态，杜绝卡死。
     /// </summary>
     private void HandleConnectTimeout() {
@@ -186,8 +201,7 @@ public sealed partial class GameClientService {
             _logger.LogDebug(ex, "断开连接异常");
         }
         _activeClient = null;
-        ClearRoomSessionCache();
-        SetState(ClientConnectionState.Idle);
+        ResetToNonRoomState();
         ConnectionChanged?.Invoke(Host, Port, false);
     }
 

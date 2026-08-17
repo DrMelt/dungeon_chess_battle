@@ -25,8 +25,8 @@ public partial class HP_StateBar : Control {
     /// 根据单位 Pawn 刷新血条数值、百分比、阵营关系颜色与名称。
     /// </summary>
     /// <param name="pawn">目标单位 Pawn。</param>
-    /// <param name="manager">战斗单位管理器，用于解析目标相对本地玩家的阵营关系；未就绪时不更新颜色。</param>
-    public void UpdateUI_WithUnit(UnitPawn pawn, BattleUnitManager? manager) {
+    /// <param name="session">战斗会话上下文，用于解析目标相对本地玩家的阵营关系；未就绪时不更新颜色。</param>
+    public void UpdateUI_WithUnit(UnitPawn pawn, BattleSessionContext? session) {
         if (pawn == null || InterRefs == null) {
             return;
         }
@@ -40,8 +40,8 @@ public partial class HP_StateBar : Control {
             var uiSettings = InterRefs.PlayerUISettingsRef;
             if (uiSettings != null) {
                 // 未就绪/未知显式置灰，绝不投影错误的敌我色
-                var relation = manager != null
-                    && manager.TryResolveLocalCampRelation(pawn.Camp.Value, out var resolved)
+                var relation = session != null
+                    && session.TryResolveLocalCampRelation(pawn.Camp.Value, out var resolved)
                     ? resolved
                     : CampRelation.Unknown;
                 progressBar.SelfModulate = uiSettings.GetRelationColor(relation);

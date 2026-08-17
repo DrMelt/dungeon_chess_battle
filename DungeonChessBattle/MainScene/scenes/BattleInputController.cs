@@ -21,9 +21,9 @@ public partial class BattleInputController : Node {
     [Export]
     private PlayerInterfaceRes? playerInterfaceResRef;
 
-    /// <summary>战斗单位管理器引用（左键聚焦目标 RPC）。</summary>
+    /// <summary>战斗会话上下文引用（左键聚焦目标 RPC）。</summary>
     [Export]
-    private BattleUnitManager? unitManagerRef;
+    private BattleSessionContext? sessionRef;
 
     /// <summary>单位选择射线最大距离。</summary>
     private const float RaycastMaxDistance = 200f;
@@ -43,8 +43,8 @@ public partial class BattleInputController : Node {
     public override void _Ready() {
         if (playerInterfaceResRef == null)
             _logger.LogError("playerInterfaceResRef is not assigned!");
-        if (unitManagerRef == null)
-            _logger.LogError("unitManagerRef is not assigned!");
+        if (sessionRef == null)
+            _logger.LogError("sessionRef is not assigned!");
         if (cameraRef == null)
             _logger.LogError("cameraRef is not assigned!");
     }
@@ -71,7 +71,7 @@ public partial class BattleInputController : Node {
     /// <summary>
     /// 鼠标左键点击：请求设置或清除本地玩家单位的聚焦目标。
     /// 经 RPC 提交服务端，校验后写回服务端权威聚焦目标，
-    /// 由 BattleUnitManager 投影为本地焦点单位并派发变化事件。
+    /// 由 BattleSessionContext 投影为本地焦点 Pawn。
     /// </summary>
     public override void _UnhandledInput(InputEvent @event) {
         if (@event.IsActionPressed("SwitchTarget")) {
@@ -81,8 +81,8 @@ public partial class BattleInputController : Node {
 
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
             return;
-        if (unitManagerRef == null) {
-            _logger.LogWarning("unitManagerRef is not assigned!");
+        if (sessionRef == null) {
+            _logger.LogWarning("sessionRef is not assigned!");
             return;
         }
 
@@ -90,20 +90,20 @@ public partial class BattleInputController : Node {
         var targetNetId = hit?.UnitShowRef.Pawn.Id ?? 0;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
-        unitManagerRef.SetLocalFocusTarget(targetNetId);
+        sessionRef.SetLocalFocusTarget(targetNetId);
     }
 
     /// <summary>
     /// 切换到下一个敌方聚焦目标；等待技能位置目标选择时不触发，避免与位置瞄准冲突。
     /// </summary>
     private void SwitchToNextEnemy() {
-        if (unitManagerRef == null) {
-            _logger.LogWarning("unitManagerRef is not assigned!");
+        if (sessionRef == null) {
+            _logger.LogWarning("sessionRef is not assigned!");
             return;
         }
         if (playerInterfaceResRef?.IsWaitingSkillTarget == true)
             return;
-        unitManagerRef.CycleEnemyTarget();
+        sessionRef.CycleEnemyTarget();
     }
 
     /// <summary>

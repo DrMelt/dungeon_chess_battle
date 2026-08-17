@@ -104,6 +104,9 @@ public sealed partial class GameClientService {
     /// <summary>战斗启动事件，网络模式下房间端口连接成功后触发。参数：房间 ID。</summary>
     public event Action<string>? OnBattleStarted;
 
+    /// <summary>战斗会话终结事件：战斗重连失败、无缓存房间或完全断开时触发，战斗编排层据此退出战斗。</summary>
+    public event Action? OnBattleSessionLost;
+
     /// <summary>
     /// 房间快照更新事件，主线程派发。参数：房间 ID、完整快照。
     /// 面向显示层；底层 SignalR 回调经主线程队列转发，显示层无需自行 CallDeferred。
@@ -293,8 +296,9 @@ public sealed partial class GameClientService {
         });
         LobbyClient.OnRedirectToRoom += (roomId, roomPort) => EnqueueMainThread(() => {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("收到重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
-            ReconnectToRoom(Host, roomPort, roomId);
+                _logger.LogInformation("收到战斗重连重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
+            // OnRedirectToRoom 仅由 reconnect_room 成功触发，服务端已确认房间在战斗中
+            ReconnectToRoom(Host, roomPort, roomId, isBattleStart: true);
         });
         LobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => EnqueueMainThread(() => {
             if (_logger.IsEnabled(LogLevel.Information))
@@ -306,8 +310,7 @@ public sealed partial class GameClientService {
                 _logger.LogWarning("重连失败: {Error}", error);
             // 仅在重连状态中处理，失败后清缓存并复位，避免卡死在 Reconnecting
             if (_state == ClientConnectionState.Reconnecting) {
-                ClearRoomSessionCache();
-                SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+                ResetToNonRoomState();
                 OnConnectionLost();
             }
         });
@@ -354,7 +357,7 @@ public sealed partial class GameClientService {
                 AttemptReconnectToRoom();
             }
             else {
-                SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+                ResetToNonRoomState();
                 OnConnectionLost();
             }
         };

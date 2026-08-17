@@ -21,6 +21,18 @@ public abstract partial class DungeonResourceBaseGodot : Resource {
     /// <summary>副本键，来自领域配置。</summary>
     public string DungeonKey => Config?.DungeonKey ?? "";
 
+    /// <summary>环境主题：地面颜色。未配置时回退默认林地主题。</summary>
+    [Export]
+    public Color GroundColor { get; private set; } = new(0.28f, 0.38f, 0.24f, 1f);
+
+    /// <summary>环境主题：天空背景颜色。未配置时回退默认林地主题。</summary>
+    [Export]
+    public Color SkyColor { get; private set; } = new(0.60f, 0.78f, 0.72f, 1f);
+
+    /// <summary>环境主题：方向光补光颜色。未配置时回退默认林地主题。</summary>
+    [Export]
+    public Color LightColor { get; private set; } = new(1.00f, 0.95f, 0.85f, 1f);
+
     /// <summary>副本显示名。</summary>
     [Export]
     public string DisplayName { get; private set; } = "";

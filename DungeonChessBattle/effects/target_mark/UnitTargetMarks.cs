@@ -18,9 +18,9 @@ public partial class UnitTargetMarks : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitTargetMarks> _logger = ServiceLocator.GetLogger<UnitTargetMarks>();
 
-    /// <summary>战斗单位管理器引用。</summary>
+    /// <summary>战斗会话上下文引用，提供单位集合、焦点单位与阵营关系判定。</summary>
     [Export]
-    private BattleUnitManager? _unitManagerRef;
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>3D 目标标记使用的场景资源。</summary>
     [Export]
@@ -40,8 +40,8 @@ public partial class UnitTargetMarks : Node {
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
     public override void _Ready() {
-        if (_unitManagerRef == null)
-            _logger.LogError("_unitManagerRef is not assigned!");
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
         if (_targetMarkPackedScene == null)
             _logger.LogError("_targetMarkPackedScene is not assigned!");
     }
@@ -51,10 +51,10 @@ public partial class UnitTargetMarks : Node {
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        var manager = _unitManagerRef
-            ?? throw new InvalidOperationException("[UnitTargetMarks] _unitManagerRef is not assigned!");
+        var session = _sessionRef
+            ?? throw new InvalidOperationException("[UnitTargetMarks] _sessionRef is not assigned!");
 
-        _marks.Sync(manager.UnitsArr);
+        _marks.Sync(session.Units);
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
@@ -79,9 +79,8 @@ public partial class UnitTargetMarks : Node {
     /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
     private void UpdateMark(Node3dTargetMark mark, UnitPawn pawn) {
-        // _Process 已对 _unitManagerRef 判空并抛出，Sync 回调内引用必然非空
-        var manager = _unitManagerRef!;
-        var focusPawn = manager.LocalFocusUnit?.Pawn;
+        var session = _sessionRef;
+        var focusPawn = session?.LocalFocusPawn;
         bool isFocus = pawn == focusPawn;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
@@ -89,7 +88,7 @@ public partial class UnitTargetMarks : Node {
 
         mark.Visible = isFocus;
         mark.SetRadius(pawn.BodyRadius.Value);
-        if (manager.TryResolveLocalCampRelation(pawn.Camp.Value, out var relation)) {
+        if (session != null && session.TryResolveLocalCampRelation(pawn.Camp.Value, out var relation)) {
             mark.SetColor(relation);
         }
         else {
