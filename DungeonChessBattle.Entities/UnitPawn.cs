@@ -192,10 +192,10 @@ public partial class UnitPawn : PawnLogic {
             ref BuffRemovedRPC,
             ExecuteFlags.SendToAll);
 
-        // 客户端在同步阶段检测聚焦目标变化，SyncVar 原生绑定，零带宽
+        // 客户端在同步阶段检测聚焦目标变化
         r.BindOnChange<UnitPawn, ushort>(ref FocusTargetNetId, (e, t) => e.OnFocusTargetChangedBySync(t), BindOnChangeFlags.ExecuteOnSync);
 
-        // 客户端在同步阶段检测血量与死亡状态变化，SyncVar 原生绑定，零带宽
+        // 客户端在同步阶段检测血量与死亡状态变化
         r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
         r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
     }

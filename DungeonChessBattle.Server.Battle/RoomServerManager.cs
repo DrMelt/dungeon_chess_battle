@@ -104,6 +104,15 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         if (!server.WaitUntilInitialized(TimeSpan.FromSeconds(10)))
             throw new InvalidOperationException($"Room '{roomId}' failed to initialize within timeout.");
 
+        // 初始化失败：房间线程已退出且未投递 RoomEmpty，这里同步清理并回收端口，
+        // 避免登记一个没有实体的空房间导致泄漏
+        if (!server.InitializeSucceeded) {
+            server.RoomEmpty -= OnRoomEmptied;
+            server.Stop();
+            RecyclePort(port);
+            throw new InvalidOperationException($"Room '{roomId}' failed to initialize.");
+        }
+
         _roomServers[roomId] = server;
 
         // 更新招募板状态

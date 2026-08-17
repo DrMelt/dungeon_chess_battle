@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Entities;
@@ -32,13 +31,18 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly IGameStateStore _stateStore;
 
     private const int FramesPerSecond = 50;
-    private const double TickInterval = 1.0 / FramesPerSecond;
+
+    /// <summary>连续逻辑 tick 失败达到该次数后停止房间，避免错误状态无限运行。</summary>
+    private const int MaxConsecutiveTickFailures = 10;
 
     // 房间线程
     private Thread? _loopThread;
     private volatile bool _running;
-    private readonly Stopwatch _tickWatch = Stopwatch.StartNew();
-    private double _lastTickTime;
+
+    /// <summary>首帧初始化是否成功，StartRoomBattle 等待初始化信号后据此判断。</summary>
+    public bool InitializeSucceeded {
+        get; private set;
+    }
 
     /// <summary>初始化完成信号：房间线程首帧完成根实体创建与单位迁移后置位。</summary>
     private readonly ManualResetEventSlim _initialized = new(false);
@@ -156,7 +160,6 @@ public partial class BattleRoomServer : INetEventListener {
         _netManager.Start(Port);
 
         _running = true;
-        _lastTickTime = _tickWatch.Elapsed.TotalSeconds;
         _loopThread = new Thread(RunLoop) {
             Name = $"Room-{RoomId}",
             IsBackground = true
@@ -176,23 +179,22 @@ public partial class BattleRoomServer : INetEventListener {
     public bool WaitUntilInitialized(TimeSpan timeout) => _initialized.Wait(timeout);
 
     /// <summary>
-    /// 停止房间服务器：取消订阅事件、清理全部会话与重连数据并关闭网络。
+    /// 停止房间服务器：先等房间线程退出，再清理全部会话与重连数据并关闭网络。
     /// 应由大厅线程调用，本方法会 Join 房间线程。
     /// </summary>
     public void Stop() {
         _running = false;
 
-        // 取消订阅所有 Pawn 的输入回调，并移除战斗编排注册
+        // 先等待房间线程退出，再清理共享状态，避免大厅线程与房间线程并发访问
+        _loopThread?.Join(TimeSpan.FromSeconds(3));
+        _netManager.Stop();
+
+        // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗编排注册才是线程安全的
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
             _battleEngine.RemoveUnit(pawn);
             _movementScene?.RemoveActor(pawn.Id);
         }
-
-        // 先等待房间线程退出，再销毁保留实体，避免大厅线程在房间线程
-        // 仍运行 EntityManager.Update() 时并发销毁实体
-        _loopThread?.Join(TimeSpan.FromSeconds(3));
-        _netManager.Stop();
 
         // 销毁全部保留实体，断线玩家实体随房间销毁一并清理，房间线程已退出
         CleanupAllSessions();
@@ -205,16 +207,20 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>
-    /// 房间服务器主循环，独立线程：首帧初始化后轮询网络事件并以固定间隔
-    /// 驱动实体同步与战斗逻辑。
+    /// 房间服务器主循环，独立线程：首帧初始化后轮询网络事件并驱动
+    /// EntityManager.Update()。AI 决策与战斗推进经 RoomLogic LocalSingleton
+    /// 收编进逻辑 tick 生命周期，时间由 LES accumulator 按真实时间统一管理。
     /// </summary>
     private void RunLoop() {
         // 首帧初始化：根实体、战斗引擎与准备期单位迁移全部在房间线程完成
         try {
             InitializeFromStore();
+            InitializeSucceeded = true;
         }
         catch (Exception ex) {
             _logger.LogError(ex, "[RoomId: {RoomId}] Initialization failed.", RoomId);
+            // 初始化失败不投递 RoomEmpty，由 StartRoomBattle 检查标志后同步清理
+            return;
         }
         finally {
             // 即使初始化失败也放行，避免大厅线程 WaitUntilInitialized 无限等待
@@ -232,34 +238,33 @@ public partial class BattleRoomServer : INetEventListener {
             _logger.LogError(ex, "[RoomId: {RoomId}] StartBattle failed.", RoomId);
         }
 
+        int consecutiveFailures = 0;
         while (_running) {
             try {
-                double now = _tickWatch.Elapsed.TotalSeconds;
-                double dt = now - _lastTickTime;
-
-                if (dt >= TickInterval) {
-                    _lastTickTime = now;
-                    // 1. 网络事件
-                    _netManager.PollEvents();
-
-                    // 2. 敌人大脑：先注入移动输入与施法请求，再执行单位位移与读条结算
-                    _enemyBrain.Tick(_enemyPawns, _roomPawns);
-
-                    // 3. Entity 同步
-                    EntityManager.Update();
-
-                    // 4. 战斗编排：BattleEngine 统一推进读条/冷却/Buff/结算/阶段，
-                    //    返回领域事件并由 HandleDomainEvent 翻译为 RPC / SyncVar
-                    foreach (var e in _battleEngine.Tick(dt))
-                        HandleDomainEvent(e);
-                }
-                else {
-                    Thread.Sleep(1);
-                }
+                // 网络事件收包入队；输入应用、实体更新、战斗推进与状态发送
+                // 全部由 EntityManager.Update() 在逻辑 tick 内驱动。
+                // Sleep 仅控制轮询节奏，不参与逻辑计时；tick 频率由 LES accumulator 保证。
+                _netManager.PollEvents();
+                EntityManager.Update();
+                consecutiveFailures = 0;
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "[RoomId: {RoomId}] Unhandled exception in RunLoop. Room continues.", RoomId);
+                consecutiveFailures++;
+                _logger.LogError(ex, "[RoomId: {RoomId}] Unhandled exception in room tick.", RoomId);
+                if (consecutiveFailures >= MaxConsecutiveTickFailures) {
+                    if (_logger.IsEnabled(LogLevel.Critical))
+                        _logger.LogCritical("[RoomId: {RoomId}] Too many consecutive tick failures, stopping room.", RoomId);
+                    break;
+                }
             }
+            Thread.Sleep(1);
+        }
+
+        // 连续失败退出：投递空房事件由大厅清理循环销毁，避免带病房间残留。
+        // 正常退出由 Stop() 置位 _running 触发，清理已由大厅线程完成。
+        if (_running) {
+            _running = false;
+            RoomEmpty?.Invoke(RoomId);
         }
     }
 }
