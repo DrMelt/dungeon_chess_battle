@@ -1,8 +1,8 @@
-﻿using DungeonChessBattle.Server.Battle;
+﻿using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.Battle;
 using DungeonChessBattle.Server.Lobby;
 using DungeonChessBattle.Server.StateStore;
 using DungeonChessBattle.Server.StateStore.Abstractions;
-using Microsoft.AspNetCore.SignalR;
 
 namespace DungeonChessBattle.Server.Host;
 
@@ -17,7 +17,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly Lock _lock = new();
     private WebApplication? _app;
-    private GameServer? _server;
+    private bool _running;
+    private IRoomServerManager? _roomServers;
     private CancellationTokenSource? _cts;
     private Task? _cleanupLoop;
 
@@ -28,7 +29,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     public bool IsRunning {
         get {
             lock (_lock)
-                return _server != null;
+                return _running;
         }
     }
 
@@ -56,7 +57,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
     public void Start(int port = DefaultPort, string? serverPassword = null) {
         lock (_lock) {
-            if (_server != null) {
+            if (_running) {
                 _logger.LogWarning("服务器已在运行中");
                 return;
             }
@@ -73,21 +74,12 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                     options.SingleLine = true;
                     options.TimestampFormat = "HH:mm:ss.fff ";
                 });
-                builder.Services.AddSingleton(new LobbyServerConfig { ServerPassword = config.ServerPassword });
-                builder.Services.AddSingleton(new BattleServerConfig {
+                builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
+                builder.Services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
+                builder.Services.AddBattleServer(new BattleServerConfig {
                     ConnectionKey = config.ServerPassword ?? config.ConnectionKey,
                     FirstRoomPort = config.FirstRoomPort,
                 });
-                builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
-                builder.Services.AddSingleton<ILobbyBroadcaster>(sp =>
-                    new SignalRBroadcaster(sp.GetRequiredService<IHubContext<LobbyHub>>()));
-                builder.Services.AddSingleton<GameServer>(sp => new GameServer(
-                    _loggerFactory,
-                    sp.GetRequiredService<ILobbyBroadcaster>(),
-                    sp.GetRequiredService<LobbyServerConfig>(),
-                    sp.GetRequiredService<BattleServerConfig>(),
-                    sp.GetRequiredService<IGameStateStore>()));
-                builder.Services.AddSingleton<ILobbyApplication>(sp => sp.GetRequiredService<GameServer>());
                 builder.Services.AddSignalR();
 
                 var app = builder.Build();
@@ -95,7 +87,10 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 app.Start();
 
                 _app = app;
-                _server = app.Services.GetRequiredService<GameServer>();
+                // 解析 GameServer 校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
+                _ = app.Services.GetRequiredService<GameServer>();
+                _roomServers = app.Services.GetRequiredService<IRoomServerManager>();
+                _running = true;
 
                 // 空房间清理后台循环，替代原大厅轮询线程
                 _cts = new CancellationTokenSource();
@@ -108,7 +103,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
             catch (Exception ex) {
                 _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _app = null;
-                _server = null;
+                _running = false;
                 Port = 0;
                 _logger.LogError(ex, "服务器启动失败");
                 StatusChanged?.Invoke(false, 0);
@@ -117,13 +112,13 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     }
 
     /// <summary>
-    /// 空房间清理循环：周期消费 <see cref="RoomServerManager.ProcessPendingRoomCleanups"/>。
+    /// 空房间清理循环：周期消费 <see cref="IRoomServerManager.ProcessPendingRoomCleanups"/>。
     /// </summary>
     private async Task CleanupLoopAsync(CancellationToken ct) {
-        using var timer = new System.Threading.PeriodicTimer(TimeSpan.FromMilliseconds(50));
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(50));
         try {
             while (await timer.WaitForNextTickAsync(ct)) {
-                _server?.RoomServers.ProcessPendingRoomCleanups();
+                _roomServers?.ProcessPendingRoomCleanups();
             }
         }
         catch (OperationCanceledException) {
@@ -136,7 +131,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
     /// </summary>
     public void Stop() {
         lock (_lock) {
-            if (_server == null) {
+            if (!_running) {
                 _logger.LogWarning("服务器未在运行");
                 return;
             }
@@ -144,7 +139,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
             try {
                 _cts?.Cancel();
                 _cleanupLoop?.Wait(TimeSpan.FromSeconds(3));
-                _server.RoomServers.StopAll();
+                _roomServers?.StopAll();
                 _app?.StopAsync().GetAwaiter().GetResult();
                 _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _logger.LogInformation("服务器已停止");
@@ -157,7 +152,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 _cts = null;
                 _cleanupLoop = null;
                 _app = null;
-                _server = null;
+                _running = false;
+                _roomServers = null;
                 Port = 0;
                 StatusChanged?.Invoke(false, 0);
             }
@@ -188,7 +184,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                     Console.WriteLine($"  Uptime: {getUptime():hh\\:mm\\:ss}, Clients: {getPeerCount()}");
                     break;
                 case "rooms":
-                    _server?.RoomServers.ListRooms();
+                    _roomServers?.ListRooms();
                     break;
                 case "exit":
                 case "quit":

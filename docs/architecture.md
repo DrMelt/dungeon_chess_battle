@@ -22,10 +22,11 @@ graph TD
     end
 
     subgraph ServerLayer["服务端库 Server"]
-        LobbySrv["Server.Lobby<br>大厅业务"]
+        LobbySrv["Server.Lobby<br>大厅服务器与协调"]
         BattleSrv["Server.Battle<br>战斗房间服务"]
         Store["Server.StateStore<br>状态存储实现"]
         StoreAbst["Server.StateStore.Abstractions<br>状态存储抽象"]
+        ServerAbst["Server.Abstractions<br>服务端抽象契约"]
     end
 
     subgraph SharedLayer["共享库 Shared"]
@@ -61,14 +62,16 @@ graph TD
     Host --> BattleSrv
     Host --> Store
     Host --> StoreAbst
+    Host --> ServerAbst
     Host --> Protocol
-    Host --> Logic
     Host --> Entities
 
+    LobbySrv --> ServerAbst
     LobbySrv --> StoreAbst
     LobbySrv --> GameConfig
     LobbySrv --> Protocol
     LobbySrv --> Domain
+    BattleSrv --> ServerAbst
     BattleSrv --> StoreAbst
     BattleSrv --> Logic
     BattleSrv --> Entities
@@ -102,8 +105,9 @@ graph TD
 | `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) |
 | `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) |
 | `DungeonChessBattle.Server.StateStore` | 内存状态存储实现 | [11-statestore](functional_boundary/11-statestore.md) |
-| `DungeonChessBattle.Server.Lobby` | 大厅业务 `GameLobby` | [12-server-lobby](functional_boundary/12-server-lobby.md) |
+| `DungeonChessBattle.Server.Abstractions` | 服务端抽象契约：房间生命周期与广播端口 | [15-server-abstractions](functional_boundary/15-server-abstractions.md) |
+| `DungeonChessBattle.Server.Lobby` | 大厅服务器：Hub 端点、业务与协调 | [12-server-lobby](functional_boundary/12-server-lobby.md) |
 | `DungeonChessBattle.Server.Battle` | 战斗房间服务与生命周期 | [13-server-battle](functional_boundary/13-server-battle.md) |
-| `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与业务协调 | [14-server-host](functional_boundary/14-server-host.md) |
+| `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与进程入口 | [14-server-host](functional_boundary/14-server-host.md) |
 
 

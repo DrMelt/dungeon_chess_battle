@@ -3,7 +3,7 @@ using Godot;
 
 namespace DungeonChessBattle.GameAssets;
 
-using DungeonConfigDef = DungeonChessBattle.GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = GameConfig.Models.DungeonConfig;
 
 /// <summary>深邃洞窟副本资源。</summary>
 [GlobalClass]

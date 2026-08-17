@@ -1,18 +1,21 @@
 ﻿using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Server.Abstractions;
+using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Host;
+namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// GameServer 的战斗编排请求处理。
 /// 大厅业务，创建、加入、列房与准备等，由 Server.Lobby 的
-/// <see cref="DungeonChessBattle.Server.Lobby.GameLobby"/> 承担；
+/// <see cref="GameLobby"/> 承担；
 /// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
+/// 战斗房间生命周期服务经 <see cref="IRoomServerManager"/> 契约调用，不感知具体实现。
 /// </summary>
 public partial class GameServer {
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
-    /// 校验通过后创建战斗房间服务器，经 <see cref="DungeonChessBattle.Server.Battle.RoomServerManager"/>，并向房间内所有玩家广播重定向端口。
+    /// 校验通过后创建战斗房间服务器，经 <see cref="IRoomServerManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
     public async Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req) {
         if (string.IsNullOrWhiteSpace(req.RoomId))
@@ -47,14 +50,14 @@ public partial class GameServer {
         }
 
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
-        var server = _roomServers.StartRoomBattle(req.RoomId);
+        int port = _roomServers.StartRoomBattle(req.RoomId);
 
         // 向房间内所有玩家广播重定向，含端口号，确保非房主也能进入战斗
         await BroadcastToRoomAsync(req.RoomId, HubMethods.OnPrepareBattleRedirect,
-            new RoomRedirect(req.RoomId, server.Port));
+            new RoomRedirect(req.RoomId, port));
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}.", req.RoomId, server.Port);
+            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}.", req.RoomId, port);
 
         return new LobbyResult(req.RoomId, true);
     }
@@ -73,17 +76,16 @@ public partial class GameServer {
         if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
             return new LobbyResult(req.RoomId, false, "Invalid room password.");
 
-        var server = _roomServers.GetRoomServer(req.RoomId);
-        if (server == null)
+        if (!_roomServers.TryGetRoomPort(req.RoomId, out int port))
             return new LobbyResult(req.RoomId, false, "Room not in battle.");
 
-        server.UpdatePlayerName(req.PlayerId, req.PlayerName);
-        server.RegisterPlayer(req.PlayerId, req.PlayerName);
+        _roomServers.RegisterPlayer(req.RoomId, req.PlayerId, req.PlayerName);
+        _roomServers.UpdatePlayerName(req.RoomId, req.PlayerId, req.PlayerName);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
-                req.PlayerName, req.PlayerId, req.RoomId, server.Port);
+                req.PlayerName, req.PlayerId, req.RoomId, port);
 
-        return new LobbyResult(req.RoomId, true, Port: server.Port);
+        return new LobbyResult(req.RoomId, true, Port: port);
     }
 }

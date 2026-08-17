@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Server.Host;
 /// 服务器装配配置的唯一来源。
 /// 收敛端口、连接密钥、服务器密码等原本散落在各网络类中的常量，
 /// 由入口 Program 与 GameServerHost 构建一次后映射为各模块的配置切片注入
-/// <see cref="DungeonChessBattle.Server.Lobby.LobbyServerConfig"/> 与 <see cref="DungeonChessBattle.Server.Battle.BattleServerConfig"/>。
+/// <see cref="Lobby.LobbyServerConfig"/> 与 <see cref="Battle.BattleServerConfig"/>。
 /// </summary>
 public sealed record ServerConfig {
     /// <summary>默认大厅监听端口，唯一来源，替代散落各处的 10170 常量。</summary>
@@ -28,12 +28,12 @@ public sealed record ServerConfig {
 
     /// <summary>
     /// 从环境变量构建服务器装配配置。
-    /// 服务器密码从 DCB_SERVER_PASSWORD 读取；显式传入的密码优先。
+    /// 服务器密码从 <see cref="ServerProcessEnv.Password"/> 读取；显式传入的密码优先。
     /// </summary>
     /// <param name="serverPassword">显式服务器密码；为空时回退到环境变量。</param>
     public static ServerConfig FromEnvironment(string? serverPassword = null) {
         string? actualPassword = string.IsNullOrEmpty(serverPassword)
-            ? Environment.GetEnvironmentVariable("DCB_SERVER_PASSWORD")
+            ? Environment.GetEnvironmentVariable(ServerProcessEnv.Password)
             : serverPassword;
 
         return new ServerConfig {

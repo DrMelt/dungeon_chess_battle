@@ -1,13 +1,14 @@
 ﻿using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Server.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 
-namespace DungeonChessBattle.Server.Host;
+namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// 大厅 SignalR Hub，ASP.NET Core 网络端点。
 /// 每个 Hub 方法对应一个大厅请求，委托给 <see cref="GameServer"/> 业务协调器处理；
-/// 服务端 → 客户端的广播由 GameServer 经 IHubContext 的 Group 推送。
+/// 服务端 → 客户端的广播由 GameServer 经 <see cref="ILobbyBroadcaster"/> 端口推送，由 SignalR IHubContext Group 实现。
 /// Hub 方法名经 <see cref="HubMethodNameAttribute"/> 绑定 <see cref="HubMethods"/> 常量，与客户端调用名编译期对齐。
 /// </summary>
 /// <param name="server">游戏服务端业务协调器，面向抽象契约。</param>

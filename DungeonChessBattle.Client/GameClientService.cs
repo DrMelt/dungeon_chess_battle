@@ -42,7 +42,7 @@ public sealed partial class GameClientService {
     // SignalR 后台线程投递、需在主线程 Update 消费的动作队列。
     // LiteNetLib NetManager 非线程安全，所有对 RoomClient 的操作必须收敛到主线程，
     // 因此大厅回调只入队、不直接操作；由主线程每帧 Update 统一消费。
-    private readonly System.Collections.Concurrent.ConcurrentQueue<System.Action> _mainThreadActions = new();
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _mainThreadActions = new();
 
     // 加入房间时暂存的 roomId，房间端口连接成功后通过 OnRoomJoined 通知 UI
     private string? _pendingJoinRoomId;
@@ -269,7 +269,7 @@ public sealed partial class GameClientService {
     /// 将后台线程 SignalR 回调产生的动作投递到主线程队列，由 Update 统一消费。
     /// 避免在回调线程直接操作 LiteNetLib NetManager 造成数据竞争。
     /// </summary>
-    private void EnqueueMainThread(System.Action action) => _mainThreadActions.Enqueue(action);
+    private void EnqueueMainThread(Action action) => _mainThreadActions.Enqueue(action);
 
     /// <summary>
     /// 绑定大厅与房间客户端的持久事件，幂等，仅执行一次。

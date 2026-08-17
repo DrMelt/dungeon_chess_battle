@@ -1,10 +1,10 @@
 ﻿using DungeonChessBattle.Protocol.Dtos;
 
-namespace DungeonChessBattle.Server.Host;
+namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
-/// GameServer 的大厅业务转发门面：将大厅 SignalR 请求转发给 Server.Lobby 的
-/// <see cref="DungeonChessBattle.Server.Lobby.GameLobby"/> 处理。
+/// GameServer 的大厅业务转发门面：将大厅 SignalR 请求转发给
+/// <see cref="GameLobby"/> 处理。
 /// 战斗编排，开始战斗与断线重连，见 GameServer.MessageHandlers。
 /// </summary>
 public partial class GameServer {

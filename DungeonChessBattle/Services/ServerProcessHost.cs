@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using DungeonChessBattle.Protocol;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -15,14 +16,10 @@ namespace DungeonChessBattle.Services;
 /// 采用查询式接口（无事件回调）：后台线程仅更新加锁保护的内部状态字段，
 /// UI 在主线程轮询 <see cref="Status"/>，从根上避免跨线程触碰 Godot 节点。
 /// 端口通过命令行参数 <c>--port</c> 传入；密码通过环境变量
-/// <c>DCB_SERVER_PASSWORD</c> 传入（避免密码暴露在进程命令行）。
+/// <see cref="ServerProcessEnv.Password"/> 传入（避免密码暴露在进程命令行）。
 /// </summary>
 public sealed class ServerProcessHost : IServerHost {
-    private const string PasswordEnvVar = "DCB_SERVER_PASSWORD";
-    private const string ExeEnvVar = "DCB_SERVER_EXE";
-    private const string ConfigEnvVar = "DCB_SERVER_CONFIG";
-    /// <summary>父进程 PID 环境变量（服务器端 ParentProcessWatcher 读取；跨进程契约，见 Server.Host）。</summary>
-    private const string ParentPidEnvVar = "DCB_SERVER_PARENT_PID";
+    /// <summary>终止子进程等待超时。</summary>
     private static readonly TimeSpan KillWaitTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ILogger<ServerProcessHost> _logger;
@@ -100,7 +97,7 @@ public sealed class ServerProcessHost : IServerHost {
 
             string exe = ResolveExecutablePath();
             if (string.IsNullOrEmpty(exe) || !File.Exists(exe)) {
-                error = $"服务器可执行文件不存在: {exe}。请构建 DungeonChessBattle.Server，或设置环境变量 {ExeEnvVar} 指定路径。";
+                error = $"服务器可执行文件不存在: {exe}。请构建 DungeonChessBattle.Server，或设置环境变量 {ServerProcessEnv.ExecutablePath} 指定路径。";
                 _logger.LogError("{Error}", error);
             }
             else {
@@ -129,9 +126,9 @@ public sealed class ServerProcessHost : IServerHost {
                 psi.ArgumentList.Add("--port");
                 psi.ArgumentList.Add(port.ToString());
                 if (!string.IsNullOrEmpty(serverPassword))
-                    psi.Environment[PasswordEnvVar] = serverPassword;
+                    psi.Environment[ServerProcessEnv.Password] = serverPassword;
                 // 注入父进程 PID，供服务器端 ParentProcessWatcher 检测客户端存活（防孤儿）
-                psi.Environment[ParentPidEnvVar] = System.Environment.ProcessId.ToString();
+                psi.Environment[ServerProcessEnv.ParentPid] = System.Environment.ProcessId.ToString();
 
                 process = new Process { StartInfo = psi, EnableRaisingEvents = true };
                 process.OutputDataReceived += (_, e) => ForwardLog(e.Data);
@@ -347,11 +344,11 @@ public sealed class ServerProcessHost : IServerHost {
         if (!string.IsNullOrEmpty(_config.ExecutablePath))
             return _config.ExecutablePath;
 
-        string? overridden = System.Environment.GetEnvironmentVariable(ExeEnvVar);
+        string? overridden = System.Environment.GetEnvironmentVariable(ServerProcessEnv.ExecutablePath);
         if (!string.IsNullOrEmpty(overridden))
             return overridden;
 
-        string config = System.Environment.GetEnvironmentVariable(ConfigEnvVar) ?? "Debug";
+        string config = System.Environment.GetEnvironmentVariable(ServerProcessEnv.BuildConfig) ?? "Debug";
         string projectDir = ProjectSettings.GlobalizePath("res://");
         string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server.Host", "bin", config, "net10.0");
         string exe = Path.Combine(outDir, "DungeonChessBattle.Server.Host.exe");

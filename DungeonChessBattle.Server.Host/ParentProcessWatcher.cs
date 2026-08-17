@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DungeonChessBattle.Protocol;
 
 namespace DungeonChessBattle.Server.Host;
 
@@ -7,13 +8,10 @@ namespace DungeonChessBattle.Server.Host;
 /// 解决问题：客户端被强杀或崩溃时，仅靠其托管事件 AppDomain.ProcessExit 无法清理子进程，
 /// 导致服务器成为孤儿进程继续运行。
 /// 采用独立组件：探测函数与退出动作均为注入点，便于单元测试与替换宿主实现。
-/// 未配置父 PID，如服务器独立手动运行，时不启用，不影响正常启动。
+/// 未配置父 PID，即服务器独立手动运行时，不启用，不影响正常启动。
 /// </summary>
 public sealed class ParentProcessWatcher {
-    /// <summary>父进程 PID 传输环境变量名，由客户端 ServerProcessHost 写入，跨进程契约。</summary>
-    public const string ParentPidEnvVar = "DCB_SERVER_PARENT_PID";
-
-    /// <summary>默认看护间隔。</summary>
+    /// <summary>父进程 PID 环境变量名，见 <see cref="ServerProcessEnv.ParentPid"/>。</summary>
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(1);
 
     private readonly Func<int, DateTime?> _getStartTime;
@@ -45,7 +43,7 @@ public sealed class ParentProcessWatcher {
     /// <param name="interval">看护间隔；为空使用默认值。</param>
     public static ParentProcessWatcher? FromEnvironment(GameServerHost host, ILogger logger,
         TimeSpan? interval = null) {
-        string? pidStr = Environment.GetEnvironmentVariable(ParentPidEnvVar);
+        string? pidStr = Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid);
         if (string.IsNullOrEmpty(pidStr))
             return null;
 

@@ -3,7 +3,7 @@ using Godot;
 
 namespace DungeonChessBattle.GameAssets;
 
-using DungeonConfigDef = DungeonChessBattle.GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = GameConfig.Models.DungeonConfig;
 
 /// <summary>
 /// Godot 副本资源基类。仅承载展示所需数据（显示名/描述）与领域副本定义引用，

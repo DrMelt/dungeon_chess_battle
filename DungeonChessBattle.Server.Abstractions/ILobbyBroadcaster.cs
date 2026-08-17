@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Server.Abstractions;
 
 /// <summary>
 /// 大厅广播端口，依赖反转：业务层通过本接口向房间内连接推送消息，

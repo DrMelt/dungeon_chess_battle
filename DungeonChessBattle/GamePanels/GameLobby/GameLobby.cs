@@ -108,7 +108,7 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>副本下拉选中回调：缓存选中副本键，用于创建房间配置。</summary>
     private void OnDungeonSelected(long index) {
         var metadata = InterRefs?.DungeonSelect?.GetItemMetadata((int)index);
-        if (metadata is Godot.Variant variant && variant.VariantType == Variant.Type.String)
+        if (metadata is Variant variant && variant.VariantType == Variant.Type.String)
             _selectedDungeonKey = variant.AsString();
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Selected dungeon: {DungeonKey}", _selectedDungeonKey);

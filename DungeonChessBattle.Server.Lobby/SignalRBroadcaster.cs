@@ -1,7 +1,7 @@
-﻿using DungeonChessBattle.Server.Lobby;
+﻿using DungeonChessBattle.Server.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 
-namespace DungeonChessBattle.Server.Host;
+namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// <see cref="ILobbyBroadcaster"/> 的 SignalR 实现，ASP.NET 传输层。

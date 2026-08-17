@@ -1,17 +1,18 @@
 ﻿using DungeonChessBattle.Protocol.Dtos;
-using DungeonChessBattle.Server.Battle;
-using DungeonChessBattle.Server.Lobby;
+using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.StateStore.Abstractions;
+using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Host;
+namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
-/// 游戏服务端业务协调器。
+/// 游戏服务端业务协调器，大厅服务器门面。
 /// 大厅端口由 SignalR Hub <see cref="LobbyHub"/> 承载，本类负责各请求的业务处理、
-/// 房间生命周期协调 <see cref="GameLobby"/> 与房间内广播。
-/// 业务层不依赖具体传输：广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现，ASP.NET 提供。
-/// 配置由装配层映射后的职责切片 <see cref="LobbyServerConfig"/> 与 <see cref="BattleServerConfig"/> 注入；
-/// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有。各 Handle* 处理见 GameServer.MessageHandlers。
+/// 房间生命周期协调与房间内广播。
+/// 业务层不依赖具体传输：广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现，由传输层提供。
+/// 配置由装配层映射后的职责切片 <see cref="LobbyServerConfig"/> 注入；
+/// 战斗房间域名只经 <see cref="IRoomServerManager"/> 契约编排，不感知实现；
+/// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有，各 Handle* 处理见 GameServer.MessageHandlers。
 /// </summary>
 /// <remarks>
 /// 初始化游戏服务端业务协调器。
@@ -19,21 +20,15 @@ namespace DungeonChessBattle.Server.Host;
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="broadcaster">大厅广播端口，向房间内连接推送消息。</param>
 /// <param name="lobbyConfig">大厅侧配置切片，服务器密码等。</param>
-/// <param name="battleConfig">战斗侧配置切片，连接密钥与房间端口池起点。</param>
+/// <param name="roomServers">战斗房间服务器生命周期契约，由装配层绑定实现。</param>
 /// <param name="stateStore">大厅级状态存储，存储引擎由装配层注入，可替换。</param>
 public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster broadcaster,
-    LobbyServerConfig lobbyConfig, BattleServerConfig battleConfig, IGameStateStore stateStore) : ILobbyApplication {
+    LobbyServerConfig lobbyConfig, IRoomServerManager roomServers, IGameStateStore stateStore) : ILobbyApplication {
     private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig);
-    private readonly RoomServerManager _roomServers = new(loggerFactory, stateStore, battleConfig);
+    private readonly IRoomServerManager _roomServers = roomServers;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly ILogger<GameServer> _logger = loggerFactory.CreateLogger<GameServer>();
     private readonly ILobbyBroadcaster _broadcaster = broadcaster;
-
-    /// <summary>房间服务器生命周期管理器，协调层。</summary>
-    internal RoomServerManager RoomServers => _roomServers;
-
-    /// <summary>大厅级状态存储。</summary>
-    internal IGameStateStore StateStore => _stateStore;
 
     /// <summary>
     /// 向房间内所有成员连接广播消息。

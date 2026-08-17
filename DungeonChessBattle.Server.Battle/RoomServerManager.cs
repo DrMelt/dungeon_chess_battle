@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -11,13 +12,15 @@ namespace DungeonChessBattle.Server.Battle;
 /// 战斗房间内实体同步与战斗逻辑由 <see cref="BattleRoomServer"/> 承担；
 /// 大厅业务，准备、组队与快照，由 Server.Lobby 的 GameLobby 承担。
 /// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有，本类不直接存储业务状态。
+/// 经 <see cref="IRoomServerManager"/> 契约供大厅协调层调用，契约只暴露端口等原语，
+/// 不泄漏 BattleRoomServer 实现细节。
 /// 线程所有权：房间线程通过 BattleRoomServer.RoomEmpty 事件仅向队列投递 roomId，
 /// 由后台清理循环 <see cref="ProcessPendingRoomCleanups"/> 消费执行销毁。
 /// </summary>
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="config">战斗侧配置切片，房间端口池起点。</param>
-public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateStore stateStore, BattleServerConfig config) {
+public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateStore stateStore, BattleServerConfig config) : IRoomServerManager {
     private readonly ILogger<RoomServerManager> _logger = loggerFactory.CreateLogger<RoomServerManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
@@ -84,7 +87,9 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 初始化，根实体、Logic 房间与单位迁移，全部在房间线程完成；
     /// 本方法仅执行生命周期控制，不触碰 EntityManager。
     /// </summary>
-    public BattleRoomServer StartRoomBattle(string roomId) {
+    /// <param name="roomId">房间 ID。</param>
+    /// <returns>房间监听端口。</returns>
+    public int StartRoomBattle(string roomId) {
         // 分配端口并创建 BattleRoomServer
         int port = AllocatePort();
         var server = new BattleRoomServer(port, roomId,
@@ -108,7 +113,7 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
             _logger.LogInformation("Room '{RoomId}' battle started on port {Port}",
                 roomId, port);
 
-        return server;
+        return port;
     }
 
     /// <summary>
@@ -118,6 +123,21 @@ public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateSt
         _roomServers.TryGetValue(roomId, out var server);
         return server;
     }
+
+    /// <summary>查询战斗中房间的监听端口；非战斗中的房间返回 false。</summary>
+    public bool TryGetRoomPort(string roomId, out int port) {
+        var server = GetRoomServer(roomId);
+        port = server?.Port ?? 0;
+        return server != null;
+    }
+
+    /// <summary>预注册玩家到房间，断线重连身份校验与命名用。房间不存在时忽略。</summary>
+    public void RegisterPlayer(string roomId, string playerId, string playerName)
+        => GetRoomServer(roomId)?.RegisterPlayer(playerId, playerName);
+
+    /// <summary>更新已注册玩家的显示名，重连时可能更改。房间不存在时忽略。</summary>
+    public void UpdatePlayerName(string roomId, string playerId, string playerName)
+        => GetRoomServer(roomId)?.UpdatePlayerName(playerId, playerName);
 
     /// <summary>
     /// 移除并停止房间服务器，同时清理 store 中的房间状态。
