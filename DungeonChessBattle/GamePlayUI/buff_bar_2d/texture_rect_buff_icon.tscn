@@ -5,20 +5,19 @@
 [ext_resource type="Resource" uid="uid://bbrt0bufres01" path="res://GameAssets/Buffs/res_buff_resource_table.tres" id="3_kfti1"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_otcmx"]
-outline_size = 3
+font_size = 20
+outline_size = 6
 outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_vqvhd"]
-font_size = 12
-outline_size = 2
+font_size = 14
+outline_size = 4
 outline_color = Color(0.133196, 0.133196, 0.133196, 1)
 
 [node name="TextureRect_Buff_Icon" type="TextureRect" unique_id=532369660 node_paths=PackedStringArray("superpositionsLabelRef", "durationLabelRef")]
-custom_minimum_size = Vector2(24, 32)
 offset_right = 24.0
 offset_bottom = 32.0
 texture = ExtResource("1_otcmx")
-expand_mode = 1
 stretch_mode = 5
 script = ExtResource("2_1t7jj")
 buffResourceTable = ExtResource("3_kfti1")
@@ -27,19 +26,24 @@ durationLabelRef = NodePath("Label_Duration")
 
 [node name="Label_Superposition" type="Label" parent="." unique_id=417925175]
 layout_mode = 1
-offset_left = 14.0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
 offset_top = -6.0
-offset_right = 26.0
-offset_bottom = 17.0
+offset_right = -4.0
+offset_bottom = 21.0
+grow_horizontal = 0
 text = "1"
 label_settings = SubResource("LabelSettings_otcmx")
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Label_Duration" type="Label" parent="." unique_id=740792934]
 layout_mode = 1
-offset_top = 19.0
-offset_right = 24.0
-offset_bottom = 36.0
+offset_top = 47.0
+offset_right = 48.0
+offset_bottom = 69.0
 text = "0"
 label_settings = SubResource("LabelSettings_vqvhd")
 horizontal_alignment = 1

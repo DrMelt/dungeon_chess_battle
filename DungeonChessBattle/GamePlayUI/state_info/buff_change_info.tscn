@@ -7,34 +7,36 @@
 
 [sub_resource type="LabelSettings" id="LabelSettings_s8gib"]
 font_size = 42
-font_color = Color(0.851769, 0.851769, 0.851769, 1)
 outline_size = 12
 outline_color = Color(0.151276, 0.151276, 0.151276, 1)
 
-[node name="BuffChange_Info" type="Control" node_paths=PackedStringArray("label_ChangeRef", "textureRectRef")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="BuffChange_Info" type="MarginContainer" unique_id=905041 node_paths=PackedStringArray("label_ChangeRef", "textureRectRef")]
+offset_right = 48.0
+offset_bottom = 64.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 script = ExtResource("1_s8gib")
 buffResourceTable = ExtResource("4_bftbl")
-label_ChangeRef = NodePath("Label")
-textureRectRef = NodePath("TextureRect")
+label_ChangeRef = NodePath("HBoxContainer/Label")
+textureRectRef = NodePath("HBoxContainer/TextureRect")
 fadeCurve = ExtResource("2_3vdwg")
 
-[node name="Label" type="Label" parent="."]
-layout_mode = 0
-offset_left = -2.0
-offset_right = 54.0
-offset_bottom = 64.0
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=456507833]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="HBoxContainer" unique_id=2078722483]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
 text = "+"
 label_settings = SubResource("LabelSettings_s8gib")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="TextureRect" type="TextureRect" parent="."]
-layout_mode = 0
-offset_left = 39.0
-offset_right = 87.0
-offset_bottom = 64.0
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer" unique_id=433534424]
+layout_mode = 2
 texture = ExtResource("3_qbiga")
+stretch_mode = 5

@@ -7,9 +7,9 @@ namespace DungeonChessBattle.GamePlayUI;
 /// <summary>
 /// StateChangeInfo 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
-public partial class StateChangeInfoInterRefs : Node {
+public partial class UnitStateChangeInfoInterRefs : Node {
     /// <summary>日志记录器。</summary>
-    private static readonly ILogger<StateChangeInfoInterRefs> _logger = ServiceLocator.GetLogger<StateChangeInfoInterRefs>();
+    private static readonly ILogger<UnitStateChangeInfoInterRefs> _logger = ServiceLocator.GetLogger<UnitStateChangeInfoInterRefs>();
 
     /// <summary>玩家 UI 设置资源。</summary>
     [Export]

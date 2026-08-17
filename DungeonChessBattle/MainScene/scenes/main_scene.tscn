@@ -5,8 +5,8 @@
 [ext_resource type="Script" uid="uid://rr4mpyfdgbxj" path="res://Services/GameClientDriver.cs" id="3_m78bw"]
 [ext_resource type="Script" uid="uid://coab1v74bi3y6" path="res://GameAssets/Scene/UserCamera3D.cs" id="5_sxf1u"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="6_8ka0p"]
-[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://GamePlayUI/state_change_info/StateChangeInfo.cs" id="7_6vwic"]
-[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://GamePlayUI/state_change_info/StateChangeInfoInterRefs.cs" id="8_4ssfp"]
+[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://GamePlayUI/state_change_info/UnitStateChangeInfo.cs" id="7_6vwic"]
+[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://GamePlayUI/state_change_info/UnitStateChangeInfoInterRefs.cs" id="8_4ssfp"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="9_i3pf0"]
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://GamePlayUI/state_info/took_damage_info.tscn" id="10_2ac7b"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://GamePlayUI/state_info/buff_change_info.tscn" id="11_f6kqk"]
@@ -140,11 +140,12 @@ outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 [node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="Interface/GamePlay/FocusOn_Outline" unique_id=317289446]
 material_override = SubResource("ShaderMaterial_3um0x")
 
-[node name="StateChange_Info" type="Node" parent="Interface/GamePlay" unique_id=820233417 node_paths=PackedStringArray("_unitManagerRef")]
+[node name="UnitStateChange_Info" type="Node" parent="Interface/GamePlay" unique_id=820233417 node_paths=PackedStringArray("_unitManagerRef")]
 script = ExtResource("7_6vwic")
 _unitManagerRef = NodePath("../../../BattleUnitManager")
+_popupScale = 0.5
 
-[node name="StateChangeInfoInterRefs" type="Node" parent="Interface/GamePlay/StateChange_Info" unique_id=188019131]
+[node name="UnitStateChangeInfoInterRefs" type="Node" parent="Interface/GamePlay/UnitStateChange_Info" unique_id=188019131]
 script = ExtResource("8_4ssfp")
 PlayerUISettingsRes = ExtResource("9_i3pf0")
 TookDamageInfoPackedScene = ExtResource("10_2ac7b")
@@ -169,11 +170,14 @@ _unitManagerRef = NodePath("../../../../BattleUnitManager")
 stateBarSimple2d_PKD = ExtResource("23_hfd03")
 
 [node name="DungeonTimeLabel" type="Label" parent="Interface/GamePlay/GamePlayUI" unique_id=2106499744 node_paths=PackedStringArray("_unitManagerRef")]
-layout_mode = 0
-offset_left = 992.0
-offset_top = 2.0
-offset_right = 1147.0
-offset_bottom = 26.0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -155.0
+offset_right = 0.00048828125
+offset_bottom = 24.0
+grow_horizontal = 0
 text = "DungeonTimeLabel"
 vertical_alignment = 1
 script = ExtResource("20_bmhqt")
@@ -185,11 +189,15 @@ mouse_filter = 2
 _unitManagerRef = NodePath("../../../../BattleUnitManager")
 
 [node name="StateBar_List" parent="Interface/GamePlay/GamePlayUI" unique_id=318767437 node_paths=PackedStringArray("_unitManagerRef") instance=ExtResource("24_o75dv")]
-layout_mode = 0
-offset_left = 877.0
-offset_top = 62.0
-offset_right = 877.0
-offset_bottom = 62.0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -282.0
+offset_top = 128.0
+offset_right = -278.0
+offset_bottom = 132.0
+grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 mouse_filter = 2
 _unitManagerRef = NodePath("../../../../BattleUnitManager")

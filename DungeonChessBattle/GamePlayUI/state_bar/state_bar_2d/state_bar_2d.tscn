@@ -19,7 +19,7 @@ script = ExtResource("1_yhj07")
 [node name="StateBar2d_FocusInterRefs" type="Node" parent="." unique_id=560142546 node_paths=PackedStringArray("HboxContainerBuffsRef", "PanelFocusStateRef", "PanelSkillProgressBarRef")]
 script = ExtResource("8_sb2d_interrefs")
 PlayerUISettingsRef = ExtResource("2_nayus")
-HboxContainerBuffsRef = NodePath("../VBoxContainer/HBoxContainer_Buffs")
+HboxContainerBuffsRef = NodePath("../VBoxContainer/Control/HBoxContainer_Buffs")
 PanelFocusStateRef = NodePath("../VBoxContainer/HBoxContainer/HP_StateBar")
 PanelSkillProgressBarRef = NodePath("../VBoxContainer/HBoxContainer/Panel_Skill_ProgressBar")
 
@@ -37,6 +37,13 @@ layout_mode = 2
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="HBoxContainer_Buffs" parent="VBoxContainer" unique_id=1095143621 instance=ExtResource("4_bln5c")]
+[node name="Control" type="Control" parent="VBoxContainer" unique_id=282404367]
 custom_minimum_size = Vector2(480, 64)
 layout_mode = 2
+
+[node name="HBoxContainer_Buffs" parent="VBoxContainer/Control" unique_id=1095143621 instance=ExtResource("4_bln5c")]
+custom_minimum_size = Vector2(480, 64)
+layout_mode = 1
+offset_right = 480.0
+offset_bottom = 128.0
+scale = Vector2(0.5, 0.5)
