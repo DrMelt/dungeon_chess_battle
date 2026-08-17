@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Entities;
@@ -71,9 +70,6 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的战斗编排门面，面向 IBattleUnit，不依赖网络载体与配置仓库。</summary>
     private readonly BattleEngine _battleEngine;
 
-    /// <summary>本房间创建时间，服务端权威，来自 Store 房间配置。</summary>
-    private readonly DateTime _roomCreatedAt;
-
     /// <summary>本房间选中的副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
     private readonly string _dungeonKey;
 
@@ -134,7 +130,6 @@ public partial class BattleRoomServer : INetEventListener {
         _logger = loggerFactory.CreateLogger<BattleRoomServer>();
         _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
-        _roomCreatedAt = stateStore.GetRoomConfig(roomId)?.CreatedAt ?? DateTime.UtcNow;
         _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");

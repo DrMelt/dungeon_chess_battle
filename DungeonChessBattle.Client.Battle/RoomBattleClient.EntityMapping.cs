@@ -12,22 +12,18 @@ namespace DungeonChessBattle.Client.Battle;
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
-    public string DungeonKey => _roomEntity?.DungeonKey.Value ?? string.Empty;
+    public string? DungeonKey => _roomEntity?.DungeonKey.Value;
 
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         lock (_lock) {
             _roomEntity = entity;
             _currentRoomId = entity.RoomId.Value;
-
-            // 回填服务端权威创建时间，>0 才覆盖，规避 OnConstructed 默认 0 的竞态时序
-            if (entity.CreatedUnixTime.Value > 0) {
-                _roomCreatedUnix = (long)entity.CreatedUnixTime.Value;
-            }
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Room entity created: {RoomId}", entity.RoomId.Value);
+            _logger.LogInformation("Room entity created: {RoomId}, phase={Phase}, startUnix={StartUnix}, dungeonKey={DungeonKey}",
+                entity.RoomId.Value, entity.BattlePhase.Value, entity.BattleStartUnixTime.Value, entity.DungeonKey.Value);
     }
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>

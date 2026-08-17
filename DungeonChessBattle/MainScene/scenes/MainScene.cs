@@ -114,7 +114,7 @@ public partial class MainScene : Node {
     /// 在战斗启动回调与战斗阶段 Running 时各调用一次，覆盖实体同步前后的时序差异。
     /// </summary>
     private void ApplyDungeonThemeSafe() {
-        string dungeonKey = ServiceLocator.ClientService.RoomClient.DungeonKey;
+        string? dungeonKey = ServiceLocator.ClientService.RoomClient.DungeonKey;
         if (string.IsNullOrEmpty(dungeonKey))
             dungeonKey = EntityConstants.DefaultDungeonKey;
         _dungeonEnv?.ApplyDungeonTheme(dungeonKey);

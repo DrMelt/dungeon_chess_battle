@@ -7,4 +7,3 @@
 script = ExtResource("1_51lf4")
 Icon = ExtResource("0_5hg7k")
 BuffName = "持续物理伤害"
-BuffDescription = ""

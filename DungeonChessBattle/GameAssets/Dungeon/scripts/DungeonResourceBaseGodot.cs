@@ -1,4 +1,3 @@
-using DungeonChessBattle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.GameAssets;

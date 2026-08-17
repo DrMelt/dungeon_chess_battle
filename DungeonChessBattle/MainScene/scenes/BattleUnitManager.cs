@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Client.Battle;
@@ -29,6 +28,9 @@ public partial class BattleUnitManager : Node {
 
     /// <summary>场景单位集合资源（UI 层数据源：状态条、技能目标、计时等）。</summary>
     public UnitsInScene UnitsInSceneRes { get; } = new();
+
+    /// <summary>战斗开始时刻（服务端权威 Unix 秒），未进战斗或实体未同步时为 null。</summary>
+    public long? BattleStartUnixTime => _roomClient?.BattleStartUnixTime;
 
     /// <summary>场景单位 Pawn 数组快照。</summary>
     public List<UnitPawn> UnitsArr => UnitsInSceneRes.UnitsArr;
@@ -94,13 +96,6 @@ public partial class BattleUnitManager : Node {
         service.UnitBuffAdded += OnBuffAdded;
         service.UnitBuffRemoved += OnBuffRemoved;
 
-        // 注入服务端权威房间创建时间（跨端一致的战斗计时起点）
-        var createdUnix = service.GetRoomCreatedUnixTime(roomId);
-        if (createdUnix is > 0) {
-            UnitsInSceneRes.SetRoomCreatedAt(
-                DateTimeOffset.FromUnixTimeSeconds(createdUnix.Value).UtcDateTime);
-        }
-
         InitializeUnitsFromPawns();
     }
 
@@ -115,9 +110,6 @@ public partial class BattleUnitManager : Node {
         }
 
         ClearUnits();
-
-        // 重置战斗计时起点，避免跨房间串扰
-        UnitsInSceneRes.SetRoomCreatedAt(DateTime.MinValue);
 
         _battleService = null;
         _roomClient = null;
@@ -303,7 +295,7 @@ public partial class BattleUnitManager : Node {
     private CampRelationResolver? RelationsOrResolve() {
         var relations = _relations;
         if (relations == null && _roomClient != null) {
-            var dungeonKey = _roomClient.DungeonKey;
+            string? dungeonKey = _roomClient.DungeonKey;
             if (!string.IsNullOrWhiteSpace(dungeonKey))
                 relations = _relations = DungeonRegistry.Instance.GetRelations(dungeonKey);
         }

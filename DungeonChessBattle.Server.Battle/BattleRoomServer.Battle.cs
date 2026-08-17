@@ -3,7 +3,6 @@ using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
-using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
@@ -27,15 +26,10 @@ public partial class BattleRoomServer {
         // 在房间 SEM 中创建 BattleRoomEntity，并订阅其实例事件
         _roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
+            // 注入服务端权威副本键，客户端据此加载对应的环境场景
+            e.DungeonKey.Value = _dungeonKey;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
 
-        // 注入服务端权威创建时间，房间在构造时创建，此处直接取用；
-        // 且不能在 AddEntity initAction 中注入——OnConstructed 会以默认值覆盖运行时值）
-        _roomEntity?.CreatedUnixTime.Value =
-                new DateTimeOffset(_roomCreatedAt).ToUnixTimeSeconds();
-
-        // 注入服务端权威副本键，客户端据此加载对应的环境场景
-        _roomEntity?.DungeonKey.Value = _dungeonKey;
         // 构建移动物理场景：按副本键取战场布局，静态障碍写入 Aether World；单位后续注册进场景做互斥
         _movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(_dungeonKey));
 
@@ -248,6 +242,14 @@ public partial class BattleRoomServer {
                 if (_roomEntity != null) {
                     _roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
                     _roomEntity.IsFinished.Value = false;
+                    // 记录战斗开始权威时刻（Unix 秒，UTC），客户端据此启动战斗计时
+                    _roomEntity.BattleStartUnixTime.Value = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    if (_logger.IsEnabled(LogLevel.Information))
+                        _logger.LogInformation("[BattleStarted] RoomId={RoomId} written: phase={Phase}, startUnix={StartUnix}",
+                            RoomId, _roomEntity.BattlePhase.Value, _roomEntity.BattleStartUnixTime.Value);
+                }
+                else if (_logger.IsEnabled(LogLevel.Error)) {
+                    _logger.LogError("[BattleStarted] dropped: _roomEntity is null, RoomId={RoomId}", RoomId);
                 }
                 break;
 

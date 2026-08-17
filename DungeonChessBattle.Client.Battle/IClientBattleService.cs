@@ -30,13 +30,6 @@ public interface IClientBattleService {
     event Action<ushort, ushort>? UnitFocusTargetChanged;
 
     /// <summary>
-    /// 获取房间的服务端权威创建时间，UTC Unix 秒。
-    /// 未进入房间或实体同步未完成时返回 null。
-    /// </summary>
-    /// <param name="roomId">房间 ID。</param>
-    long? GetRoomCreatedUnixTime(string roomId);
-
-    /// <summary>
     /// 对目标施放技能，客户端发起。经可靠请求通道发送，服务端权威读条与结算。
     /// 参数展开为值类型，避免接口层依赖轻量实体类型。
     /// </summary>

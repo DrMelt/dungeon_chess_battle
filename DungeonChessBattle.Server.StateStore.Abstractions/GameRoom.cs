@@ -50,11 +50,7 @@ public class GameRoom(string roomId) {
     /// <summary>房间是否设置了密码。</summary>
     public bool HasPassword => !string.IsNullOrWhiteSpace(Password);
 
-    /// <summary>
-    /// 房间创建时间，UTC，服务端权威。
-    /// 服务端 Store 层在创建房间时初始化为权威时刻；战斗房间服务器 BattleRoomServer
-    /// 从本字段读取权威创建时间注入战斗时钟，客户端经 BattleRoomEntity.CreatedUnixTime 同步。
-    /// </summary>
+    /// <summary>房间创建时间，UTC，服务端权威，大厅列表按此排序与展示。</summary>
     public DateTime CreatedAt {
         get; set;
     } = DateTime.UtcNow;

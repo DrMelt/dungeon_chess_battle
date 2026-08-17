@@ -7,5 +7,4 @@
 script = ExtResource("1_wp656")
 Icon = ExtResource("1_yhkhu")
 BuffName = "持续治疗"
-BuffDescription = ""
 metadata/_custom_type_script = "uid://l1y3n5djli2w"

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Entities;
 using Godot;
@@ -23,26 +22,6 @@ public partial class UnitsInScene : Resource {
 
     /// <summary>场景单位数组快照。</summary>
     public List<UnitPawn> UnitsArr => [.. unitsArr];
-
-    /// <summary>房间创建时间（UTC，服务端权威，由 <see cref="SetRoomCreatedAt"/> 注入）。</summary>
-    private DateTime _roomCreatedAt = DateTime.MinValue;
-
-    /// <summary>
-    /// 设置房间创建时间（服务端权威，来自 BattleRoomEntity.CreatedUnixTime 同步字段）。
-    /// 进入战斗时由 BattleUnitManager.Bind 注入；退出战斗时传 <see cref="DateTime.MinValue"/> 重置。
-    /// </summary>
-    /// <param name="utc">房间创建时刻（UTC）。</param>
-    public void SetRoomCreatedAt(DateTime utc) {
-        _roomCreatedAt = utc;
-    }
-
-    /// <summary>
-    /// 从房间创建时刻起经过的秒数（战斗计时，跨端一致）。
-    /// 未设置创建时间（如未进入战斗）时返回 0。
-    /// </summary>
-    public double SceneTime => _roomCreatedAt == DateTime.MinValue
-        ? 0.0
-        : (DateTime.UtcNow - _roomCreatedAt).TotalSeconds;
 
     /// <summary>
     /// 添加单位。

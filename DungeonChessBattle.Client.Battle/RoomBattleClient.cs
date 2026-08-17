@@ -3,7 +3,6 @@ using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
-using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
@@ -23,14 +22,10 @@ namespace DungeonChessBattle.Client.Battle;
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
 
-    // 单房间 Entity 缓存，P2-7 替代 Dictionary
     private BattleRoomEntity? _roomEntity;
     private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
     private readonly Lock _lock = new();
-
-    /// <summary>房间服务端权威创建时间，UTC Unix 秒；房间实体同步后回填。</summary>
-    private long _roomCreatedUnix;
 
     /// <summary>单位生命值变化事件。参数：单位网络实体 ID、新生命值、旧生命值。</summary>
     public event Action<ushort, float, float>? UnitHealthChanged;
@@ -125,7 +120,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _roomCreatedUnix = 0;
         }
     }
 
@@ -144,7 +138,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _roomCreatedUnix = 0;
         }
     }
 
@@ -230,19 +223,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _roomEntity = null;
             _roomPawns.Clear();
             _currentRoomId = null;
-            _roomCreatedUnix = 0;
         }
     }
 
     /// <summary>
-    /// 获取房间服务端权威创建时间，UTC Unix 秒。
-    /// 房间实体尚未同步时返回 0；调用方按需忽略。
+    /// 战斗开始时间（服务端权威，UTC Unix 秒），直接读取 BattleRoomEntity 同步值。
+    /// 房间实体尚未同步时返回 0；Running 阶段调用时实体必然已同步。
     /// </summary>
-    public long? GetRoomCreatedUnixTime(string roomId) {
-        lock (_lock) {
-            return _roomCreatedUnix;
-        }
-    }
+    public long? BattleStartUnixTime => _roomEntity?.BattleStartUnixTime.Value;
 
     /// <summary>
     /// 经可靠请求通道向服务端发起施法读条，服务端权威校验与结算。
