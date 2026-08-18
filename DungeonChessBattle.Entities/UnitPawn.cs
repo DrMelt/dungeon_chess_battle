@@ -30,48 +30,61 @@ public partial class UnitPawn : PawnLogic {
     public SyncVar<Vector2> Direction;
 
     /// <summary>单位碰撞半径，供技能范围判定使用。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> BodyRadius;
 
     /// <summary>当前生命值。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> Health;
 
     /// <summary>最大生命值。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MaxHealth;
 
     /// <summary>阵营字符串标识，如 "Camp_A"、"Camp_B"。</summary>
     public readonly SyncString Camp = new();
 
     /// <summary>单位状态，0 表示存活，1 表示死亡。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<byte> UnitState;
 
     /// <summary>剩余全局冷却时间，秒。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> GcdRemaining;
 
     /// <summary>技能个体冷却列表，服务端权威回写。</summary>
     public readonly SyncList<SyncSkillCooldown> SkillCooldowns = [];
 
     /// <summary>当前施法技能 ID，0 表示无施法。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<ushort> SkillCasting;
 
     /// <summary>当前施法剩余读条时间，秒。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> SkillCastRemaining;
 
     /// <summary>物理攻击基础系数即伤害倍率。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> PhysicalAttackBase;
 
     /// <summary>魔法攻击基础系数即伤害倍率。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MagicAttackBase;
 
     /// <summary>物理伤害承受系数即减免倍率。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> PhysicalTakePercent;
 
     /// <summary>魔法伤害承受系数即减免倍率。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MagicTakePercent;
 
     /// <summary>治疗强度系数即治疗倍率。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> CureIntensity;
 
     /// <summary>基础移动速度。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> BaseSpeed;
 
     /// <summary>单位当前持有的 Buff 列表。</summary>
@@ -101,6 +114,7 @@ public partial class UnitPawn : PawnLogic {
     public readonly SyncList<SyncHateData> HatesList = [];
 
     /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标。</summary>
+    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<ushort> FocusTargetNetId;
 
     /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
