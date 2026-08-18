@@ -6,7 +6,7 @@
 
 - 领域类型：`BattlePhase`、`SkillDefinition` 族与 `SkillKeyId`、`SkillTargetValidator`、`BuffView`、`CombatTypes`、`IBattleUnit` 投影接口、`HateEffect`。
 - 施法静态判定唯一来源 `SkillCastValidator`，服务端权威、客户端预输入与 AI 决策共用。
-- 敌人决策：`IUnitIntelligence` 契约、默认实现 `EnemyIntelligence`、决策结构 `EnemyDecision` 与决策场景契约 `IBattleScene`，决策器实例由单位配置直接引用、无状态可多单位共享，阵营关系由编排层按副本注入。
+- 敌人决策：`IUnitIntelligence` 契约、默认实现 `EnemyIntelligence`、决策结构 `EnemyDecision` 与决策场景契约 `IBattleScene`。
 - 仇恨规则族、Buff 实例模型、战场布局与移动场景抽象、阵营关系解析、领域事件流、向量数学与范围判定形状。
 
 ## 不负责

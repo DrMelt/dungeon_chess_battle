@@ -8,7 +8,7 @@
 - 大厅业务 `GameLobby`：创建/加入/离开房间、招募板列表、准备单位增删、准备状态设置。
 - 协调门面 `GameServer`：分派大厅请求、连接断开清理、开始战斗与断线重连编排。
 - 房间快照组装与广播。
-- 服务器密码切片 `LobbyServerConfig`，由装配层从 `ServerConfig` 映射注入。
+- 服务器密码切片 `LobbyServerConfig`。
 
 ## 不负责
 
