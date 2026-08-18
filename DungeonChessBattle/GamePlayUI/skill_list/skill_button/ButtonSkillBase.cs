@@ -1,7 +1,6 @@
 using System;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.GameAssets;
-using DungeonChessBattle.GamePlayUI.skill_list;
 using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -37,9 +36,9 @@ public partial class ButtonSkillBase : Button {
     /// <summary>绑定的技能对象。</summary>
     public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
 
-    /// <summary>绑定技能所属的施法单位 Pawn。</summary>
-    public UnitPawn BindPawn {
-        get => field ?? throw new InvalidOperationException("BindPawn has not been initialized.");
+    /// <summary>绑定技能所属的施法单位。</summary>
+    public IBattleUnit BindUnit {
+        get => field ?? throw new InvalidOperationException("BindUnit has not been initialized.");
         private set;
     }
 
@@ -47,14 +46,14 @@ public partial class ButtonSkillBase : Button {
     private SkillsList? _skillsListRef;
 
     /// <summary>
-    /// 初始化按钮与技能、施法单位 Pawn 及技能列表面板的绑定，并设置技能图标。
+    /// 初始化按钮与技能、施法单位及技能列表面板的绑定，并设置技能图标。
     /// </summary>
     /// <param name="bindSkill">要绑定的技能。</param>
-    /// <param name="bindPawn">技能所属的施法单位 Pawn。</param>
+    /// <param name="bindUnit">技能所属的施法单位。</param>
     /// <param name="skillsListRef">技能列表面板引用。</param>
-    public void Init(UnitSkillBaseGodot bindSkill, UnitPawn bindPawn, SkillsList skillsListRef) {
+    public void Init(UnitSkillBaseGodot bindSkill, IBattleUnit bindUnit, SkillsList skillsListRef) {
         _bindingSkill = bindSkill;
-        BindPawn = bindPawn;
+        BindUnit = bindUnit;
         _skillsListRef = skillsListRef;
 
         Icon = bindSkill.Icon;
@@ -94,16 +93,16 @@ public partial class ButtonSkillBase : Button {
         _skillsListRef?.OnSkillButtonPressed(this);
     }
 
-    /// <summary>每帧更新冷却 UI（灰色遮罩与剩余秒数）。数据源为 Pawn 服务端权威冷却。</summary>
+    /// <summary>每帧更新冷却 UI（灰色遮罩与剩余秒数）。数据源为服务端权威冷却。</summary>
     public override void _Process(double delta) {
         if (_bindingSkill == null)
             return;
 
-        var pawn = IsInitialized ? BindPawn : null;
-        if (pawn == null)
+        var unit = IsInitialized ? BindUnit : null;
+        if (unit == null)
             return;
 
-        float remaining = SkillCooldownHelper.Remaining(pawn, _bindingSkill!.SkillId);
+        float remaining = unit.GetTotalCooldownRemaining(_bindingSkill!.SkillId);
         if (remaining > 0f) {
             SelfModulate = _coolingColor;
             if (_labelCooldownTimeRef != null) {

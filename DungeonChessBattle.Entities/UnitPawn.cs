@@ -48,9 +48,9 @@ public partial class UnitPawn : PawnLogic {
     [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<byte> UnitState;
 
-    /// <summary>剩余全局冷却时间，秒。</summary>
+    /// <summary>全局冷却截止的服务器逻辑 tick，客户端据此本地推算剩余时间。</summary>
     [SyncVarFlags(SyncFlags.NeverRollBack)]
-    public SyncVar<float> GcdRemaining;
+    public SyncVar<ushort> GcdEndServerTick;
 
     /// <summary>技能个体冷却列表，服务端权威回写。</summary>
     public readonly SyncList<SyncSkillCooldown> SkillCooldowns = [];

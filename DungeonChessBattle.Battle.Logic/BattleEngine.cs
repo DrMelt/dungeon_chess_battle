@@ -42,7 +42,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
     /// <summary>运行时 Buff 权威，按目标单位分组。</summary>
     private readonly Dictionary<IBattleUnit, List<ActiveBuff>> _buffs = [];
 
-    /// <summary>技能个体冷却权威，Logic 每帧推进后投影回载体，只由本类单向写入。</summary>
+    /// <summary>技能个体冷却权威，只由本类单向写入；起始与到期时投影截止 tick 到载体，剩余由客户端推算。</summary>
     private readonly Dictionary<IBattleUnit, List<CooldownEntry>> _cooldowns = [];
 
     /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
@@ -235,8 +235,6 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
     }
 
     private void TickCooldowns(IBattleUnit unit, double deltaTime) {
-        if (unit.GcdRemaining > 0f)
-            unit.GcdRemaining = MathF.Max(0f, unit.GcdRemaining - (float)deltaTime);
         if (!_cooldowns.TryGetValue(unit, out var entries) || entries.Count == 0)
             return;
         float dt = (float)deltaTime;
@@ -249,7 +247,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
             }
             else {
                 entry.Remaining = remaining;
-                unit.SetSkillCooldown(entry.SkillKey, remaining);
+                // 剩余时间由客户端按 EndServerTick 本地推算，不再每 tick 写载体
             }
         }
     }
@@ -273,10 +271,21 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
                 alive.Add(buff);
         }
 
-        if (alive.Count != list.Count)
+        // 仅结构变化时投影载体：新增与叠加在 AddBuff 投影，到期在此投影。
+        // 剩余时间由客户端按 EndServerTick 本地推算，不随每 tick 递减同步。
+        if (alive.Count != list.Count) {
             _buffs[target] = alive;
+            ProjectBuffs(target);
+        }
+    }
 
-        target.ReplaceBuffs([.. alive.Select(b => new BuffView {
+    /// <summary>把目标单位的权威 Buff 列表全量投影到载体，低频结构变化时调用。</summary>
+    private void ProjectBuffs(IBattleUnit target) {
+        if (!_buffs.TryGetValue(target, out var list) || list.Count == 0) {
+            target.ReplaceBuffs([]);
+            return;
+        }
+        target.ReplaceBuffs([.. list.Select(b => new BuffView {
             BuffTypeId = b.Instance.BuffTypeId,
             Remaining = (float)b.Instance.Remaining,
             StackCount = (ushort)b.Instance.Stacks,
@@ -384,6 +393,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
         }
 
         events.Add(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
+        ProjectBuffs(target);
     }
 
     private static void ApplyHealthDelta(IBattleUnit unit, float delta) {

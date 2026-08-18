@@ -88,9 +88,9 @@ public partial class RoomBattleClient {
     }
 
     /// <summary>将同步 Buff 数据映射为 UI 事件使用的展示视图。</summary>
-    private static BuffView MapBuffData(SyncBuffData buff) => new() {
+    private BuffView MapBuffData(SyncBuffData buff) => new() {
         BuffTypeId = buff.BuffTypeId,
-        Remaining = buff.Remaining,
+        Remaining = SyncTickHelper.RemainingSeconds(_entityManager!, buff.EndServerTick),
         StackCount = buff.StackCount,
         DamageType = buff.DamageType,
     };

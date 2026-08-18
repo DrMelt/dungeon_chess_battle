@@ -6,6 +6,8 @@ namespace DungeonChessBattle.Entities;
 
 // UnitPawn 对 IBattleUnit 接口的适配：把 LES SyncVar/SyncList 映射为领域读写通道。
 // 领域结算 BattleEngine 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
+// 倒计时换算（GCD/冷却/Buff）依赖 EntityManager 服务器 tick：服务端用 Tick、客户端用插值 ServerTick，
+// 实现须处于 LES 实体生命周期内，供 SkillCastValidator 与 UI 共用。
 public partial class UnitPawn : IBattleUnit {
     /// <inheritdoc />
     string IBattleUnit.UnitName => UnitName.Value;
@@ -53,8 +55,8 @@ public partial class UnitPawn : IBattleUnit {
 
     /// <inheritdoc />
     float IBattleUnit.GcdRemaining {
-        get => GcdRemaining.Value;
-        set => GcdRemaining.Value = value;
+        get => SyncTickHelper.RemainingSeconds(EntityManager, GcdEndServerTick.Value);
+        set => GcdEndServerTick.Value = SyncTickHelper.EndTick(EntityManager, value);
     }
 
     /// <inheritdoc />
@@ -79,12 +81,18 @@ public partial class UnitPawn : IBattleUnit {
     }
 
     /// <inheritdoc />
-    float IBattleUnit.GetSkillCooldownRemaining(SkillKeyId skillKey) {
+    float IBattleUnit.GetTotalCooldownRemaining(SkillKeyId skillKey) {
+        var em = EntityManager;
+        float remaining = SyncTickHelper.RemainingSeconds(em, GcdEndServerTick.Value);
         foreach (var cd in SkillCooldowns) {
-            if (cd.SkillId == skillKey.Id)
-                return cd.Remaining;
+            if (cd.SkillId == skillKey.Id) {
+                float cdRemaining = SyncTickHelper.RemainingSeconds(em, cd.EndServerTick);
+                if (cdRemaining > remaining)
+                    remaining = cdRemaining;
+                break;
+            }
         }
-        return 0f;
+        return remaining;
     }
 
     /// <inheritdoc />
@@ -95,11 +103,11 @@ public partial class UnitPawn : IBattleUnit {
             if (remaining <= 0f)
                 SkillCooldowns.RemoveAt(i);
             else
-                SkillCooldowns[i] = new SyncSkillCooldown { SkillId = skillKey.Id, Remaining = remaining };
+                SkillCooldowns[i] = new SyncSkillCooldown { SkillId = skillKey.Id, EndServerTick = SyncTickHelper.EndTick(EntityManager, remaining) };
             return;
         }
         if (remaining > 0f)
-            SkillCooldowns.Add(new SyncSkillCooldown { SkillId = skillKey.Id, Remaining = remaining });
+            SkillCooldowns.Add(new SyncSkillCooldown { SkillId = skillKey.Id, EndServerTick = SyncTickHelper.EndTick(EntityManager, remaining) });
     }
 
     /// <inheritdoc />
@@ -119,7 +127,7 @@ public partial class UnitPawn : IBattleUnit {
         foreach (var view in buffs) {
             BuffsList.Add(new SyncBuffData {
                 BuffTypeId = view.BuffTypeId,
-                Remaining = view.Remaining,
+                EndServerTick = SyncTickHelper.EndTick(EntityManager, view.Remaining),
                 StackCount = view.StackCount,
                 MaxStackCount = StackFor(view.StackCount),
                 DamageType = view.DamageType,
@@ -155,9 +163,9 @@ public partial class UnitPawn : IBattleUnit {
         }
     }
 
-    private static BuffView MapBuffView(SyncBuffData b) => new() {
+    private BuffView MapBuffView(SyncBuffData b) => new() {
         BuffTypeId = b.BuffTypeId,
-        Remaining = b.Remaining,
+        Remaining = SyncTickHelper.RemainingSeconds(EntityManager, b.EndServerTick),
         StackCount = b.StackCount,
         DamageType = b.DamageType,
     };

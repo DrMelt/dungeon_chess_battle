@@ -3,14 +3,15 @@ using LiteEntitySystem;
 namespace DungeonChessBattle.Entities.SyncData;
 
 /// <summary>
-/// Buff 的扁平化同步数据，实现 ISpanSerializable 以便在 SyncList 中传输。
+/// Buff 的扁平化同步数据。RPC 广播与 SyncList 均以本结构传输。
+/// 服务端权威写入截止 tick，客户端按当前服务器 tick 本地推算剩余时间。
 /// </summary>
 public struct SyncBuffData : ISpanSerializable {
     /// <summary>Buff 类型 ID，对应配置表中的 Buff 名称哈希。</summary>
     public ushort BuffTypeId;
 
-    /// <summary>剩余持续时间，秒。</summary>
-    public float Remaining;
+    /// <summary>Buff 截止的服务器逻辑 tick，客户端据此本地推算剩余时间。</summary>
+    public ushort EndServerTick;
 
     /// <summary>每跳间隔，秒，0 表示非周期性 Buff。</summary>
     public float TickInterval;
@@ -31,7 +32,7 @@ public struct SyncBuffData : ISpanSerializable {
     public byte DamageType;
 
     /// <summary>序列化后的最大字节数。</summary>
-    public readonly int MaxSize => 2 + 4 + 4 + 4 + 2 + 2 + 2 + 1; // 21 bytes
+    public readonly int MaxSize => 2 + 2 + 4 + 4 + 2 + 2 + 2 + 1; // 19 bytes
 
     /// <summary>
     /// 序列化到网络缓冲区。
@@ -39,7 +40,7 @@ public struct SyncBuffData : ISpanSerializable {
     /// <param name="writer">序列化写入器。</param>
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(BuffTypeId);
-        writer.Put(Remaining);
+        writer.Put(EndServerTick);
         writer.Put(TickInterval);
         writer.Put(TickValue);
         writer.Put(StackCount);
@@ -54,7 +55,7 @@ public struct SyncBuffData : ISpanSerializable {
     /// <param name="reader">序列化读取器。</param>
     public void Deserialize(ref SpanReader reader) {
         BuffTypeId = reader.GetUShort();
-        Remaining = reader.GetFloat();
+        EndServerTick = reader.GetUShort();
         TickInterval = reader.GetFloat();
         TickValue = reader.GetFloat();
         StackCount = reader.GetUShort();

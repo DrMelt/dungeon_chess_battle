@@ -51,18 +51,26 @@ public partial class TextureRectBuffIcon : TextureRect {
             _logger.LogError("buffResourceTable is not assigned!");
     }
 
+    /// <summary>当前绑定的焦点单位 Pawn，用于每帧推算剩余时间。</summary>
+    private UnitPawn? _focusPawn;
+
     /// <summary>
     /// 绑定并展示 Buff 信息：设置图标、持续时间、层数及来源颜色。
+    /// 同单位且关键字段未变化时跳过，供缓存同步器每帧刷新复用。
     /// </summary>
     /// <param name="buffData">要展示的同步 Buff 数据。</param>
     /// <param name="focusPawn">当前焦点单位，用于判断 Buff 来源颜色。</param>
     public void SetBuffIcon(SyncBuffData buffData, UnitPawn focusPawn) {
+        if (_focusPawn == focusPawn && SameContent(buffData))
+            return;
+
         BindingBuffData = buffData;
+        _focusPawn = focusPawn;
 
         if (durationLabelRef == null || superpositionsLabelRef == null)
             return;
 
-        durationLabelRef.Text = buffData.Remaining.ToString("F0");
+        UpdateDurationLabel();
         superpositionsLabelRef.Text = buffData.StackCount.ToString();
 
         durationLabelRef.LabelSettings.FontColor =
@@ -70,5 +78,26 @@ public partial class TextureRectBuffIcon : TextureRect {
 
         // 图标按 BuffTypeId 从资源表匹配；未注册时留空
         Texture = buffResourceTable?.GetResourceByBuffTypeId(buffData.BuffTypeId)?.Icon;
+    }
+
+    /// <summary>关键字段与当前绑定一致时视为未变化，跳过重复刷新。</summary>
+    private bool SameContent(SyncBuffData other) =>
+        BindingBuffData.BuffTypeId == other.BuffTypeId
+        && BindingBuffData.EndServerTick == other.EndServerTick
+        && BindingBuffData.StackCount == other.StackCount
+        && BindingBuffData.SourceUnitNetId == other.SourceUnitNetId
+        && BindingBuffData.DamageType == other.DamageType;
+
+    /// <summary>每帧按服务器 tick 本地推算刷新剩余时间，平滑倒数。</summary>
+    public override void _Process(double delta) {
+        UpdateDurationLabel();
+    }
+
+    /// <summary>按服务端权威截止 tick 推算并刷新剩余秒数标签。</summary>
+    private void UpdateDurationLabel() {
+        if (durationLabelRef == null || _focusPawn == null)
+            return;
+        durationLabelRef.Text = SyncTickHelper.RemainingSeconds(_focusPawn.EntityManager, BindingBuffData.EndServerTick)
+            .ToString("F0");
     }
 }

@@ -109,6 +109,7 @@ graph TD
 - LocalSingleton、`VisualUpdate()`、构造回调永不参与回滚，禁止写入实体确定性状态。
 - 唯一参与客户端预测与回滚的实体是本地受控的 `UnitPawn`。
 - 服务端权威 SyncVar 字段标记 `SyncFlags.NeverRollBack`，客户端只读消费，不参与回滚。
+- 冷却、全局冷却与 Buff 剩余时间以服务端权威截止 tick（`EndServerTick`）事件式同步，客户端本地推算，禁止每 tick 全量写回。
 - 技能、读条、Buff、伤害全部服务端权威，客户端经可靠请求通道，不做预测。
 - LocalSingleton 阶段允许服务端权威副作用（如移动打断读条），客户端不预测不重放，只消费同步结果。
 - 移动结算的唯一入口是 `UnitPawn.Update()`。

@@ -240,7 +240,7 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 领域事件 → 网络翻译：把 BattleEngine 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
-    /// Health、读条、冷却与 Buff 全量已由 BattleEngine 直接写 IBattleUnit 的 Pawn SyncVar，
+    /// Health、读条由 BattleEngine 直接写 Pawn SyncVar，冷却与 Buff 按截止 tick 结构变化投影，
     /// 此处仅处理瞬时事件，阶段、受击、死亡、Buff 增减。
     /// </summary>
     private void HandleDomainEvent(IDomainEvent domainEvent) {

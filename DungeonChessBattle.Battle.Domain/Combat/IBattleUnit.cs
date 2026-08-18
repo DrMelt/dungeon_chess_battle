@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Battle.Domain.Combat;
 /// <summary>
 /// 编排层读写具体战斗单位的通道，依赖倒置，由 Entities 的 UnitPawn 实现。
 /// Logic 层面向本接口编排结算，不依赖任何网络/框架类型。
-/// 读条、个体冷却、Buff 为 Logic 每帧推进的权威状态，经由本接口写回载体同步，载体仅承担存储与映射。
+/// 读条为 Logic 每帧推进的权威状态，经本接口写回载体同步；冷却与 Buff 以截止 tick 在起始与结构变化时投影，剩余由服务端与客户端按本端 tick 本地推算，载体仅承担存储与映射。
 /// </summary>
 public interface IBattleUnit {
     /// <summary>单位名称，供调试与展示使用。</summary>
@@ -67,8 +67,8 @@ public interface IBattleUnit {
     /// <summary>按技能 ID 获取技能定义，单位未装备该技能时返回 null。</summary>
     SkillDefinition? GetSkill(SkillKeyId skillKey);
 
-    /// <summary>读取单个技能的个体冷却剩余秒数，无此技能的冷却时返回 0。</summary>
-    float GetSkillCooldownRemaining(SkillKeyId skillKey);
+    /// <summary>读取单个技能的总冷却剩余秒数（全局冷却与个体冷却取较大者），无冷却时返回 0。</summary>
+    float GetTotalCooldownRemaining(SkillKeyId skillKey);
 
     /// <summary>当前 Buff 快照，展示投影。</summary>
     IReadOnlyList<BuffView> Buffs {

@@ -199,7 +199,7 @@ public partial class SkillsList : Control {
             // 焦点目标合法时直接施放到焦点目标
             if (focusPawn != null
                 && session.TryGetCampRelations(out var relations)
-                && SkillTargetValidator.CanAffect(button.BindPawn, focusPawn, skill.TargetPolicy, relations)) {
+                && SkillTargetValidator.CanAffect(button.BindUnit, focusPawn, skill.TargetPolicy, relations)) {
                 SubmitCast(skill, focusPawn.Id, 0f, 0f, button);
                 return;
             }

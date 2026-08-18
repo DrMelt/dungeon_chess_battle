@@ -39,11 +39,11 @@ public static class SkillCastValidator {
         return Vector2.Distance(caster.Snapshot.Position, target.Snapshot.Position) <= reach;
     }
 
-    /// <summary>状态因素聚合：存活、非读条与全局/个体冷却均就绪。单值查询，无托管对象分配。</summary>
+    /// <summary>状态因素聚合：存活、非读条与技能总冷却（全局与个体取较大）均就绪。单值查询，无托管对象分配。</summary>
     private static bool CanCastState(IBattleUnit caster, SkillKeyId skillKey) {
-        if (caster.Health <= 0f || caster.SkillCasting != default || caster.GcdRemaining > 0f)
+        if (caster.Health <= 0f || caster.SkillCasting != default)
             return false;
-        return caster.GetSkillCooldownRemaining(skillKey) <= 0f;
+        return caster.GetTotalCooldownRemaining(skillKey) <= 0f;
     }
 
     /// <summary>位置因素：目标点非空且落在技能几何范围内，与结算共用 RangeShape 判定。</summary>
