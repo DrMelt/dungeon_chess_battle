@@ -54,8 +54,7 @@ public partial class MainScene : Node {
         _screenMachine = new ScreenStateMachine(_frontUI);
 
         // 战斗完成通知：Finished 阶段由 BattleCoordinator 转发，走应用级退出流程
-        if (_coordinator != null)
-            _coordinator.OnBattleFinished = ExitBattle;
+        _coordinator?.OnBattleFinished = ExitBattle;
 
         _logger.LogInformation("_Ready Initialized.");
     }

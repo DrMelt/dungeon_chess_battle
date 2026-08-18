@@ -43,7 +43,9 @@ public partial class BattleCoordinator : Node {
     private string _roomId = "";
 
     /// <summary>是否已在战斗中（子组件已绑定）。</summary>
-    public bool IsInBattle { get; private set; }
+    public bool IsInBattle {
+        get; private set;
+    }
 
     /// <summary>战斗完成回调（Finished 阶段触发），由 MainScene 注入应用级退出流程。</summary>
     public Action? OnBattleFinished;

@@ -47,12 +47,12 @@ public partial class BattleRoomServer {
         // 按房间选中的副本配置生成敌人（Camp_BOSS 阵营，服务端 AI 驱动）
         SpawnDungeonEnemies();
 
-        // 房间逻辑收编进 LES tick 生命周期：Update=AI 决策先于位移，
+        // 战斗循环收编进 LES tick 生命周期：Update=AI 决策先于位移，
         // LateUpdate=战斗推进在实体更新后、状态包发送前。
-        // 此后房间线程每逻辑 tick 自动驱动 EnemyBrain 与 BattleEngine，
+        // 此后房间线程每逻辑 tick 自动驱动 BattleLoop 与 BattleEngine，
         // 与实体同步严格 1:1，时间由 LES accumulator 统一管理。
-        EntityManager.AddLocalSingleton(new RoomLogic(
-            _enemyBrain, _battleEngine, _enemyPawns, _roomPawns, HandleDomainEvent));
+        EntityManager.AddLocalSingleton(new BattleLoop(
+            _battleEngine, _campRelations, _battleLoopLogger, _enemyPawns, _roomPawns, HandleDomainEvent));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated, {EnemyCount} enemies spawned.",

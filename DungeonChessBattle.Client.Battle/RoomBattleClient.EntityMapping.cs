@@ -66,12 +66,6 @@ public partial class RoomBattleClient {
                 unitName, pawn.Camp.Value, pawn.Position.Value);
     }
 
-    /// <summary>玩家实体创建回调。</summary>
-    private void OnPlayerEntityCreated(PlayerRoomEntity player) {
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Player entity created: {PlayerName}", player.PlayerName.Value);
-    }
-
     /// <summary>
     /// 控制器实体构造回调：识别并缓存本地玩家的 UnitController，用于 SubmitPlayerInput。
     /// 客户端单房间单连接，OnlyForOwner 分发，收到控制器实体即属主控制器；

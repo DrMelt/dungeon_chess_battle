@@ -11,9 +11,6 @@ public enum EntityClassId : ushort {
     /// <summary>战斗房间实体。</summary>
     BattleRoom = 1,
 
-    /// <summary>房间内玩家实体。</summary>
-    PlayerRoom = 2,
-
     /// <summary>单位人工输入控制器。</summary>
     UnitController = 3,
 
@@ -36,7 +33,6 @@ public static class EntityTypesRegistry {
     /// </summary>
     public static EntityTypesMap<EntityClassId> EntityTypesMap => _map ??= new EntityTypesMap<EntityClassId>()
             .Register(EntityClassId.BattleRoom, static p => new BattleRoomEntity(p))
-            .Register(EntityClassId.PlayerRoom, static p => new PlayerRoomEntity(p))
             .Register(EntityClassId.UnitController, static p => new UnitController(p))
             .Register(EntityClassId.UnitPawn, static p => new UnitPawn(p));
 

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Protocol;
 using LiteEntitySystem.Transport;
 using LiteNetLib;
@@ -9,8 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
-/// BattleRoomServer 的网络事件处理：连接验证、断线保留实体与 LES 数据反序列化。
-/// 断线模型：玩家断开仅标记 Disconnected 状态并保留实体，玩家可随时重连；
+/// BattleRoomServer 的网络事件处理：连接验证、断线保留会话与 LES 数据反序列化。
+/// 断线模型：玩家断开仅清空会话连接状态并保留单位与战斗状态，玩家可随时重连；
 /// 全部活跃连接断开后触发 RoomEmpty 由大厅线程销毁房间。
 /// </summary>
 public partial class BattleRoomServer {
@@ -36,16 +35,15 @@ public partial class BattleRoomServer {
 
         // P1 修复：同一 playerId 已有活跃连接时，关闭旧连接接受新连接
         if (connectionKey != null && connectionKey != _connectionKey
-            && _sessions.TryGetValue(connectionKey, out var existingSession)
-            && existingSession.Entity != null) {
-            if (existingSession.Entity.PlayerState.Value == (byte)PlayerConnectionState.Connected) {
+            && _sessions.TryGetValue(connectionKey, out var existingSession)) {
+            if (existingSession.IsConnected) {
                 // 替换：清理旧 peer，用新 peer 重连
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("[RoomId: {RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
                     RoomId, connectionKey);
                 ReplaceExistingConnection(connectionKey);
             }
-            // 执行重连流程，Disconnected 恢复或替换后重新绑定
+            // 执行重连流程，断开恢复或替换后重新绑定
             HandlePlayerReconnect(peer, connectionKey);
         }
         else {
@@ -62,17 +60,13 @@ public partial class BattleRoomServer {
         // 查找该 peer 对应的 playerId，通过反向索引
         _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
         if (playerId != null && _sessions.TryGetValue(playerId, out var session)) {
-            // 标记为断连状态，保留实体不销毁；玩家可凭 Store 成员身份随时重连
-            session.Entity?.PlayerState.Value = (byte)PlayerConnectionState.Disconnected;
+            // 清空会话连接状态，保留单位与战斗状态；玩家可凭 Store 成员身份随时重连
+            session.PeerId = 0;
+            session.NetPlayer = null;
+            session.Controller = null;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomId: {RoomId}] Player '{PlayerId}' disconnected (entity retained).",
+                _logger.LogInformation("[RoomId: {RoomId}] Player '{PlayerId}' disconnected (session retained).",
                     RoomId, playerId);
-        }
-
-        // 清除旧 peer 的引用
-        if (playerId != null && _sessions.TryGetValue(playerId, out var s)) {
-            s.NetPlayer = null;
-            s.Controller = null;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))

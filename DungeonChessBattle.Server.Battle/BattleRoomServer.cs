@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Entities;
@@ -27,6 +28,7 @@ namespace DungeonChessBattle.Server.Battle;
 public partial class BattleRoomServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ILogger<BattleRoomServer> _logger;
+    private readonly ILogger<BattleLoop> _battleLoopLogger;
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
 
@@ -74,14 +76,14 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的战斗编排门面，面向 IBattleUnit，不依赖网络载体与配置仓库。</summary>
     private readonly BattleEngine _battleEngine;
 
+    /// <summary>本房间副本的阵营关系函数，AI 决策与战斗引擎共用。</summary>
+    private readonly CampRelationResolver _campRelations;
+
     /// <summary>本房间选中的副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
     private readonly string _dungeonKey;
 
     /// <summary>本房间生成的敌人 Pawn 列表，供服务端 AI 驱动。</summary>
     private readonly List<UnitPawn> _enemyPawns = [];
-
-    /// <summary>敌人大脑：服务端每 tick 驱动敌方单位移动与施法。</summary>
-    private readonly EnemyBrain _enemyBrain;
 
     /// <summary>本房间的移动物理场景，房间线程首帧初始化后只读，null 表示尚未构建。</summary>
     private PhysicsMovementScene? _movementScene;
@@ -137,9 +139,9 @@ public partial class BattleRoomServer : INetEventListener {
         _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");
-        var campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
-        _battleEngine = new BattleEngine(campRelations);
-        _enemyBrain = new EnemyBrain(_battleEngine, campRelations, loggerFactory.CreateLogger<EnemyBrain>());
+        _campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
+        _battleEngine = new BattleEngine(_campRelations);
+        _battleLoopLogger = loggerFactory.CreateLogger<BattleLoop>();
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
@@ -208,7 +210,7 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>
     /// 房间服务器主循环，独立线程：首帧初始化后轮询网络事件并驱动
-    /// EntityManager.Update()。AI 决策与战斗推进经 RoomLogic LocalSingleton
+    /// EntityManager.Update()。AI 决策与战斗推进经 BattleLoop LocalSingleton
     /// 收编进逻辑 tick 生命周期，时间由 LES accumulator 按真实时间统一管理。
     /// </summary>
     private void RunLoop() {

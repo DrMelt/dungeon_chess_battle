@@ -24,10 +24,8 @@ internal sealed class PlayerSession(string playerId, string playerName) {
         get; set;
     }
 
-    /// <summary>房间内玩家 Entity，通过 LES SyncVar 同步到客户端。</summary>
-    public PlayerRoomEntity? Entity {
-        get; set;
-    }
+    /// <summary>当前是否有活跃网络连接。连接建立时置 PeerId，断开时清 0。</summary>
+    public bool IsConnected => PeerId != 0;
 
     /// <summary>LES 网络玩家句柄。</summary>
     public NetPlayer? NetPlayer {

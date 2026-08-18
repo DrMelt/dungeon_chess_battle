@@ -15,7 +15,7 @@ namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
-/// 实现 IClientBattleService，管理 LES Entity：BattleRoomEntity、UnitPawn、PlayerRoomEntity。
+/// 实现 IClientBattleService，管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
 /// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
@@ -193,8 +193,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             .SubscribeToConstructed(OnRoomEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<UnitPawn>()
             .SubscribeToConstructed(OnPawnEntityCreated, callOnExisting: true);
-        _entityManager.GetEntities<PlayerRoomEntity>()
-            .SubscribeToConstructed(OnPlayerEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<UnitController>()
             .SubscribeToConstructed(OnUnitControllerCreated, callOnExisting: true);
 

@@ -90,6 +90,29 @@ graph TD
     GameConfig --> Domain
 ```
 
+## LES 集成约定：逻辑阶段与回滚边界
+
+跨项目共用的 LiteEntitySystem 时序与可回滚性约束，所有实体与编排代码必须遵守。
+
+```
+每个逻辑 tick（服务端）：
+  ① 输入注入   LocalSingleton.Update            只写输入载体，移动方向与请求入队
+  ② 输入落盘   OnLogicTick → ApplyIncomingInput 写入 UnitController.CurrentInput
+  ③ 实体结算   entity.Update()                  唯一可回滚位置：读输入写可回滚 SyncVar
+  ④ 编排推进   LocalSingleton.LateUpdate        BattleEngine.Tick：读条、伤害、冷却，服务端权威
+  ⑤ 同步       tick 末发送 diff / baseline
+```
+
+约束：
+
+- 预测回滚只重放客户端本地受控实体的 `Update()`。
+- LocalSingleton、`VisualUpdate()`、构造回调永不参与回滚，禁止写入实体确定性状态。
+- 唯一参与客户端预测与回滚的实体是本地受控的 `UnitPawn`。
+- 技能、读条、Buff、伤害全部服务端权威，客户端经可靠请求通道，不做预测。
+- LocalSingleton 阶段允许服务端权威副作用（如移动打断读条），客户端不预测不重放，只消费同步结果。
+- 移动结算的唯一入口是 `UnitPawn.Update()`。
+- 会话连接状态是服务端本地数据，存放于 `PlayerSession`，不放入网络实体。
+
 ## 项目文档索引
 
 | 项目 | 职责 | 文档 |
