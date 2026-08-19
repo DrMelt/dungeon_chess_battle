@@ -172,16 +172,13 @@ public partial class BattleSessionContext : Node {
         return resolved != null;
     }
 
-    /// <summary>解析目标阵营相对本地玩家的关系；本地单位或关系函数未就绪返回 false。</summary>
-    public bool TryResolveLocalCampRelation(string targetCamp, out CampRelation relation) {
+    /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
+    public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps) {
         var relations = RelationsOrResolve();
         var localPawn = _roomClient?.LocalUnitPawn;
-        if (relations == null || localPawn == null) {
-            relation = default;
-            return false;
-        }
-        relation = relations.Invoke([localPawn.Camp.Value], [targetCamp]);
-        return true;
+        if (relations == null || localPawn == null)
+            return CampRelation.Unknown;
+        return relations.Invoke(localPawn.CampTags, targetCamps);
     }
 
     /// <summary>Running 阶段就绪校验：战斗已开始仍无阵营判定能力属时序故障，响亮报告。</summary>
@@ -209,8 +206,7 @@ public partial class BattleSessionContext : Node {
         foreach (var candidate in pawns) {
             if (candidate.Id == self.Id || candidate.UnitState.Value == 1)
                 continue;
-            if (!TryResolveLocalCampRelation(candidate.Camp.Value, out var relation)
-                || relation != CampRelation.Enemy)
+            if (ResolveLocalCampRelation(candidate.CampTags) != CampRelation.Enemy)
                 continue;
             enemies.Add(candidate);
         }

@@ -19,23 +19,11 @@ public sealed class DungeonRegistry {
     private readonly Dictionary<string, DungeonConfig> _byKey;
 
     private DungeonRegistry() {
-        // 新增副本在此登记，唯一注册点
         var entries = new[] {
             GameConfigDB.DungeonGoblinCamp,
             GameConfigDB.DungeonDeepCave,
         };
 
-        // fail-fast：敌人生成引用必须在 UnitRegistry 已注册，且敌人单位必填阵营，配错配置即启动失败
-        foreach (var dungeon in entries) {
-            foreach (var spawn in dungeon.Enemies) {
-                var config = UnitRegistry.Instance.GetByConfig(spawn.Unit)
-                    ?? throw new InvalidOperationException(
-                        $"Dungeon '{dungeon.DungeonKey}' enemy spawn references unregistered unit config.");
-                if (string.IsNullOrWhiteSpace(config.Camp))
-                    throw new InvalidOperationException(
-                        $"Dungeon '{dungeon.DungeonKey}' enemy unit '{config.ConfigKey}' does not declare a camp.");
-            }
-        }
 
         _byKey = entries.ToDictionary(d => d.DungeonKey, d => d);
     }

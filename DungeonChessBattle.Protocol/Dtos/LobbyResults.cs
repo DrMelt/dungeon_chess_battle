@@ -13,9 +13,9 @@ public sealed record RoomListResult(IReadOnlyList<RoomListing> Rooms);
 
 /// <summary>准备阶段单位条目。</summary>
 /// <param name="UnitName">单位名称。</param>
-/// <param name="Camp">阵营。</param>
+/// <param name="Camps">单位所属阵营列表。</param>
 /// <param name="PlayerName">归属玩家名。</param>
-public sealed record PrepareUnitDto(string UnitName, string Camp, string PlayerName);
+public sealed record PrepareUnitDto(string UnitName, IReadOnlyList<string> Camps, string PlayerName);
 
 /// <summary>玩家准备状态条目。</summary>
 /// <param name="PlayerName">玩家名。</param>

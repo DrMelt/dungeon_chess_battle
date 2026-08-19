@@ -31,8 +31,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// <summary>房间内玩家的 playerId 映射表：房间 ID 到玩家名与 playerId 的映射。</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> _roomPlayerIds = new();
 
-    /// <summary>准备阶段单位数据表：房间 ID 到单位名、阵营、玩家名与玩家 ID 的列表。</summary>
-    private readonly ConcurrentDictionary<string, List<(string UnitName, string Camp, string PlayerName, string PlayerId)>> _prepareUnits = new();
+    /// <summary>准备阶段单位数据表：房间 ID 到单位名、阵营列表、玩家名与玩家 ID 的列表。</summary>
+    private readonly ConcurrentDictionary<string, List<(string UnitName, IReadOnlyList<string> Camps, string PlayerName, string PlayerId)>> _prepareUnits = new();
 
     /// <summary>
     /// 房间级锁表：房间ID → 锁对象，串行化同一房间的读改写，保证
@@ -447,7 +447,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool AddPrepareUnit(string roomId, string unitName, string camp, string playerName, string playerId) {
+    public bool AddPrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string playerName, string playerId) {
         lock (GetRoomLock(roomId)) {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
@@ -457,13 +457,13 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 && states.TryGetValue(playerName, out var ready) && ready)
                 return false;
 
-            units.Add((unitName, camp, playerName, playerId));
+            units.Add((unitName, camps, playerName, playerId));
             return true;
         }
     }
 
     /// <inheritdoc />
-    public bool RemovePrepareUnit(string roomId, string unitName, string camp, string ownerName) {
+    public bool RemovePrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string ownerName) {
         lock (GetRoomLock(roomId)) {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
@@ -473,7 +473,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 && states.TryGetValue(ownerName, out var ready) && ready)
                 return false;
 
-            return units.RemoveAll(u => u.UnitName == unitName && u.Camp == camp && u.PlayerName == ownerName) > 0;
+            return units.RemoveAll(
+                u => u.UnitName == unitName && u.Camps.SequenceEqual(camps) && u.PlayerName == ownerName) > 0;
         }
     }
 
@@ -482,7 +483,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         lock (GetRoomLock(roomId)) {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return [];
-            return [.. units.Select(u => new UnitSelection(u.UnitName, u.Camp, u.PlayerName, u.PlayerId))];
+            return [.. units.Select(u => new UnitSelection(u.UnitName, u.Camps, u.PlayerName, u.PlayerId))];
         }
     }
 }

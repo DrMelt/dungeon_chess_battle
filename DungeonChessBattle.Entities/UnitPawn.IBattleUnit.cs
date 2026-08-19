@@ -18,7 +18,7 @@ public partial class UnitPawn : IBattleUnit {
     ushort IBattleUnit.UnitNetId => Id;
 
     /// <inheritdoc />
-    IReadOnlyList<string> IBattleUnit.Camps => [Camp.Value];
+    IReadOnlyList<string> IBattleUnit.Camps => CampTags;
 
     /// <inheritdoc />
     UnitSnapshot IBattleUnit.Snapshot => new() {

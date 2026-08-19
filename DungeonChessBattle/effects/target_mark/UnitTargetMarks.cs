@@ -71,8 +71,8 @@ public partial class UnitTargetMarks : Node {
     /// <summary>移除目标标记。</summary>
     private static void RemoveMark(Node3dTargetMark mark) => mark.QueueFree();
 
-    /// <summary>阵营判定未就绪一次性告警标记，避免刷屏。</summary>
-    private bool _relationsNotReadyLogged;
+    /// <summary>阵营关系未知一次性告警标记，避免刷屏。</summary>
+    private bool _unknownRelationLogged;
 
     /// <summary>
     /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
@@ -88,15 +88,11 @@ public partial class UnitTargetMarks : Node {
 
         mark.Visible = isFocus;
         mark.SetRadius(pawn.BodyRadius.Value);
-        if (session != null && session.TryResolveLocalCampRelation(pawn.Camp.Value, out var relation)) {
-            mark.SetColor(relation);
-        }
-        else {
-            mark.SetColor(CampRelation.Unknown);
-            if (!_relationsNotReadyLogged) {
-                _relationsNotReadyLogged = true;
-                _logger.LogWarning("[UnitTargetMarks] 阵营判定未就绪，目标标记着色置灰。");
-            }
+        var relation = session?.ResolveLocalCampRelation(pawn.CampTags) ?? CampRelation.Unknown;
+        mark.SetColor(relation);
+        if (relation == CampRelation.Unknown && !_unknownRelationLogged) {
+            _unknownRelationLogged = true;
+            _logger.LogWarning("[UnitTargetMarks] 阵营关系未知，目标标记着色置灰。");
         }
         var pos = pawn.Position.InterpolatedValue;
         mark.GlobalPosition = new Vector3(pos.X, 0f, pos.Y);

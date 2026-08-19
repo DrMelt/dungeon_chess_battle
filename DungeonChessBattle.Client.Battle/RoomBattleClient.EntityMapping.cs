@@ -61,11 +61,11 @@ public partial class RoomBattleClient {
         // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;
         if (roomId != null)
-            OnUnitCreated?.Invoke(roomId, pawn.Id, unitName, pawn.Camp.Value);
+            OnUnitCreated?.Invoke(roomId, pawn.Id, unitName, pawn.CampTags);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("UnitPawn entity created: {UnitName}, Camp={Camp}, Pos={Position}",
-                unitName, pawn.Camp.Value, pawn.Position.Value);
+            _logger.LogInformation("UnitPawn entity created: {UnitName}, Camps={Camps}, Pos={Position}",
+                unitName, string.Join(",", pawn.CampTags), pawn.Position.Value);
     }
 
     /// <summary>

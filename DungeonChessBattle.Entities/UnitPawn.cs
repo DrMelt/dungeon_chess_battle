@@ -48,8 +48,11 @@ public partial class UnitPawn : PawnLogic {
     [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MaxHealth;
 
-    /// <summary>阵营字符串标识，如 "Camp_A"、"Camp_B"。</summary>
-    public readonly SyncString Camp = new();
+    /// <summary>单位所属阵营列表，装配期一次写入的权威同步数据。</summary>
+    public readonly SyncSpanSerializable<SyncCampsData> CampsData = new(() => new SyncCampsData());
+
+    /// <summary>阵营列表只读投影，服务端与客户端同源直读；装配期一次写入后不变，每次读取新建数组。</summary>
+    public IReadOnlyList<string> CampTags => CampsData.Value.ToArray();
 
     /// <summary>单位状态，0 表示存活，1 表示死亡。</summary>
     [SyncVarFlags(SyncFlags.NeverRollBack)]

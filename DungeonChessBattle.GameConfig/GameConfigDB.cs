@@ -178,7 +178,7 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "Goblin",
-        Camp = CampConstants.CampBoss,
+        Camps = [CampConstants.CampBoss],
         BodyRadius = 0.5f,
         MaxHealth = 800f,
         CureIntensity = 1.0f,
@@ -202,7 +202,7 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "GoblinBoss",
-        Camp = CampConstants.CampBoss,
+        Camps = [CampConstants.CampBoss],
         BodyRadius = 0.8f,
         MaxHealth = 2000f,
         CureIntensity = 1.0f,
@@ -284,13 +284,11 @@ public class GameConfigDB : IGameConfigDB {
     }
 
     /// <summary>
-    /// 副本关系函数：同阵营为友，任一方为 Boss 阵营即敌对，其余组合为友（A、B 玩家组队共斗）。
-    /// 兜底返回 Unknown 显式表示未覆盖组合，绝不猜成错误的敌我关系。
+    /// 副本关系函数：任一方含 Boss 阵营即敌对；双方存在共同阵营即友；其余组合返回 Unknown 不猜。
+    /// 支持多阵营：玩家可同属多个阵营，任一共同阵营即视同友方（A、B 玩家组队共斗）。
     /// </summary>
     private static CampRelation CampRelationsPve(
         IReadOnlyList<string> sourceCamps, IReadOnlyList<string> targetCamps) {
-        if (sourceCamps.Count == 1 && targetCamps.Count == 1 && sourceCamps[0] == targetCamps[0])
-            return CampRelation.Friendly;
         foreach (var camp in sourceCamps) {
             if (camp == CampConstants.CampBoss)
                 return CampRelation.Enemy;
@@ -298,6 +296,12 @@ public class GameConfigDB : IGameConfigDB {
         foreach (var camp in targetCamps) {
             if (camp == CampConstants.CampBoss)
                 return CampRelation.Enemy;
+        }
+        foreach (var camp in sourceCamps) {
+            foreach (var other in targetCamps) {
+                if (camp == other)
+                    return CampRelation.Friendly;
+            }
         }
         return CampRelation.Unknown;
     }

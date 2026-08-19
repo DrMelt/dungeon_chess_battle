@@ -41,14 +41,14 @@ public sealed record JoinRoomRequest(
 /// <summary>准备阶段：添加单位请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
-/// <param name="Camp">阵营。</param>
-public sealed record PrepareAddUnitRequest(string RoomId, string UnitName, string Camp);
+/// <param name="Camps">单位所属阵营列表。</param>
+public sealed record PrepareAddUnitRequest(string RoomId, string UnitName, IReadOnlyList<string> Camps);
 
 /// <summary>准备阶段：移除单位请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
-/// <param name="Camp">阵营。</param>
-public sealed record PrepareRemoveUnitRequest(string RoomId, string UnitName, string Camp);
+/// <param name="Camps">单位所属阵营列表。</param>
+public sealed record PrepareRemoveUnitRequest(string RoomId, string UnitName, IReadOnlyList<string> Camps);
 
 /// <summary>准备阶段：开始战斗请求，仅房主可发起。</summary>
 /// <param name="RoomId">房间 ID。</param>

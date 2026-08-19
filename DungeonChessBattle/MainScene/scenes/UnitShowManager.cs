@@ -72,11 +72,11 @@ public partial class UnitShowManager : Node {
     /// 服务事件：单位创建。网络模式下单位实体可能晚于战斗开始到达；
     /// 与 InitializeUnitsFromPawns 缓存兜底共用幂等入口，保证不重不漏。
     /// </summary>
-    private void OnServiceUnitCreated(string eventRoomId, ushort netId, string unitName, string camp) {
+    private void OnServiceUnitCreated(string eventRoomId, ushort netId, string unitName, IReadOnlyList<string> camps) {
         if (eventRoomId != _roomId)
             return;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Unit created via service: {UnitName} (camp={Camp}, netId={NetId})", unitName, camp, netId);
+            _logger.LogInformation("Unit created via service: {UnitName} (camps={Camps}, netId={NetId})", unitName, string.Join(",", camps), netId);
         CallDeferred(nameof(SpawnUnitFromCache), netId);
     }
 

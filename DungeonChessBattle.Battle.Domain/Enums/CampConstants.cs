@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace DungeonChessBattle.Battle.Domain.Enums;
 
 /// <summary>
@@ -22,4 +24,36 @@ public static class CampConstants {
     /// <returns>合法返回 true。</returns>
     public static bool IsValidCamp(string? camp) =>
         camp is CampA or CampB or CampBoss;
+
+    /// <summary>单单位最大阵营数。</summary>
+    public const int MaxCampsPerUnit = 3;
+
+    /// <summary>
+    /// 判断一组阵营标识是否合法：非空、不超上限、无重复且每项合法。
+    /// </summary>
+    /// <param name="camps">阵营标识列表。</param>
+    /// <returns>合法返回 true。</returns>
+    public static bool IsValidCamps(IReadOnlyList<string>? camps) {
+        if (camps == null || camps.Count == 0 || camps.Count > MaxCampsPerUnit)
+            return false;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var camp in camps) {
+            if (!IsValidCamp(camp) || !seen.Add(camp))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>判断两个阵营列表是否存在共同阵营；null 或空视为无交集。</summary>
+    public static bool HasAnyCamp(IReadOnlyList<string>? a, IReadOnlyList<string>? b) {
+        if (a == null || b == null || a.Count == 0 || b.Count == 0)
+            return false;
+        foreach (var camp in a) {
+            foreach (var other in b) {
+                if (camp == other)
+                    return true;
+            }
+        }
+        return false;
+    }
 }

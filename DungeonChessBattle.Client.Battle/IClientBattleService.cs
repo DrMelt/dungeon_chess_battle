@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 
@@ -8,8 +9,8 @@ namespace DungeonChessBattle.Client.Battle;
 /// 所有方法使用 roomId 作为上下文标识，不暴露服务端实现细节。
 /// </summary>
 public interface IClientBattleService {
-    /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营字符串。</summary>
-    event Action<string, ushort, string, string>? OnUnitCreated;
+    /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
+    event Action<string, ushort, string, IReadOnlyList<string>>? OnUnitCreated;
 
     /// <summary>战斗阶段变化事件。参数：房间 ID、战斗阶段。</summary>
     event Action<string, BattlePhase>? BattlePhaseChanged;

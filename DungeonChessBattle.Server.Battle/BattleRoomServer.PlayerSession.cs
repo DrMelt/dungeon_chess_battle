@@ -128,8 +128,8 @@ public partial class BattleRoomServer {
         session.ControlledPawn = pawn;
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (camp={Camp}).",
-                RoomId, session.PlayerName, selection.UnitName, selection.Camp);
+            _logger.LogInformation("[RoomId: {RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (camps={Camps}).",
+                RoomId, session.PlayerName, selection.UnitName, string.Join(",", selection.Camps));
     }
 
     /// <summary>

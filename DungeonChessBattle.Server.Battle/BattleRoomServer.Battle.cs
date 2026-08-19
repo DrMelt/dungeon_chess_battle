@@ -36,10 +36,11 @@ public partial class BattleRoomServer {
         var units = _stateStore.GetPrepareUnits(RoomId);
         int campAIndex = 0, campBIndex = 0;
         foreach (var selection in units) {
-            var spawnPos = selection.Camp == CampConstants.CampA
+            // 玩家单位首个阵营为主阵营，作为出生点分边依据
+            var spawnPos = selection.Camps[0] == CampConstants.CampA
                 ? new Vector2(campAIndex++ * SpawnSpacing, 0)
                 : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
-            var pawn = CreatePawnEntity(selection.UnitName, selection.Camp, spawnPos);
+            var pawn = CreatePawnEntity(selection.UnitName, selection.Camps, spawnPos);
             _pawnByPlayerId[selection.PlayerId] = pawn;
         }
 
@@ -73,7 +74,7 @@ public partial class BattleRoomServer {
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                var pawn = CreatePawnEntity(config.ConfigKey, config.Camp!, spawnPos);
+                var pawn = CreatePawnEntity(config.ConfigKey, config.Camps, spawnPos);
                 // 注入智能决策器，战斗世界按 IBattleUnit.Intelligence 识别并驱动该单位
                 pawn.Intelligence = config.Intelligence;
             }
@@ -83,16 +84,19 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 在本房间的 SEM 中创建 UnitPawn 实体。仅房间线程调用。
     /// </summary>
-    public UnitPawn CreatePawnEntity(string unitName, string camp, Vector2 spawnPos) {
+    public UnitPawn CreatePawnEntity(string unitName, IReadOnlyList<string> camps, Vector2 spawnPos) {
         // 兜底防御，上游网络入口已校验，这里仅防未来新增路径绕过校验
         if (unitName.Length > EntityConstants.MaxUnitNameLength)
             unitName = unitName[..EntityConstants.MaxUnitNameLength];
-        if (!CampConstants.IsValidCamp(camp))
-            throw new InvalidOperationException($"Invalid camp '{camp}' for unit '{unitName}' in room '{RoomId}'.");
+        if (!CampConstants.IsValidCamps(camps))
+            throw new InvalidOperationException(
+                $"Invalid camps '{(camps == null ? string.Empty : string.Join(",", camps))}' for unit '{unitName}' in room '{RoomId}'.");
 
         var entity = EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitName.Value = unitName;
-            e.Camp.Value = camp;
+            var campsData = new SyncCampsData();
+            campsData.Set(camps);
+            e.CampsData.Value = campsData;
             e.Position.Value = spawnPos;
         }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{RoomId}'.");
 

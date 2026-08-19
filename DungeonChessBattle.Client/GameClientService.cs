@@ -194,13 +194,13 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>请求在大厅准备阶段添加单位。</summary>
-    public void RequestPrepareAddUnit(string roomId, string unitName, string camp) {
-        LobbyClient.RequestPrepareAddUnit(roomId, unitName, camp);
+    public void RequestPrepareAddUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
+        LobbyClient.RequestPrepareAddUnit(roomId, unitName, camps);
     }
 
     /// <summary>请求在大厅准备阶段移除单位。</summary>
-    public void RequestPrepareRemoveUnit(string roomId, string unitName, string camp) {
-        LobbyClient.RequestPrepareRemoveUnit(roomId, unitName, camp);
+    public void RequestPrepareRemoveUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
+        LobbyClient.RequestPrepareRemoveUnit(roomId, unitName, camps);
     }
 
     /// <summary>请求离开房间，准备阶段主动退出，通知服务端移除成员并清理房间状态。</summary>

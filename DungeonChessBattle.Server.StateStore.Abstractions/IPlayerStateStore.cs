@@ -52,14 +52,14 @@ public interface IPlayerStateStore {
     string? RemovePlayerByConnection(string connectionId);
 
     /// <summary>在大厅准备阶段添加单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
-    bool AddPrepareUnit(string roomId, string unitName, string camp, string playerName, string playerId);
+    bool AddPrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string playerName, string playerId);
 
     /// <summary>在大厅准备阶段移除单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="unitName">单位名称。</param>
-    /// <param name="camp">阵营。</param>
+    /// <param name="camps">单位所属阵营列表。</param>
     /// <param name="ownerName">单位归属玩家名，服务端权威，仅归属者可移除。</param>
-    bool RemovePrepareUnit(string roomId, string unitName, string camp, string ownerName);
+    bool RemovePrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string ownerName);
 
     /// <summary>获取准备阶段单位列表。</summary>
     IReadOnlyList<UnitSelection> GetPrepareUnits(string roomId);

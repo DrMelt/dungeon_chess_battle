@@ -30,8 +30,6 @@ public partial class RoomPreparation : BaseGamePanel {
     private DungeonResourceTable? _dungeonResourceTable;
     /// <summary>当前房间 ID。</summary>
     private string _roomId = "";
-    /// <summary>当前选择的阵营（当前仅支持 A 方 Camp_A，协议已预留 Camp_A/B/Boss）。</summary>
-    private string _selectedCamp = CampConstants.CampA;
     /// <summary>当前选中的单位配置键。</summary>
     private string? _selectedUnitKey;
     /// <summary>已添加的单位显示名称列表。</summary>
@@ -190,10 +188,9 @@ public partial class RoomPreparation : BaseGamePanel {
         if (config is null)
             return;
         string configKey = config.ConfigKey;
-        string camp = _selectedCamp;
 
-        // 通过大厅 SignalR 协议发送（经 GameClientService 统一入口）
-        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, configKey, camp);
+        // 通过大厅 SignalR 协议发送（经 GameClientService 统一入口）；玩家暂不提供阵营选择，固定 A 方
+        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, configKey, [CampConstants.CampA]);
 
         InterRefs?.StatusLabel?.Text = $"请求创建 {configKey}...";
         RefreshStartButton();

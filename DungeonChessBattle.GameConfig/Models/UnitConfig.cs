@@ -32,10 +32,10 @@ public class UnitConfig {
     /// <summary>基础移动速度。</summary>
     public float BaseSpeed { get; set; } = 2.0f;
 
-    /// <summary>单位归属阵营；玩家可选单位留空表示由玩家选择决定，敌人单位必填。</summary>
-    public string? Camp {
+    /// <summary>单位归属阵营列表；玩家可选单位留空表示由玩家选择决定，敌人单位必填。</summary>
+    public IReadOnlyList<string> Camps {
         get; set;
-    }
+    } = [];
 
     /// <summary>单位拥有的技能定义列表。</summary>
     public SkillDefinition[] Skills { get; set; } = [];

@@ -165,7 +165,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(req.RoomId) || string.IsNullOrEmpty(req.UnitName))
             return new LobbyResult(req.RoomId, false, "roomId and unitName required.");
 
-        if (req.UnitName.Length > EntityConstants.MaxUnitNameLength || !CampConstants.IsValidCamp(req.Camp))
+        if (req.UnitName.Length > EntityConstants.MaxUnitNameLength || !CampConstants.IsValidCamps(req.Camps))
             return new LobbyResult(req.RoomId, false, "Invalid unit params.");
 
         // 单位归属用服务端权威玩家名，连接归属表，不信任客户端提交
@@ -178,7 +178,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(ownerPlayerId))
             return new LobbyResult(req.RoomId, false, "Player identity not registered.");
 
-        if (!_stateStore.AddPrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName, ownerPlayerId))
+        if (!_stateStore.AddPrepareUnit(req.RoomId, req.UnitName, req.Camps, ownerName, ownerPlayerId))
             return new LobbyResult(req.RoomId, false,
                 _stateStore.RoomExists(req.RoomId) ? "Cannot change unit while ready." : "Room not found.");
 
@@ -200,7 +200,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(ownerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
             return new LobbyResult(req.RoomId, false, "Player not in room.");
 
-        bool removed = _stateStore.RemovePrepareUnit(req.RoomId, req.UnitName, req.Camp, ownerName);
+        bool removed = _stateStore.RemovePrepareUnit(req.RoomId, req.UnitName, req.Camps, ownerName);
         if (removed) {
             await BroadcastRoomSnapshotAsync(req.RoomId);
             return new LobbyResult(req.RoomId, true);
@@ -267,7 +267,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
-            [.. units.Select(u => new PrepareUnitDto(u.UnitName, u.Camp, u.PlayerName))]);
+            [.. units.Select(u => new PrepareUnitDto(u.UnitName, u.Camps, u.PlayerName))]);
 
         await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
 

@@ -43,8 +43,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
     public event Action<ushort, ushort>? UnitFocusTargetChanged;
 
-    /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营字符串。</summary>
-    public event Action<string, ushort, string, string>? OnUnitCreated;
+    /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
+    public event Action<string, ushort, string, IReadOnlyList<string>>? OnUnitCreated;
 
     /// <summary>
     /// 战斗阶段变化事件，roomId 与 phase。

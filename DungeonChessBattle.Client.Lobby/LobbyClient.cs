@@ -190,20 +190,20 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// <summary>
     /// 请求添加准备阶段单位。
     /// </summary>
-    public void RequestPrepareAddUnit(string roomId, string unitName, string camp) {
+    public void RequestPrepareAddUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
         RunHubCall(async hub => {
             await hub.InvokeAsync<LobbyResult>(HubMethods.AddPrepareUnit,
-                new PrepareAddUnitRequest(roomId, unitName, camp));
+                new PrepareAddUnitRequest(roomId, unitName, camps));
         });
     }
 
     /// <summary>
     /// 请求移除准备阶段单位。
     /// </summary>
-    public void RequestPrepareRemoveUnit(string roomId, string unitName, string camp) {
+    public void RequestPrepareRemoveUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
         RunHubCall(async hub => {
             await hub.InvokeAsync<LobbyResult>(HubMethods.RemovePrepareUnit,
-                new PrepareRemoveUnitRequest(roomId, unitName, camp));
+                new PrepareRemoveUnitRequest(roomId, unitName, camps));
         });
     }
 
