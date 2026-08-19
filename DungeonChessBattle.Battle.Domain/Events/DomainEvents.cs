@@ -26,9 +26,3 @@ public readonly record struct CastCompleted(ushort CasterNetId, SkillKeyId Skill
 
 /// <summary>单位死亡。</summary>
 public readonly record struct UnitDied(ushort UnitNetId) : IDomainEvent;
-
-/// <summary>战斗开始，阶段机进入 Running，房间级元事件。</summary>
-public readonly record struct BattleStarted() : IDomainEvent;
-
-/// <summary>战斗结束，阶段机进入 Finished。WinnerCamp 为胜方阵营；多个阵营存活判定为未结束，null 表示平局或无存活。</summary>
-public readonly record struct BattleEnded(string? WinnerCamp) : IDomainEvent;

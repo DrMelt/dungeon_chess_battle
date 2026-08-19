@@ -1,5 +1,6 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Logic.Movement;
 using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
@@ -11,19 +12,20 @@ namespace DungeonChessBattle.Client.Battle;
 /// 展示层直读 UnitPawn 的 SyncVar，不再维护客户端模型中转。
 /// </summary>
 public partial class RoomBattleClient {
-    /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
-    public string? DungeonKey => _roomEntity?.DungeonKey.Value;
+    /// <summary>当前房间的副本键，来自服务端权威 IReadOnlyBattleRoom.DungeonKey 同步。</summary>
+    public string? DungeonKey => _roomEntity?.DungeonKey;
 
-    /// <summary>房间实体创建回调：缓存房间与当前房间 ID。</summary>
+    /// <summary>房间实体创建回调：缓存房间与当前房间 ID，日志经 IReadOnlyBattleRoom 读取投影状态。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
+        IReadOnlyBattleRoom room = entity;
         lock (_lock) {
-            _roomEntity = entity;
-            _currentRoomId = entity.RoomId.Value;
+            _roomEntity = room;
+            _currentRoomId = room.RoomId;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Room entity created: {RoomId}, phase={Phase}, startUnix={StartUnix}, dungeonKey={DungeonKey}",
-                entity.RoomId.Value, entity.BattlePhase.Value, entity.BattleStartUnixTime.Value, entity.DungeonKey.Value);
+                room.RoomId, room.CurrentPhase, room.BattleStartUnixTime, room.DungeonKey);
     }
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>

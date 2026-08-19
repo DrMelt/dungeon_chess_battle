@@ -4,6 +4,7 @@ using LiteEntitySystem.Transport;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Battle.Logic.Movement;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
@@ -22,7 +23,7 @@ namespace DungeonChessBattle.Client.Battle;
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
 
-    private BattleRoomEntity? _roomEntity;
+    private IReadOnlyBattleRoom? _roomEntity;
     private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
     private readonly Lock _lock = new();
@@ -47,7 +48,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>
     /// 战斗阶段变化事件，roomId 与 phase。
-    /// 由 BattleRoomEntity.BattlePhase SyncVar 变化触发。
+    /// 经 IBattleRoom 轮询检测到阶段变化时触发。
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 
@@ -83,10 +84,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private PhysicsMovementScene? GetOrCreateMovementScene() {
         if (_movementScene != null)
             return _movementScene;
-        if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
+        if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey))
             return null;
 
-        var scene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(room.DungeonKey.Value));
+        var scene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(room.DungeonKey));
         _movementScene = scene;
         foreach (var pawn in _pendingScenePawns)
             scene.AddActor(pawn.Id, () => pawn.BodyRadius.Value, () => pawn.Position.Value);
@@ -154,10 +155,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _countingPeer?.ResetTraffic();
         }
 
-        // 检测 BattlePhase SyncVar 变化，LES 无公开 Changed 事件，通过轮询检测
-        if (_roomEntity != null) {
-            var currentPhase = _roomEntity.BattlePhase.Value;
-            var phase = (BattlePhase)currentPhase;
+        // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
+        if (_roomEntity is { } room) {
+            var phase = room.CurrentPhase;
             if (phase != _lastKnownPhase) {
                 _lastKnownPhase = phase;
                 var roomId = _currentRoomId;
@@ -212,7 +212,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// 战斗开始时间（服务端权威，UTC Unix 秒），直接读取 BattleRoomEntity 同步值。
     /// 房间实体尚未同步时返回 0；Running 阶段调用时实体必然已同步。
     /// </summary>
-    public long? BattleStartUnixTime => _roomEntity?.BattleStartUnixTime.Value;
+    public long? BattleStartUnixTime => _roomEntity?.BattleStartUnixTime;
 
     /// <summary>
     /// 经可靠请求通道向服务端发起施法读条，服务端权威校验与结算。
@@ -245,7 +245,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>判断当前房间战斗是否已结束。</summary>
     public bool CheckBattleEnded(string roomId) {
-        return _roomEntity?.IsFinished.Value ?? false;
+        return _roomEntity?.IsFinished ?? false;
     }
 
     /// <summary>

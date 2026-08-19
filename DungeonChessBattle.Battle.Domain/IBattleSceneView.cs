@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Domain;
 /// 单位权威状态经 <see cref="IBattleUnit"/> 只读成员读取；实现方为 <see cref="IBattleScene"/>。
 /// </summary>
 public interface IBattleSceneView {
-    /// <summary>战斗阶段，阶段机权威。</summary>
+    /// <summary>战斗阶段，经 <see cref="IBattleRoom"/> 读取载体权威。</summary>
     BattlePhase CurrentPhase {
         get;
     }

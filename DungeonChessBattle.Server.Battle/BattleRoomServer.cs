@@ -17,7 +17,8 @@ namespace DungeonChessBattle.Server.Battle;
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
 /// 独立的战斗世界实例 BattleScene 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
-/// 战斗流程由 IBattleScene 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
+/// 战斗流程由 IBattleScene 统一驱动，读条、冷却、Buff、结算与阶段；
+/// 房间级阶段状态由战斗世界直接写入载体，战斗内领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>，房间存续期间
 /// 登记成员可连接；断线玩家实体保留直至房间销毁，无宽限期机制。
@@ -69,9 +70,6 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>同阵营玩家出生点间距，大于两倍碰撞半径避免重叠。</summary>
     private const float SpawnSpacing = 3f;
-
-    /// <summary>本房间的 BattleRoomEntity，SEM 创建后填充。</summary>
-    private BattleRoomEntity? _roomEntity;
 
     /// <summary>本房间的战斗世界，面向 IBattleScene 契约，不依赖网络载体与配置仓库。</summary>
     private readonly BattleScene _battleScene;
@@ -222,7 +220,7 @@ public partial class BattleRoomServer : INetEventListener {
             _initialized.Set();
         }
 
-        // 房间一经初始化即开战：阶段机 Waiting → Running 并同步 BattlePhase。
+        // 房间一经初始化即开战：阶段机 Waiting → Running 并写入 BattlePhase 载体。
         // 战斗只允许在房间线程启动，与 Tick / EntityManager.Update 保持线程所有权一致；
         // 大厅 StartRoomBattle 等待 _initialized 后才广播重定向，
         // 客户端连入时 BattlePhase 已为 Running，技能请求不会被阶段校验拒绝。

@@ -23,12 +23,14 @@ public partial class BattleRoomServer {
     /// 从 Store 迁移准备期单位。此后 EntityManager 不再被其他线程触碰。
     /// </summary>
     private void InitializeFromStore() {
-        // 在房间 SEM 中创建 BattleRoomEntity，并订阅其实例事件
-        _roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
+        // 在房间 SEM 中创建 BattleRoomEntity，并绑定为战斗世界的房间状态载体；
+        // 此后阶段状态经 IBattleRoom 直接读写，无需事件翻译。
+        var roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
             e.DungeonKey.Value = _dungeonKey;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
+        _battleScene.BindRoom(roomEntity);
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -136,11 +138,12 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 在本房间启动战斗：委托战斗世界阶段机，并将阶段事件翻译为网络同步。
+    /// 在本房间启动战斗：委托战斗世界阶段机；阶段状态由战斗世界经 IBattleRoom 直接写入载体。
     /// </summary>
     public void StartBattle() {
-        foreach (var e in _battleScene.StartBattle())
-            HandleDomainEvent(e);
+        _battleScene.StartBattle();
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[RoomId: {RoomId}] Battle started, phase={Phase}", RoomId, _battleScene.CurrentPhase);
     }
 
     /// <summary>
@@ -234,41 +237,15 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 领域事件 → 网络翻译：把战斗世界产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
-    /// Health、读条由战斗世界直接写 Pawn SyncVar，冷却与 Buff 按截止 tick 结构变化投影，
-    /// 此处仅处理瞬时事件，阶段、受击、死亡、Buff 增减。
+    /// Health、读条、冷却与 Buff 列表已由战斗世界直接写 Pawn SyncVar，
+    /// 房间级阶段状态已由战斗世界经 IBattleRoom 直接写入载体，
+    /// 此处仅投影瞬时表现与实体级状态写回：受击 RPC、死亡状态与聚焦清理、Buff 增减 RPC。
     /// </summary>
     private void HandleDomainEvent(IDomainEvent domainEvent) {
         switch (domainEvent) {
-            case BattleStarted:
-                if (_roomEntity != null) {
-                    _roomEntity.BattlePhase.Value = (byte)BattlePhase.Running;
-                    _roomEntity.IsFinished.Value = false;
-                    // 记录战斗开始权威时刻（Unix 秒，UTC），客户端据此启动战斗计时
-                    _roomEntity.BattleStartUnixTime.Value = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    if (_logger.IsEnabled(LogLevel.Information))
-                        _logger.LogInformation("[BattleStarted] RoomId={RoomId} written: phase={Phase}, startUnix={StartUnix}",
-                            RoomId, _roomEntity.BattlePhase.Value, _roomEntity.BattleStartUnixTime.Value);
-                }
-                else if (_logger.IsEnabled(LogLevel.Error)) {
-                    _logger.LogError("[BattleStarted] dropped: _roomEntity is null, RoomId={RoomId}", RoomId);
-                }
-                break;
-
-            case BattleEnded ended:
-                if (_roomEntity != null) {
-                    _roomEntity.BattlePhase.Value = (byte)BattlePhase.Finished;
-                    _roomEntity.IsFinished.Value = true;
-                    _roomEntity.WinnerCamp.Value = ended.WinnerCamp ?? string.Empty;
-                }
-                break;
-
             case DamageOccurred dmg:
                 FindPawnById(dmg.TargetNetId)?
                     .BroadcastDamageTaken(dmg.AppliedDamage, dmg.DamageType);
-                break;
-
-            case HealOccurred:
-                // 治疗量经 Health SyncVar 自动同步，无需额外 RPC
                 break;
 
             case UnitDied died:
@@ -284,14 +261,6 @@ public partial class BattleRoomServer {
 
             case BuffExpired buffExp:
                 BroadcastBuffChanged(buffExp.TargetNetId, buffExp.BuffTypeId, 0, added: false);
-                break;
-
-            case CastCompleted:
-                // 日志级事件，无网络投影
-                break;
-
-            case HateRequested:
-                // 仇恨指令由目标单位自身规则消费，属战斗结算内部驱动，无网络投影
                 break;
         }
     }
