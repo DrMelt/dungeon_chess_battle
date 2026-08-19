@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Battle.Domain.Combat;
 
 /// <summary>
-/// 战斗阶段，编排层权威状态。由 BattleEngine 持有并推进，
+/// 战斗阶段，编排层权威状态。由 BattleScene 持有并推进，
 /// 网络载体 BattleRoomEntity 仅以字节值投影该枚举。
 /// </summary>
 public enum BattlePhase : byte {

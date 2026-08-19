@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Battle.Logic.Hates;
 /// <summary>
 /// 服务端权威仇恨账本：每单位一张对目标的仇恨表。
 /// 以网络 ID 为键，不持有单位引用，纯数据结构可独立单测。
-/// 增删改查与 dirty 标记，投影到 IBattleUnit.Hates 由 BattleEngine 驱动。
+/// 增删改查与 dirty 标记，投影到 IBattleUnit.Hates 由 BattleScene 驱动。
 /// </summary>
 public sealed class HateSystem {
     /// <summary>持有者网络 ID → 目标网络 ID → 仇恨值。</summary>
@@ -97,7 +97,7 @@ public sealed class HateSystem {
         }
     }
 
-    /// <summary>取出并清空所有脏持有者，供 BattleEngine 统一投影同步。</summary>
+    /// <summary>取出并清空所有脏持有者，供 BattleScene 统一投影同步。</summary>
     public List<ushort> GetDirtyAndClear() {
         var result = new List<ushort>(_dirty);
         _dirty.Clear();

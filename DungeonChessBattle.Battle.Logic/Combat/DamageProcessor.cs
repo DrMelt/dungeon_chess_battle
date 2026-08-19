@@ -50,7 +50,7 @@ public static class DamageProcessor {
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown damage type."),
         };
 
-        float newHealth = System.Math.Clamp(defender.Health - applied, 0f, defender.MaxHealth);
+        float newHealth = Math.Clamp(defender.Health - applied, 0f, defender.MaxHealth);
         return new DamageResult {
             RawDamage = raw,
             AppliedDamage = applied,

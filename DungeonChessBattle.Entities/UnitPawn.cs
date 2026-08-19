@@ -14,6 +14,13 @@ namespace DungeonChessBattle.Entities;
 /// 逐步替代 UnitSyncEntity，回合制纯数据载体。
 /// </summary>
 public partial class UnitPawn : PawnLogic {
+
+    /// <summary>
+    /// 初始化单位 Pawn 实体。
+    /// </summary>
+    /// <param name="entityParams">实体框架参数。</param>
+    public UnitPawn(EntityParams entityParams) : base(entityParams) { }
+
     private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;
     private static RemoteCallSerializable<SyncBuffData> BuffRemovedRPC;
@@ -141,8 +148,11 @@ public partial class UnitPawn : PawnLogic {
         set;
     }
 
+    /// <summary>服务端权威战斗状态，不参与网络同步；客户端实例保留空状态不推进。</summary>
+    public UnitCombatState RuntimeState { get; } = new();
+
     /// <summary>当前移动方向，由控制器逐逻辑帧注入，纯本地变量，不参与网络同步。</summary>
-    private Vector2 _moveDir;
+    private Vector2 _moveInput;
 
     /// <summary>客户端同步阶段缓存的上一次生命值，用于 HealthChanged 的 oldHealth。</summary>
     private float _lastHealth;
@@ -158,9 +168,9 @@ public partial class UnitPawn : PawnLogic {
     /// 设置当前移动方向。由 <see cref="UnitController"/> 在客户端预测与服务端权威阶段
     /// 都调用，驱动 <see cref="Update"/> 执行确定性位移。
     /// </summary>
-    /// <param name="moveDir">移动方向向量，无需单位化。</param>
-    public void SetMovementInput(Vector2 moveDir) {
-        _moveDir = moveDir;
+    /// <param name="moveInput">移动方向向量，无需单位化。</param>
+    public void SetMovementInput(Vector2 moveInput) {
+        _moveInput = moveInput;
     }
 
     /// <summary>
@@ -170,21 +180,16 @@ public partial class UnitPawn : PawnLogic {
     /// </summary>
     protected override void Update() {
         base.Update();
-        if (MoveResolver == null || _moveDir.LengthSquared() <= 0.0001f || BaseSpeed.Value <= 0f)
+        if (MoveResolver == null || _moveInput.LengthSquared() <= 0.0001f || BaseSpeed.Value <= 0f)
             return;
 
-        Position.Value = MoveResolver(Position.Value, _moveDir, BaseSpeed.Value, EntityManager.DeltaTimeF);
+        Position.Value = MoveResolver(Position.Value, _moveInput, BaseSpeed.Value, EntityManager.DeltaTimeF);
 
-        var dir = _moveDir / _moveDir.Length(); // 已判非零，防除零
+        var dir = Vector2.Normalize(_moveInput);
         if (Direction.Value != dir)
             Direction.Value = dir;
     }
 
-    /// <summary>
-    /// 初始化单位 Pawn 实体。
-    /// </summary>
-    /// <param name="entityParams">实体框架参数。</param>
-    public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
     /// <summary>
     /// 注册 RPC 动作：服务端到客户端事件广播。

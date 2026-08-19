@@ -1,12 +1,18 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Buffs;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Domain.Intelligence;
+using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Hates;
+using DungeonChessBattle.Battle.Logic.Movement;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 // 过渡期：Battle.Logic 全局 using 旧 Battle.Enums 含同名 BattlePhase，此处显式指向 Domain 权威枚举。
 // 删除旧 Battle 项目后该别名可一并移除。
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
@@ -14,36 +20,51 @@ using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
-/// 战斗编排门面：统一驱动读条、冷却、Buff、仇恨与技能结算。
+/// 战斗世界实现：实现 <see cref="IBattleScene"/>，统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
 /// 面向 Domain 接口 IBattleUnit 读写单位状态，不依赖网络载体与全局配置仓库。
-/// 服务端每帧调用 <see cref="Tick"/> 推进状态，并消费返回的领域事件做网络广播。
+/// 单位权威状态经 <see cref="IBattleUnit.RuntimeState"/> 承载于单位自身，本类只做推进、投影与结算。
+/// <see cref="ApplyDecisions"/> 在实体移动结算前调用以注入 AI 输入，
+/// <see cref="Tick"/> 在实体更新后调用推进战斗并返回领域事件做网络广播。
 /// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
+/// <param name="movementScene">竞技场移动场景，由房间按副本布局构建注入，与战斗世界同生命周期。</param>
 /// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
-public sealed class BattleEngine(CampRelationResolver relations, HateSettings? hateSettings = null) {
+/// <param name="logger">AI 决策日志，可选注入。</param>
+public sealed partial class BattleScene(
+    CampRelationResolver relations,
+    PhysicsMovementScene movementScene,
+    HateSettings? hateSettings = null,
+    ILogger<BattleScene>? logger = null) : IBattleScene {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
     /// <summary>仇恨系统参数，未注入时用默认。</summary>
     private readonly HateSettings _hateSettings = hateSettings ?? new HateSettings();
 
+    /// <summary>AI 决策与应用日志，未注入时用 NullLogger 静默。</summary>
+    private readonly ILogger<BattleScene> _logger = logger ?? NullLogger<BattleScene>.Instance;
+
+    /// <summary>竞技场移动场景：静态障碍与单位互斥的空间载体，构造后只读，与战斗世界同生命周期。</summary>
+    private readonly PhysicsMovementScene _movementScene = movementScene;
+
+    /// <inheritdoc />
+    public IMovementScene MovementScene => _movementScene;
+
     /// <summary>服务端权威仇恨账本。</summary>
     private readonly HateSystem _hates = new();
 
-    /// <summary>网络 ID 到单位的索引，仇恨投影用。</summary>
+    /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨投影用。</summary>
     private readonly Dictionary<ushort, IBattleUnit> _unitById = [];
 
     private readonly List<IBattleUnit> _units = [];
 
-    /// <summary>读条目标权威，服务端私有，不参与同步。</summary>
-    private readonly Dictionary<IBattleUnit, CastContext> _castTargets = [];
+    /// <inheritdoc />
+    public IReadOnlyList<IBattleUnit> Units => _units;
 
-    /// <summary>运行时 Buff 权威，按目标单位分组。</summary>
-    private readonly Dictionary<IBattleUnit, List<ActiveBuff>> _buffs = [];
-
-    /// <summary>技能个体冷却权威，只由本类单向写入；起始与到期时投影截止 tick 到载体，剩余由客户端推算。</summary>
-    private readonly Dictionary<IBattleUnit, List<CooldownEntry>> _cooldowns = [];
+    /// <inheritdoc />
+    public IBattleUnit? FindUnit(ushort netId) =>
+        _unitById.TryGetValue(netId, out var unit) ? unit : null;
 
     /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
     private readonly HashSet<IBattleUnit> _dead = [];
@@ -65,34 +86,24 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
     /// <summary>距下一次 Buff 全局结算的剩余时间，秒。</summary>
     private double _buffTickRemaining = BuffTickInterval;
 
-    private sealed record CastContext(IBattleUnit? Target, Vector2? TargetPos);
-
-    private sealed record ActiveBuff(BuffInstance Instance, IBuffEffect Effect);
-
-    /// <summary>冷却项：技能键与剩余秒数。可变以便推进时原地更新，避免每帧分配。</summary>
-    private sealed class CooldownEntry(SkillKeyId skillKey, float remaining) {
-        public SkillKeyId SkillKey = skillKey;
-        public float Remaining = remaining;
-    }
-
-    /// <summary>注册一个战斗单位到编排门面。</summary>
+    /// <summary>注册一个战斗单位到战斗世界，空间演员注册与战斗注册同生命周期。</summary>
     public void AddUnit(IBattleUnit unit) {
         ArgumentNullException.ThrowIfNull(unit);
         if (!_units.Contains(unit)) {
             _units.Add(unit);
             _unitById[unit.UnitNetId] = unit;
+            _movementScene.AddActor(unit.UnitNetId,
+                () => unit.Snapshot.BodyRadius, () => unit.Snapshot.Position);
         }
     }
 
-    /// <summary>移除已注册的战斗单位。</summary>
+    /// <summary>移除已注册的战斗单位与空间演员。权威状态随单位载体生命周期，无需额外清理。</summary>
     public void RemoveUnit(IBattleUnit unit) {
         _units.Remove(unit);
         _unitById.Remove(unit.UnitNetId);
-        _castTargets.Remove(unit);
-        _buffs.Remove(unit);
-        _cooldowns.Remove(unit);
         _dead.Remove(unit);
         _hates.RemoveUnit(unit.UnitNetId);
+        _movementScene.RemoveActor(unit.UnitNetId);
     }
 
     /// <summary>
@@ -130,7 +141,8 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
 
         caster.SkillCasting = skillKey;
         caster.SkillCastRemaining = skill.SpellTime;
-        _castTargets[caster] = new CastContext(target, targetPos);
+        caster.RuntimeState.CastTarget = target;
+        caster.RuntimeState.CastTargetPos = targetPos;
         return true;
     }
 
@@ -142,7 +154,72 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
             return;
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
-        _castTargets.Remove(unit);
+        unit.RuntimeState.ClearCast();
+    }
+
+    /// <summary>
+    /// AI 前置推进：为全部带智能的存活单位决策并应用移动输入与施法请求。
+    /// 本帧单位列表只读，决策输入经 <see cref="Units"/> 取本帧权威状态。
+    /// </summary>
+    public void ApplyDecisions() {
+        if (CurrentPhase != BattlePhase.Running)
+            return;
+
+        foreach (var unit in _units) {
+            if (unit.Health <= 0f || unit.Intelligence is not { } intelligence)
+                continue;
+
+            var decision = intelligence.Decide(unit, this, _relations);
+            ApplyDecision(unit, decision);
+        }
+    }
+
+    /// <summary>把 AI 决策映射为世界动作：停止、逼近或发起施法。</summary>
+    private void ApplyDecision(IBattleUnit enemy, EnemyDecision decision) {
+        switch (decision.Kind) {
+            case EnemyDecisionKind.Idle:
+                enemy.SetMovementInput(Vector2.Zero);
+                break;
+
+            case EnemyDecisionKind.MoveTo:
+                enemy.SetMovementInput(decision.MoveDirection);
+                OnUnitMoved(enemy, decision.MoveDirection);
+                break;
+
+            case EnemyDecisionKind.CastSkill:
+                enemy.SetMovementInput(Vector2.Zero);
+                TryBeginCast(enemy, decision);
+                break;
+
+            default:
+                LogUnknownDecision(enemy.UnitName, decision.Kind);
+                break;
+        }
+    }
+
+    /// <summary>按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
+    private void TryBeginCast(IBattleUnit enemy, EnemyDecision decision) {
+        var skill = enemy.GetSkill(decision.SkillId);
+        if (skill == null) {
+            LogSkillNotFound(enemy.UnitName, decision.SkillId.Id);
+            return;
+        }
+
+        IBattleUnit? target = null;
+        if (skill.NeedUnitTarget) {
+            var targetUnit = FindUnit(decision.TargetNetId);
+            if (targetUnit == null)
+                return;
+            target = targetUnit;
+        }
+
+        string targetName = target?.UnitName ?? "(position)";
+        if (!BeginCast(enemy, decision.SkillId, target, decision.TargetPosition)) {
+            LogCastRejected(enemy.UnitName, decision.SkillId.Id, targetName);
+            return;
+        }
+
+        LogCastStarted(enemy.UnitName, decision.SkillId.Id, targetName);
     }
 
     /// <summary>
@@ -231,11 +308,12 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
         ResolveCast(unit, events);
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
-        _castTargets.Remove(unit);
+        unit.RuntimeState.ClearCast();
     }
 
-    private void TickCooldowns(IBattleUnit unit, double deltaTime) {
-        if (!_cooldowns.TryGetValue(unit, out var entries) || entries.Count == 0)
+    private static void TickCooldowns(IBattleUnit unit, double deltaTime) {
+        var entries = unit.RuntimeState.Cooldowns;
+        if (entries.Count == 0)
             return;
         float dt = (float)deltaTime;
         for (int i = entries.Count - 1; i >= 0; i--) {
@@ -252,8 +330,9 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
         }
     }
 
-    private void TickBuffs(IBattleUnit target, double deltaTime, List<IDomainEvent> events, int buffJumps) {
-        if (!_buffs.TryGetValue(target, out var list) || list.Count == 0)
+    private static void TickBuffs(IBattleUnit target, double deltaTime, List<IDomainEvent> events, int buffJumps) {
+        var list = target.RuntimeState.Buffs;
+        if (list.Count == 0)
             return;
 
         double tickSeconds = buffJumps * BuffTickInterval;
@@ -274,14 +353,16 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
         // 仅结构变化时投影载体：新增与叠加在 AddBuff 投影，到期在此投影。
         // 剩余时间由客户端按 EndServerTick 本地推算，不随每 tick 递减同步。
         if (alive.Count != list.Count) {
-            _buffs[target] = alive;
+            list.Clear();
+            list.AddRange(alive);
             ProjectBuffs(target);
         }
     }
 
     /// <summary>把目标单位的权威 Buff 列表全量投影到载体，低频结构变化时调用。</summary>
-    private void ProjectBuffs(IBattleUnit target) {
-        if (!_buffs.TryGetValue(target, out var list) || list.Count == 0) {
+    private static void ProjectBuffs(IBattleUnit target) {
+        var list = target.RuntimeState.Buffs;
+        if (list.Count == 0) {
             target.ReplaceBuffs([]);
             return;
         }
@@ -294,7 +375,8 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
     }
 
     private void ResolveCast(IBattleUnit caster, List<IDomainEvent> events) {
-        if (!_castTargets.TryGetValue(caster, out var ctx))
+        var state = caster.RuntimeState;
+        if (state.CastTarget is null && state.CastTargetPos is null)
             return;
 
         var skill = caster.GetSkill(caster.SkillCasting);
@@ -307,7 +389,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
 
         switch (skill) {
             case DamageSkillDefinition d:
-                if (ctx.Target is { } target) {
+                if (state.CastTarget is { } target) {
                     var res = CastResolver.ComputeDamage(caster.Snapshot, target.Snapshot, d.Damage, d.DamageType);
                     target.Health = res.RemainingHealth;
                     events.Add(new DamageOccurred(caster.UnitNetId, target.UnitNetId, res.AppliedDamage, d.DamageType));
@@ -315,7 +397,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
                 break;
 
             case HealSkillDefinition h:
-                if (ctx.Target is { } healTarget) {
+                if (state.CastTarget is { } healTarget) {
                     var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
                     healTarget.Health = heal.RemainingHealth;
                     events.Add(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
@@ -323,29 +405,26 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
                 break;
 
             case RangeDamageSkillDefinition r:
-                ResolveRangeDamage(caster, r, ctx.TargetPos, events);
+                ResolveRangeDamage(caster, r, state.CastTargetPos, events);
                 break;
 
             case AddBuffSkillDefinition ab:
-                if (ctx.Target is { } buffTarget)
+                if (state.CastTarget is { } buffTarget)
                     AddBuff(buffTarget, ab.Buff, caster, events);
                 break;
 
             case HateSkillDefinition t:
-                if (ctx.Target is { } hateTarget)
+                if (state.CastTarget is { } hateTarget)
                     events.Add(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
                 break;
         }
 
-        events.Add(new CastCompleted(caster.UnitNetId, skill.SkillId, ctx.Target?.UnitNetId));
+        events.Add(new CastCompleted(caster.UnitNetId, skill.SkillId, state.CastTarget?.UnitNetId));
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值；权威变化立即投影回载体，保证施放校验即时生效。</summary>
-    private void SetCooldownAuthoritative(IBattleUnit unit, SkillKeyId skillKey, float remaining) {
-        if (!_cooldowns.TryGetValue(unit, out var entries)) {
-            entries = [];
-            _cooldowns[unit] = entries;
-        }
+    private static void SetCooldownAuthoritative(IBattleUnit unit, SkillKeyId skillKey, float remaining) {
+        var entries = unit.RuntimeState.Cooldowns;
         foreach (var entry in entries) {
             if (entry.SkillKey != skillKey)
                 continue;
@@ -373,17 +452,13 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
         }
     }
 
-    private void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, List<IDomainEvent> events) {
-        if (!_buffs.TryGetValue(target, out var list)) {
-            list = [];
-            _buffs[target] = list;
-        }
-
+    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, List<IDomainEvent> events) {
+        var list = target.RuntimeState.Buffs;
         var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == def.BuffTypeId);
         int stacks;
         if (existing != null) {
-            existing.Instance.Remaining = System.Math.Max(existing.Instance.Remaining, def.Duration);
-            existing.Instance.Stacks = System.Math.Min(existing.Instance.Stacks + 1, def.MaxStacks);
+            existing.Instance.Remaining = Math.Max(existing.Instance.Remaining, def.Duration);
+            existing.Instance.Stacks = Math.Min(existing.Instance.Stacks + 1, def.MaxStacks);
             stacks = existing.Instance.Stacks;
         }
         else {
@@ -397,7 +472,7 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
     }
 
     private static void ApplyHealthDelta(IBattleUnit unit, float delta) {
-        unit.Health = System.Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
+        unit.Health = Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
     }
 
     private static byte EffectDamageType(IBuffEffect effect) => effect switch {
@@ -413,6 +488,26 @@ public sealed class BattleEngine(CampRelationResolver relations, HateSettings? h
             holder.ReplaceHates(_hates.Snapshot(holderId));
         }
     }
+
+    #endregion
+
+    #region 日志
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "[BattleScene] Unknown enemy decision kind: {Enemy} -> {Kind}.")]
+    private partial void LogUnknownDecision(string enemy, EnemyDecisionKind kind);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "[BattleScene] {Enemy} cannot find skill {SkillId}.")]
+    private partial void LogSkillNotFound(string enemy, ushort skillId);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "[BattleScene] {Enemy} cast rejected: {SkillId} on {Target}.")]
+    private partial void LogCastRejected(string enemy, ushort skillId, string target);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "[BattleScene] {Enemy} starts casting skill {SkillId} on {Target}.")]
+    private partial void LogCastStarted(string enemy, ushort skillId, string target);
 
     #endregion
 }

@@ -31,7 +31,7 @@ graph TD
 
     subgraph SharedLayer["共享库 Shared"]
         Protocol["Protocol<br>网络契约与 DTO"]
-        Logic["Battle.Logic<br>战斗引擎"]
+        Logic["Battle.Logic<br>战斗世界"]
         Entities["Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
     end
@@ -96,10 +96,10 @@ graph TD
 
 ```
 每个逻辑 tick（服务端）：
-  ① 输入注入   LocalSingleton.Update            只写输入载体，移动方向与请求入队
+  ① AI 前置      LocalSingleton.Update           BattleScene.ApplyDecisions：AI 决策并写移动输入/施法请求
   ② 输入落盘   OnLogicTick → ApplyIncomingInput 写入 UnitController.CurrentInput
   ③ 实体结算   entity.Update()                  唯一可回滚位置：读输入写可回滚 SyncVar
-  ④ 编排推进   LocalSingleton.LateUpdate        BattleEngine.Tick：读条、伤害、冷却，服务端权威
+  ④ 战斗推进   LocalSingleton.LateUpdate        BattleScene.Tick：读条、伤害、冷却，服务端权威
   ⑤ 同步       tick 末发送 diff / baseline
 ```
 
@@ -125,7 +125,7 @@ graph TD
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) |
 | `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) |
 | `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) |
-| `DungeonChessBattle.Battle.Logic` | 战斗引擎 `BattleEngine` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
+| `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
 | `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) |
 | `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) |
 | `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) |

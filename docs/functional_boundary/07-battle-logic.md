@@ -1,17 +1,18 @@
 # DungeonChessBattle.Battle.Logic
 
-战斗逻辑实现层，所属分组 Shared。以 `BattleEngine` 编排战斗节拍，提供 Buff、仇恨、移动与战斗结算的具体逻辑，只面向领域接口，不依赖网络。
+战斗逻辑实现层，所属分组 Shared。以 `BattleScene` 实现战斗世界契约 `IBattleScene` 并编排战斗节拍，提供 Buff、仇恨、移动与战斗结算的具体逻辑，只面向领域接口，不依赖网络。AI 决策仅依赖查询视图 `IBattleSceneView`。
 
 ## 职责范围
 
-- 战斗编排：`BattleEngine.Tick(dt)` 统一推进阶段机、读条、冷却、Buff 与技能结算，产出领域事件流。
+- 战斗编排：`BattleScene.Tick(dt)` 统一推进阶段机、读条、冷却、Buff 与技能结算，产出领域事件流；`ApplyDecisions(dt)` 前置驱动带智能单位决策并应用移动输入与施法请求。单位权威状态经 `IBattleUnit.RuntimeState` 读写，场景只做推进、投影与结算。
+- 战斗世界归属：`BattleScene` 持有竞技场移动场景，`AddUnit`/`RemoveUnit` 与空间演员注册同生命周期收敛；`MovementScene` 供实体层接线移动结算。
 - Buff 创建与效果、施法校验与结算、伤害/治疗处理、权威仇恨账本、位移解析与物理移动场景。
 
 ## 不负责
 
 - 不依赖网络与实体载体，不实现序列化与广播。
 - 不含客户端表现与输入采集。
-- 不负责网络同步，权威状态由引擎单向投影回载体。
+- 不负责网络同步，权威状态由战斗世界单向投影回载体。
 
 
 ## 依赖项

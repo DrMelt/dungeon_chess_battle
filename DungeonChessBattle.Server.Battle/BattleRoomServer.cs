@@ -1,7 +1,8 @@
 using System.Collections.Concurrent;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
@@ -14,9 +15,9 @@ namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的战斗编排实例 BattleEngine 与领域技能仓库 GameConfigDB，并运行在独立线程中，
+/// 独立的战斗世界实例 BattleScene 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
-/// 战斗流程由 BattleEngine 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
+/// 战斗流程由 IBattleScene 统一驱动，读条、冷却、Buff、结算与阶段，领域事件经 HandleDomainEvent 翻译为 RPC 与 SyncVar。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>，房间存续期间
 /// 登记成员可连接；断线玩家实体保留直至房间销毁，无宽限期机制。
@@ -28,7 +29,6 @@ namespace DungeonChessBattle.Server.Battle;
 public partial class BattleRoomServer : INetEventListener {
     private readonly NetManager _netManager;
     private readonly ILogger<BattleRoomServer> _logger;
-    private readonly ILogger<BattleLoop> _battleLoopLogger;
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
 
@@ -73,20 +73,14 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的 BattleRoomEntity，SEM 创建后填充。</summary>
     private BattleRoomEntity? _roomEntity;
 
-    /// <summary>本房间的战斗编排门面，面向 IBattleUnit，不依赖网络载体与配置仓库。</summary>
-    private readonly BattleEngine _battleEngine;
+    /// <summary>本房间的战斗世界，面向 IBattleScene 契约，不依赖网络载体与配置仓库。</summary>
+    private readonly BattleScene _battleScene;
 
-    /// <summary>本房间副本的阵营关系函数，AI 决策与战斗引擎共用。</summary>
+    /// <summary>本房间副本的阵营关系函数，AI 决策与战斗世界共用。</summary>
     private readonly CampRelationResolver _campRelations;
 
     /// <summary>本房间选中的副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
     private readonly string _dungeonKey;
-
-    /// <summary>本房间生成的敌人 Pawn 列表，供服务端 AI 驱动。</summary>
-    private readonly List<UnitPawn> _enemyPawns = [];
-
-    /// <summary>本房间的移动物理场景，房间线程首帧初始化后只读，null 表示尚未构建。</summary>
-    private PhysicsMovementScene? _movementScene;
 
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
@@ -140,8 +134,8 @@ public partial class BattleRoomServer : INetEventListener {
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");
         _campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
-        _battleEngine = new BattleEngine(_campRelations);
-        _battleLoopLogger = loggerFactory.CreateLogger<BattleLoop>();
+        var movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(_dungeonKey));
+        _battleScene = new BattleScene(_campRelations, movementScene, logger: loggerFactory.CreateLogger<BattleScene>());
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
@@ -174,7 +168,7 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>
-    /// 等待房间线程完成首帧初始化，根实体、战斗引擎与单位迁移。
+    /// 等待房间线程完成首帧初始化，根实体、战斗世界与单位迁移。
     /// 配合 StartRoomBattle：初始化完成后才广播重定向，保证客户端连入时
     /// 房间已就绪。返回 false 表示等待超时。
     /// </summary>
@@ -191,11 +185,10 @@ public partial class BattleRoomServer : INetEventListener {
         _loopThread?.Join(TimeSpan.FromSeconds(3));
         _netManager.Stop();
 
-        // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗编排注册才是线程安全的
+        // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗世界注册才是线程安全的
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
-            _battleEngine.RemoveUnit(pawn);
-            _movementScene?.RemoveActor(pawn.Id);
+            _battleScene.RemoveUnit(pawn);
         }
 
         // 销毁全部保留实体，断线玩家实体随房间销毁一并清理，房间线程已退出
@@ -214,7 +207,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// 收编进逻辑 tick 生命周期，时间由 LES accumulator 按真实时间统一管理。
     /// </summary>
     private void RunLoop() {
-        // 首帧初始化：根实体、战斗引擎与准备期单位迁移全部在房间线程完成
+        // 首帧初始化：根实体、战斗世界与准备期单位迁移全部在房间线程完成
         try {
             InitializeFromStore();
             InitializeSucceeded = true;

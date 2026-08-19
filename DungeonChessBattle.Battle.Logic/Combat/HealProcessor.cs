@@ -30,7 +30,7 @@ public static class HealProcessor {
     /// <summary>结算一次治疗：按施法者强度折算并钳制受击方生命上限。</summary>
     public static HealResult Process(UnitSnapshot healer, UnitSnapshot target, float basePotency) {
         float raw = Amount(basePotency, healer);
-        float newHealth = System.Math.Clamp(target.Health + raw, 0f, target.MaxHealth);
+        float newHealth = Math.Clamp(target.Health + raw, 0f, target.MaxHealth);
         return new HealResult {
             RawHeal = raw,
             ActualHeal = newHealth - target.Health,

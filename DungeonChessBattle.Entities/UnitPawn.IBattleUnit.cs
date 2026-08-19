@@ -1,11 +1,13 @@
+using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
+using DungeonChessBattle.Battle.Domain.Intelligence;
 using DungeonChessBattle.Entities.SyncData;
 
 namespace DungeonChessBattle.Entities;
 
 // UnitPawn 对 IBattleUnit 接口的适配：把 LES SyncVar/SyncList 映射为领域读写通道。
-// 领域结算 BattleEngine 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
+// 领域结算 BattleScene 面向 IBattleUnit，不感知网络载体；本文件仅做值映射，无结算逻辑。
 // 倒计时换算（GCD/冷却/Buff）依赖 EntityManager 服务器 tick：服务端用 Tick、客户端用插值 ServerTick，
 // 实现须处于 LES 实体生命周期内，供 SkillCastValidator 与 UI 共用。
 public partial class UnitPawn : IBattleUnit {
@@ -162,6 +164,15 @@ public partial class UnitPawn : IBattleUnit {
             });
         }
     }
+
+    /// <inheritdoc />
+    IUnitIntelligence? IBattleUnit.Intelligence => Intelligence;
+
+    /// <inheritdoc />
+    void IBattleUnit.SetMovementInput(Vector2 moveDirection) => SetMovementInput(moveDirection);
+
+    /// <inheritdoc />
+    UnitCombatState IBattleUnit.RuntimeState => RuntimeState;
 
     private BuffView MapBuffView(SyncBuffData b) => new() {
         BuffTypeId = b.BuffTypeId,

@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 
@@ -51,9 +52,9 @@ public interface IUnitIntelligence {
     /// 仅房间线程调用，输入在本帧内不应变化。
     /// </summary>
     /// <param name="self">决策主体，仇恨取自其自身仇恨投影。</param>
-    /// <param name="scene">本帧战场只读视图，单位列表与按 ID 查询。</param>
+    /// <param name="scene">战场查询视图，本帧读只读，禁止写。</param>
     /// <param name="relations">所在副本的阵营关系函数，敌我判定唯一来源。</param>
-    EnemyDecision Decide(IBattleUnit self, IBattleScene scene, CampRelationResolver relations);
+    EnemyDecision Decide(IBattleUnit self, IBattleSceneView scene, CampRelationResolver relations);
 }
 
 /// <summary>
@@ -67,7 +68,7 @@ public sealed class EnemyIntelligence(
     private readonly float _fallbackApproachRange = fallbackApproachRange;
 
     /// <inheritdoc />
-    public EnemyDecision Decide(IBattleUnit self, IBattleScene scene, CampRelationResolver relations) {
+    public EnemyDecision Decide(IBattleUnit self, IBattleSceneView scene, CampRelationResolver relations) {
         // 正在读条：原地等待读条完成，避免移动打断自身读条
         if (self.SkillCasting != default)
             return EnemyDecision.Idle();

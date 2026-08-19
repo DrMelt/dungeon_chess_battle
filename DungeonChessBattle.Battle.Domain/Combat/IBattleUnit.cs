@@ -1,4 +1,6 @@
+using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
+using DungeonChessBattle.Battle.Domain.Intelligence;
 
 namespace DungeonChessBattle.Battle.Domain.Combat;
 
@@ -95,4 +97,17 @@ public interface IBattleUnit {
 
     /// <summary>以全量投影方式同步仇恨列表，服务端权威。</summary>
     void ReplaceHates(IReadOnlyList<HateSnapshot> hates);
+
+    /// <summary>单位智能决策器，null 表示由外部输入驱动（玩家单位）。装配期写入后只读，AI 驱动识别依据。</summary>
+    IUnitIntelligence? Intelligence {
+        get;
+    }
+
+    /// <summary>写入本帧移动输入，由实体确定性移动结算消费。AI 决策与外部输入共用。</summary>
+    void SetMovementInput(Vector2 moveDirection);
+
+    /// <summary>单位服务端权威战斗状态，载体持有；读条目标、Buff、冷却权威在此，同步经既有投影通道。</summary>
+    UnitCombatState RuntimeState {
+        get;
+    }
 }

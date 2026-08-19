@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Logic.Combat;
 
 /// <summary>
 /// 技能效果结算的无状态纯函数。只做数值计算与范围判定，不持有状态、不产生副作用；
-/// 状态写回，Health 等由编排层 BattleEngine 依据返回值完成。
+/// 状态写回，Health 等由编排层 BattleScene 依据返回值完成。
 /// </summary>
 public static class CastResolver {
     /// <summary>结算一次单体/范围伤害：按施法者攻击系数与受击者承受系数折算。</summary>

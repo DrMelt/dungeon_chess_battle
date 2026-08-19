@@ -19,7 +19,7 @@ namespace DungeonChessBattle.Server.Battle;
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 房间线程首帧初始化：创建根实体、订阅实体事件、创建战斗引擎、
+    /// 房间线程首帧初始化：创建根实体、订阅实体事件、创建战斗世界、
     /// 从 Store 迁移准备期单位。此后 EntityManager 不再被其他线程触碰。
     /// </summary>
     private void InitializeFromStore() {
@@ -29,9 +29,6 @@ public partial class BattleRoomServer {
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
             e.DungeonKey.Value = _dungeonKey;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
-
-        // 构建移动物理场景：按副本键取战场布局，静态障碍写入 Aether World；单位后续注册进场景做互斥
-        _movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(_dungeonKey));
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -47,16 +44,15 @@ public partial class BattleRoomServer {
         // 按房间选中的副本配置生成敌人（Camp_BOSS 阵营，服务端 AI 驱动）
         SpawnDungeonEnemies();
 
-        // 战斗循环收编进 LES tick 生命周期：Update=AI 决策先于位移，
-        // LateUpdate=战斗推进在实体更新后、状态包发送前。
-        // 此后房间线程每逻辑 tick 自动驱动 BattleLoop 与 BattleEngine，
+        // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions 先于位移，
+        // LateUpdate=Tick 在实体更新后、状态包发送前。
+        // 此后房间线程每逻辑 tick 自动驱动 BattleLoop 与战斗世界，
         // 与实体同步严格 1:1，时间由 LES accumulator 统一管理。
-        EntityManager.AddLocalSingleton(new BattleLoop(
-            _battleEngine, _campRelations, _battleLoopLogger, _enemyPawns, _roomPawns, HandleDomainEvent));
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleDomainEvent));
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated, {EnemyCount} enemies spawned.",
-                RoomId, units.Count, _enemyPawns.Count);
+            _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.",
+                RoomId, units.Count);
     }
 
     /// <summary>
@@ -76,8 +72,8 @@ public partial class BattleRoomServer {
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
                 var pawn = CreatePawnEntity(config.ConfigKey, config.Camp!, spawnPos);
+                // 注入智能决策器，战斗世界按 IBattleUnit.Intelligence 识别并驱动该单位
                 pawn.Intelligence = config.Intelligence;
-                _enemyPawns.Add(pawn);
             }
         }
     }
@@ -103,7 +99,7 @@ public partial class BattleRoomServer {
 
         _roomPawns.Add(entity);
 
-        // 从单位配置注入 Pawn 战斗系数，权威由 BattleEngine 直接读写 IBattleUnit 载体
+        // 从单位配置注入 Pawn 战斗系数，权威由战斗世界直接读写 IBattleUnit 载体
         var config = UnitRegistry.Instance.GetByKey(unitName);
         if (config != null) {
             entity.MaxHealth.Value = config.MaxHealth;
@@ -120,16 +116,14 @@ public partial class BattleRoomServer {
             entity.HateRule = config.HateRule ?? DefaultHateRule.Instance;
         }
 
-        // 注册到战斗编排门面，BattleEngine 面向 IBattleUnit 结算，读条、冷却与 Buff 由 Tick 写回 Pawn
-        _battleEngine.AddUnit(entity);
+        // 注册到战斗世界，读条、冷却与 Buff 由 Tick 写回 Pawn
+        _battleScene.AddUnit(entity);
 
         // 注入碰撞半径与移动管线，Logic 层 MovementResolver，含场景交互。
         // 场景两端口径一致，从同一副本布局构建 Aether 世界，保证预测与权威确定性一致；
-        // 半径与位置延迟读取，规避实体构造时同步未完成的时序。
-        var scene = _movementScene ?? throw new InvalidOperationException($"Room '{RoomId}' movement scene not initialized.");
+        // 空间演员注册已在 AddUnit 收敛，位置与半径由提供器延迟读取实体 SyncVar。
         entity.MoveResolver = (pos, dir, speed, dt) =>
-            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, scene, entity.Id);
-        scene.AddActor(entity.Id, () => entity.BodyRadius.Value, () => entity.Position.Value);
+            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, _battleScene.MovementScene, entity.Id);
 
         return entity;
     }
@@ -142,10 +136,10 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 在本房间启动战斗：委托 BattleEngine 阶段机，并将阶段事件翻译为网络同步。
+    /// 在本房间启动战斗：委托战斗世界阶段机，并将阶段事件翻译为网络同步。
     /// </summary>
     public void StartBattle() {
-        foreach (var e in _battleEngine.StartBattle())
+        foreach (var e in _battleScene.StartBattle())
             HandleDomainEvent(e);
     }
 
@@ -156,8 +150,8 @@ public partial class BattleRoomServer {
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
         // 移动已由 UnitPawn.Update() 确定性结算，客户端预测加服务端权威。
-        // 此处驱动移动即打断读条，BattleEngine 保留既有行为。
-        _battleEngine.OnUnitMoved(pawn, input.MoveDirection);
+        // 此处驱动移动即打断读条，战斗世界保留既有行为。
+        _battleScene.OnUnitMoved(pawn, input.MoveDirection);
 
         if (_logger.IsEnabled(LogLevel.Trace))
             _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
@@ -170,12 +164,12 @@ public partial class BattleRoomServer {
     /// 完成时 Logic 结算并回写。返回值作为请求回执发回客户端。
     /// </summary>
     private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
-        if (_battleEngine.CurrentPhase != BattlePhase.Running) {
+        if (_battleScene.CurrentPhase != BattlePhase.Running) {
             _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: battle not running.", RoomId);
             return false;
         }
 
-        // 发起读条：BattleEngine 面向 IBattleUnit 校验冷却并写入读条状态
+        // 发起读条：战斗世界面向 IBattleUnit 校验冷却并写入读条状态
         IBattleUnit? target = null;
         Vector2? targetPos = null;
         if (req.TargetNetId != 0) {
@@ -192,7 +186,7 @@ public partial class BattleRoomServer {
             targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
         }
 
-        bool began = _battleEngine.BeginCast(casterPawn, new SkillKeyId(req.SkillTypeId), target, targetPos);
+        bool began = _battleScene.BeginCast(casterPawn, new SkillKeyId(req.SkillTypeId), target, targetPos);
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
@@ -239,8 +233,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 领域事件 → 网络翻译：把 BattleEngine 产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
-    /// Health、读条由 BattleEngine 直接写 Pawn SyncVar，冷却与 Buff 按截止 tick 结构变化投影，
+    /// 领域事件 → 网络翻译：把战斗世界产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
+    /// Health、读条由战斗世界直接写 Pawn SyncVar，冷却与 Buff 按截止 tick 结构变化投影，
     /// 此处仅处理瞬时事件，阶段、受击、死亡、Buff 增减。
     /// </summary>
     private void HandleDomainEvent(IDomainEvent domainEvent) {
@@ -279,7 +273,7 @@ public partial class BattleRoomServer {
 
             case UnitDied died:
                 var deadPawn = FindPawnById(died.UnitNetId);
-                deadPawn?.SetMovementInput(System.Numerics.Vector2.Zero);
+                deadPawn?.SetMovementInput(Vector2.Zero);
                 deadPawn?.UnitState.Value = 1;
                 ClearFocusTargetsTo(died.UnitNetId);
                 break;

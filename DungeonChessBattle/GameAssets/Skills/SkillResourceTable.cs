@@ -81,7 +81,7 @@ public partial class SkillResourceTable : Resource {
     /// <param name="skillKey">技能配置键。</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本；未找到返回 null。</returns>
     public static UnitSkillBaseGodot? GetResourceBySkillId(SkillKeyId skillKey) {
-        var config = GameConfig.GameConfigDB.GetSkillById(skillKey);
+        var config = GameConfigDB.GetSkillById(skillKey);
         if (config == null)
             return null;
         try {
