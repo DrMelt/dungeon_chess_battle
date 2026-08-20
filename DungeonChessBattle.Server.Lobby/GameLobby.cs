@@ -191,7 +191,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (unitConfig == null || !unitConfig.IsPlayerSelectable)
             return new LobbyResult(roomId, false, "Invalid unit config.");
 
-        if (!_stateStore.AddPrepareUnit(roomId, req.UnitConfigKey, req.CampOptionKey, campOption.Camps, ownerName, ownerPlayerId))
+        if (!_stateStore.AddPrepareUnit(roomId, req.UnitConfigKey, req.CampOptionKey, ownerName, ownerPlayerId))
             return new LobbyResult(roomId, false,
                 _stateStore.RoomExists(roomId) ? "Cannot change unit while ready." : "Room not found.");
 

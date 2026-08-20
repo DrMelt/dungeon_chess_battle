@@ -9,6 +9,7 @@ using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -36,15 +37,16 @@ public partial class BattleRoomServer {
         var units = _stateStore.GetPrepareUnits(RoomId);
         int campAIndex = 0, campBIndex = 0;
         foreach (var selection in units) {
-            // 玩家单位首个阵营为主阵营，作为出生点分边依据
-            var spawnPos = selection.Camps[0] == CampConstants.CampA
+            // 玩家阵营由副本配置按选项键权威解析；首个阵营为主阵营，作为出生点分边依据
+            var camps = ResolvePlayerCamps(selection);
+            var spawnPos = camps[0] == CampConstants.CampA
                 ? new Vector2(campAIndex++ * SpawnSpacing, 0)
                 : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
-            var pawn = CreatePawnEntity(selection.UnitConfigKey, selection.Camps, spawnPos);
+            var pawn = CreatePawnEntity(selection.UnitConfigKey, camps, spawnPos);
             _pawnByPlayerId[selection.PlayerId] = pawn;
         }
 
-        // 按房间选中的副本配置生成敌人（Camp_BOSS 阵营，服务端 AI 驱动）
+        // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
         SpawnDungeonEnemies();
 
         // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions 先于位移，
@@ -59,7 +61,20 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 按房间副本配置生成敌人 Pawn。敌方在场地对侧按纵队排布，阵营固定 CampBoss。
+    /// 按副本配置的玩家阵营选项解析选择记录的实际阵营；选项缺失属配置故障，响亮失败。
+    /// 仅房间线程调用。
+    /// </summary>
+    private IReadOnlyList<string> ResolvePlayerCamps(UnitSelection selection) {
+        var dungeon = DungeonRegistry.Instance.GetByKey(_dungeonKey);
+        var camps = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey)?.Camps;
+        if (camps == null || camps.Count == 0)
+            throw new InvalidOperationException(
+                $"Room '{RoomId}': camp option '{selection.CampOptionKey}' not found in dungeon '{_dungeonKey}' for unit '{selection.UnitConfigKey}'.");
+        return camps;
+    }
+
+    /// <summary>
+    /// 按房间副本配置生成敌人 Pawn。敌方在场地对侧按纵队排布，阵营由副本配置统一编队。
     /// 仅房间线程调用。
     /// </summary>
     private void SpawnDungeonEnemies() {
@@ -74,7 +89,7 @@ public partial class BattleRoomServer {
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                var pawn = CreatePawnEntity(config.ConfigKey, config.Camps, spawnPos);
+                var pawn = CreatePawnEntity(config.ConfigKey, dungeon.EnemyCamps, spawnPos);
                 // 注入智能决策器，战斗世界按 IBattleUnit.Intelligence 识别并驱动该单位
                 pawn.Intelligence = config.Intelligence;
             }

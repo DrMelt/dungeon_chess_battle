@@ -26,12 +26,14 @@ public sealed record EnemySpawnConfig(
 public sealed record PlayerCampOption(string Key, IReadOnlyList<string> Camps);
 
 /// <summary>
-/// 副本配置：副本键、玩家阵营选项、敌人生成阵容与战场布局。
+/// 副本配置：副本键、玩家阵营选项、敌人阵营、敌人生成阵容与战场布局。
 /// 纯 C# 共享配置，服务端据此生成敌人与指派玩家阵营，客户端据此决定环境表现。
+/// 阵营归属由副本权威定义，单位配置不含阵营。
 /// </summary>
 public sealed record DungeonConfig(
     string DungeonKey,
     IReadOnlyList<PlayerCampOption> PlayerCampOptions,
     IReadOnlyList<EnemySpawnConfig> Enemies,
     CampRelationResolver RelationsResolver,
+    IReadOnlyList<string> EnemyCamps,
     BattlefieldLayout? Layout = null);

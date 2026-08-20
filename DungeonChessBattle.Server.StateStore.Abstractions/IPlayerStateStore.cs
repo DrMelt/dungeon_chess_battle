@@ -57,12 +57,11 @@ public interface IPlayerStateStore {
     /// <summary>在大厅准备阶段添加单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="unitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
-    /// <param name="campOptionKey">玩家阵营选项键，对应副本配置 PlayerCampOptions 中的选项。</param>
-    /// <param name="camps">服务端从副本配置解析出的实际阵营列表。</param>
+    /// <param name="campOptionKey">玩家阵营选项键，对应副本配置 PlayerCampOptions 中的选项，阵营由副本配置权威解析。</param>
     /// <param name="playerName">单位归属玩家名，服务端权威。</param>
     /// <param name="playerId">玩家持久标识，控制器绑定用权威键。</param>
     bool AddPrepareUnit(string roomId, string unitConfigKey, string campOptionKey,
-        IReadOnlyList<string> camps, string playerName, string playerId);
+        string playerName, string playerId);
 
     /// <summary>在大厅准备阶段移除单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     /// <param name="roomId">房间 ID。</param>
