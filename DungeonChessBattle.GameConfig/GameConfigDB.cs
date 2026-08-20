@@ -286,19 +286,25 @@ public class GameConfigDB : IGameConfigDB {
     }
 
     /// <summary>
-    /// 副本关系函数：任一方含 Boss 阵营即敌对；双方存在共同阵营即友；其余组合返回 Unknown 不猜。
+    /// 副本关系函数：双方同属 Boss 阵营为友；任一方含 Boss 阵营即敌对；双方存在共同阵营即友；其余组合返回 Unknown 不猜。
     /// 支持多阵营：玩家可同属多个阵营，任一共同阵营即视同友方（A、B 玩家组队共斗）。
     /// </summary>
     private static CampRelation CampRelationsPve(
         IReadOnlyList<string> sourceCamps, IReadOnlyList<string> targetCamps) {
+        bool sourceHasBoss = false;
+        bool targetHasBoss = false;
         foreach (var camp in sourceCamps) {
             if (camp == CampConstants.CampBoss)
-                return CampRelation.Enemy;
+                sourceHasBoss = true;
         }
         foreach (var camp in targetCamps) {
             if (camp == CampConstants.CampBoss)
-                return CampRelation.Enemy;
+                targetHasBoss = true;
         }
+        if (sourceHasBoss && targetHasBoss)
+            return CampRelation.Friendly;
+        if (sourceHasBoss || targetHasBoss)
+            return CampRelation.Enemy;
         foreach (var camp in sourceCamps) {
             foreach (var other in targetCamps) {
                 if (camp == other)
