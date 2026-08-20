@@ -110,6 +110,9 @@ public partial class UnitPawn : PawnLogic {
         get; set;
     }
 
+    /// <summary>AI 动作执行器，AddUnit 时由 BattleScene 注入；客户端或未绑定实例为空，RunAI 不动作。</summary>
+    private IAiExecutor? _aiExecutor;
+
     /// <summary>仇恨生成倍率，引用单位配置，装配期写入后只读，不参与网络同步。</summary>
     public float HateFactor {
         get; set;

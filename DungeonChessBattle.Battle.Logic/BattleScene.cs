@@ -24,7 +24,7 @@ namespace DungeonChessBattle.Battle.Logic;
 /// 战斗世界实现：实现 <see cref="IBattleScene"/>，统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
 /// 面向 Domain 接口 IBattleUnit 读写单位状态、经 IBattleRoom 读写房间阶段，不依赖网络载体与全局配置仓库。
 /// 单位权威状态经 <see cref="IBattleUnit.RuntimeState"/> 承载于单位自身，本类只做推进、投影与结算。
-/// <see cref="ApplyDecisions"/> 在实体移动结算前调用以注入 AI 输入，
+/// <see cref="ApplyDecisions"/> 在实体移动结算前调用以触发 AI 决策，
 /// <see cref="Tick"/> 在实体更新后调用推进战斗并返回领域事件做网络广播。
 /// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
 /// </summary>
@@ -36,7 +36,7 @@ public sealed partial class BattleScene(
     CampRelationResolver relations,
     PhysicsMovementScene movementScene,
     HateSettings? hateSettings = null,
-    ILogger<BattleScene>? logger = null) : IBattleScene {
+    ILogger<BattleScene>? logger = null) : IBattleScene, IAiExecutor {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
@@ -51,9 +51,6 @@ public sealed partial class BattleScene(
 
     /// <inheritdoc />
     public IMovementScene MovementScene => _movementScene;
-
-    /// <summary>服务端权威仇恨账本。</summary>
-    private readonly HateSystem _hates = new();
 
     /// <summary>每帧战斗事件日志：处理开始清空，处理中只增追加，帧末经只读视图消费与外送。</summary>
     private readonly BattleEventLog _eventLog = new();
@@ -109,18 +106,28 @@ public sealed partial class BattleScene(
         if (!_units.Contains(unit)) {
             _units.Add(unit);
             _unitById[unit.UnitNetId] = unit;
+            unit.BindAIExecutor(this);
             _movementScene.AddActor(unit.UnitNetId,
                 () => unit.Snapshot.BodyRadius, () => unit.Snapshot.Position);
         }
     }
 
-    /// <summary>移除已注册的战斗单位与空间演员。权威状态随单位载体生命周期，无需额外清理。</summary>
+    /// <summary>移除已注册的战斗单位与空间演员。仇恨表随单位载体生命周期，无需额外清理。</summary>
     public void RemoveUnit(IBattleUnit unit) {
         _units.Remove(unit);
         _unitById.Remove(unit.UnitNetId);
         _dead.Remove(unit);
-        _hates.RemoveUnit(unit.UnitNetId);
+        ClearHateEntries(unit);
         _movementScene.RemoveActor(unit.UnitNetId);
+    }
+
+    /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
+    private void ClearHateEntries(IBattleUnit dead) {
+        dead.RuntimeState.Hates.Clear();
+        foreach (var unit in _units) {
+            if (unit != dead)
+                unit.RuntimeState.Hates.RemoveTarget(dead.UnitNetId);
+        }
     }
 
     /// <summary>
@@ -174,68 +181,46 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// AI 前置推进：为全部带智能的存活单位决策并应用移动输入与施法请求。
+    /// AI 前置推进：逐个触发单位的自治决策，动作执行经单位绑定执行器回到本场景。
     /// 本帧单位列表只读，决策输入经 <see cref="Units"/> 取本帧权威状态。
     /// </summary>
     public void ApplyDecisions() {
         if (CurrentPhase != BattlePhase.Running)
             return;
 
-        foreach (var unit in _units) {
-            if (unit.Health <= 0f || unit.Intelligence is not { } intelligence)
-                continue;
-
-            var decision = intelligence.Decide(unit, this, _relations);
-            ApplyDecision(unit, decision);
-        }
+        foreach (var unit in _units)
+            unit.RunAI(this, _relations);
     }
 
-    /// <summary>把 AI 决策映射为世界动作：停止、逼近或发起施法。</summary>
-    private void ApplyDecision(IBattleUnit enemy, EnemyDecision decision) {
-        switch (decision.Kind) {
-            case EnemyDecisionKind.Idle:
-                enemy.SetMovementInput(Vector2.Zero);
-                break;
-
-            case EnemyDecisionKind.MoveTo:
-                enemy.SetMovementInput(decision.MoveDirection);
-                OnUnitMoved(enemy, decision.MoveDirection);
-                break;
-
-            case EnemyDecisionKind.CastSkill:
-                enemy.SetMovementInput(Vector2.Zero);
-                TryBeginCast(enemy, decision);
-                break;
-
-            default:
-                LogUnknownDecision(enemy.UnitName, decision.Kind);
-                break;
-        }
+    /// <summary>IAiExecutor：写入移动输入并按世界规则处理"移动即打断读条"；零向量表示静止，不打断读条。</summary>
+    void IAiExecutor.SetMovement(IBattleUnit unit, Vector2 moveDirection) {
+        unit.SetMovementInput(moveDirection);
+        OnUnitMoved(unit, moveDirection);
     }
 
-    /// <summary>按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
-    private void TryBeginCast(IBattleUnit enemy, EnemyDecision decision) {
-        var skill = enemy.GetSkill(decision.SkillId);
+    /// <summary>IAiExecutor：按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
+    void IAiExecutor.RequestCast(IBattleUnit caster, SkillKeyId skillKey, ushort targetNetId, Vector2 targetPosition) {
+        var skill = caster.GetSkill(skillKey);
         if (skill == null) {
-            LogSkillNotFound(enemy.UnitName, decision.SkillId.Id);
+            LogSkillNotFound(caster.UnitName, skillKey.Id);
             return;
         }
 
         IBattleUnit? target = null;
         if (skill.NeedUnitTarget) {
-            var targetUnit = FindUnit(decision.TargetNetId);
+            var targetUnit = FindUnit(targetNetId);
             if (targetUnit == null)
                 return;
             target = targetUnit;
         }
 
         string targetName = target?.UnitName ?? "(position)";
-        if (!BeginCast(enemy, decision.SkillId, target, decision.TargetPosition)) {
-            LogCastRejected(enemy.UnitName, decision.SkillId.Id, targetName);
+        if (!BeginCast(caster, skillKey, target, targetPosition)) {
+            LogCastRejected(caster.UnitName, skillKey.Id, targetName);
             return;
         }
 
-        LogCastStarted(enemy.UnitName, decision.SkillId.Id, targetName);
+        LogCastStarted(caster.UnitName, skillKey.Id, targetName);
     }
 
     /// <summary>
@@ -273,14 +258,16 @@ public sealed partial class BattleScene(
 
         TryEndBattle();
 
-        // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；仇恨状态经投影同步
-        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById, _hateSettings, _relations))
-            _hates.ApplyEffect(effect);
+        // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
+        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById, _hateSettings, _relations)) {
+            if (_unitById.TryGetValue(effect.HolderNetId, out var holder))
+                holder.RuntimeState.Hates.ApplyEffect(effect);
+        }
 
-        // 死亡清理：本帧死者从仇恨账本移除，含其持有表与他表对其条目，保证死者不残留
+        // 死亡清理：本帧死者清空自身表并从其他单位表移除其条目，保证死者不残留
         foreach (var unit in _units.ToArray()) {
             if (unit.Health <= 0f)
-                _hates.RemoveUnit(unit.UnitNetId);
+                ClearHateEntries(unit);
         }
         ProjectHates();
 
@@ -493,20 +480,16 @@ public sealed partial class BattleScene(
 
     /// <summary>把脏仇恨表全量投影到单位载体，供网络同步。无变化的单位被跳过。</summary>
     private void ProjectHates() {
-        foreach (var holderId in _hates.GetDirtyAndClear()) {
-            if (!_unitById.TryGetValue(holderId, out var holder))
+        foreach (var unit in _units) {
+            if (!unit.RuntimeState.Hates.ConsumeDirty())
                 continue;
-            holder.ReplaceHates(_hates.Snapshot(holderId));
+            unit.ReplaceHates(unit.RuntimeState.Hates.Snapshot());
         }
     }
 
     #endregion
 
     #region 日志
-
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "[BattleScene] Unknown enemy decision kind: {Enemy} -> {Kind}.")]
-    private partial void LogUnknownDecision(string enemy, EnemyDecisionKind kind);
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "[BattleScene] {Enemy} cannot find skill {SkillId}.")]

@@ -1,5 +1,7 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
+using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Intelligence;
 
 namespace DungeonChessBattle.Battle.Domain.Combat;
@@ -90,7 +92,7 @@ public interface IBattleUnit {
         get;
     }
 
-    /// <summary>当前仇恨快照，服务端权威投影；查询者只读，不含写通道。</summary>
+    /// <summary>当前仇恨快照，服务端权威投影；权威在 <see cref="UnitCombatState.Hates"/>，本成员为只读投影通道。</summary>
     IReadOnlyList<HateSnapshot> Hates {
         get;
     }
@@ -98,10 +100,16 @@ public interface IBattleUnit {
     /// <summary>以全量投影方式同步仇恨列表，服务端权威。</summary>
     void ReplaceHates(IReadOnlyList<HateSnapshot> hates);
 
-    /// <summary>单位智能决策器，null 表示由外部输入驱动（玩家单位）。装配期写入后只读，AI 驱动识别依据。</summary>
+    /// <summary>单位智能决策器，null 表示由外部输入驱动（玩家单位）。装配期写入后只读，AI 驱动识别依据；决策执行经 <see cref="RunAI"/>。</summary>
     IUnitIntelligence? Intelligence {
         get;
     }
+
+    /// <summary>AI 前置推进：单位自行调用决策器并映射动作意图，经绑定执行器回请求场景。无决策器或未绑定执行器时不动作。仅服务端由 BattleScene 调用。</summary>
+    void RunAI(IBattleSceneView scene, CampRelationResolver relations);
+
+    /// <summary>绑定 AI 动作执行器，AddUnit 时由场景注入；客户端或无 AI 单位不绑定。</summary>
+    void BindAIExecutor(IAiExecutor executor);
 
     /// <summary>写入本帧移动输入，由实体确定性移动结算消费。AI 决策与外部输入共用。</summary>
     void SetMovementInput(Vector2 moveDirection);

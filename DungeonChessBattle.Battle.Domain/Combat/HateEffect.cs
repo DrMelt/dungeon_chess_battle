@@ -12,7 +12,7 @@ public enum HateEffectOp : byte {
 
 /// <summary>
 /// 仇恨修改效果：HolderNetId 的仇恨表中对 SourceNetId 的仇恨执行 Op 操作。
-/// 由仇恨技能结算产出，直接作用于服务端权威仇恨账本。
+/// 由仇恨技能结算产出，直接作用于单位仇恨表。
 /// </summary>
 public readonly record struct HateEffect(ushort HolderNetId, ushort SourceNetId, HateEffectOp Op, float Value);
 

@@ -10,8 +10,8 @@ namespace DungeonChessBattle.Battle.Domain;
 /// 追加写成员与逐帧推进方法作为编排层唯一更新入口。
 /// 写成员与推进方法为服务端权威，由编排层调用；查询成员供 AI 决策只读使用。
 /// 移动结算不在本契约内：位置由实体确定性结算（UnitPawn.Update）。
-/// 世界只拥有单位注册表与仇恨账本；房间级阶段状态经 <see cref="IBattleRoom"/> 读写载体，
-/// 读条目标、Buff、冷却等单位权威状态由单位经 <see cref="IBattleUnit.RuntimeState"/> 承载，场景只做推进与投影。
+/// 世界只拥有单位注册表；房间级阶段状态经 <see cref="IBattleRoom"/> 读写载体，
+/// 读条目标、Buff、冷却、仇恨等单位权威状态由单位经 <see cref="IBattleUnit.RuntimeState"/> 承载，场景只做推进与投影。
 /// </summary>
 public interface IBattleScene : IBattleSceneView {
     /// <summary>竞技场移动场景，供实体层接线移动结算；战斗结算不消费位移。构造后只读。</summary>
@@ -38,7 +38,7 @@ public interface IBattleScene : IBattleSceneView {
     void OnUnitMoved(IBattleUnit unit, Vector2 moveDir);
 
     /// <summary>
-    /// AI 前置推进：为全部带智能的存活单位决策并应用移动输入与施法请求。
+    /// AI 前置推进：逐个触发单位的自治决策，动作执行经单位绑定执行器回到场景。
     /// 必须在实体移动结算（UnitPawn.Update）之前调用，移动输入本帧生效。
     /// </summary>
     void ApplyDecisions();
