@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Server.Lobby;
 
 /// <summary>
 /// Server.Lobby 的 DI 装配扩展。注册大厅配置切片、广播端口与业务协调器。
-/// IGameStateStore 与 IRoomServerManager 由装配层或其它模块扩展注册。
+/// IGameStateStore 与 IBattleRoomManager 由装配层或其它模块扩展注册。
 /// </summary>
 public static class LobbyServiceCollectionExtensions {
     /// <summary>注册大厅服务器：配置切片、SignalR 广播实现与协调器。</summary>
@@ -20,7 +20,7 @@ public static class LobbyServiceCollectionExtensions {
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<ILobbyBroadcaster>(),
             sp.GetRequiredService<LobbyServerConfig>(),
-            sp.GetRequiredService<IRoomServerManager>(),
+            sp.GetRequiredService<IBattleRoomManager>(),
             sp.GetRequiredService<IGameStateStore>()));
         services.AddSingleton<ILobbyApplication>(sp => sp.GetRequiredService<GameServer>());
         return services;

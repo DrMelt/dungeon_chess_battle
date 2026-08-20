@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Server.Lobby;
 /// 所有大厅级状态数据，房间配置、密码、玩家准备状态与准备单位等，统一由
 /// <see cref="IGameStateStore"/> 持有，本类不存储业务状态。
 /// 向客户端广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现，不依赖具体传输。
-/// 战斗房间服务器的生命周期管理由协调层经 <see cref="IRoomServerManager"/> 契约编排，
+/// 战斗房间服务器的生命周期管理由协调层经 <see cref="IBattleRoomManager"/> 契约编排，
 /// 本类不触碰战斗房间。
 /// </summary>
 /// <param name="loggerFactory">日志工厂。</param>

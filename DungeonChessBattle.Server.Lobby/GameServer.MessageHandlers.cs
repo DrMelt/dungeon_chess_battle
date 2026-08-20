@@ -10,13 +10,13 @@ namespace DungeonChessBattle.Server.Lobby;
 /// 大厅业务，创建、加入、列房与准备等，由 Server.Lobby 的
 /// <see cref="GameLobby"/> 承担；
 /// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
-/// 战斗房间生命周期服务经 <see cref="IRoomServerManager"/> 契约调用，不感知具体实现。
+/// 战斗房间生命周期服务经 <see cref="IBattleRoomManager"/> 契约调用，不感知具体实现。
 /// </summary>
 public partial class GameServer {
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
     /// 房间与发起者身份均从连接归属反查，不信任客户端提交。
-    /// 校验通过后创建战斗房间服务器，经 <see cref="IRoomServerManager"/>，并向房间内所有玩家广播重定向端口。
+    /// 校验通过后创建战斗房间服务器，经 <see cref="IBattleRoomManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
     public async Task<LobbyResult> HandleStartBattleAsync(string connectionId) {
         string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
@@ -48,7 +48,7 @@ public partial class GameServer {
         }
 
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
-        int port = _roomServers.StartRoomBattle(roomId);
+        int port = _battleRoomManager.StartRoomBattle(roomId);
 
         // 向房间内所有玩家广播重定向，含端口号，确保非房主也能进入战斗
         await BroadcastToRoomAsync(roomId, HubMethods.OnPrepareBattleRedirect,
@@ -74,11 +74,11 @@ public partial class GameServer {
         if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
             return new LobbyResult(req.RoomId, false, "Invalid room password.");
 
-        if (!_roomServers.TryGetRoomPort(req.RoomId, out int port))
+        if (!_battleRoomManager.TryGetRoomPort(req.RoomId, out int port))
             return new LobbyResult(req.RoomId, false, "Room not in battle.");
 
-        _roomServers.RegisterPlayer(req.RoomId, req.PlayerId, req.PlayerName);
-        _roomServers.UpdatePlayerName(req.RoomId, req.PlayerId, req.PlayerName);
+        _battleRoomManager.RegisterPlayer(req.RoomId, req.PlayerId, req.PlayerName);
+        _battleRoomManager.UpdatePlayerName(req.RoomId, req.PlayerId, req.PlayerName);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",

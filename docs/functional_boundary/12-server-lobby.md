@@ -1,6 +1,6 @@
 # DungeonChessBattle.Server.Lobby
 
-大厅服务器，所属分组 Server。承载大厅 SignalR 传输端点、业务实现与协调门面，经 `IRoomServerManager` 契约编排战斗房间生命周期。
+大厅服务器，所属分组 Server。承载大厅 SignalR 传输端点、业务实现与协调门面，经 `IBattleRoomManager` 契约编排战斗房间生命周期。
 
 ## 职责范围
 
@@ -13,7 +13,7 @@
 ## 不负责
 
 - 不感知状态存储实现，经 `IGameStateStore` 读写。
-- 战斗房间服务器实现 `BattleRoomServer` 不在本项目，经 `IRoomServerManager` 契约调用。
+- 战斗房间服务器实现 `BattleRoomServer` 不在本项目，经 `IBattleRoomManager` 契约调用。
 - 不承载进程装配：Kestrel、DI 组合根与进程看护由 Server.Host 承担。
 
 ## 依赖项

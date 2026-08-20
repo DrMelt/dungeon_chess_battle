@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Server.Battle;
 
 /// <summary>
-/// 房间服务器生命周期管理器，协调层。
+/// 战斗房间生命周期管理器，协调层。
 /// 负责战斗房间服务器的创建、查找、销毁与端口分配，以及空房清理。
 /// 战斗房间内实体同步与战斗逻辑由 <see cref="BattleRoomServer"/> 承担；
 /// 大厅业务，准备、组队与快照，由 Server.Lobby 的 GameLobby 承担。
 /// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有，本类不直接存储业务状态。
-/// 经 <see cref="IRoomServerManager"/> 契约供大厅协调层调用，契约只暴露端口等原语，
+/// 经 <see cref="IBattleRoomManager"/> 契约供大厅协调层调用，契约只暴露端口等原语，
 /// 不泄漏 BattleRoomServer 实现细节。
 /// 线程所有权：房间线程通过 BattleRoomServer.RoomEmpty 事件仅向队列投递 roomId，
 /// 由后台清理循环 <see cref="ProcessPendingRoomCleanups"/> 消费执行销毁。
@@ -20,8 +20,8 @@ namespace DungeonChessBattle.Server.Battle;
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="config">战斗侧配置切片，房间端口池起点。</param>
-public sealed class RoomServerManager(ILoggerFactory loggerFactory, IGameStateStore stateStore, BattleServerConfig config) : IRoomServerManager {
-    private readonly ILogger<RoomServerManager> _logger = loggerFactory.CreateLogger<RoomServerManager>();
+public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore, BattleServerConfig config) : IBattleRoomManager {
+    private readonly ILogger<BattleRoomManager> _logger = loggerFactory.CreateLogger<BattleRoomManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly BattleServerConfig _config = config;

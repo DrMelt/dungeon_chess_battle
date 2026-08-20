@@ -411,7 +411,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
                 units.RemoveAll(u => u.PlayerName == leavingName);
 
             // 仅准备阶段房间维护人数、房主转让与空房删除；
-            // 战斗中房间的生命周期由 RoomServerManager 全权负责，本方法不触碰。
+            // 战斗中房间的生命周期由 BattleRoomManager 全权负责，本方法不触碰。
             if (_roomConfigs.TryGetValue(roomId, out var config) && config.Status == RoomStatus.Waiting) {
                 config.CurrentPlayers = Math.Max(0, config.CurrentPlayers - 1);
 

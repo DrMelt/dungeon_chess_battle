@@ -50,7 +50,7 @@ public interface IPlayerStateStore {
     /// <remarks>
     /// 对准备阶段，Waiting，房间还执行：减少当前玩家数、移除玩家准备单位；
     /// 房主退出时转让房主给剩余玩家；最后一人退出时删除房间全部状态并返回 null。
-    /// 战斗中，InProgress，房间仅做基础清理，生命周期由 RoomServerManager 负责。
+    /// 战斗中，InProgress，房间仅做基础清理，生命周期由 BattleRoomManager 负责。
     /// </remarks>
     string? RemovePlayerByConnection(string connectionId);
 

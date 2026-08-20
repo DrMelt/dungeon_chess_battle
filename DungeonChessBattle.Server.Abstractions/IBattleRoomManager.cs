@@ -4,9 +4,9 @@ namespace DungeonChessBattle.Server.Abstractions;
 /// 战斗房间服务器生命周期契约，协调抽象。
 /// 只暴露原语类型与字符串，不暴露 BattleRoomServer 等实现细节，
 /// 使大厅协调层与战斗实现层互不依赖。
-/// 实现由 Server.Battle 的 RoomServerManager 承担。
+/// 实现由 Server.Battle 的 BattleRoomManager 承担。
 /// </summary>
-public interface IRoomServerManager {
+public interface IBattleRoomManager {
     /// <summary>开始战斗：创建房间服务器并等待首帧初始化完成，返回房间监听端口。</summary>
     int StartRoomBattle(string roomId);
 
