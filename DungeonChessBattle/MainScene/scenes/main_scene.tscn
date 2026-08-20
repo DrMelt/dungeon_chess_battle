@@ -40,8 +40,26 @@
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
+[sub_resource type="Gradient" id="Gradient_4ssfp"]
+colors = PackedColorArray(0.7539839, 0.75398386, 0.75398386, 1, 1, 1, 1, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_i3pf0"]
+noise_type = 0
+frequency = 0.0125
+fractal_type = 2
+fractal_gain = 1.0
+fractal_weighted_strength = 0.3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_4ssfp"]
+width = 1024
+height = 1024
+noise = SubResource("FastNoiseLite_i3pf0")
+color_ramp = SubResource("Gradient_4ssfp")
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
-albedo_color = Color(0.329158, 0.329158, 0.329158, 1)
+albedo_color = Color(0.66245234, 0.66245234, 0.6624523, 1)
+albedo_texture = SubResource("NoiseTexture2D_4ssfp")
+metallic_specular = 0.0
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
 
@@ -290,7 +308,6 @@ text = "Disconnected"
 script = ExtResource("33_ovly")
 
 [node name="FrontUI" type="Control" parent="." unique_id=437760611]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
