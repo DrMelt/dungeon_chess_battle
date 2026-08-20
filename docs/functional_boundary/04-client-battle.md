@@ -4,7 +4,7 @@
 
 ## 职责范围
 
-- LES `ClientEntityManager` 生命周期与实体事件派发。
+- LES `ClientEntityManager` 生命周期与实体事件派发，战斗事件日志解码后经 `BattleEventsReceived` 统一暴露给 UI。
 - 施放、聚焦目标与移动请求：施法与目标经可靠请求通道，移动经输入流提交。
 - 客户端权威移动：构建与服务端同源的 `PhysicsMovementScene`，提供本地预测。
 - 网络指标快照：`NetworkStatusSnapshot` 与统计型 `CountingNetPeer`。

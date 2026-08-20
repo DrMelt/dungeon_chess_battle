@@ -46,6 +46,18 @@ public partial class TookDamageInfo : FadeInfo {
     }
 
     /// <summary>
+    /// 初始化数值提示：直接指定文本颜色，供治疗等非伤害表现复用。
+    /// </summary>
+    /// <param name="value">展示数值。</param>
+    /// <param name="color">文本颜色。</param>
+    public void Init(float value, Color color) {
+        if (damageLabel == null)
+            return;
+        damageLabel.SelfModulate = color;
+        damageLabel.Text = value.ToString("F0");
+    }
+
+    /// <summary>
     /// 每帧更新淡出动画。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>

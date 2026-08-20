@@ -1,6 +1,5 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
-using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
@@ -20,10 +19,6 @@ public partial class UnitPawn : PawnLogic {
     /// </summary>
     /// <param name="entityParams">实体框架参数。</param>
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
-
-    private static RemoteCallSerializable<SyncDamageData> DamageTakenRPC;
-    private static RemoteCallSerializable<SyncBuffData> BuffAddedRPC;
-    private static RemoteCallSerializable<SyncBuffData> BuffRemovedRPC;
 
     /// <summary>单位名称。</summary>
     public readonly SyncString UnitName = new();
@@ -136,15 +131,6 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位死亡事件。</summary>
     public event Action<UnitPawn>? UnitDied;
 
-    /// <summary>单位受到伤害事件。参数：实体、实际伤害量、伤害类型。</summary>
-    public event Action<UnitPawn, float, DamageType>? TookDamage;
-
-    /// <summary>添加 Buff 事件。</summary>
-    public event Action<UnitPawn, SyncBuffData>? BuffAdded;
-
-    /// <summary>移除 Buff 事件。</summary>
-    public event Action<UnitPawn, SyncBuffData>? BuffRemoved;
-
     /// <summary>聚焦目标变化事件，客户端同步阶段触发。参数：实体、目标单位网络 ID。</summary>
     public event Action<UnitPawn, ushort>? FocusTargetChanged;
 
@@ -203,41 +189,12 @@ public partial class UnitPawn : PawnLogic {
     /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {
         base.RegisterRPC(ref r);
-        // 服务端到客户端广播：受击与 Buff 增减事件，瞬时语义，携带完整数据
-        r.CreateRPCAction<UnitPawn, SyncDamageData>(
-            (e, d) => e.OnRpcDamageTaken(d),
-            ref DamageTakenRPC,
-            ExecuteFlags.SendToAll);
-        r.CreateRPCAction<UnitPawn, SyncBuffData>(
-            (e, b) => e.OnRpcBuffAdded(b),
-            ref BuffAddedRPC,
-            ExecuteFlags.SendToAll);
-        r.CreateRPCAction<UnitPawn, SyncBuffData>(
-            (e, b) => e.OnRpcBuffRemoved(b),
-            ref BuffRemovedRPC,
-            ExecuteFlags.SendToAll);
-
         // 客户端在同步阶段检测聚焦目标变化
         r.BindOnChange<UnitPawn, ushort>(ref FocusTargetNetId, (e, t) => e.OnFocusTargetChangedBySync(t), BindOnChangeFlags.ExecuteOnSync);
 
         // 客户端在同步阶段检测血量与死亡状态变化
         r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
         r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
-    }
-
-    /// <summary>客户端接收：受击事件广播。</summary>
-    private void OnRpcDamageTaken(SyncDamageData d) {
-        TookDamage?.Invoke(this, d.Damage, (DamageType)d.DamageType);
-    }
-
-    /// <summary>客户端接收：Buff 添加事件广播。</summary>
-    private void OnRpcBuffAdded(SyncBuffData buff) {
-        BuffAdded?.Invoke(this, buff);
-    }
-
-    /// <summary>客户端接收：Buff 移除事件广播。</summary>
-    private void OnRpcBuffRemoved(SyncBuffData buff) {
-        BuffRemoved?.Invoke(this, buff);
     }
 
     /// <summary>客户端同步阶段：生命值变化，缓存旧值以提供 oldHealth。</summary>
@@ -256,21 +213,6 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>客户端同步阶段：聚焦目标变化，0 表示无聚焦目标。</summary>
     private void OnFocusTargetChangedBySync(ushort targetNetId) {
         FocusTargetChanged?.Invoke(this, targetNetId);
-    }
-
-    /// <summary>服务端调用：广播受击事件到客户端。</summary>
-    public void BroadcastDamageTaken(float damage, DamageType damageType) {
-        ExecuteRPC(DamageTakenRPC, new SyncDamageData { Damage = damage, DamageType = (byte)damageType });
-    }
-
-    /// <summary>服务端调用：广播 Buff 添加事件到客户端。</summary>
-    public void BroadcastBuffAdded(SyncBuffData buff) {
-        ExecuteRPC(BuffAddedRPC, buff);
-    }
-
-    /// <summary>服务端调用：广播 Buff 移除事件到客户端。</summary>
-    public void BroadcastBuffRemoved(SyncBuffData buff) {
-        ExecuteRPC(BuffRemovedRPC, buff);
     }
 
     /// <summary>

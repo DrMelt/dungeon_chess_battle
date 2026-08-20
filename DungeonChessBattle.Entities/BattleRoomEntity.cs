@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using BattlePhaseEnum = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
+using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Entities.SyncData;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 
@@ -31,11 +35,43 @@ public partial class BattleRoomEntity : EntityLogic {
     /// <summary>房间选中的副本键，服务端权威，客户端据此呈现对应环境场景。</summary>
     public readonly SyncString DungeonKey = new();
 
+    /// <summary>战斗事件日志 RPC：整帧 SyncBattleEvent 数组广播。</summary>
+    private static RemoteCallSpan<SyncBattleEvent> BattleEventsRPC;
+
+    /// <summary>战斗事件日志接收事件，客户端解码后触发。参数：本帧领域事件。</summary>
+    public event Action<IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
+
     /// <summary>
     /// 初始化战斗房间实体。
     /// </summary>
     /// <param name="entityParams">实体框架参数。</param>
     public BattleRoomEntity(EntityParams entityParams) : base(entityParams) { }
+
+    /// <summary>注册房间级 RPC：战斗事件日志整帧广播，服务端到全部客户端。</summary>
+    protected override void RegisterRPC(ref RPCRegistrator r) {
+        base.RegisterRPC(ref r);
+        r.CreateRPCAction<BattleRoomEntity, SyncBattleEvent>(
+            (e, events) => e.OnBattleEventsReceived(events),
+            ref BattleEventsRPC,
+            ExecuteFlags.SendToAll);
+    }
+
+    /// <summary>客户端接收：整帧事件日志解码为领域事件并触发 <see cref="BattleEventsReceived"/>。</summary>
+    private void OnBattleEventsReceived(ReadOnlySpan<SyncBattleEvent> events) {
+        var decoded = new List<IBattleEvent>(events.Length);
+        foreach (var e in events) {
+            if (BattleEventCoder.Decode(e) is { } domainEvent)
+                decoded.Add(domainEvent);
+        }
+        BattleEventsReceived?.Invoke(decoded);
+    }
+
+    /// <summary>服务端调用：整帧事件日志编码广播，空帧不发。仅房间线程调用。</summary>
+    public void BroadcastBattleEvents(ReadOnlySpan<SyncBattleEvent> events) {
+        if (events.Length == 0)
+            return;
+        ExecuteRPC(BattleEventsRPC, events);
+    }
 
     /// <summary>战斗开始：写入 Running 阶段、未结束与开始时刻。服务端权威，客户端不调用。</summary>
     public void ProjectBattleStarted() {
@@ -54,3 +90,4 @@ public partial class BattleRoomEntity : EntityLogic {
         IsFinished.Value = true;
     }
 }
+

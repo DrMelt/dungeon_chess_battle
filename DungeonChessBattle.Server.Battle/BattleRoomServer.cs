@@ -18,7 +18,7 @@ namespace DungeonChessBattle.Server.Battle;
 /// 独立的战斗世界实例 BattleScene 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
 /// 战斗流程由 IBattleScene 统一驱动，读条、冷却、Buff、结算与阶段；
-/// 房间级阶段状态由战斗世界直接写入载体，战斗内领域事件经 HandleBattleEvent 翻译为 RPC 与 SyncVar。
+/// 房间级阶段状态由战斗世界直接写入载体，战斗内领域事件经整帧事件日志广播到客户端。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>，房间存续期间
 /// 登记成员可连接；断线玩家实体保留直至房间销毁，无宽限期机制。
@@ -64,6 +64,9 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>本房间的所有 UnitPawn。</summary>
     private readonly List<UnitPawn> _roomPawns = [];
+
+    /// <summary>房间网络实体，整帧事件日志广播载体；房间线程首帧初始化时填充。</summary>
+    private BattleRoomEntity? _roomEntity;
 
     /// <summary>playerId 到其专属 Pawn 的映射，控制器绑定用；房间线程首帧迁移时填充。</summary>
     private readonly Dictionary<string, UnitPawn> _pawnByPlayerId = [];

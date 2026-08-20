@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
@@ -31,6 +32,7 @@ public partial class BattleRoomServer {
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
             e.DungeonKey.Value = _dungeonKey;
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
+        _roomEntity = roomEntity;
         _battleScene.BindRoom(roomEntity);
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
@@ -53,7 +55,7 @@ public partial class BattleRoomServer {
         // LateUpdate=Tick 在实体更新后、状态包发送前。
         // 此后房间线程每逻辑 tick 自动驱动 BattleLoop 与战斗世界，
         // 与实体同步严格 1:1，时间由 LES accumulator 统一管理。
-        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleBattleEvent));
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleBattleFrameEvents));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.",
@@ -255,48 +257,27 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 领域事件 → 网络翻译：把战斗世界产出的 IBattleEvent 转换为 RPC / SyncVar 写回。
-    /// Health、读条、冷却与 Buff 列表已由战斗世界直接写 Pawn SyncVar，
-    /// 房间级阶段状态已由战斗世界经 IBattleRoom 直接写入载体，
-    /// 此处仅投影瞬时表现与实体级状态写回：受击 RPC、死亡状态与聚焦清理、Buff 增减 RPC。
+    /// 整帧领域事件处理：先做权威状态写回，再把本帧事件日志整帧编码广播到客户端。
+    /// Health、读条、冷却与 Buff 列表已由战斗世界直接写 Pawn SyncVar，房间级阶段状态已经
+    /// IBattleRoom 直接写入载体，此处仅处理事件型状态写回与事件日志外送。
     /// </summary>
-    private void HandleBattleEvent(IBattleEvent battleEvent) {
-        switch (battleEvent) {
-            case DamageOccurred dmg:
-                FindPawnById(dmg.TargetNetId)?
-                    .BroadcastDamageTaken(dmg.AppliedDamage, dmg.DamageType);
-                break;
-
-            case UnitDied died:
+    private void HandleBattleFrameEvents(IReadOnlyList<IBattleEvent> events) {
+        // 权威状态写回：死亡单位清空移动输入、写死亡状态并清理他人聚焦
+        foreach (var battleEvent in events) {
+            if (battleEvent is UnitDied died) {
                 var deadPawn = FindPawnById(died.UnitNetId);
                 deadPawn?.SetMovementInput(Vector2.Zero);
                 deadPawn?.UnitState.Value = 1;
                 ClearFocusTargetsTo(died.UnitNetId);
-                break;
-
-            case BuffApplied buff:
-                BroadcastBuffChanged(buff.TargetNetId, buff.BuffTypeId, (ushort)buff.StackCount, added: true);
-                break;
-
-            case BuffExpired buffExp:
-                BroadcastBuffChanged(buffExp.TargetNetId, buffExp.BuffTypeId, 0, added: false);
-                break;
+            }
         }
-    }
 
-    /// <summary>Buff 增减事件：从 Pawn 的同步列表取快照构造 SyncBuffData 并广播 RPC。</summary>
-    private void BroadcastBuffChanged(ushort targetNetId, ushort buffTypeId, ushort stackCount, bool added) {
-        var pawn = FindPawnById(targetNetId);
-        if (pawn == null)
+        // 整帧事件日志编码广播，空帧不发
+        if (events.Count == 0)
             return;
-
-        var data = pawn.BuffsList.FirstOrDefault(b => b.BuffTypeId == buffTypeId);
-        if (data.BuffTypeId == 0)
-            data = new SyncBuffData { BuffTypeId = buffTypeId, StackCount = stackCount };
-
-        if (added)
-            pawn.BroadcastBuffAdded(data);
-        else
-            pawn.BroadcastBuffRemoved(data);
+        var data = new SyncBattleEvent[events.Count];
+        for (int i = 0; i < events.Count; i++)
+            data[i] = BattleEventCoder.Encode(events[i]);
+        _roomEntity?.BroadcastBattleEvents(data);
     }
 }

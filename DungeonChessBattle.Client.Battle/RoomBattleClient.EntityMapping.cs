@@ -1,8 +1,7 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Battle.Domain;
+using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Logic.Movement;
-using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client.Battle;
@@ -15,17 +14,25 @@ public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 IReadOnlyBattleRoom.DungeonKey 同步。</summary>
     public string? DungeonKey => _roomEntity?.DungeonKey;
 
-    /// <summary>房间实体创建回调：缓存房间与当前房间 ID，日志经 IReadOnlyBattleRoom 读取投影状态。</summary>
+    /// <summary>房间实体创建回调：缓存房间与当前房间 ID，订阅事件日志并日志经 IReadOnlyBattleRoom 读取投影状态。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         IReadOnlyBattleRoom room = entity;
         lock (_lock) {
             _roomEntity = room;
             _currentRoomId = room.RoomId;
         }
+        entity.BattleEventsReceived += OnRoomBattleEvents;
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Room entity created: {RoomId}, phase={Phase}, startUnix={StartUnix}, dungeonKey={DungeonKey}",
                 room.RoomId, room.CurrentPhase, room.BattleStartUnixTime, room.DungeonKey);
+    }
+
+    /// <summary>房间事件日志转发：带当前房间 ID 暴露给服务门面，供 UI 订阅瞬时表现。</summary>
+    private void OnRoomBattleEvents(IReadOnlyList<IBattleEvent> events) {
+        var roomId = _currentRoomId;
+        if (roomId != null)
+            BattleEventsReceived?.Invoke(roomId, events);
     }
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
@@ -47,14 +54,6 @@ public partial class RoomBattleClient {
             UnitHealthChanged?.Invoke(u.Id, newHealth, oldHealth);
         pawn.UnitDied += (u) =>
             UnitDied?.Invoke(u.Id);
-        pawn.BuffAdded += (u, buff) => {
-            var eventData = MapBuffData(buff);
-            UnitBuffAdded?.Invoke(u.Id, eventData);
-        };
-        pawn.BuffRemoved += (u, buff) => {
-            var eventData = MapBuffData(buff);
-            UnitBuffRemoved?.Invoke(u.Id, eventData);
-        };
         pawn.FocusTargetChanged += (u, target) =>
             UnitFocusTargetChanged?.Invoke(u.Id, target);
 
@@ -88,14 +87,6 @@ public partial class RoomBattleClient {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Local UnitController bound: {PawnName}", pawnName);
     }
-
-    /// <summary>将同步 Buff 数据映射为 UI 事件使用的展示视图。</summary>
-    private BuffView MapBuffData(SyncBuffData buff) => new() {
-        BuffTypeId = buff.BuffTypeId,
-        Remaining = SyncTickHelper.RemainingSeconds(_entityManager!, buff.EndServerTick),
-        StackCount = buff.StackCount,
-        DamageType = buff.DamageType,
-    };
 
     /// <summary>按网络实体 ID 查找本房间的 Pawn 实体。</summary>
     public UnitPawn? FindPawnById(ushort netId) {

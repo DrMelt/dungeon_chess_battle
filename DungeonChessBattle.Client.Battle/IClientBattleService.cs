@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
-using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
+using DungeonChessBattle.Battle.Domain.Events;
 
 namespace DungeonChessBattle.Client.Battle;
 
@@ -15,17 +15,14 @@ public interface IClientBattleService {
     /// <summary>战斗阶段变化事件。参数：房间 ID、战斗阶段。</summary>
     event Action<string, BattlePhase>? BattlePhaseChanged;
 
+    /// <summary>战斗事件日志事件。参数：房间 ID、本帧领域事件列表。</summary>
+    event Action<string, IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
+
     /// <summary>单位生命值变化事件。参数：单位网络实体 ID、新生命值、旧生命值。</summary>
     event Action<ushort, float, float>? UnitHealthChanged;
 
     /// <summary>单位死亡事件。参数：单位网络实体 ID。</summary>
     event Action<ushort>? UnitDied;
-
-    /// <summary>单位添加 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
-    event Action<ushort, BuffView>? UnitBuffAdded;
-
-    /// <summary>单位移除 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
-    event Action<ushort, BuffView>? UnitBuffRemoved;
 
     /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
     event Action<ushort, ushort>? UnitFocusTargetChanged;

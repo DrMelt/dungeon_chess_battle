@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Services;
 using Godot;
@@ -10,13 +13,14 @@ using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
 namespace DungeonChessBattle.GamePlayUI;
 
 /// <summary>
-/// 状态变化信息管理器，订阅单位 Pawn 事件并在对应位置弹出受击/ Buff 增减提示。
+/// 状态变化信息管理器，订阅战斗事件日志流并在对应位置弹出受击/治疗/Buff 增减提示。
+/// 瞬时表现数据源为服务端权威事件日志；HP/Buff 等状态展示以 SyncVar 为准，本组件不投影状态。
 /// </summary>
 public partial class UnitStateChangeInfo : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitStateChangeInfo> _logger = ServiceLocator.GetLogger<UnitStateChangeInfo>();
 
-    /// <summary>战斗会话上下文引用，提供场景单位集合。</summary>
+    /// <summary>战斗会话上下文引用，提供场景单位集合与服务。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
 
@@ -24,8 +28,11 @@ public partial class UnitStateChangeInfo : Node {
     [Export]
     private float _popupScale = 1f;
 
-    /// <summary>已订阅 Pawn 事件的单位映射，用于增量同步。</summary>
-    private readonly Dictionary<ushort, UnitPawn> _boundPawns = [];
+    /// <summary>当前已订阅事件流的战斗服务，进出战斗时切换。</summary>
+    private IClientBattleService? _boundService;
+
+    /// <summary>当前房间 ID，用于事件过滤。</summary>
+    private string _roomId = "";
 
     /// <summary>导出引用集合节点。</summary>
     public UnitStateChangeInfoInterRefs? InterRefs {
@@ -58,53 +65,70 @@ public partial class UnitStateChangeInfo : Node {
     }
 
     /// <summary>
-    /// 每帧将 Pawn 事件订阅同步到当前场景单位集合：新增单位绑定、消失单位退订。
+    /// 每帧同步事件流订阅：进出战斗时切换绑定的战斗服务，避免跨战斗悬挂。
     /// </summary>
-    /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         var session = _sessionRef;
         if (session == null)
             return;
 
-        var currentIds = new HashSet<ushort>();
-        foreach (var unit in session.Units) {
-            currentIds.Add(unit.Id);
-            if (!_boundPawns.ContainsKey(unit.Id)) {
-                BindWithUnitPawn(unit);
-                _boundPawns[unit.Id] = unit;
+        var service = session.BattleService;
+        if (service != _boundService) {
+            _boundService?.BattleEventsReceived -= OnBattleEventsReceived;
+            _boundService = service;
+            service?.BattleEventsReceived += OnBattleEventsReceived;
+        }
+        _roomId = session.RoomId;
+    }
+
+    /// <summary>节点退出场景树：兜底退订事件流，防止战斗中途场景被释放导致事件悬挂。</summary>
+    public override void _ExitTree() {
+        _boundService?.BattleEventsReceived -= OnBattleEventsReceived;
+        _boundService = null;
+    }
+
+    /// <summary>
+    /// 战斗事件日志订阅：按事件类型在对应单位位置弹出现时表现提示。
+    /// </summary>
+    private void OnBattleEventsReceived(string roomId, IReadOnlyList<IBattleEvent> events) {
+        if (roomId != _roomId)
+            return;
+
+        foreach (var battleEvent in events) {
+            switch (battleEvent) {
+                case DamageOccurred dmg:
+                    if (FindPawn(dmg.TargetNetId) is { } dmgPawn)
+                        ShowDamagePopup(dmgPawn, dmg.AppliedDamage, dmg.DamageType);
+                    break;
+
+                case HealOccurred heal:
+                    if (FindPawn(heal.TargetNetId) is { } healPawn)
+                        ShowHealPopup(healPawn, heal.ActualHeal);
+                    break;
+
+                case BuffApplied buff:
+                    if (FindPawn(buff.TargetNetId) is { } buffPawn)
+                        ShowBuffPopup(buffPawn, buff.BuffTypeId, added: true);
+                    break;
+
+                case BuffExpired expired:
+                    if (FindPawn(expired.TargetNetId) is { } expPawn)
+                        ShowBuffPopup(expPawn, expired.BuffTypeId, added: false);
+                    break;
             }
         }
+    }
 
-        if (_boundPawns.Count == currentIds.Count)
-            return;
-        List<ushort> gone = [];
-        foreach (var id in _boundPawns.Keys)
-            if (!currentIds.Contains(id))
-                gone.Add(id);
-        foreach (var id in gone) {
-            UnbindWithUnitPawn(_boundPawns[id]);
-            _boundPawns.Remove(id);
+    /// <summary>按网络实体 ID 查找场景单位。</summary>
+    private UnitPawn? FindPawn(ushort netId) {
+        var session = _sessionRef;
+        if (session == null)
+            return null;
+        foreach (var unit in session.Units) {
+            if (unit.Id == netId)
+                return unit;
         }
-    }
-
-    /// <summary>
-    /// 订阅单个单位 Pawn 的受击与 Buff 事件。
-    /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    private void BindWithUnitPawn(UnitPawn pawn) {
-        pawn.BuffAdded += OnUnitBuffAdded;
-        pawn.BuffRemoved += OnUnitBuffRemoved;
-        pawn.TookDamage += OnUnitTookDamage;
-    }
-
-    /// <summary>
-    /// 取消订阅单个单位 Pawn 的事件。
-    /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    private void UnbindWithUnitPawn(UnitPawn pawn) {
-        pawn.BuffAdded -= OnUnitBuffAdded;
-        pawn.BuffRemoved -= OnUnitBuffRemoved;
-        pawn.TookDamage -= OnUnitTookDamage;
+        return null;
     }
 
     /// <summary>
@@ -126,47 +150,48 @@ public partial class UnitStateChangeInfo : Node {
     }
 
     /// <summary>
-    /// 单位获得 Buff 回调：在单位位置弹出添加提示。
+    /// 单位受击提示：在单位位置弹出受击伤害浮字。
     /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    /// <param name="buff">被添加的同步 Buff 数据。</param>
-    private void OnUnitBuffAdded(UnitPawn pawn, Entities.SyncData.SyncBuffData buff) {
-        BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
-        AddChild(buffChangeInfo);
-        ApplyPopupScale(buffChangeInfo);
-        buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Added);
-        var pos = pawn.Position.InterpolatedValue;
-        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
-    }
-
-    /// <summary>
-    /// 单位移除 Buff 回调：在单位位置弹出移除提示。
-    /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    /// <param name="buff">被移除的同步 Buff 数据。</param>
-    private void OnUnitBuffRemoved(UnitPawn pawn, Entities.SyncData.SyncBuffData buff) {
-        BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
-        AddChild(buffChangeInfo);
-        ApplyPopupScale(buffChangeInfo);
-        buffChangeInfo.Init(buff, BuffChangeInfo.Enum_BuffChangeType.Removed);
-        var pos = pawn.Position.InterpolatedValue;
-        buffChangeInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
-    }
-
-    /// <summary>
-    /// 单位受击回调：在单位位置弹出受击伤害提示。
-    /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    /// <param name="damage">伤害数值。</param>
-    /// <param name="damageType">伤害类型。</param>
-    private void OnUnitTookDamage(UnitPawn pawn, float damage, DamageType damageType) {
+    private void ShowDamagePopup(UnitPawn pawn, float damage, DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         AddChild(tookDamageInfo);
         ApplyPopupScale(tookDamageInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
         tookDamageInfo.Init(damage, damageType, uiSettings);
+        PopupAtUnit(tookDamageInfo, pawn);
+    }
+
+    /// <summary>
+    /// 单位治疗提示：在单位位置弹出治疗浮字。
+    /// </summary>
+    private void ShowHealPopup(UnitPawn pawn, float heal) {
+        TookDamageInfo healInfo = NewTookDamageInfo;
+        AddChild(healInfo);
+        ApplyPopupScale(healInfo);
+        var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
+            ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
+        healInfo.Init(heal, uiSettings.HealthInfoColor);
+        PopupAtUnit(healInfo, pawn);
+    }
+
+    /// <summary>
+    /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 BuffTypeId 从资源表匹配。
+    /// </summary>
+    private void ShowBuffPopup(UnitPawn pawn, ushort buffTypeId, bool added) {
+        BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
+        AddChild(buffChangeInfo);
+        ApplyPopupScale(buffChangeInfo);
+        var buffData = new SyncBuffData { BuffTypeId = buffTypeId };
+        buffChangeInfo.Init(buffData, added
+            ? BuffChangeInfo.Enum_BuffChangeType.Added
+            : BuffChangeInfo.Enum_BuffChangeType.Removed);
+        PopupAtUnit(buffChangeInfo, pawn);
+    }
+
+    /// <summary>把提示节点定位到单位头顶。</summary>
+    private static void PopupAtUnit(Control info, UnitPawn pawn) {
         var pos = pawn.Position.InterpolatedValue;
-        tookDamageInfo.GlobalPosition = WorldToScreenPos(this, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
+        info.GlobalPosition = WorldToScreenPos(info, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 }

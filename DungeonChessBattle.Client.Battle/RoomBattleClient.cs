@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using LiteNetLib;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
@@ -5,10 +6,10 @@ using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Domain;
+using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
-using BuffView = DungeonChessBattle.Battle.Domain.Combat.BuffView;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;
 
@@ -34,12 +35,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>单位死亡事件。参数：单位网络实体 ID。</summary>
     public event Action<ushort>? UnitDied;
 
-    /// <summary>单位添加 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
-    public event Action<ushort, BuffView>? UnitBuffAdded;
-
-    /// <summary>单位移除 Buff 事件。参数：单位网络实体 ID、Buff 数据。</summary>
-    public event Action<ushort, BuffView>? UnitBuffRemoved;
-
     /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
     public event Action<ushort, ushort>? UnitFocusTargetChanged;
 
@@ -51,6 +46,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// 经 IBattleRoom 轮询检测到阶段变化时触发。
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
+
+    /// <summary>战斗事件日志事件。参数：房间 ID、本帧领域事件列表。</summary>
+    public event Action<string, IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
 
     // 本地玩家的 UnitController，在 OnUnitControllerCreated 回调中识别并缓存
     private UnitController? _localController;

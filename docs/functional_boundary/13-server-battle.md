@@ -8,7 +8,7 @@
 - 房间生命周期：创建/查找/销毁、端口池分配回收、空房清理队列。
 - `BattleRoomManager` 实现 `IBattleRoomManager` 契约，向外只暴露端口等原语，供大厅协调层编排。
 - 初始化与登场：迁移准备期单位、按副本配置生成敌人、构建移动物理场景。
-- 战斗循环编排：AI 前置推进与战斗推进收编进 LES 逻辑 tick（`BattleLoop`），转发 `IBattleScene.ApplyDecisions` 与 `Tick`，移动与施法经 `BattleScene` 与玩家共用同一权威入口。
+- 战斗循环编排：AI 前置推进与战斗推进收编进 LES 逻辑 tick（`BattleLoop`），转发 `IBattleScene.ApplyDecisions` 与 `Tick`，移动与施法经 `BattleScene` 与玩家共用同一权威入口；整帧事件日志在逻辑 tick 内编码后经 `BattleRoomEntity` 一条 RPC 广播。
 - 玩家会话与连接密钥校验、断线重连；连接状态是会话本地数据（`PlayerSession`），不产生网络同步实体。
 
 ## 不负责
