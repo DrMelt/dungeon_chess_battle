@@ -9,6 +9,7 @@ using DungeonChessBattle.Battle.Domain.Intelligence;
 using DungeonChessBattle.Battle.Domain.Movement;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
+using DungeonChessBattle.Battle.Logic.Events;
 using DungeonChessBattle.Battle.Logic.Hates;
 using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,9 @@ public sealed partial class BattleScene(
 
     /// <summary>服务端权威仇恨账本。</summary>
     private readonly HateSystem _hates = new();
+
+    /// <summary>每帧战斗事件日志：处理开始清空，处理中只增追加，帧末经只读视图消费与外送。</summary>
+    private readonly BattleEventLog _eventLog = new();
 
     /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨投影用。</summary>
     private readonly Dictionary<ushort, IBattleUnit> _unitById = [];
@@ -252,11 +256,11 @@ public sealed partial class BattleScene(
             buffJumps++;
         }
 
-        var events = new List<IBattleEvent>();
+        _eventLog.Clear();
         foreach (var unit in _units.ToArray()) {
-            TickCasting(unit, deltaTime, events);
+            TickCasting(unit, deltaTime, _eventLog);
             TickCooldowns(unit, deltaTime);
-            TickBuffs(unit, deltaTime, events, buffJumps);
+            TickBuffs(unit, deltaTime, _eventLog, buffJumps);
         }
 
         // 全量死亡扫描：本帧内所有 Health<=0 的单位统一产出 UnitDied。
@@ -264,13 +268,13 @@ public sealed partial class BattleScene(
         // 仇恨账本清理延迟到增量推衍之后，避免本帧死者因自身伤害事件重写进账本。
         foreach (var unit in _units.ToArray()) {
             if (unit.Health <= 0f && _dead.Add(unit))
-                events.Add(new UnitDied(unit.UnitNetId));
+                _eventLog.Append(new UnitDied(unit.UnitNetId));
         }
 
         TryEndBattle();
 
         // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；仇恨状态经投影同步
-        foreach (var effect in HateDispatcher.Dispatch(events, _units, _unitById, _hateSettings, _relations))
+        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById, _hateSettings, _relations))
             _hates.ApplyEffect(effect);
 
         // 死亡清理：本帧死者从仇恨账本移除，含其持有表与他表对其条目，保证死者不残留
@@ -280,7 +284,7 @@ public sealed partial class BattleScene(
         }
         ProjectHates();
 
-        return events;
+        return _eventLog;
     }
 
     /// <summary>
@@ -304,7 +308,7 @@ public sealed partial class BattleScene(
 
     #region Tick 内部
 
-    private void TickCasting(IBattleUnit unit, double deltaTime, List<IBattleEvent> events) {
+    private void TickCasting(IBattleUnit unit, double deltaTime, BattleEventLog log) {
         if (unit.SkillCasting == default)
             return;
 
@@ -312,7 +316,7 @@ public sealed partial class BattleScene(
         if (unit.SkillCastRemaining > 0f)
             return;
 
-        ResolveCast(unit, events);
+        ResolveCast(unit, log);
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         unit.RuntimeState.ClearCast();
@@ -337,7 +341,7 @@ public sealed partial class BattleScene(
         }
     }
 
-    private static void TickBuffs(IBattleUnit target, double deltaTime, List<IBattleEvent> events, int buffJumps) {
+    private static void TickBuffs(IBattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
             return;
@@ -347,7 +351,7 @@ public sealed partial class BattleScene(
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
             foreach (var e in BuffTickProcessor.Tick(buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
-                events.Add(e);
+                log.Append(e);
                 if (e is DamageOccurred dmg)
                     ApplyHealthDelta(target, -dmg.AppliedDamage);
                 else if (e is HealOccurred heal)
@@ -381,7 +385,7 @@ public sealed partial class BattleScene(
         })]);
     }
 
-    private void ResolveCast(IBattleUnit caster, List<IBattleEvent> events) {
+    private void ResolveCast(IBattleUnit caster, BattleEventLog log) {
         var state = caster.RuntimeState;
         if (state.CastTarget is null && state.CastTargetPos is null)
             return;
@@ -399,7 +403,7 @@ public sealed partial class BattleScene(
                 if (state.CastTarget is { } target) {
                     var res = CastResolver.ComputeDamage(caster.Snapshot, target.Snapshot, d.Damage, d.DamageType);
                     target.Health = res.RemainingHealth;
-                    events.Add(new DamageOccurred(caster.UnitNetId, target.UnitNetId, res.AppliedDamage, d.DamageType));
+                    log.Append(new DamageOccurred(caster.UnitNetId, target.UnitNetId, res.AppliedDamage, d.DamageType));
                 }
                 break;
 
@@ -407,26 +411,26 @@ public sealed partial class BattleScene(
                 if (state.CastTarget is { } healTarget) {
                     var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
                     healTarget.Health = heal.RemainingHealth;
-                    events.Add(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
+                    log.Append(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
                 }
                 break;
 
             case RangeDamageSkillDefinition r:
-                ResolveRangeDamage(caster, r, state.CastTargetPos, events);
+                ResolveRangeDamage(caster, r, state.CastTargetPos, log);
                 break;
 
             case AddBuffSkillDefinition ab:
                 if (state.CastTarget is { } buffTarget)
-                    AddBuff(buffTarget, ab.Buff, caster, events);
+                    AddBuff(buffTarget, ab.Buff, caster, log);
                 break;
 
             case HateSkillDefinition t:
                 if (state.CastTarget is { } hateTarget)
-                    events.Add(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
+                    log.Append(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
                 break;
         }
 
-        events.Add(new CastCompleted(caster.UnitNetId, skill.SkillId, state.CastTarget?.UnitNetId));
+        log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, state.CastTarget?.UnitNetId));
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值；权威变化立即投影回载体，保证施放校验即时生效。</summary>
@@ -445,7 +449,7 @@ public sealed partial class BattleScene(
         unit.SetSkillCooldown(skillKey, remaining);
     }
 
-    private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IBattleEvent> events) {
+    private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, BattleEventLog log) {
         var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
         foreach (var unit in _units.ToArray()) {
             if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
@@ -455,11 +459,11 @@ public sealed partial class BattleScene(
 
             var res = CastResolver.ComputeDamage(caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);
             unit.Health = res.RemainingHealth;
-            events.Add(new DamageOccurred(caster.UnitNetId, unit.UnitNetId, res.AppliedDamage, skill.DamageType));
+            log.Append(new DamageOccurred(caster.UnitNetId, unit.UnitNetId, res.AppliedDamage, skill.DamageType));
         }
     }
 
-    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, List<IBattleEvent> events) {
+    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, BattleEventLog log) {
         var list = target.RuntimeState.Buffs;
         var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == def.BuffTypeId);
         int stacks;
@@ -474,7 +478,7 @@ public sealed partial class BattleScene(
             stacks = 1;
         }
 
-        events.Add(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
+        log.Append(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
         ProjectBuffs(target);
     }
 

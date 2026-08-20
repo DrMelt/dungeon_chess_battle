@@ -5,6 +5,7 @@
 ## 职责范围
 
 - 战斗编排：`BattleScene.Tick(dt)` 统一推进阶段机、读条、冷却、Buff 与技能结算，产出领域事件流；`ApplyDecisions(dt)` 前置驱动带智能单位决策并应用移动输入与施法请求。单位权威状态经 `IBattleUnit.RuntimeState` 读写，房间级阶段状态经 `IBattleRoom` 直接读写载体，场景只做推进、投影与结算。
+- 事件编排：`BattleScene` 每帧经 `BattleEventLog` 收集结算产出的事件，处理开始清空、处理中只增追加；`HateDispatcher` 帧末统一消费事件流落仇恨账本。事件日志仅当帧有效。
 - 战斗世界归属：`BattleScene` 持有竞技场移动场景，`AddUnit`/`RemoveUnit` 与空间演员注册同生命周期收敛；`MovementScene` 供实体层接线移动结算。
 - Buff 创建与效果、施法校验与结算、伤害/治疗处理、权威仇恨账本、位移解析与物理移动场景。
 
