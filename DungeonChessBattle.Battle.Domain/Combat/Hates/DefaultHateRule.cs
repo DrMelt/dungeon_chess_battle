@@ -18,7 +18,7 @@ public sealed class DefaultHateRule : IHateRule {
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IDomainEvent e, HateContext ctx) {
+    public IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IBattleEvent e, HateContext ctx) {
         return e switch {
             DamageOccurred dmg when dmg.TargetNetId == self.UnitNetId && dmg.SourceNetId != 0 => Accrue(self, dmg.SourceNetId, dmg.AppliedDamage, ctx.Settings.DamageHateFactor, ctx),
             HealOccurred heal => HealSpread(self, heal, ctx),

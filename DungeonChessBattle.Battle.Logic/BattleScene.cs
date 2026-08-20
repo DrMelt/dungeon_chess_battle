@@ -238,7 +238,7 @@ public sealed partial class BattleScene(
     /// 按帧推进全部单位的读条、冷却与 Buff，返回本帧领域事件。
     /// 仅在 Running 阶段推进；战斗结束条件满足时经载体切换 Finished。
     /// </summary>
-    public IReadOnlyList<IDomainEvent> Tick(double deltaTime) {
+    public IReadOnlyList<IBattleEvent> Tick(double deltaTime) {
         if (CurrentPhase != BattlePhase.Running)
             return [];
 
@@ -252,7 +252,7 @@ public sealed partial class BattleScene(
             buffJumps++;
         }
 
-        var events = new List<IDomainEvent>();
+        var events = new List<IBattleEvent>();
         foreach (var unit in _units.ToArray()) {
             TickCasting(unit, deltaTime, events);
             TickCooldowns(unit, deltaTime);
@@ -304,7 +304,7 @@ public sealed partial class BattleScene(
 
     #region Tick 内部
 
-    private void TickCasting(IBattleUnit unit, double deltaTime, List<IDomainEvent> events) {
+    private void TickCasting(IBattleUnit unit, double deltaTime, List<IBattleEvent> events) {
         if (unit.SkillCasting == default)
             return;
 
@@ -337,7 +337,7 @@ public sealed partial class BattleScene(
         }
     }
 
-    private static void TickBuffs(IBattleUnit target, double deltaTime, List<IDomainEvent> events, int buffJumps) {
+    private static void TickBuffs(IBattleUnit target, double deltaTime, List<IBattleEvent> events, int buffJumps) {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
             return;
@@ -381,7 +381,7 @@ public sealed partial class BattleScene(
         })]);
     }
 
-    private void ResolveCast(IBattleUnit caster, List<IDomainEvent> events) {
+    private void ResolveCast(IBattleUnit caster, List<IBattleEvent> events) {
         var state = caster.RuntimeState;
         if (state.CastTarget is null && state.CastTargetPos is null)
             return;
@@ -445,7 +445,7 @@ public sealed partial class BattleScene(
         unit.SetSkillCooldown(skillKey, remaining);
     }
 
-    private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IDomainEvent> events) {
+    private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, List<IBattleEvent> events) {
         var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
         foreach (var unit in _units.ToArray()) {
             if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
@@ -459,7 +459,7 @@ public sealed partial class BattleScene(
         }
     }
 
-    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, List<IDomainEvent> events) {
+    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, List<IBattleEvent> events) {
         var list = target.RuntimeState.Buffs;
         var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == def.BuffTypeId);
         int stacks;

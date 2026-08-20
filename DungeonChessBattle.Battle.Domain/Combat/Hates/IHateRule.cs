@@ -22,5 +22,5 @@ public readonly record struct HateContext(
 /// </summary>
 public interface IHateRule {
     /// <summary>以自身为中心求值一个领域事件，返回落账效果；事件与自身无关时返回空。</summary>
-    IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IDomainEvent e, HateContext ctx);
+    IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IBattleEvent e, HateContext ctx);
 }

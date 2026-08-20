@@ -18,7 +18,7 @@ public sealed class DotEffect : IBuffEffect {
     }
 
     /// <inheritdoc />
-    public IEnumerable<IDomainEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target) {
+    public IEnumerable<IBattleEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target) {
         if (instance.From is not { } from)
             yield break;
 
@@ -36,7 +36,7 @@ public sealed class HotEffect : IBuffEffect {
     }
 
     /// <inheritdoc />
-    public IEnumerable<IDomainEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target) {
+    public IEnumerable<IBattleEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target) {
         if (instance.From is not { } from)
             yield break;
 
@@ -51,11 +51,11 @@ public sealed class HotEffect : IBuffEffect {
 /// </summary>
 public static class BuffTickProcessor {
     /// <summary>按帧推进一个 Buff 实例，返回本帧领域事件。失效 Buff 的 IsAlive 会被置为 false。</summary>
-    public static IReadOnlyList<IDomainEvent> Tick(IBuffEffect effect, BuffInstance instance, UnitSnapshot target, double deltaTime, double tickSeconds) {
+    public static IReadOnlyList<IBattleEvent> Tick(IBuffEffect effect, BuffInstance instance, UnitSnapshot target, double deltaTime, double tickSeconds) {
         if (!instance.IsAlive)
             return [];
 
-        var events = new List<IDomainEvent>();
+        var events = new List<IBattleEvent>();
 
         if (tickSeconds > 0)
             events.AddRange(effect.Tick(tickSeconds, instance, target));

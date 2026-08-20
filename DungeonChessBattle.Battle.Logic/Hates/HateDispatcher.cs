@@ -12,12 +12,12 @@ namespace DungeonChessBattle.Battle.Logic.Hates;
 /// </summary>
 public static class HateDispatcher {
     /// <summary>事件类型到仇恨处理的关注度预筛，与事件无关的类型直接跳过。</summary>
-    private static bool IsRelevant(IDomainEvent evt) =>
+    private static bool IsRelevant(IBattleEvent evt) =>
         evt is DamageOccurred or HealOccurred or HateRequested;
 
     /// <summary>分发一件事流到全部存活单位求值，返回聚合仇恨效果。单位索引由编排层持有，规则反查共用同一份。</summary>
     public static IReadOnlyList<HateEffect> Dispatch(
-        IReadOnlyList<IDomainEvent> events,
+        IReadOnlyList<IBattleEvent> events,
         IReadOnlyList<IBattleUnit> units,
         IReadOnlyDictionary<ushort, IBattleUnit> unitById,
         HateSettings settings,

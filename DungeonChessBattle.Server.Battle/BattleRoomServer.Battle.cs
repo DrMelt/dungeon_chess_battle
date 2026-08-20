@@ -51,7 +51,7 @@ public partial class BattleRoomServer {
         // LateUpdate=Tick 在实体更新后、状态包发送前。
         // 此后房间线程每逻辑 tick 自动驱动 BattleLoop 与战斗世界，
         // 与实体同步严格 1:1，时间由 LES accumulator 统一管理。
-        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleDomainEvent));
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleBattleEvent));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.",
@@ -240,13 +240,13 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 领域事件 → 网络翻译：把战斗世界产出的 IDomainEvent 转换为 RPC / SyncVar 写回。
+    /// 领域事件 → 网络翻译：把战斗世界产出的 IBattleEvent 转换为 RPC / SyncVar 写回。
     /// Health、读条、冷却与 Buff 列表已由战斗世界直接写 Pawn SyncVar，
     /// 房间级阶段状态已由战斗世界经 IBattleRoom 直接写入载体，
     /// 此处仅投影瞬时表现与实体级状态写回：受击 RPC、死亡状态与聚焦清理、Buff 增减 RPC。
     /// </summary>
-    private void HandleDomainEvent(IDomainEvent domainEvent) {
-        switch (domainEvent) {
+    private void HandleBattleEvent(IBattleEvent battleEvent) {
+        switch (battleEvent) {
             case DamageOccurred dmg:
                 FindPawnById(dmg.TargetNetId)?
                     .BroadcastDamageTaken(dmg.AppliedDamage, dmg.DamageType);

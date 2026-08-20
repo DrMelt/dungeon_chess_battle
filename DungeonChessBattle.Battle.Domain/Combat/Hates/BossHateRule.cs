@@ -14,7 +14,7 @@ public sealed class BossHateRule : IHateRule {
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IDomainEvent e, HateContext ctx) {
+    public IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IBattleEvent e, HateContext ctx) {
         if (e is HateRequested)
             return [];
         return DefaultHateRule.Instance.Evaluate(self, e, ctx);

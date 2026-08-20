@@ -44,6 +44,6 @@ public interface IBattleScene : IBattleSceneView {
     void ApplyDecisions();
 
     /// <summary>战斗推进：读条、冷却、Buff、仇恨与死亡结算，返回本帧领域事件。仅在 Running 阶段推进。</summary>
-    IReadOnlyList<IDomainEvent> Tick(double deltaTime);
+    IReadOnlyList<IBattleEvent> Tick(double deltaTime);
 }
 

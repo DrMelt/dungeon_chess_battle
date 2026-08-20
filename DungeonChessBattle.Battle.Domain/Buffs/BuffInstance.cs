@@ -48,5 +48,5 @@ public sealed class BuffInstance {
 /// <summary>Buff 的持续效果策略，纯函数无状态。</summary>
 public interface IBuffEffect {
     /// <summary>按累积秒数执行一次效果，返回产生的领域事件，可能为空。</summary>
-    IEnumerable<IDomainEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target);
+    IEnumerable<IBattleEvent> Tick(double accumulatedSeconds, BuffInstance instance, UnitSnapshot target);
 }
