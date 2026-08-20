@@ -228,6 +228,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new(
         // 副本键对齐 Protocol.EntityConstants.DefaultDungeonKey，GameConfig 不反向依赖协议层
         DungeonKey: "goblin_camp",
+        PlayerCampOptions: [new(CampConstants.CampA, [CampConstants.CampA])],
         Enemies: [
             new(Unit: UnitGoblin, Count: 3, SpawnBaseX: 30f, SpawnXSpacing: 3f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 42f, SpawnXSpacing: 0f),
@@ -244,6 +245,7 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new(
         DungeonKey: "deep_cave",
+        PlayerCampOptions: [new(CampConstants.CampA, [CampConstants.CampA])],
         Enemies: [
             new(Unit: UnitGoblin, Count: 5, SpawnBaseX: 28f, SpawnXSpacing: 2.5f),
             new(Unit: UnitGoblinBoss, Count: 1, SpawnBaseX: 44f, SpawnXSpacing: 0f),

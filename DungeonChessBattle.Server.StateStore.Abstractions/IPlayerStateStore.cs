@@ -40,6 +40,9 @@ public interface IPlayerStateStore {
     /// <summary>判断指定连接是否为指定房间的成员，基于连接归属表。</summary>
     bool IsConnectionInRoom(string connectionId, string roomId);
 
+    /// <summary>解析指定连接所属的房间 ID，基于连接归属表；未归属任何房间时返回 null。</summary>
+    string? GetRoomIdForConnection(string connectionId);
+
     /// <summary>解析指定连接在房间内登记的玩家名，服务器权威身份。</summary>
     string? GetPlayerNameForConnection(string connectionId);
 
@@ -52,14 +55,20 @@ public interface IPlayerStateStore {
     string? RemovePlayerByConnection(string connectionId);
 
     /// <summary>在大厅准备阶段添加单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
-    bool AddPrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string playerName, string playerId);
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="unitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
+    /// <param name="campOptionKey">玩家阵营选项键，对应副本配置 PlayerCampOptions 中的选项。</param>
+    /// <param name="camps">服务端从副本配置解析出的实际阵营列表。</param>
+    /// <param name="playerName">单位归属玩家名，服务端权威。</param>
+    /// <param name="playerId">玩家持久标识，控制器绑定用权威键。</param>
+    bool AddPrepareUnit(string roomId, string unitConfigKey, string campOptionKey,
+        IReadOnlyList<string> camps, string playerName, string playerId);
 
     /// <summary>在大厅准备阶段移除单位；玩家已准备时返回 false，禁止准备后更改角色。</summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="unitName">单位名称。</param>
-    /// <param name="camps">单位所属阵营列表。</param>
+    /// <param name="unitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
     /// <param name="ownerName">单位归属玩家名，服务端权威，仅归属者可移除。</param>
-    bool RemovePrepareUnit(string roomId, string unitName, IReadOnlyList<string> camps, string ownerName);
+    bool RemovePrepareUnit(string roomId, string unitConfigKey, string ownerName);
 
     /// <summary>获取准备阶段单位列表。</summary>
     IReadOnlyList<UnitSelection> GetPrepareUnits(string roomId);

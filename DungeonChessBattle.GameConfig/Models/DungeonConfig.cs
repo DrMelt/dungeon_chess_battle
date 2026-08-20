@@ -18,11 +18,20 @@ public sealed record EnemySpawnConfig(
     float SpawnXSpacing = 3f);
 
 /// <summary>
-/// 副本配置：副本键、敌人生成阵容与战场布局。
-/// 纯 C# 共享配置，服务端据此生成敌人，客户端据此决定环境表现。
+/// 玩家阵营选项：客户端在准备阶段提交选项键，服务端据此解析实际阵营列表。
+/// 阵营由副本配置权威定义，客户端不可直接设置阵营数组。
+/// </summary>
+/// <param name="Key">选项键，客户端协议提交值。</param>
+/// <param name="Camps">该选项对应的实际阵营列表。</param>
+public sealed record PlayerCampOption(string Key, IReadOnlyList<string> Camps);
+
+/// <summary>
+/// 副本配置：副本键、玩家阵营选项、敌人生成阵容与战场布局。
+/// 纯 C# 共享配置，服务端据此生成敌人与指派玩家阵营，客户端据此决定环境表现。
 /// </summary>
 public sealed record DungeonConfig(
     string DungeonKey,
+    IReadOnlyList<PlayerCampOption> PlayerCampOptions,
     IReadOnlyList<EnemySpawnConfig> Enemies,
     CampRelationResolver RelationsResolver,
     BattlefieldLayout? Layout = null);

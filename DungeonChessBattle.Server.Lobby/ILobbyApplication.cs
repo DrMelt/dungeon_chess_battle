@@ -23,7 +23,7 @@ public interface ILobbyApplication {
     Task<LobbyResult> HandleRemovePrepareUnitAsync(string connectionId, PrepareRemoveUnitRequest req);
 
     /// <summary>开始战斗。</summary>
-    Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req);
+    Task<LobbyResult> HandleStartBattleAsync(string connectionId);
 
     /// <summary>设置准备状态。</summary>
     Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req);
@@ -32,7 +32,7 @@ public interface ILobbyApplication {
     Task<LobbyResult> HandleReconnectRoomAsync(ReconnectRoomRequest req);
 
     /// <summary>离开房间，准备阶段主动退出。</summary>
-    Task<LobbyResult> HandleLeaveRoomAsync(string connectionId, LeaveRoomRequest req);
+    Task<LobbyResult> HandleLeaveRoomAsync(string connectionId);
 
     /// <summary>连接断开清理。</summary>
     Task ConnectionLostAsync(string connectionId);

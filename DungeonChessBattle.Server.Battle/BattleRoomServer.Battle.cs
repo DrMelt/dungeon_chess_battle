@@ -40,7 +40,7 @@ public partial class BattleRoomServer {
             var spawnPos = selection.Camps[0] == CampConstants.CampA
                 ? new Vector2(campAIndex++ * SpawnSpacing, 0)
                 : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
-            var pawn = CreatePawnEntity(selection.UnitName, selection.Camps, spawnPos);
+            var pawn = CreatePawnEntity(selection.UnitConfigKey, selection.Camps, spawnPos);
             _pawnByPlayerId[selection.PlayerId] = pawn;
         }
 
@@ -86,8 +86,8 @@ public partial class BattleRoomServer {
     /// </summary>
     public UnitPawn CreatePawnEntity(string unitName, IReadOnlyList<string> camps, Vector2 spawnPos) {
         // 兜底防御，上游网络入口已校验，这里仅防未来新增路径绕过校验
-        if (unitName.Length > EntityConstants.MaxUnitNameLength)
-            unitName = unitName[..EntityConstants.MaxUnitNameLength];
+        if (unitName.Length > EntityConstants.MaxUnitConfigKeyLength)
+            unitName = unitName[..EntityConstants.MaxUnitConfigKeyLength];
         if (!CampConstants.IsValidCamps(camps))
             throw new InvalidOperationException(
                 $"Invalid camps '{(camps == null ? string.Empty : string.Join(",", camps))}' for unit '{unitName}' in room '{RoomId}'.");

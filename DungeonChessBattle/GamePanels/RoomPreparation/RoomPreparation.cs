@@ -3,9 +3,11 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.GameAssets;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GamePanels;
 
@@ -32,8 +34,8 @@ public partial class RoomPreparation : BaseGamePanel {
     private string _roomId = "";
     /// <summary>当前选中的单位配置键。</summary>
     private string? _selectedUnitKey;
-    /// <summary>已添加的单位显示名称列表。</summary>
-    private readonly List<string> _units = [];
+    /// <summary>已添加的单位配置键列表。</summary>
+    private readonly List<string> _unitKeys = [];
 
     /// <summary>当前玩家是否为房主。</summary>
     private bool _isHost;
@@ -49,8 +51,8 @@ public partial class RoomPreparation : BaseGamePanel {
     /// <summary>房间最大玩家数。</summary>
     private int _maxPlayers = 2;
 
-    /// <summary>玩家名 → 已选择职业显示名（UnitGrid 按玩家展示）。</summary>
-    private readonly Dictionary<string, string> _playerUnitNames = [];
+    /// <summary>玩家名 → 已选择角色配置键（UnitGrid 按玩家展示）。</summary>
+    private readonly Dictionary<string, string> _playerUnitKeys = [];
     /// <summary>房间玩家快照（服务端权威，含准备标志，用于 UnitGrid 按玩家列卡与高亮）。</summary>
     private List<(string PlayerName, bool Ready)> _roomPlayers = [];
 
@@ -96,7 +98,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// </summary>
     private void OnBackButtonPressed() {
         if (!string.IsNullOrEmpty(_roomId))
-            ServiceLocator.ClientService.RequestLeaveRoom(_roomId);
+            ServiceLocator.ClientService.RequestLeaveRoom();
         _roomId = ""; // 复位，避免离开后旧房间快照误应用（OnRoomSnapshotUpdated 按 _roomId 过滤）
         GoBack();
     }
@@ -117,8 +119,8 @@ public partial class RoomPreparation : BaseGamePanel {
             _logger.LogInformation("进入房间: {RoomId}, isHost={IsHost}", roomId, isHost);
 
         // 清空之前的单位列表
-        _units.Clear();
-        _playerUnitNames.Clear();
+        _unitKeys.Clear();
+        _playerUnitKeys.Clear();
         _roomPlayers = [];
 
         // 显示招募板信息
@@ -189,8 +191,20 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         string configKey = config.ConfigKey;
 
-        // 通过大厅 SignalR 协议发送（经 GameClientService 统一入口）；玩家暂不提供阵营选择，固定 A 方
-        ServiceLocator.ClientService.RequestPrepareAddUnit(_roomId, configKey, [CampConstants.CampA]);
+        // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
+        GameConfig.Models.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(_dungeonKey);
+        IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
+        string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
+
+        if (campOptionKey is not null) {
+            ServiceLocator.ClientService.RequestPrepareAddUnit(configKey, campOptionKey);
+        }
+        else {
+            // 副本未配置玩家阵营选项，无法解析实际阵营，服务端必然拒绝，提前终止
+            _logger.LogWarning("副本 {DungeonKey} 未配置玩家阵营选项，无法添加单位 {UnitKey}", _dungeonKey, configKey);
+            InterRefs?.StatusLabel?.Text = "副本阵营配置缺失，无法选择角色";
+            return;
+        }
 
         InterRefs?.StatusLabel?.Text = $"请求创建 {configKey}...";
         RefreshStartButton();
@@ -218,11 +232,11 @@ public partial class RoomPreparation : BaseGamePanel {
                 snapshot.RoomId, snapshot.Units.Count, snapshot.Players.Count);
 
         // 单位列表
-        _units.Clear();
-        _playerUnitNames.Clear();
+        _unitKeys.Clear();
+        _playerUnitKeys.Clear();
         foreach (var unit in snapshot.Units) {
-            _units.Add(unit.UnitName);
-            _playerUnitNames[unit.PlayerName] = unit.UnitName;
+            _unitKeys.Add(unit.UnitConfigKey);
+            _playerUnitKeys[unit.PlayerName] = unit.UnitConfigKey;
         }
 
         // 房间静态信息
@@ -251,7 +265,7 @@ public partial class RoomPreparation : BaseGamePanel {
         RefreshStartButton();
 
         if (!isInitial)
-            InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_units.Count})";
+            InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({_unitKeys.Count})";
     }
 
     /// <summary>判断除房主外所有玩家是否都已准备；无其他玩家时视为已满足。</summary>
@@ -292,7 +306,7 @@ public partial class RoomPreparation : BaseGamePanel {
         var players = _roomPlayers;
         if (players.Count == 0) {
             players = [];
-            foreach (var playerName in _playerUnitNames.Keys)
+            foreach (var playerName in _playerUnitKeys.Keys)
                 players.Add((playerName, false));
         }
 
@@ -303,7 +317,7 @@ public partial class RoomPreparation : BaseGamePanel {
         foreach (var (playerName, ready) in players) {
             var card = InterRefs.UnitCardScene.Instantiate<UnitCard>();
 
-            if (_playerUnitNames.TryGetValue(playerName, out string? unitConfigKey) && unitConfigKey != null
+            if (_playerUnitKeys.TryGetValue(playerName, out string? unitConfigKey) && unitConfigKey != null
                 && UnitCatalog.GetByKey(unitConfigKey) is { } config) {
                 // 已选择职业：展示职业名 + 玩家名 + 真实 HP 数值
                 card.SetupUnit(config.ConfigKey, config.MaxHealth);
@@ -331,7 +345,7 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
 
         // 以当前玩家是否已选角色判断，而非房间内任意玩家有单位
-        bool hasSelectedUnit = _playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName);
+        bool hasSelectedUnit = _playerUnitKeys.ContainsKey(ServiceLocator.ClientService.PlayerName);
 
         if (_isHost) {
             startBtn.Text = "开始战斗";
@@ -363,7 +377,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// 房主点击开始战斗：校验单位与全员准备后，通过 LobbyClient 发送请求。
     /// </summary>
     private void OnStartBattleAsHost() {
-        if (!_playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
+        if (!_playerUnitKeys.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
             InterRefs?.StatusLabel?.Text = "请先选择角色！";
             return;
         }
@@ -374,11 +388,10 @@ public partial class RoomPreparation : BaseGamePanel {
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("请求开始战斗: {RoomId}, units={UnitCount}", _roomId, _units.Count);
+            _logger.LogInformation("请求开始战斗: {RoomId}, units={UnitCount}", _roomId, _unitKeys.Count);
 
-        // 通过大厅 LobbyClient JSON 协议发送 prepare_start_battle
-        ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle(
-            _roomId, ServiceLocator.ClientService.PlayerName, ServiceLocator.ClientService.PlayerId);
+        // 通过大厅 LobbyClient JSON 协议发送 prepare_start_battle，房间由服务端从连接归属反查
+        ServiceLocator.ClientService.LobbyClient.RequestPrepareStartBattle();
 
         Visible = false;
     }
@@ -391,15 +404,15 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
 
         if (_isReady) {
-            ServiceLocator.ClientService.LobbyClient.RequestPrepareUnready(_roomId, ServiceLocator.ClientService.PlayerName);
+            ServiceLocator.ClientService.LobbyClient.RequestPrepareUnready();
             InterRefs?.StatusLabel?.Text = "已取消准备";
         }
         else {
-            if (!_playerUnitNames.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
+            if (!_playerUnitKeys.ContainsKey(ServiceLocator.ClientService.PlayerName)) {
                 InterRefs?.StatusLabel?.Text = "请先选择角色！";
                 return;
             }
-            ServiceLocator.ClientService.LobbyClient.RequestPrepareReady(_roomId, ServiceLocator.ClientService.PlayerName);
+            ServiceLocator.ClientService.LobbyClient.RequestPrepareReady();
             InterRefs?.StatusLabel?.Text = "已请求准备...";
         }
     }

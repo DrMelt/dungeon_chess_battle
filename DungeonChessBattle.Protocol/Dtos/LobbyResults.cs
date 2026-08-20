@@ -1,4 +1,4 @@
-﻿namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Protocol.Dtos;
 
 /// <summary>大厅请求的通用结果。</summary>
 /// <param name="RoomId">相关房间 ID。</param>
@@ -12,10 +12,10 @@ public sealed record LobbyResult(string RoomId, bool Success, string? Error = nu
 public sealed record RoomListResult(IReadOnlyList<RoomListing> Rooms);
 
 /// <summary>准备阶段单位条目。</summary>
-/// <param name="UnitName">单位名称。</param>
-/// <param name="Camps">单位所属阵营列表。</param>
+/// <param name="UnitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
+/// <param name="CampOptionKey">玩家阵营选项键，对应副本配置 PlayerCampOptions 中的选项。</param>
 /// <param name="PlayerName">归属玩家名。</param>
-public sealed record PrepareUnitDto(string UnitName, IReadOnlyList<string> Camps, string PlayerName);
+public sealed record PrepareUnitDto(string UnitConfigKey, string CampOptionKey, string PlayerName);
 
 /// <summary>玩家准备状态条目。</summary>
 /// <param name="PlayerName">玩家名。</param>

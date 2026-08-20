@@ -188,53 +188,52 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求添加准备阶段单位。
+    /// 请求添加准备阶段单位，房间由服务端从连接归属反查，阵营由副本配置按选项键解析。
     /// </summary>
-    public void RequestPrepareAddUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
+    public void RequestPrepareAddUnit(string unitConfigKey, string campOptionKey) {
         RunHubCall(async hub => {
             await hub.InvokeAsync<LobbyResult>(HubMethods.AddPrepareUnit,
-                new PrepareAddUnitRequest(roomId, unitName, camps));
+                new PrepareAddUnitRequest(unitConfigKey, campOptionKey));
         });
     }
 
     /// <summary>
-    /// 请求移除准备阶段单位。
+    /// 请求移除准备阶段单位，房间由服务端从连接归属反查。
     /// </summary>
-    public void RequestPrepareRemoveUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
+    public void RequestPrepareRemoveUnit(string unitConfigKey) {
         RunHubCall(async hub => {
             await hub.InvokeAsync<LobbyResult>(HubMethods.RemovePrepareUnit,
-                new PrepareRemoveUnitRequest(roomId, unitName, camps));
+                new PrepareRemoveUnitRequest(unitConfigKey));
         });
     }
 
     /// <summary>
     /// 请求开始战斗，仅房主可发起，需其他玩家已全部准备。
     /// </summary>
-    public void RequestPrepareStartBattle(string roomId, string playerName, string playerId) {
+    public void RequestPrepareStartBattle() {
         RunHubCall(async hub => {
-            await hub.InvokeAsync<LobbyResult>(HubMethods.StartBattle,
-                new PrepareStartBattleRequest(roomId, playerId, playerName));
+            await hub.InvokeAsync<LobbyResult>(HubMethods.StartBattle);
         });
     }
 
     /// <summary>
     /// 请求设置是否已准备，仅非房主。
     /// </summary>
-    public void RequestSetReady(string roomId, string playerName, bool ready) {
+    public void RequestSetReady(bool ready) {
         RunHubCall(async hub => {
             await hub.InvokeAsync<LobbyResult>(HubMethods.SetReady,
-                new PrepareReadyStateRequest(roomId, playerName, ready));
+                new PrepareReadyStateRequest(ready));
         });
     }
     /// <summary>
     /// 请求准备，仅非房主。
     /// </summary>
-    public void RequestPrepareReady(string roomId, string playerName) => RequestSetReady(roomId, playerName, true);
+    public void RequestPrepareReady() => RequestSetReady(true);
 
     /// <summary>
     /// 请求取消准备，仅非房主。
     /// </summary>
-    public void RequestPrepareUnready(string roomId, string playerName) => RequestSetReady(roomId, playerName, false);
+    public void RequestPrepareUnready() => RequestSetReady(false);
 
     /// <summary>
     /// 请求重连房间。
@@ -254,11 +253,11 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
-    /// 请求离开房间，准备阶段主动退出。服务端从连接身份反查房间成员，无需传玩家名。
+    /// 请求离开房间，准备阶段主动退出。
     /// </summary>
-    public void RequestLeaveRoom(string roomId) {
+    public void RequestLeaveRoom() {
         RunHubCall(async hub => {
-            await hub.InvokeAsync<LobbyResult>(HubMethods.LeaveRoom, new LeaveRoomRequest(roomId));
+            await hub.InvokeAsync<LobbyResult>(HubMethods.LeaveRoom);
         });
     }
 

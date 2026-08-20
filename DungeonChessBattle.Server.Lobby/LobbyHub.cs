@@ -40,12 +40,12 @@ public class LobbyHub(ILobbyApplication server) : Hub {
     public Task<LobbyResult> RemovePrepareUnit(PrepareRemoveUnitRequest req)
         => _server.HandleRemovePrepareUnitAsync(Context.ConnectionId, req);
 
-    /// <summary>准备阶段：开始战斗请求。</summary>
+    /// <summary>准备阶段：开始战斗请求，房间与发起者由连接归属反查。</summary>
     [HubMethodName(HubMethods.StartBattle)]
-    public Task<LobbyResult> StartBattle(PrepareStartBattleRequest req)
-        => _server.HandleStartBattleAsync(Context.ConnectionId, req);
+    public Task<LobbyResult> StartBattle()
+        => _server.HandleStartBattleAsync(Context.ConnectionId);
 
-    /// <summary>准备阶段：设置是否已准备请求。</summary>
+    /// <summary>准备阶段：设置是否已准备请求，房间与玩家由连接归属反查。</summary>
     [HubMethodName(HubMethods.SetReady)]
     public Task<LobbyResult> SetReady(PrepareReadyStateRequest req)
         => _server.HandleSetReadyAsync(Context.ConnectionId, req);
@@ -55,10 +55,10 @@ public class LobbyHub(ILobbyApplication server) : Hub {
     public Task<LobbyResult> ReconnectRoom(ReconnectRoomRequest req)
         => _server.HandleReconnectRoomAsync(req);
 
-    /// <summary>离开房间请求。</summary>
+    /// <summary>离开房间请求，房间由连接归属反查。</summary>
     [HubMethodName(HubMethods.LeaveRoom)]
-    public Task<LobbyResult> LeaveRoom(LeaveRoomRequest req)
-        => _server.HandleLeaveRoomAsync(Context.ConnectionId, req);
+    public Task<LobbyResult> LeaveRoom()
+        => _server.HandleLeaveRoomAsync(Context.ConnectionId);
 
     /// <summary>连接断开时清理玩家归属。</summary>
     public override async Task OnDisconnectedAsync(Exception? exception) {

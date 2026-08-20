@@ -113,7 +113,7 @@ public partial class BattleRoomServer {
         // 2. 取该玩家专属 Pawn，重名单位不串绑
         if (!_pawnByPlayerId.TryGetValue(session.PlayerId, out var pawn)) {
             _logger.LogWarning("[RoomId: {RoomId}] Player '{PlayerName}' prepare unit '{UnitName}' pawn not found.",
-                RoomId, session.PlayerName, selection.UnitName);
+                RoomId, session.PlayerName, selection.UnitConfigKey);
             return;
         }
 
@@ -129,7 +129,7 @@ public partial class BattleRoomServer {
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (camps={Camps}).",
-                RoomId, session.PlayerName, selection.UnitName, string.Join(",", selection.Camps));
+                RoomId, session.PlayerName, selection.UnitConfigKey, string.Join(",", selection.Camps));
     }
 
     /// <summary>

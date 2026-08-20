@@ -51,26 +51,27 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
 
     /// <summary>
     /// 处理 leave_room：玩家主动离开房间，准备阶段退出。
-    /// 先从房间广播分组移除连接，再复用统一清理
+    /// 房间从连接归属反查；先从房间广播分组移除连接，再复用统一清理
     /// <see cref="IPlayerStateStore.RemovePlayerByConnection"/>
     /// 成员、单位、人数、房主转让与空房删除，并向剩余玩家广播最新房间快照。
     /// </summary>
-    public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId, LeaveRoomRequest req) {
-        if (string.IsNullOrWhiteSpace(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "roomId is required.");
+    public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId) {
+        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        if (roomId == null)
+            return new LobbyResult(string.Empty, false, "Player not in room.");
 
         // 先停止接收该房间广播，再清理状态，清理后最后一人退出时房间已删，无需广播
-        await _broadcaster.RemoveFromRoomAsync(connectionId, req.RoomId);
+        await _broadcaster.RemoveFromRoomAsync(connectionId, roomId);
 
-        string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
-        if (roomId == null)
-            return new LobbyResult(req.RoomId, true); // 最后一人退出，房间已删除
+        string? removedRoomId = _stateStore.RemovePlayerByConnection(connectionId);
+        if (removedRoomId == null)
+            return new LobbyResult(roomId, true); // 最后一人退出，房间已删除
 
-        await _lobby.BroadcastRoomSnapshotAsync(roomId);
+        await _lobby.BroadcastRoomSnapshotAsync(removedRoomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Player left room '{RoomId}'.", req.RoomId);
+            _logger.LogInformation("Player left room '{RoomId}'.", removedRoomId);
 
-        return new LobbyResult(req.RoomId, true);
+        return new LobbyResult(roomId, true);
     }
 }

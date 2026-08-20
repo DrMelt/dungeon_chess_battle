@@ -9,7 +9,7 @@ public static class EntityConstants {
     public const int MaxPlayerNameLength = 16;
 
     /// <summary>单位配置键最大字符数，与配置表 ConfigKey 对齐。</summary>
-    public const int MaxUnitNameLength = 32;
+    public const int MaxUnitConfigKeyLength = 32;
 
     /// <summary>默认副本键，创建房间未指定副本时使用。</summary>
     public const string DefaultDungeonKey = "goblin_camp";

@@ -15,51 +15,49 @@ namespace DungeonChessBattle.Server.Lobby;
 public partial class GameServer {
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
+    /// 房间与发起者身份均从连接归属反查，不信任客户端提交。
     /// 校验通过后创建战斗房间服务器，经 <see cref="IRoomServerManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
-    public async Task<LobbyResult> HandleStartBattleAsync(string connectionId, PrepareStartBattleRequest req) {
-        if (string.IsNullOrWhiteSpace(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "roomId is required.");
+    public async Task<LobbyResult> HandleStartBattleAsync(string connectionId) {
+        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
+        if (roomId == null || string.IsNullOrEmpty(playerName))
+            return new LobbyResult(string.Empty, false, "Player not in room.");
 
-        if (string.IsNullOrWhiteSpace(req.PlayerName) || req.PlayerName.Length > EntityConstants.MaxPlayerNameLength) {
-            _logger.LogWarning("start_battle: invalid player name for '{PlayerId}'.", req.PlayerId);
-            return new LobbyResult(req.RoomId, false, "invalid player name.");
+        if (!_stateStore.RoomExists(roomId)) {
+            _logger.LogWarning("start_battle: room '{RoomId}' not found.", roomId);
+            return new LobbyResult(roomId, false, "Room not found.");
         }
 
-        if (!_stateStore.RoomExists(req.RoomId)) {
-            _logger.LogWarning("start_battle: room '{RoomId}' not found.", req.RoomId);
-            return new LobbyResult(req.RoomId, false, "Room not found.");
-        }
-
-        // 校验发起者必须是房主，基于连接归属表，不信任客户端提交的 playerName
-        if (!_stateStore.IsConnectionRoomHost(connectionId, req.RoomId)) {
-            _logger.LogWarning("start_battle: connection of room '{RoomId}' is not the host, rejected.", req.RoomId);
-            return new LobbyResult(req.RoomId, false, "Only room host can start battle.");
+        // 校验发起者必须是房主，基于连接归属表，不信任客户端提交
+        if (!_stateStore.IsConnectionRoomHost(connectionId, roomId)) {
+            _logger.LogWarning("start_battle: connection of room '{RoomId}' is not the host, rejected.", roomId);
+            return new LobbyResult(roomId, false, "Only room host can start battle.");
         }
 
         // 校验除房主外所有玩家已准备
-        if (!_stateStore.IsAllOthersReady(req.RoomId)) {
-            _logger.LogWarning("start_battle: room '{RoomId}' has not-ready players, rejected.", req.RoomId);
-            return new LobbyResult(req.RoomId, false, "Not all players ready.");
+        if (!_stateStore.IsAllOthersReady(roomId)) {
+            _logger.LogWarning("start_battle: room '{RoomId}' has not-ready players, rejected.", roomId);
+            return new LobbyResult(roomId, false, "Not all players ready.");
         }
 
         // 校验所有玩家（含房主）都已选择角色
-        if (!_stateStore.AreAllPlayersUnitSelected(req.RoomId)) {
-            _logger.LogWarning("start_battle: room '{RoomId}' has players without unit selection, rejected.", req.RoomId);
-            return new LobbyResult(req.RoomId, false, "Not all players selected a unit.");
+        if (!_stateStore.AreAllPlayersUnitSelected(roomId)) {
+            _logger.LogWarning("start_battle: room '{RoomId}' has players without unit selection, rejected.", roomId);
+            return new LobbyResult(roomId, false, "Not all players selected a unit.");
         }
 
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
-        int port = _roomServers.StartRoomBattle(req.RoomId);
+        int port = _roomServers.StartRoomBattle(roomId);
 
         // 向房间内所有玩家广播重定向，含端口号，确保非房主也能进入战斗
-        await BroadcastToRoomAsync(req.RoomId, HubMethods.OnPrepareBattleRedirect,
-            new RoomRedirect(req.RoomId, port));
+        await BroadcastToRoomAsync(roomId, HubMethods.OnPrepareBattleRedirect,
+            new RoomRedirect(roomId, port));
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}.", req.RoomId, port);
+            _logger.LogInformation("Room '{RoomId}' battle started on port {Port}.", roomId, port);
 
-        return new LobbyResult(req.RoomId, true);
+        return new LobbyResult(roomId, true);
     }
 
     /// <summary>

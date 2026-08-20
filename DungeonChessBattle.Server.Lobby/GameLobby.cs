@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol.Dtos;
@@ -160,93 +160,103 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
     /// <summary>
     /// 处理 prepare_add_unit：为房间添加准备单位，并广播最新列表。
+    /// 房间与单位归属从连接归属反查；阵营由房间所选副本配置按选项键权威解析，不信任客户端提交的阵营。
     /// </summary>
     public async Task<LobbyResult> HandleAddPrepareUnitAsync(string connectionId, PrepareAddUnitRequest req) {
-        if (string.IsNullOrEmpty(req.RoomId) || string.IsNullOrEmpty(req.UnitName))
-            return new LobbyResult(req.RoomId, false, "roomId and unitName required.");
+        if (string.IsNullOrEmpty(req.UnitConfigKey))
+            return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
-        if (req.UnitName.Length > EntityConstants.MaxUnitNameLength || !CampConstants.IsValidCamps(req.Camps))
-            return new LobbyResult(req.RoomId, false, "Invalid unit params.");
+        if (req.UnitConfigKey.Length > EntityConstants.MaxUnitConfigKeyLength || string.IsNullOrEmpty(req.CampOptionKey))
+            return new LobbyResult(string.Empty, false, "Invalid unit params.");
 
-        // 单位归属用服务端权威玩家名，连接归属表，不信任客户端提交
+        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (ownerName == null)
-            return new LobbyResult(req.RoomId, false, "Player not in room.");
+        if (roomId == null || ownerName == null)
+            return new LobbyResult(string.Empty, false, "Player not in room.");
 
         // 反查该玩家的持久 playerId，控制器绑定用权威键，与连接密钥一致
-        string? ownerPlayerId = _stateStore.GetRoomPlayerIds(req.RoomId).GetValueOrDefault(ownerName);
+        string? ownerPlayerId = _stateStore.GetRoomPlayerIds(roomId).GetValueOrDefault(ownerName);
         if (string.IsNullOrEmpty(ownerPlayerId))
-            return new LobbyResult(req.RoomId, false, "Player identity not registered.");
+            return new LobbyResult(roomId, false, "Player identity not registered.");
 
-        if (!_stateStore.AddPrepareUnit(req.RoomId, req.UnitName, req.Camps, ownerName, ownerPlayerId))
-            return new LobbyResult(req.RoomId, false,
-                _stateStore.RoomExists(req.RoomId) ? "Cannot change unit while ready." : "Room not found.");
+        // 阵营由副本配置权威解析：客户端只提交选项键，不直接设置阵营数组
+        var roomConfig = _stateStore.GetRoomConfig(roomId);
+        var dungeon = roomConfig == null ? null : DungeonRegistry.Instance.GetByKey(roomConfig.DungeonKey);
+        var campOption = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == req.CampOptionKey);
+        if (campOption == null)
+            return new LobbyResult(roomId, false, "Invalid camp option.");
+
+        // 单位必须为已注册且可被玩家选择的配置，拒绝虚构键与敌人单位
+        var unitConfig = UnitRegistry.Instance.GetByKey(req.UnitConfigKey);
+        if (unitConfig == null || !unitConfig.IsPlayerSelectable)
+            return new LobbyResult(roomId, false, "Invalid unit config.");
+
+        if (!_stateStore.AddPrepareUnit(roomId, req.UnitConfigKey, req.CampOptionKey, campOption.Camps, ownerName, ownerPlayerId))
+            return new LobbyResult(roomId, false,
+                _stateStore.RoomExists(roomId) ? "Cannot change unit while ready." : "Room not found.");
 
         // 广播更新给房间内所有玩家
-        await BroadcastRoomSnapshotAsync(req.RoomId);
-        return new LobbyResult(req.RoomId, true);
+        await BroadcastRoomSnapshotAsync(roomId);
+        return new LobbyResult(roomId, true);
     }
 
     /// <summary>
     /// 处理 prepare_remove_unit：从房间移除准备单位，成功时广播最新列表。
-    /// 仅允许单位归属者，连接权威身份，移除，防止他人恶意移除。
+    /// 房间与单位归属均从连接归属反查，仅归属者可移除，防止他人恶意移除。
     /// </summary>
     public async Task<LobbyResult> HandleRemovePrepareUnitAsync(string connectionId, PrepareRemoveUnitRequest req) {
-        if (string.IsNullOrEmpty(req.RoomId) || string.IsNullOrEmpty(req.UnitName))
-            return new LobbyResult(req.RoomId, false, "roomId and unitName required.");
+        if (string.IsNullOrEmpty(req.UnitConfigKey))
+            return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
-        // 单位归属用服务端权威玩家名，连接归属表，不信任客户端提交，仅本人可移除
+        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (string.IsNullOrEmpty(ownerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
-            return new LobbyResult(req.RoomId, false, "Player not in room.");
+        if (roomId == null || string.IsNullOrEmpty(ownerName))
+            return new LobbyResult(string.Empty, false, "Player not in room.");
 
-        bool removed = _stateStore.RemovePrepareUnit(req.RoomId, req.UnitName, req.Camps, ownerName);
+        bool removed = _stateStore.RemovePrepareUnit(roomId, req.UnitConfigKey, ownerName);
         if (removed) {
-            await BroadcastRoomSnapshotAsync(req.RoomId);
-            return new LobbyResult(req.RoomId, true);
+            await BroadcastRoomSnapshotAsync(roomId);
+            return new LobbyResult(roomId, true);
         }
 
         // 已准备的玩家不能移除角色；否则视为单位不存在
-        string error = _stateStore.IsPlayerReady(req.RoomId, ownerName)
+        string error = _stateStore.IsPlayerReady(roomId, ownerName)
             ? "Cannot change unit while ready."
             : "Unit not found.";
-        return new LobbyResult(req.RoomId, false, error);
+        return new LobbyResult(roomId, false, error);
     }
 
     /// <summary>
     /// 处理 prepare_ready / prepare_unready：非房主请求设置准备状态，更新并广播房间准备状态。
+    /// 房间与权威玩家名均从连接归属反查，避免伪造他人准备状态或使用不一致的玩家名造成孤立键。
     /// </summary>
     public async Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req) {
-        if (string.IsNullOrEmpty(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "roomId required.");
-
-        if (!_stateStore.RoomExists(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "Room not found.");
-
-        // 用连接归属反查权威玩家名，服务端 join 或 create 后的权威化名，
-        // 避免伪造他人准备状态或使用与权威名不一致的 playerName 造成孤立键。
+        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (string.IsNullOrEmpty(playerName) || !_stateStore.IsConnectionInRoom(connectionId, req.RoomId))
-            return new LobbyResult(req.RoomId, false, "Player not in room.");
+        if (roomId == null || string.IsNullOrEmpty(playerName))
+            return new LobbyResult(string.Empty, false, "Player not in room.");
+
+        if (!_stateStore.RoomExists(roomId))
+            return new LobbyResult(roomId, false, "Room not found.");
 
         // 房主不参与准备
-        if (_stateStore.IsConnectionRoomHost(connectionId, req.RoomId))
-            return new LobbyResult(req.RoomId, false, "Host cannot set ready state.");
+        if (_stateStore.IsConnectionRoomHost(connectionId, roomId))
+            return new LobbyResult(roomId, false, "Host cannot set ready state.");
 
         // 未选择角色不能准备
-        if (!_stateStore.TrySetPlayerReady(req.RoomId, playerName, req.Ready)) {
+        if (!_stateStore.TrySetPlayerReady(roomId, playerName, req.Ready)) {
             _logger.LogWarning("Player '{Player}' set_ready rejected in room '{RoomId}' (ready={Ready}).",
-                playerName, req.RoomId, req.Ready);
-            return new LobbyResult(req.RoomId, false, "Select a unit before ready.");
+                playerName, roomId, req.Ready);
+            return new LobbyResult(roomId, false, "Select a unit before ready.");
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{Player}' {Action} in room '{RoomId}'.",
-                playerName, req.Ready ? "ready" : "unready", req.RoomId);
+                playerName, req.Ready ? "ready" : "unready", roomId);
 
         // 广播最新准备状态给房间内所有玩家
-        await BroadcastRoomSnapshotAsync(req.RoomId);
-        return new LobbyResult(req.RoomId, true);
+        await BroadcastRoomSnapshotAsync(roomId);
+        return new LobbyResult(roomId, true);
     }
 
     /// <summary>
@@ -267,7 +277,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
-            [.. units.Select(u => new PrepareUnitDto(u.UnitName, u.Camps, u.PlayerName))]);
+            [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))]);
 
         await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
 

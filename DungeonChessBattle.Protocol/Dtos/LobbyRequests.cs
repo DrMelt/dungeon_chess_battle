@@ -38,29 +38,18 @@ public sealed record JoinRoomRequest(
     string? RoomPassword,
     string? ServerPassword);
 
-/// <summary>准备阶段：添加单位请求。</summary>
-/// <param name="RoomId">房间 ID。</param>
-/// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
-/// <param name="Camps">单位所属阵营列表。</param>
-public sealed record PrepareAddUnitRequest(string RoomId, string UnitName, IReadOnlyList<string> Camps);
+/// <summary>准备阶段：添加单位请求。房间与阵营选项由服务端解析。</summary>
+/// <param name="UnitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
+/// <param name="CampOptionKey">副本配置的玩家阵营选项键，服务端据此解析实际阵营。</param>
+public sealed record PrepareAddUnitRequest(string UnitConfigKey, string CampOptionKey);
 
-/// <summary>准备阶段：移除单位请求。</summary>
-/// <param name="RoomId">房间 ID。</param>
-/// <param name="UnitName">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
-/// <param name="Camps">单位所属阵营列表。</param>
-public sealed record PrepareRemoveUnitRequest(string RoomId, string UnitName, IReadOnlyList<string> Camps);
+/// <summary>准备阶段：移除单位请求。房间由服务端从连接归属反查。</summary>
+/// <param name="UnitConfigKey">单位配置键，与 UnitConfig.ConfigKey 一致。</param>
+public sealed record PrepareRemoveUnitRequest(string UnitConfigKey);
 
-/// <summary>准备阶段：开始战斗请求，仅房主可发起。</summary>
-/// <param name="RoomId">房间 ID。</param>
-/// <param name="PlayerId">发起者玩家 ID。</param>
-/// <param name="PlayerName">发起者显示名。</param>
-public sealed record PrepareStartBattleRequest(string RoomId, string PlayerId, string PlayerName);
-
-/// <summary>准备阶段：设置是否已准备请求，仅非房主。</summary>
-/// <param name="RoomId">房间 ID。</param>
-/// <param name="PlayerName">玩家显示名。</param>
+/// <summary>准备阶段：设置是否已准备请求，仅非房主。房间与玩家名由服务端从连接归属反查。</summary>
 /// <param name="Ready">是否已准备。</param>
-public sealed record PrepareReadyStateRequest(string RoomId, string PlayerName, bool Ready);
+public sealed record PrepareReadyStateRequest(bool Ready);
 
 /// <summary>重连房间请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
@@ -74,7 +63,3 @@ public sealed record ReconnectRoomRequest(
     string PlayerName,
     string? RoomPassword,
     string? ServerPassword);
-
-/// <summary>离开房间请求，准备阶段主动退出。</summary>
-/// <param name="RoomId">房间 ID。</param>
-public sealed record LeaveRoomRequest(string RoomId);

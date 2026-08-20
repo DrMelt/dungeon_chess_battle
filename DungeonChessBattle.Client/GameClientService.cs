@@ -193,19 +193,19 @@ public sealed partial class GameClientService {
         LobbyClient.RequestJoinRoom(roomId, PlayerName, PlayerId, roomPassword, _serverPassword);
     }
 
-    /// <summary>请求在大厅准备阶段添加单位。</summary>
-    public void RequestPrepareAddUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
-        LobbyClient.RequestPrepareAddUnit(roomId, unitName, camps);
+    /// <summary>请求在大厅准备阶段添加单位，房间由服务端从连接归属反查，阵营由副本配置按选项键解析。</summary>
+    public void RequestPrepareAddUnit(string unitConfigKey, string campOptionKey) {
+        LobbyClient.RequestPrepareAddUnit(unitConfigKey, campOptionKey);
     }
 
-    /// <summary>请求在大厅准备阶段移除单位。</summary>
-    public void RequestPrepareRemoveUnit(string roomId, string unitName, IReadOnlyList<string> camps) {
-        LobbyClient.RequestPrepareRemoveUnit(roomId, unitName, camps);
+    /// <summary>请求在大厅准备阶段移除单位，房间由服务端从连接归属反查。</summary>
+    public void RequestPrepareRemoveUnit(string unitConfigKey) {
+        LobbyClient.RequestPrepareRemoveUnit(unitConfigKey);
     }
 
     /// <summary>请求离开房间，准备阶段主动退出，通知服务端移除成员并清理房间状态。</summary>
-    public void RequestLeaveRoom(string roomId) {
-        LobbyClient.RequestLeaveRoom(roomId);
+    public void RequestLeaveRoom() {
+        LobbyClient.RequestLeaveRoom();
     }
 
     /// <summary>
