@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://daxkf4sb5aeqp"]
+
+[ext_resource type="Script" uid="uid://crpfe0nailtuu" path="res://GamePlayUI/battle_event_log/BattleEventLogPanel.cs" id="1_panel"]
+[ext_resource type="Script" uid="uid://bvrm1gtnkncoh" path="res://GamePlayUI/battle_event_log/BattleEventLogPanelInterRefs.cs" id="2_interrefs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_logbg"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0.55)
+
+[node name="BattleEventLogPanel" type="Control" unique_id=2106499747]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 15.0
+offset_top = 340.0
+offset_right = 435.0
+offset_bottom = 580.0
+mouse_filter = 2
+script = ExtResource("1_panel")
+
+[node name="BattleEventLogPanelInterRefs" type="Node" parent="." unique_id=2106499748 node_paths=PackedStringArray("LogLabelRef")]
+script = ExtResource("2_interrefs")
+LogLabelRef = NodePath("../PanelContainer/ScrollContainer/RichTextLabel")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=2106499749]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_logbg")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer" unique_id=2106499750]
+layout_mode = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="PanelContainer/ScrollContainer" unique_id=2106499751]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 12
+fit_content = true
+scroll_following = true

@@ -55,6 +55,9 @@ public sealed partial class BattleScene(
     /// <summary>每帧战斗事件日志：处理开始清空，处理中只增追加，帧末经只读视图消费与外送。</summary>
     private readonly BattleEventLog _eventLog = new();
 
+    /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
+    private readonly List<IBattleEvent> _pendingEvents = [];
+
     /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨投影用。</summary>
     private readonly Dictionary<ushort, IBattleUnit> _unitById = [];
 
@@ -166,15 +169,17 @@ public sealed partial class BattleScene(
         caster.SkillCastRemaining = skill.SpellTime;
         caster.RuntimeState.CastTarget = target;
         caster.RuntimeState.CastTargetPos = targetPos;
+        _pendingEvents.Add(new CastStarted(caster.UnitNetId, skillKey, target?.UnitNetId));
         return true;
     }
 
     /// <summary>
-    /// 单位发生移动：保留既定行为"移动即打断读条"。
+    /// 单位发生移动：保留既定行为"移动即打断读条"，打断视为主动取消读条。
     /// </summary>
     public void OnUnitMoved(IBattleUnit unit, Vector2 moveDir) {
         if (moveDir.LengthSquared() <= 0.0001f || unit.SkillCasting == default)
             return;
+        _pendingEvents.Add(new CastCanceled(unit.UnitNetId, unit.SkillCasting));
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         unit.RuntimeState.ClearCast();
@@ -228,8 +233,11 @@ public sealed partial class BattleScene(
     /// 仅在 Running 阶段推进；战斗结束条件满足时经载体切换 Finished。
     /// </summary>
     public IReadOnlyList<IBattleEvent> Tick(double deltaTime) {
-        if (CurrentPhase != BattlePhase.Running)
+        if (CurrentPhase != BattlePhase.Running) {
+            // 非 Running 不推进不外送事件；跨帧缓冲一并清空，避免战斗结束后滞留。
+            _pendingEvents.Clear();
             return [];
+        }
 
         ElapsedTime += (float)deltaTime;
 
@@ -242,6 +250,8 @@ public sealed partial class BattleScene(
         }
 
         _eventLog.Clear();
+        _eventLog.AppendRange(_pendingEvents);
+        _pendingEvents.Clear();
         foreach (var unit in _units.ToArray()) {
             TickCasting(unit, deltaTime, _eventLog);
             TickCooldowns(unit, deltaTime);

@@ -115,6 +115,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _movementScene = null;
         _pendingScenePawns.Clear();
         _registeredActorIds.Clear();
+        _eventLog.Clear();
         _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
         lock (_lock) {
@@ -203,8 +204,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
                 decoded.Add(domainEvent);
         }
         var roomId = _currentRoomId;
-        if (roomId != null)
+        if (roomId != null) {
+            _eventLog.Append(decoded, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             BattleEventsReceived?.Invoke(roomId, decoded);
+        }
     }
 
     /// <summary>

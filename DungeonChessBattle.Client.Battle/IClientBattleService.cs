@@ -58,4 +58,16 @@ public interface IClientBattleService {
     /// <summary>提交玩家移动输入。参数展开为 float 避免接口层依赖 System.Numerics。
     /// 输入流仅承载移动状态；技能等一次性事件走 CastSkill / SetFocusTarget 请求。</summary>
     void SubmitPlayerInput(float moveX, float moveY);
+
+    /// <summary>
+    /// 当前房间会话的事件日志。返回内部列表只读视图，仅可枚举；
+    /// 断线/重连/离开房间时清空，UI 据索引做增量同步与历史回填。
+    /// </summary>
+    IReadOnlyList<BattleEventLogEntry> GetEventLog();
+
+    /// <summary>
+    /// 当前房间会话事件日志的版本号，Clear 会话重置时自增。
+    /// 与 GetEventLog 配对消费：版本变化即会话切换，UI 游标归零重同步。
+    /// </summary>
+    long GetEventLogVersion();
 }

@@ -24,5 +24,11 @@ public readonly record struct BuffExpired(ushort TargetNetId, ushort BuffTypeId)
 /// <summary>技能读条完成并完成结算。</summary>
 public readonly record struct CastCompleted(ushort CasterNetId, SkillKeyId SkillId, ushort? TargetNetId) : IBattleEvent;
 
+/// <summary>技能开始读条施法。</summary>
+public readonly record struct CastStarted(ushort CasterNetId, SkillKeyId SkillId, ushort? TargetNetId) : IBattleEvent;
+
+/// <summary>施法读条被主动取消，含移动打断。</summary>
+public readonly record struct CastCanceled(ushort CasterNetId, SkillKeyId SkillId) : IBattleEvent;
+
 /// <summary>单位死亡。</summary>
 public readonly record struct UnitDied(ushort UnitNetId) : IBattleEvent;

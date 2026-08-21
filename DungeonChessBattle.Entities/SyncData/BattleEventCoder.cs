@@ -30,6 +30,12 @@ public static class BattleEventCoder {
     /// <summary>单位死亡。</summary>
     public const byte TypeUnitDied = 7;
 
+    /// <summary>技能开始读条施法。</summary>
+    public const byte TypeCastStarted = 8;
+
+    /// <summary>施法读条被主动取消，含移动打断。</summary>
+    public const byte TypeCastCanceled = 9;
+
     /// <summary>编码单个领域事件。未知事件类型抛异常，配置故障响亮暴露。</summary>
     public static SyncBattleEvent Encode(IBattleEvent evt) {
         return evt switch {
@@ -51,6 +57,12 @@ public static class BattleEventCoder {
             CastCompleted cc => new SyncBattleEvent {
                 Type = TypeCastCompleted, A = cc.CasterNetId, B = cc.SkillId.Id, C = cc.TargetNetId ?? 0,
             },
+            CastStarted cs => new SyncBattleEvent {
+                Type = TypeCastStarted, A = cs.CasterNetId, B = cs.SkillId.Id, C = cs.TargetNetId ?? 0,
+            },
+            CastCanceled ccl => new SyncBattleEvent {
+                Type = TypeCastCanceled, A = ccl.CasterNetId, B = ccl.SkillId.Id,
+            },
             UnitDied ud => new SyncBattleEvent { Type = TypeUnitDied, A = ud.UnitNetId },
             _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
         };
@@ -65,6 +77,8 @@ public static class BattleEventCoder {
             TypeBuffApplied => new BuffApplied(e.A, e.B, e.C),
             TypeBuffExpired => new BuffExpired(e.A, e.B),
             TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.B), e.C == 0 ? null : e.C),
+            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.B), e.C == 0 ? null : e.C),
+            TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.B)),
             TypeUnitDied => new UnitDied(e.A),
             _ => null,
         };

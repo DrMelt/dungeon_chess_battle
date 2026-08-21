@@ -37,6 +37,7 @@
 [ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_resource_table.tres" id="38_dungeonTable"]
 [ext_resource type="Script" uid="uid://bolcdqihs7w6m" path="res://MainScene/scenes/BattleCoordinator.cs" id="39_coordinator"]
 [ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
+[ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -306,6 +307,18 @@ offset_bottom = 284.0
 theme_override_font_sizes/font_size = 12
 text = "Disconnected"
 script = ExtResource("33_ovly")
+
+[node name="BattleEventLogPanel" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=2106499746 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("41_evtlog")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 26.0
+offset_top = -211.0
+offset_right = 323.0
+offset_bottom = -34.0
+grow_vertical = 0
+_sessionRef = NodePath("../../../BattleSessionContext")
 
 [node name="FrontUI" type="Control" parent="." unique_id=437760611]
 layout_mode = 3
