@@ -10,6 +10,9 @@ public static class NetworkDefaults {
     /// <summary>房间端口 LES 二进制协议包头，客户端与服务端共读。</summary>
     public const byte PacketHeader = 0xDC;
 
+    /// <summary>房间端口服务器可靠消息类型，位于 0xDC 包头后第二字节。</summary>
+    public const byte ReliableServerMessage = 0x10;
+
     /// <summary>房间端口默认连接密钥；服务端配置服务器密码时以密码替换。</summary>
     public const string ConnectionKey = "DungeonChessBattle";
 }

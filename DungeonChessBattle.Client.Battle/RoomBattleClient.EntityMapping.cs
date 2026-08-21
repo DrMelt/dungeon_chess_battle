@@ -1,6 +1,5 @@
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Battle.Domain;
-using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 
@@ -14,25 +13,16 @@ public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 IReadOnlyBattleRoom.DungeonKey 同步。</summary>
     public string? DungeonKey => _roomEntity?.DungeonKey;
 
-    /// <summary>房间实体创建回调：缓存房间与当前房间 ID，订阅事件日志并日志经 IReadOnlyBattleRoom 读取投影状态。</summary>
+    /// <summary>房间实体创建回调：缓存房间与当前房间 ID，日志经 IReadOnlyBattleRoom 读取投影状态。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         IReadOnlyBattleRoom room = entity;
         lock (_lock) {
             _roomEntity = room;
             _currentRoomId = room.RoomId;
         }
-        entity.BattleEventsReceived += OnRoomBattleEvents;
-
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Room entity created: {RoomId}, phase={Phase}, startUnix={StartUnix}, dungeonKey={DungeonKey}",
                 room.RoomId, room.CurrentPhase, room.BattleStartUnixTime, room.DungeonKey);
-    }
-
-    /// <summary>房间事件日志转发：带当前房间 ID 暴露给服务门面，供 UI 订阅瞬时表现。</summary>
-    private void OnRoomBattleEvents(IReadOnlyList<IBattleEvent> events) {
-        var roomId = _currentRoomId;
-        if (roomId != null)
-            BattleEventsReceived?.Invoke(roomId, events);
     }
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>

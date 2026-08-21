@@ -11,6 +11,7 @@ using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Server.StateStore.Abstractions;
+using LiteNetLib.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -257,7 +258,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 整帧领域事件处理：先做权威状态写回，再把本帧事件日志整帧编码广播到客户端。
+    /// 整帧领域事件处理：先做权威状态写回，再把本帧事件日志整帧编码可靠外送。
     /// Health、读条、冷却与 Buff 列表已由战斗世界直接写 Pawn SyncVar，房间级阶段状态已经
     /// IBattleRoom 直接写入载体，此处仅处理事件型状态写回与事件日志外送。
     /// </summary>
@@ -272,12 +273,27 @@ public partial class BattleRoomServer {
             }
         }
 
-        // 整帧事件日志编码广播，空帧不发
+        // 整帧事件日志编码经可靠通道外送，空帧不发
         if (events.Count == 0)
             return;
         var data = new SyncBattleEvent[events.Count];
         for (int i = 0; i < events.Count; i++)
             data[i] = BattleEventCoder.Encode(events[i]);
-        _roomEntity?.BroadcastBattleEvents(data);
+        SendReliableBattleEvents(data);
+    }
+
+    /// <summary>
+    /// 经传输层可靠通道向全部在线玩家广播整帧战斗事件日志。
+    /// ReliableOrdered 保证连接内可靠有序，断线重连期间的事件不补发；
+    /// 断线会话 NetPlayer 为空，直接跳过。仅房间线程调用。
+    /// </summary>
+    private void SendReliableBattleEvents(SyncBattleEvent[] events) {
+        var writer = new NetDataWriter();
+        ReliableMessageFrame.WriteHeader(writer);
+        new ReliableBattleEventLog { Events = events }.Serialize(writer);
+        var payload = writer.AsReadOnlySpan();
+        foreach (var session in _sessions.Values)
+            if (session.NetPlayer is { } netPlayer)
+                netPlayer.Peer.SendReliableOrdered(payload);
     }
 }

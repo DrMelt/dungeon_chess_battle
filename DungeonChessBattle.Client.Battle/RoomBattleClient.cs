@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using LiteNetLib;
+using LiteNetLib.Utils;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
+using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Events;
@@ -165,14 +167,44 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>处理房间端口接收的 LES 二进制包，0xDC。</summary>
+    /// <summary>处理房间端口接收的二进制包：先识别可靠消息帧，其余 0xDC 帧交 LES 反序列化。</summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
         _bytesIn += data.Length;
         _packetsIn++;
-        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader) {
-            _entityManager?.Deserialize(data);
+        if (ReliableMessageFrame.TryReadBody(data, out var body)) {
+            HandleReliableServerMessage(body);
+            return;
         }
-        // 房间端口不处理 JSON，其余丢弃
+        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader)
+            _entityManager?.Deserialize(data);
+    }
+
+    /// <summary>
+    /// 处理服务器可靠消息：解码整帧战斗事件日志并触发 <see cref="BattleEventsReceived"/>。
+    /// 消息体已由 <see cref="ReliableMessageFrame"/> 从帧中提取；连接内可靠有序，断线重连期间的事件不补发。
+    /// </summary>
+    private void HandleReliableServerMessage(NetDataReader body) {
+        if (_roomEntity == null)
+            return;
+        ReliableBattleEventLog log;
+        try {
+            log = new ReliableBattleEventLog();
+            log.Deserialize(body);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArgumentOutOfRangeException) {
+            _logger.LogWarning("Discard malformed reliable battle event log: {Reason}", ex.Message);
+            return;
+        }
+        if (log.Events is not { Length: > 0 })
+            return;
+        var decoded = new List<IBattleEvent>(log.Events.Length);
+        foreach (var e in log.Events) {
+            if (BattleEventCoder.Decode(e) is { } domainEvent)
+                decoded.Add(domainEvent);
+        }
+        var roomId = _currentRoomId;
+        if (roomId != null)
+            BattleEventsReceived?.Invoke(roomId, decoded);
     }
 
     /// <summary>

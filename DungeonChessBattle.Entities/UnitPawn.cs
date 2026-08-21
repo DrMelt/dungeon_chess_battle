@@ -184,7 +184,7 @@ public partial class UnitPawn : PawnLogic {
 
 
     /// <summary>
-    /// 注册 RPC 动作：服务端到客户端事件广播。
+    /// 注册同步字段变化回调。
     /// </summary>
     /// <param name="r">RPC 注册器。</param>
     protected override void RegisterRPC(ref RPCRegistrator r) {

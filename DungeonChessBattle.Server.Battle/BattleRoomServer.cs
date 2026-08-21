@@ -65,7 +65,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的所有 UnitPawn。</summary>
     private readonly List<UnitPawn> _roomPawns = [];
 
-    /// <summary>房间网络实体，整帧事件日志广播载体；房间线程首帧初始化时填充。</summary>
+    /// <summary>房间网络实体，房间级战斗状态载体；整帧事件日志经传输层可靠通道外送，不经本实体承载。房间线程首帧初始化时填充。</summary>
     private BattleRoomEntity? _roomEntity;
 
     /// <summary>playerId 到其专属 Pawn 的映射，控制器绑定用；房间线程首帧迁移时填充。</summary>

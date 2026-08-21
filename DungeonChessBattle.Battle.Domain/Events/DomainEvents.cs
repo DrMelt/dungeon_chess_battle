@@ -2,7 +2,7 @@ using DungeonChessBattle.Battle.Domain.Combat;
 
 namespace DungeonChessBattle.Battle.Domain.Events;
 
-/// <summary>战斗事件的统一标记接口。事件为纯数据，由编排层转译成网络 RPC / SyncVar 写回。</summary>
+/// <summary>战斗事件的统一标记接口。事件为纯数据，由编排层经可靠通道外送 / SyncVar 写回。</summary>
 public interface IBattleEvent {
 }
 
