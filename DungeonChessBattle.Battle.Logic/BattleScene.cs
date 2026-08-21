@@ -165,6 +165,14 @@ public sealed partial class BattleScene(
         if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
             return false;
 
+        // 瞬发技能：校验通过即立即结算，不进入读条状态机，不受移动取消施法影响
+        if (skill.SpellTime <= 0f) {
+            var log = new BattleEventLog();
+            ResolveCast(caster, skill, target, targetPos, log);
+            _pendingEvents.AddRange(log);
+            return true;
+        }
+
         caster.SkillCasting = skillKey;
         caster.SkillCastRemaining = skill.SpellTime;
         caster.RuntimeState.CastTarget = target;
@@ -174,10 +182,19 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 单位发生移动：保留既定行为"移动即打断读条"，打断视为主动取消读条。
+    /// 单位发生移动：移动即取消读条，状态清理统一经显式取消施法收敛。
     /// </summary>
     public void OnUnitMoved(IBattleUnit unit, Vector2 moveDir) {
-        if (moveDir.LengthSquared() <= 0.0001f || unit.SkillCasting == default)
+        if (moveDir.LengthSquared() <= 0.0001f)
+            return;
+        CancelCast(unit);
+    }
+
+    /// <summary>
+    /// 取消单位当前读条施法：产生 CastCanceled 事件并清理读条状态；无读条为空操作。
+    /// </summary>
+    public void CancelCast(IBattleUnit unit) {
+        if (unit.SkillCasting == default)
             return;
         _pendingEvents.Add(new CastCanceled(unit.UnitNetId, unit.SkillCasting));
         unit.SkillCasting = default;
@@ -313,7 +330,10 @@ public sealed partial class BattleScene(
         if (unit.SkillCastRemaining > 0f)
             return;
 
-        ResolveCast(unit, log);
+        var skill = unit.GetSkill(unit.SkillCasting);
+        var state = unit.RuntimeState;
+        if (skill != null)
+            ResolveCast(unit, skill, state.CastTarget, state.CastTargetPos, log);
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         unit.RuntimeState.ClearCast();
@@ -382,30 +402,22 @@ public sealed partial class BattleScene(
         })]);
     }
 
-    private void ResolveCast(IBattleUnit caster, BattleEventLog log) {
-        var state = caster.RuntimeState;
-        if (state.CastTarget is null && state.CastTargetPos is null)
-            return;
-
-        var skill = caster.GetSkill(caster.SkillCasting);
-        if (skill == null)
-            return;
-
-        // 读条完成：写入权威个体冷却并推进全局冷却
-        SetCooldownAuthoritative(caster, caster.SkillCasting, skill.CooldownTime);
+    private void ResolveCast(IBattleUnit caster, SkillDefinition skill, IBattleUnit? target, Vector2? targetPos, BattleEventLog log) {
+        // 读条完成与瞬发立即结算共用：写入权威个体冷却并推进全局冷却
+        SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
 
         switch (skill) {
             case DamageSkillDefinition d:
-                if (state.CastTarget is { } target) {
-                    var res = CastResolver.ComputeDamage(caster.Snapshot, target.Snapshot, d.Damage, d.DamageType);
-                    target.Health = res.RemainingHealth;
-                    log.Append(new DamageOccurred(caster.UnitNetId, target.UnitNetId, res.AppliedDamage, d.DamageType));
+                if (target is { } damageTarget) {
+                    var res = CastResolver.ComputeDamage(caster.Snapshot, damageTarget.Snapshot, d.Damage, d.DamageType);
+                    damageTarget.Health = res.RemainingHealth;
+                    log.Append(new DamageOccurred(caster.UnitNetId, damageTarget.UnitNetId, res.AppliedDamage, d.DamageType));
                 }
                 break;
 
             case HealSkillDefinition h:
-                if (state.CastTarget is { } healTarget) {
+                if (target is { } healTarget) {
                     var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
                     healTarget.Health = heal.RemainingHealth;
                     log.Append(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
@@ -413,21 +425,21 @@ public sealed partial class BattleScene(
                 break;
 
             case RangeDamageSkillDefinition r:
-                ResolveRangeDamage(caster, r, state.CastTargetPos, log);
+                ResolveRangeDamage(caster, r, targetPos, log);
                 break;
 
             case AddBuffSkillDefinition ab:
-                if (state.CastTarget is { } buffTarget)
+                if (target is { } buffTarget)
                     AddBuff(buffTarget, ab.Buff, caster, log);
                 break;
 
             case HateSkillDefinition t:
-                if (state.CastTarget is { } hateTarget)
+                if (target is { } hateTarget)
                     log.Append(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
                 break;
         }
 
-        log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, state.CastTarget?.UnitNetId));
+        log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, target?.UnitNetId));
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值；权威变化立即投影回载体，保证施放校验即时生效。</summary>

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace DungeonChessBattle.Battle.Domain.Enums;
 
 /// <summary>

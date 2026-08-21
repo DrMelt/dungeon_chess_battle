@@ -6,7 +6,6 @@ using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GamePanels;

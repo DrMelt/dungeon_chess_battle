@@ -1,5 +1,3 @@
-using DungeonChessBattle.Battle.Domain.Combat;
-
 namespace DungeonChessBattle.Battle.Domain.Combat.Hates;
 
 /// <summary>

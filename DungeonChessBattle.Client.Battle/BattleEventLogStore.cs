@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Events;
 
 namespace DungeonChessBattle.Client.Battle;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 using DungeonChessBattle.Battle.Domain.Events;
 

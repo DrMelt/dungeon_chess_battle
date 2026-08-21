@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GamePlayUI.battle_event_log;
 using DungeonChessBattle.MainScene;

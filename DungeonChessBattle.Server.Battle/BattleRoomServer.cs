@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;

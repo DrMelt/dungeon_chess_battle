@@ -37,6 +37,9 @@ public interface IBattleScene : IBattleSceneView {
     /// <summary>单位发生移动，保留既定行为"移动即打断读条"。</summary>
     void OnUnitMoved(IBattleUnit unit, Vector2 moveDir);
 
+    /// <summary>取消单位当前读条施法，产生 CastCanceled 事件并清理读条状态；无读条为空操作。</summary>
+    void CancelCast(IBattleUnit unit);
+
     /// <summary>
     /// AI 前置推进：逐个触发单位的自治决策，动作执行经单位绑定执行器回到场景。
     /// 必须在实体移动结算（UnitPawn.Update）之前调用，移动输入本帧生效。

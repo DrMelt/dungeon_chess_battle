@@ -1,5 +1,4 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Intelligence;

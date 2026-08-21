@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Numerics;
 using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Combat.Hates;
