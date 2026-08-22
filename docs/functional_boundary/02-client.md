@@ -4,10 +4,10 @@
 
 ## 职责范围
 
-- 持有 `LobbyClient` 与 `RoomBattleClient` 两个持久实例，经 `IClientConnectionFactory` 创建，门面不依赖传输实现。
-- 维护连接状态机 `ClientConnectionState`：Idle、ConnectingLobby、InLobby、ConnectingRoom、InRoom、Reconnecting。
-- 断线重连：以持久 `playerId` 为身份，缓存 `roomId`、`roomPort` 与房间密码，经 SignalR `ReconnectRoom` 校验资格后重连房间端口。
-- 战斗会话生命周期：连接房间成功触发 `OnBattleStarted`，重连成功恢复战斗；重连失败、连接超时或完全断开统一经 `ResetToNonRoomState` 触发 `OnBattleSessionLost`，战斗编排层据此退出战斗。
+- 持有大厅与房间两个持久连接客户端实例，门面不依赖传输实现。
+- 维护连接状态机，覆盖空闲、连接大厅、在大厅、连接房间、在房间、重连各阶段。
+- 断线重连：以持久玩家身份为凭据，缓存房间信息，经服务端校验重连资格后重连。
+- 战斗会话生命周期：连接房间成功触发战斗启动，重连成功恢复战斗；重连失败、超时或断开触发会话丢失，战斗编排层据此退出战斗。
 - 把两端客户端事件转换为 C# 事件，向 Godot 层暴露请求入口。
 
 ## 不负责
@@ -19,4 +19,4 @@
 
 ## 依赖项
 
-- Protocol 契约；Client.Lobby 与 Client.Battle 两端经 `IClientConnectionFactory` 创建。
+- Protocol 契约；Client.Lobby 与 Client.Battle 两端经连接工厂创建。

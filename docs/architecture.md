@@ -92,22 +92,24 @@ graph TD
 
 ## 项目文档索引
 
-| 项目 | 职责 | 文档 |
-| --- | --- | --- |
-| `DungeonChessBattle` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-dungeonchessbattle](functional_boundary/01-dungeonchessbattle.md) |
-| `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) |
-| `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) |
-| `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) |
-| `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) |
-| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) |
-| `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) |
-| `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) |
-| `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) |
-| `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) |
-| `DungeonChessBattle.Server.StateStore` | 内存状态存储实现 | [11-statestore](functional_boundary/11-statestore.md) |
-| `DungeonChessBattle.Server.Abstractions` | 服务端抽象契约：房间生命周期与广播端口 | [15-server-abstractions](functional_boundary/15-server-abstractions.md) |
-| `DungeonChessBattle.Server.Lobby` | 大厅服务器：Hub 端点、业务与协调 | [12-server-lobby](functional_boundary/12-server-lobby.md) |
-| `DungeonChessBattle.Server.Battle` | 战斗房间服务与生命周期 | [13-server-battle](functional_boundary/13-server-battle.md) |
-| `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与进程入口 | [14-server-host](functional_boundary/14-server-host.md) |
+每模块文档分两层：`functional_boundary/` 为抽象边界描述，`overview/` 为内部工作机制说明。
+
+| 项目 | 职责 | 边界描述 | 快速了解 |
+| --- | --- | --- | --- |
+| `DungeonChessBattle` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-dungeonchessbattle](functional_boundary/01-dungeonchessbattle.md) | [01-dungeonchessbattle](overview/01-dungeonchessbattle.md) |
+| `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) | [02-client](overview/02-client.md) |
+| `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
+| `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) | [04-client-battle](overview/04-client-battle.md) |
+| `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) | [05-protocol](overview/05-protocol.md) |
+| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) | [06-battle-domain](overview/06-battle-domain.md) |
+| `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |
+| `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) | [08-entities](overview/08-entities.md) |
+| `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) | [09-gameconfig](overview/09-gameconfig.md) |
+| `DungeonChessBattle.Server.StateStore.Abstractions` | 状态存储接口与快照模型 | [10-statestore-abstractions](functional_boundary/10-statestore-abstractions.md) | [10-statestore-abstractions](overview/10-statestore-abstractions.md) |
+| `DungeonChessBattle.Server.StateStore` | 内存状态存储实现 | [11-statestore](functional_boundary/11-statestore.md) | [11-statestore](overview/11-statestore.md) |
+| `DungeonChessBattle.Server.Abstractions` | 服务端抽象契约：房间生命周期与广播端口 | [15-server-abstractions](functional_boundary/15-server-abstractions.md) | [15-server-abstractions](overview/15-server-abstractions.md) |
+| `DungeonChessBattle.Server.Lobby` | 大厅服务器：Hub 端点、业务与协调 | [12-server-lobby](functional_boundary/12-server-lobby.md) | [12-server-lobby](overview/12-server-lobby.md) |
+| `DungeonChessBattle.Server.Battle` | 战斗房间服务与生命周期 | [13-server-battle](functional_boundary/13-server-battle.md) | [13-server-battle](overview/13-server-battle.md) |
+| `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与进程入口 | [14-server-host](functional_boundary/14-server-host.md) | [14-server-host](overview/14-server-host.md) |
 
 
