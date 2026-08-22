@@ -45,6 +45,9 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// <summary>大厅完全连接成功事件。</summary>
     public event Action? OnFullyConnected;
 
+    /// <summary>登入结果事件。参数：是否成功、错误信息。</summary>
+    public event Action<bool, string?>? OnLoginResult;
+
     /// <summary>大厅连接完全关闭事件。</summary>
     public event Action? OnFullyDisconnected;
 
@@ -144,11 +147,21 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     }
 
     /// <summary>
+    /// 请求登入大厅，登记服务端权威玩家名。连接建立后调用，重连后需重新登入。
+    /// </summary>
+    public void RequestLogin(string playerName) {
+        RunHubCall(async hub => {
+            var result = await hub.InvokeAsync<LoginResult>(HubMethods.Login, new LoginRequest(playerName));
+            OnLoginResult?.Invoke(result.Success, result.Error);
+        });
+    }
+
+    /// <summary>
     /// 请求创建房间，房间 ID 由服务端生成并回传。
     /// </summary>
-    public void RequestCreateRoom(string playerName, string playerId,
+    public void RequestCreateRoom(string playerId,
         string? roomPassword, RoomConfigDto? config, string? serverPassword = null) {
-        var dto = new CreateRoomRequest(playerId, playerName, roomPassword, config, serverPassword);
+        var dto = new CreateRoomRequest(playerId, roomPassword, config, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.CreateRoom, dto);
             if (result.Success) {
@@ -163,9 +176,9 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// <summary>
     /// 请求加入房间。
     /// </summary>
-    public void RequestJoinRoom(string roomId, string playerName, string playerId,
+    public void RequestJoinRoom(string roomId, string playerId,
         string? roomPassword, string? serverPassword = null) {
-        var dto = new JoinRoomRequest(roomId, playerId, playerName, roomPassword, serverPassword);
+        var dto = new JoinRoomRequest(roomId, playerId, roomPassword, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.JoinRoom, dto);
             if (result.Success) {
@@ -238,9 +251,9 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// <summary>
     /// 请求重连房间。
     /// </summary>
-    public void RequestReconnectRoom(string roomId, string playerId, string playerName,
+    public void RequestReconnectRoom(string roomId, string playerId,
         string? roomPassword, string? serverPassword = null) {
-        var dto = new ReconnectRoomRequest(roomId, playerId, playerName, roomPassword, serverPassword);
+        var dto = new ReconnectRoomRequest(roomId, playerId, roomPassword, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.ReconnectRoom, dto);
             if (result.Success && result.Port is > 0) {

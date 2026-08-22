@@ -7,6 +7,7 @@
 - 入口装配：解析 `--port` 与 `DCB_SERVER_PASSWORD`，建日志工厂、安装 LES 日志、启动宿主。
 - DI 组合根：模块配置切片、状态存储、广播端口、`IBattleRoomManager` 绑定 Server.Battle 实现、协调器与 Hub 注册。
 - 空房间清理后台循环，经 `IBattleRoomManager.ProcessPendingRoomCleanups`。
+- 回放下载端点 `GET /replay/{roomId}`：验证一次性凭证后经 `IReplayStore` 流式输出回放字节流，不经 SignalR 通道。
 - 进程看护：`ParentProcessWatcher` 检测父进程消失或 PID 复用触发优雅退出；Ctrl+C 优雅停机。
 
 ## 不负责

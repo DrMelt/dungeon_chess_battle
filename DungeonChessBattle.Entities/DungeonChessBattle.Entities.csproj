@@ -14,6 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="LiteEntitySystem" />
+        <PackageReference Include="MessagePack" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>
 

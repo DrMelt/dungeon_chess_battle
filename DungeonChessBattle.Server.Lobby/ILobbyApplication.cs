@@ -28,11 +28,20 @@ public interface ILobbyApplication {
     /// <summary>设置准备状态。</summary>
     Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req);
 
-    /// <summary>重连房间。</summary>
-    Task<LobbyResult> HandleReconnectRoomAsync(ReconnectRoomRequest req);
+    /// <summary>重连房间：校验身份后登记房间成员，供断线玩家回到战斗。</summary>
+    Task<LobbyResult> HandleReconnectRoomAsync(string connectionId, ReconnectRoomRequest req);
 
     /// <summary>离开房间，准备阶段主动退出。</summary>
     Task<LobbyResult> HandleLeaveRoomAsync(string connectionId);
+
+    /// <summary>登入大厅，登记登录会话身份。</summary>
+    Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req);
+
+    /// <summary>查询当前登录玩家的回放列表，最近在前。</summary>
+    Task<ReplayListResult> HandleGetReplaysAsync(string connectionId);
+
+    /// <summary>按房间 ID 下载回放字节流，仅参与者可下载。</summary>
+    Task<ReplayDownloadResult> HandleDownloadReplayAsync(string connectionId, string roomId);
 
     /// <summary>连接断开清理。</summary>
     Task ConnectionLostAsync(string connectionId);

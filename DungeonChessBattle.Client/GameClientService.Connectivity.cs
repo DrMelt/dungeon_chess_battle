@@ -35,6 +35,9 @@ public sealed partial class GameClientService {
     /// <summary>战斗启动重定向时暂存的 roomId，区别于加入房间重定向 _pendingJoinRoomId。</summary>
     private string? _pendingBattleRoomId;
 
+    /// <summary>自动重连路径：大厅需重新登录，登录结果事件驱动发送重连请求。</summary>
+    private bool _reconnectPendingLogin;
+
     /// <summary>
     /// 状态机唯一转换入口：集中维护状态与超时时间戳。
     /// </summary>
@@ -113,27 +116,22 @@ public sealed partial class GameClientService {
         _activeClient = LobbyClient;
 
         if (!LobbyClient.IsConnected) {
-            // 事件驱动：等待大厅连接建立后再发送重连请求
-            void handler() {
-                LobbyClient.OnFullyConnected -= handler;
-                SendReconnectRequest();
-            }
-
-            LobbyClient.OnFullyConnected += handler;
+            // 事件驱动：大厅连接建立后自动登录，登录结果回调再发送重连请求，避免竞态
+            _reconnectPendingLogin = true;
             LobbyClient.Connect(Host, DefaultPort);
         }
         else {
-            SendReconnectRequest(); // 大厅已连接，直接发送
+            SendReconnectRequest(); // 大厅已连接且登录会话有效，直接发送
         }
     }
 
     /// <summary>
-    /// 发送重连请求到大厅，需确保大厅已连接。
+    /// 发送重连请求到大厅，需确保大厅已连接且已登入。
     /// </summary>
     private void SendReconnectRequest() {
         var cachedRoomId = _cachedRoomId ??
             throw new InvalidOperationException("cachedRoomId is not set before reconnect request.");
-        LobbyClient.RequestReconnectRoom(cachedRoomId, PlayerId, PlayerName, _cachedRoomPassword, _serverPassword);
+        LobbyClient.RequestReconnectRoom(cachedRoomId, PlayerId, _cachedRoomPassword, _serverPassword);
     }
 
     // 内部连接回调
@@ -157,6 +155,7 @@ public sealed partial class GameClientService {
             or ClientConnectionState.InRoom
             or ClientConnectionState.Reconnecting;
         ClearRoomSessionCache();
+        _reconnectPendingLogin = false;
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;
         SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);

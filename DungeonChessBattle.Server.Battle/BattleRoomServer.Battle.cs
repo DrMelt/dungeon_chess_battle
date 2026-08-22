@@ -5,6 +5,7 @@ using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Domain.Events;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
+using DungeonChessBattle.Entities.Replay;
 using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
@@ -37,7 +38,9 @@ public partial class BattleRoomServer {
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
+        var playerInfos = new List<ReplayPlayerInfo>(units.Count);
         int campAIndex = 0, campBIndex = 0;
+        byte playerIndex = 0;
         foreach (var selection in units) {
             // 玩家阵营由副本配置按选项键权威解析；首个阵营为主阵营，作为出生点分边依据
             var camps = ResolvePlayerCamps(selection);
@@ -46,7 +49,15 @@ public partial class BattleRoomServer {
                 : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
             var pawn = CreatePawnEntity(selection.UnitConfigKey, camps, spawnPos);
             _pawnByPlayerId[selection.PlayerId] = pawn;
+            // 回放玩家表与索引：序号即 playerIndex，敌人与非玩家单位不收录
+            _playerIndexByNetId[pawn.Id] = playerIndex;
+            playerInfos.Add(new ReplayPlayerInfo(selection.PlayerId, selection.PlayerName,
+                selection.UnitConfigKey, selection.CampOptionKey, spawnPos.X, spawnPos.Y));
+            playerIndex++;
         }
+
+        // 战斗输入回放记录：玩家表已含出生点，此后在既有输入消费点采集
+        CreateReplayRecorder(playerInfos);
 
         // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
         SpawnDungeonEnemies();
@@ -176,6 +187,7 @@ public partial class BattleRoomServer {
         // 移动已由 UnitPawn.Update() 确定性结算，客户端预测加服务端权威。
         // 此处驱动移动即打断读条，战斗世界保留既有行为。
         _battleScene.OnUnitMoved(pawn, input.MoveDirection);
+        TryRecordMoveInput(pawn, input);
 
         if (_logger.IsEnabled(LogLevel.Trace))
             _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",

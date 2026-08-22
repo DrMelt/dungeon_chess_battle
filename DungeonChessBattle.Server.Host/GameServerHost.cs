@@ -84,6 +84,15 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
 
                 var app = builder.Build();
                 app.MapHub<LobbyHub>("/lobby");
+                // 回放下载端点：凭一次性凭证换取回放字节流，直接流式输出，不经 SignalR 通道
+                app.MapGet("/replay/{roomId}", (string roomId, string ticket,
+                    IReplayDownloadTicketStore ticketStore, IReplayStore replayStore) => {
+                        if (!ticketStore.TryConsume(ticket, out string authorizedRoom) || authorizedRoom != roomId)
+                            return Results.NotFound();
+                        if (!replayStore.TryGetReplay(roomId, out byte[] data))
+                            return Results.NotFound();
+                        return Results.File(data, "application/octet-stream", $"{roomId}.replay");
+                    });
                 app.Start();
 
                 _app = app;

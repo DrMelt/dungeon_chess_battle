@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Entities.Replay;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -20,11 +21,14 @@ namespace DungeonChessBattle.Server.Battle;
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="config">战斗侧配置切片，房间端口池起点。</param>
-public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore, BattleServerConfig config) : IBattleRoomManager {
+/// <param name="replayStore">回放存储，房间销毁时归档战斗输入快照。</param>
+public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore,
+    BattleServerConfig config, IReplayStore replayStore) : IBattleRoomManager {
     private readonly ILogger<BattleRoomManager> _logger = loggerFactory.CreateLogger<BattleRoomManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly BattleServerConfig _config = config;
+    private readonly IReplayStore _replayStore = replayStore;
 
     /// <summary>房间服务器注册表，线程安全。准备阶段房间不在此表中。</summary>
     private readonly ConcurrentDictionary<string, BattleRoomServer> _roomServers = new();
@@ -140,13 +144,29 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         return server != null;
     }
 
-    /// <summary>预注册玩家到房间，断线重连身份校验与命名用。房间不存在时忽略。</summary>
-    public void RegisterPlayer(string roomId, string playerId, string playerName)
-        => GetRoomServer(roomId)?.RegisterPlayer(playerId, playerName);
+    /// <summary>重连登记玩家到房间：仅房间既有同名会话才允许，返回是否成功。</summary>
+    public bool RegisterPlayer(string roomId, string playerId, string playerName)
+        => GetRoomServer(roomId)?.RegisterPlayer(playerId, playerName) ?? false;
 
-    /// <summary>更新已注册玩家的显示名，重连时可能更改。房间不存在时忽略。</summary>
-    public void UpdatePlayerName(string roomId, string playerId, string playerName)
-        => GetRoomServer(roomId)?.UpdatePlayerName(playerId, playerName);
+    /// <summary>归档一次回放到存储：编码字节流与摘要，摘要从头部元数据投影，玩家主键经玩家记录注册表解析。</summary>
+    private void ArchiveReplay(ReplayRecordSnapshot replay) {
+        var summary = new ReplaySummary(
+            replay.Header.RoomId,
+            replay.Header.DungeonKey,
+            replay.Header.StartUnixTime,
+            replay.Header.TickRate,
+            [.. replay.Header.Players.Select(p => new ReplayPlayer(
+                _stateStore.ResolvePlayerRecordId(p.PlayerName), p.PlayerName, p.UnitConfigKey))]);
+        _replayStore.Add(replay.Header.RoomId, summary, ReplayRecordCoder.Encode(replay));
+    }
+
+    /// <summary>停止房间服务器并回收端口；房间线程已退出，回放快照稳定，归档供大厅查询与下载。仅协调线程调用。</summary>
+    private void StopAndArchive(BattleRoomServer server) {
+        server.Stop();
+        RecyclePort(server.Port);
+        if (server.ReplaySnapshot is { } replay)
+            ArchiveReplay(replay);
+    }
 
     /// <summary>
     /// 移除并停止房间服务器，同时清理 store 中的房间状态。
@@ -156,8 +176,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         bool removed;
         if (_roomServers.TryRemove(roomId, out var server)) {
             server.RoomEmpty -= OnRoomEmptied;
-            server.Stop();
-            RecyclePort(server.Port);
+            StopAndArchive(server);
             removed = true;
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("Room '{RoomId}' removed (port {Port} recycled)", roomId, server.Port);
@@ -178,8 +197,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
             foreach (var (roomId, server) in _roomServers) {
                 if (_roomServers.TryRemove(roomId, out _)) {
                     server.RoomEmpty -= OnRoomEmptied;
-                    server.Stop();
-                    RecyclePort(server.Port);
+                    StopAndArchive(server);
                 }
             }
         }

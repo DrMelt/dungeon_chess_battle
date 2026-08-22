@@ -53,12 +53,27 @@ public class LobbyHub(ILobbyApplication server) : Hub {
     /// <summary>重连房间请求。</summary>
     [HubMethodName(HubMethods.ReconnectRoom)]
     public Task<LobbyResult> ReconnectRoom(ReconnectRoomRequest req)
-        => _server.HandleReconnectRoomAsync(req);
+        => _server.HandleReconnectRoomAsync(Context.ConnectionId, req);
 
     /// <summary>离开房间请求，房间由连接归属反查。</summary>
     [HubMethodName(HubMethods.LeaveRoom)]
     public Task<LobbyResult> LeaveRoom()
         => _server.HandleLeaveRoomAsync(Context.ConnectionId);
+
+    /// <summary>登入大厅请求，登记服务端权威玩家名。</summary>
+    [HubMethodName(HubMethods.Login)]
+    public Task<LoginResult> Login(LoginRequest req)
+        => _server.HandleLoginAsync(Context.ConnectionId, req);
+
+    /// <summary>查询当前登录玩家的回放列表请求，身份从登录会话反查。</summary>
+    [HubMethodName(HubMethods.GetReplays)]
+    public Task<ReplayListResult> GetReplays()
+        => _server.HandleGetReplaysAsync(Context.ConnectionId);
+
+    /// <summary>下载回放请求，仅参与者可下载。</summary>
+    [HubMethodName(HubMethods.DownloadReplay)]
+    public Task<ReplayDownloadResult> DownloadReplay(string roomId)
+        => _server.HandleDownloadReplayAsync(Context.ConnectionId, roomId);
 
     /// <summary>连接断开时清理玩家归属。</summary>
     public override async Task OnDisconnectedAsync(Exception? exception) {

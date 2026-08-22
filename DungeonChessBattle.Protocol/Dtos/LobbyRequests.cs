@@ -12,15 +12,17 @@ public sealed record RoomConfigDto(
     string Description,
     int MaxPlayers);
 
+/// <summary>登入大厅请求，登记连接到玩家名，服务端权威身份。</summary>
+/// <param name="PlayerName">玩家显示名，服务端校验长度后登记为登录会话身份。</param>
+public sealed record LoginRequest(string PlayerName);
+
 /// <summary>创建房间请求，房间 ID 由服务端生成，经 LobbyResult.RoomId 返回。</summary>
 /// <param name="PlayerId">房主玩家 ID。</param>
-/// <param name="PlayerName">房主显示名。</param>
 /// <param name="RoomPassword">房间密码；空表示无密码。</param>
 /// <param name="Config">招募板配置；空表示使用默认值。</param>
 /// <param name="ServerPassword">服务器密码；空表示无密码模式。</param>
 public sealed record CreateRoomRequest(
     string PlayerId,
-    string PlayerName,
     string? RoomPassword,
     RoomConfigDto? Config,
     string? ServerPassword);
@@ -28,13 +30,11 @@ public sealed record CreateRoomRequest(
 /// <summary>加入房间请求。</summary>
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="PlayerId">玩家 ID。</param>
-/// <param name="PlayerName">玩家显示名。</param>
 /// <param name="RoomPassword">房间密码；空表示无密码。</param>
 /// <param name="ServerPassword">服务器密码；空表示无密码模式。</param>
 public sealed record JoinRoomRequest(
     string RoomId,
     string PlayerId,
-    string PlayerName,
     string? RoomPassword,
     string? ServerPassword);
 
@@ -51,15 +51,13 @@ public sealed record PrepareRemoveUnitRequest(string UnitConfigKey);
 /// <param name="Ready">是否已准备。</param>
 public sealed record PrepareReadyStateRequest(bool Ready);
 
-/// <summary>重连房间请求。</summary>
+/// <summary>重连房间请求，玩家名由服务端从登录会话反查。</summary>
 /// <param name="RoomId">房间 ID。</param>
-/// <param name="PlayerId">玩家 ID。</param>
-/// <param name="PlayerName">玩家显示名。</param>
+/// <param name="PlayerId">玩家 ID，须与房间既有会话匹配。</param>
 /// <param name="RoomPassword">房间密码。</param>
 /// <param name="ServerPassword">服务器密码。</param>
 public sealed record ReconnectRoomRequest(
     string RoomId,
     string PlayerId,
-    string PlayerName,
     string? RoomPassword,
     string? ServerPassword);

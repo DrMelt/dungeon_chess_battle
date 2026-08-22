@@ -46,6 +46,18 @@ public interface IPlayerStateStore {
     /// <summary>解析指定连接在房间内登记的玩家名，服务器权威身份。</summary>
     string? GetPlayerNameForConnection(string connectionId);
 
+    /// <summary>登记连接为大厅登录会话，玩家名作为服务端权威身份；名字为空或超长时返回 false。</summary>
+    bool TryRegisterLoginSession(string connectionId, string playerName);
+
+    /// <summary>解析连接登记的登录名；未登录时返回 null。</summary>
+    string? GetLoginPlayerName(string connectionId);
+
+    /// <summary>移除连接的登录会话，连接断开时清理。</summary>
+    void RemoveLoginSession(string connectionId);
+
+    /// <summary>按登入名字解析玩家记录主键；名字首次出现时自动登记并分配稳定主键，之后复用。记录主键仅进程生命周期内稳定。</summary>
+    string ResolvePlayerRecordId(string playerName);
+
     /// <summary>移除房间内玩家，连接断开或主动离开清理，返回所属房间 ID；玩家未登记或房间因此被删除时返回 null。</summary>
     /// <remarks>
     /// 对准备阶段，Waiting，房间还执行：减少当前玩家数、移除玩家准备单位；

@@ -26,3 +26,9 @@ public sealed record PlayerReadyDto(string PlayerName, bool Ready);
 /// <param name="RoomId">房间 ID。</param>
 /// <param name="Port">房间战斗端口。</param>
 public sealed record RoomRedirect(string RoomId, int Port);
+
+/// <summary>登入大厅结果。</summary>
+/// <param name="Success">是否成功。</param>
+/// <param name="PlayerName">已登记的登录名；失败时为空。</param>
+/// <param name="Error">失败原因；成功时为空。</param>
+public sealed record LoginResult(bool Success, string? PlayerName = null, string? Error = null);

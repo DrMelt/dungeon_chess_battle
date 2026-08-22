@@ -22,11 +22,16 @@ namespace DungeonChessBattle.Server.Lobby;
 /// <param name="lobbyConfig">大厅侧配置切片，服务器密码等。</param>
 /// <param name="battleRoomManager">战斗房间生命周期契约，由装配层绑定实现。</param>
 /// <param name="stateStore">大厅级状态存储，存储引擎由装配层注入，可替换。</param>
+/// <param name="replayStore">回放存储，玩家回放查询。</param>
+/// <param name="replayTicketStore">回放下载一次性凭证存储，字节流经 HTTP 端点凭凭证获取。</param>
 public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster broadcaster,
-    LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore) : ILobbyApplication {
+    LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore,
+    IReplayStore replayStore, IReplayDownloadTicketStore replayTicketStore) : ILobbyApplication {
     private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig);
     private readonly IBattleRoomManager _battleRoomManager = battleRoomManager;
     private readonly IGameStateStore _stateStore = stateStore;
+    private readonly IReplayStore _replayStore = replayStore;
+    private readonly IReplayDownloadTicketStore _replayTicketStore = replayTicketStore;
     private readonly ILogger<GameServer> _logger = loggerFactory.CreateLogger<GameServer>();
     private readonly ILobbyBroadcaster _broadcaster = broadcaster;
 
@@ -38,10 +43,13 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
     }
 
     /// <summary>
-    /// 连接断开清理：移除该连接所属房间的成员与准备状态，并向剩余玩家广播最新房间快照。
+    /// 连接断开清理：移除登录会话与房间归属，并向剩余玩家广播最新房间快照。
     /// 准备阶段房间的最后一人退出时房间被删除，本方法不再广播。
     /// </summary>
     public async Task ConnectionLostAsync(string connectionId) {
+        // 登录会话先清理，避免断线残留身份
+        _stateStore.RemoveLoginSession(connectionId);
+
         string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
         if (roomId == null)
             return;

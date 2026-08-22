@@ -14,26 +14,18 @@ namespace DungeonChessBattle.Server.Battle;
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 大厅层预注册玩家到房间，准备阶段调用。白名单校验由 Store 实时查询承担，
-    /// 此处仅预留会话聚合。客户端真正连接房间端口前调用。
+    /// 大厅层登记玩家到房间，断线重连专用：仅当房间已有该 playerId 的会话
+    /// 且会话玩家名与登录名一致才允许，杜绝客户端自报 playerId 冒用他人单位。
+    /// 首次进入战斗的玩家不经此路径，由连接流程创建会话。
     /// </summary>
-    public void RegisterPlayer(string playerId, string playerName) {
-        _sessions.GetOrAdd(playerId, _ => new PlayerSession(playerId, playerName));
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomId: {RoomId}] Player '{PlayerName}' ({PlayerId}) pre-registered.", RoomId, playerName, playerId);
-    }
+    public bool RegisterPlayer(string playerId, string playerName) {
+        if (_sessions.TryGetValue(playerId, out var session) && session.PlayerName == playerName)
+            return true;
 
-    /// <summary>
-    /// 更新已注册玩家的显示名，重连时可能更改。
-    /// </summary>
-    public void UpdatePlayerName(string playerId, string playerName) {
-        if (_sessions.TryGetValue(playerId, out var session)) {
-            session.PlayerName = playerName;
-        }
-        else {
-            // 预注册阶段，尚未创建 Session，创建 session
-            _sessions[playerId] = new PlayerSession(playerId, playerName);
-        }
+        if (_logger.IsEnabled(LogLevel.Warning))
+            _logger.LogWarning("[RoomId: {RoomId}] Reconnect rejected: session for '{PlayerId}' missing or name mismatch (session='{Existing}', requested='{Requested}').",
+                RoomId, playerId, session?.PlayerName, playerName);
+        return false;
     }
 
     /// <summary>
@@ -110,6 +102,9 @@ public partial class BattleRoomServer {
             return;
         }
 
+        // 权威玩家名来自准备单位登记，与大厅登录会话一致；首次连接时落定，重连校验依赖
+        session.PlayerName = selection.PlayerName;
+
         // 2. 取该玩家专属 Pawn，重名单位不串绑
         if (!_pawnByPlayerId.TryGetValue(session.PlayerId, out var pawn)) {
             _logger.LogWarning("[RoomId: {RoomId}] Player '{PlayerName}' prepare unit '{UnitName}' pawn not found.",
@@ -121,8 +116,17 @@ public partial class BattleRoomServer {
         //    同时把技能施放与聚焦目标的事件请求处理后注入房间权威校验，
         //    请求到达时框架自动按该控制器所属玩家回发成功/失败回执。
         EntityManager.AddController<UnitController>(netPlayer, pawn, c => {
-            c.BindServerCastHandler(req => HandleCastSkillRequest(pawn, req));
-            c.BindServerFocusHandler(req => HandleSetFocusTargetRequest(pawn, req.TargetUnitNetId));
+            // 权威校验与回放录制共用同一处理结果，录制在旁路不改变校验
+            c.BindServerCastHandler(req => {
+                bool accepted = HandleCastSkillRequest(pawn, req);
+                TryRecordCastSkill(pawn, req, accepted);
+                return accepted;
+            });
+            c.BindServerFocusHandler(req => {
+                bool accepted = HandleSetFocusTargetRequest(pawn, req.TargetUnitNetId);
+                TryRecordFocusTarget(pawn, req.TargetUnitNetId, accepted);
+                return accepted;
+            });
             session.Controller = c;
         });
         session.ControlledPawn = pawn;

@@ -61,14 +61,16 @@ public partial class GameServer {
     }
 
     /// <summary>
-    /// 处理 reconnect_room：校验身份后将断线玩家重连到战斗房间。
+    /// 处理 reconnect_room：身份从登录会话反查，重连仅恢复既有会话。
     /// </summary>
-    public async Task<LobbyResult> HandleReconnectRoomAsync(ReconnectRoomRequest req) {
-        if (string.IsNullOrWhiteSpace(req.RoomId) || string.IsNullOrWhiteSpace(req.PlayerName))
-            return new LobbyResult(req.RoomId, false, "roomId and playerName required.");
+    public async Task<LobbyResult> HandleReconnectRoomAsync(string connectionId, ReconnectRoomRequest req) {
+        if (string.IsNullOrWhiteSpace(req.RoomId))
+            return new LobbyResult(string.Empty, false, "roomId required.");
 
-        if (req.PlayerName.Length > EntityConstants.MaxPlayerNameLength)
-            return new LobbyResult(req.RoomId, false, "Player name too long.");
+        // 玩家名从登录会话取服务端权威身份，不信任客户端自报
+        string? loginName = _stateStore.GetLoginPlayerName(connectionId);
+        if (string.IsNullOrEmpty(loginName))
+            return new LobbyResult(req.RoomId, false, "Player not logged in.");
 
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
         if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
@@ -77,12 +79,13 @@ public partial class GameServer {
         if (!_battleRoomManager.TryGetRoomPort(req.RoomId, out int port))
             return new LobbyResult(req.RoomId, false, "Room not in battle.");
 
-        _battleRoomManager.RegisterPlayer(req.RoomId, req.PlayerId, req.PlayerName);
-        _battleRoomManager.UpdatePlayerName(req.RoomId, req.PlayerId, req.PlayerName);
+        // 登记房间成员，供战斗白名单校验；仅房间已有同名会话才允许，杜绝冒用他人 playerId 绑单位
+        if (!_battleRoomManager.RegisterPlayer(req.RoomId, req.PlayerId, loginName))
+            return new LobbyResult(req.RoomId, false, "Reconnect rejected: session mismatch.");
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
-                req.PlayerName, req.PlayerId, req.RoomId, port);
+                loginName, req.PlayerId, req.RoomId, port);
 
         return new LobbyResult(req.RoomId, true, Port: port);
     }

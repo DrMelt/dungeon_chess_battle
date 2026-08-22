@@ -31,4 +31,8 @@ public partial class GameServer {
     /// <summary>设置准备状态，大厅业务。</summary>
     public Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req)
         => _lobby.HandleSetReadyAsync(connectionId, req);
+
+    /// <summary>登入大厅，登记登录会话身份，大厅业务。</summary>
+    public Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req)
+        => _lobby.HandleLoginAsync(connectionId, req);
 }

@@ -6,7 +6,7 @@
 
 - 存储门面 `IGameStateStore`，组合 `IRoomStateStore` 与 `IPlayerStateStore` 两个子接口。
 - 房间状态存储：注册/查询房间、招募板列表、密码校验、状态与人数维护、清理。
-- 玩家状态存储：成员登记与归属、准备状态、房主转让、准备单位增删、玩家名解析。
+- 玩家状态存储：成员登记与归属、登录会话登记（连接到服务端权威玩家名）、玩家记录注册表（登录名自动登记并分配稳定主键）、准备状态、房主转让、准备单位增删、玩家名解析。
 - 快照与数据模型：`GameRoom`、`RoomStateSnapshot`、`PlayerReadyState`、`UnitSelection`。
 
 ## 不负责

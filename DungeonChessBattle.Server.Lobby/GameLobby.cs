@@ -39,16 +39,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         return true;
     }
 
-    /// <summary>解析权威玩家显示名：空或超长时退化为 Player_{playerId 前 6 位}。</summary>
-    private static string GetDisplayName(string? playerName, string playerId) {
-        if (playerName == null)
-            return $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
-        // 超长拒绝，安全优于截断，避免两个玩家显示名碰撞
-        return playerName.Length <= EntityConstants.MaxPlayerNameLength
-            ? playerName
-            : $"Player_{playerId[..Math.Min(playerId.Length, 6)]}";
-    }
-
     /// <summary>解析权威副本键：非法键回落默认副本。</summary>
     /// <param name="dungeonKey">客户端提交的副本键。</param>
     /// <returns>合法的副本键。</returns>
@@ -58,19 +48,31 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     }
 
     /// <summary>
+    /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份。
+    /// 名字非法时拒绝；成功后房间业务与回放业务均从登录会话反查身份。
+    /// </summary>
+    public Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req) {
+        if (_stateStore.TryRegisterLoginSession(connectionId, req.PlayerName))
+            return Task.FromResult(new LoginResult(true, req.PlayerName));
+        return Task.FromResult(new LoginResult(false, Error: "Invalid player name."));
+    }
+
+    /// <summary>
     /// 处理 create_room：注册房间，准备阶段不重定向。
     /// </summary>
     public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req) {
         if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", null))
             return new LobbyResult(string.Empty, false, "invalid server password.");
 
+        // 房主名从登录会话取服务端权威身份，不信任客户端提交
+        string? hostDisplayName = _stateStore.GetLoginPlayerName(connectionId);
+        if (string.IsNullOrEmpty(hostDisplayName))
+            return new LobbyResult(string.Empty, false, "Player not logged in.");
+
         // 房间 ID 由服务端权威生成，客户端不提交，避免碰撞与伪造
         string roomId = Guid.NewGuid().ToString("N");
         string playerId = req.PlayerId;
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
-
-        // 房主 displayName 由服务端权威解析，不信任客户端提交的 HostName
-        string hostDisplayName = GetDisplayName(req.PlayerName, playerId);
 
         GameRoom config;
         if (req.Config != null) {
@@ -128,11 +130,15 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
             return new LobbyResult(req.RoomId, false, "Invalid room password.");
 
+        // 玩家名从登录会话取服务端权威身份，不信任客户端提交；先校验再改状态，失败不留脏状态
+        string? displayName = _stateStore.GetLoginPlayerName(connectionId);
+        if (string.IsNullOrEmpty(displayName))
+            return new LobbyResult(req.RoomId, false, "Player not logged in.");
+
         // 原子自增玩家数，避免并发 join 时读改写丢失更新
         _stateStore.IncrementPlayerCount(req.RoomId);
         await _broadcaster.AddToRoomAsync(connectionId, req.RoomId);
 
-        string displayName = GetDisplayName(req.PlayerName, req.PlayerId);
         // 登记玩家为房间准备成员，默认未准备，playerId 一并登记用于战斗白名单
         _stateStore.RegisterRoomPlayer(req.RoomId, displayName, req.PlayerId, connectionId);
 

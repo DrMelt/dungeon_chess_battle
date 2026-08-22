@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,12 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
     /// <summary>房间内玩家的连接归属表：connectionId 到房间 ID 与玩家名的映射。</summary>
     private readonly ConcurrentDictionary<string, (string RoomId, string PlayerName)> _peerPlayers = new();
+
+    /// <summary>玩家记录注册表：登入名字到记录主键。名字首次出现时自动登记，回放按记录主键归档与查询。</summary>
+    private readonly ConcurrentDictionary<string, string> _playerRecords = new();
+
+    /// <summary>大厅登录会话表：connectionId 到登录名，服务端权威身份，连接断开时清理。</summary>
+    private readonly ConcurrentDictionary<string, string> _loginSessions = new();
 
     /// <summary>房间内玩家的 playerId 映射表：房间 ID 到玩家名与 playerId 的映射。</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> _roomPlayerIds = new();
@@ -212,6 +219,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         _roomReadyStates.Clear();
         _roomPlayerIds.Clear();
         _peerPlayers.Clear();
+        _playerRecords.Clear();
+        _loginSessions.Clear();
         // 锁表随状态一并清空，停机后不再有房间，旧锁对象无保留价值
         _roomLocks.Clear();
     }
@@ -386,6 +395,32 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         if (_peerPlayers.TryGetValue(connectionId, out var entry))
             return entry.PlayerName;
         return null;
+    }
+
+    /// <inheritdoc />
+    public string ResolvePlayerRecordId(string playerName) {
+        // 单条目 GetOrAdd 原子；名字首次出现自动登记，记录主键与连接无关，进程生命周期内稳定
+        return _playerRecords.GetOrAdd(playerName, _ => Guid.NewGuid().ToString("N"));
+    }
+
+    /// <inheritdoc />
+    public bool TryRegisterLoginSession(string connectionId, string playerName) {
+        // 登录名是服务端权威身份，非法名字直接拒绝，不做降级，避免身份名与显示名漂移
+        if (string.IsNullOrWhiteSpace(playerName) || playerName.Length > EntityConstants.MaxPlayerNameLength)
+            return false;
+        _loginSessions[connectionId] = playerName;
+        return true;
+    }
+
+    /// <inheritdoc />
+    public string? GetLoginPlayerName(string connectionId) {
+        _loginSessions.TryGetValue(connectionId, out var playerName);
+        return playerName;
+    }
+
+    /// <inheritdoc />
+    public void RemoveLoginSession(string connectionId) {
+        _loginSessions.TryRemove(connectionId, out _);
     }
 
     /// <inheritdoc />

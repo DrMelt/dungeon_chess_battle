@@ -1,4 +1,5 @@
 using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.Battle.Replay;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,10 +14,12 @@ public static class BattleServiceCollectionExtensions {
     /// <summary>注册战斗服务器：配置切片与 IBattleRoomManager 绑定。</summary>
     public static IServiceCollection AddBattleServer(this IServiceCollection services, BattleServerConfig battleConfig) {
         services.AddSingleton(battleConfig);
+        services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
         services.AddSingleton<IBattleRoomManager>(sp => new BattleRoomManager(
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<IGameStateStore>(),
-            sp.GetRequiredService<BattleServerConfig>()));
+            sp.GetRequiredService<BattleServerConfig>(),
+            sp.GetRequiredService<IReplayStore>()));
         return services;
     }
 }

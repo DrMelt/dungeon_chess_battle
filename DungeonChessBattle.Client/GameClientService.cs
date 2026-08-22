@@ -173,7 +173,7 @@ public sealed partial class GameClientService {
     public void RequestCreateRoom(string? roomPassword = null, RoomConfigDto? config = null) {
         _cachedRoomPassword = roomPassword;
 
-        LobbyClient.RequestCreateRoom(PlayerName, PlayerId, roomPassword, config, _serverPassword);
+        LobbyClient.RequestCreateRoom(PlayerId, roomPassword, config, _serverPassword);
     }
 
     /// <summary>
@@ -190,7 +190,7 @@ public sealed partial class GameClientService {
         _cachedRoomId = roomId;
         _cachedRoomPassword = roomPassword;
 
-        LobbyClient.RequestJoinRoom(roomId, PlayerName, PlayerId, roomPassword, _serverPassword);
+        LobbyClient.RequestJoinRoom(roomId, PlayerId, roomPassword, _serverPassword);
     }
 
     /// <summary>请求在大厅准备阶段添加单位，房间由服务端从连接归属反查，阵营由副本配置按选项键解析。</summary>
@@ -287,6 +287,22 @@ public sealed partial class GameClientService {
         LobbyClient.OnFullyConnected += () => EnqueueMainThread(() => {
             SetState(ClientConnectionState.InLobby);
             OnConnectionEstablished();
+            // 连接建立后登记服务端权威身份；重连路径等待登录结果后再发重连请求
+            LobbyClient.RequestLogin(PlayerName);
+        });
+        LobbyClient.OnLoginResult += (success, error) => EnqueueMainThread(() => {
+            if (!success) {
+                // 清除重连等待，登录失败时重连无法进行，交由超时兜底复位状态
+                _reconnectPendingLogin = false;
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("登入失败: {Error}", error);
+                return;
+            }
+            // 自动重连路径：登录完成后发送重连请求，避免未登录被服务端拒绝
+            if (_reconnectPendingLogin) {
+                _reconnectPendingLogin = false;
+                SendReconnectRequest();
+            }
         });
         LobbyClient.OnFullyDisconnected += () => EnqueueMainThread(() => {
             // 大厅断开：若房间仍连，战斗中则保持；否则视为完全断开

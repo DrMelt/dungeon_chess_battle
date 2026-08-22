@@ -13,11 +13,8 @@ public interface IBattleRoomManager {
     /// <summary>获取战斗中房间的监听端口；非战斗中的房间返回 false。</summary>
     bool TryGetRoomPort(string roomId, out int port);
 
-    /// <summary>预注册玩家到房间，断线重连身份校验与命名用。</summary>
-    void RegisterPlayer(string roomId, string playerId, string playerName);
-
-    /// <summary>更新已注册玩家的显示名，重连时可能更改。</summary>
-    void UpdatePlayerName(string roomId, string playerId, string playerName);
+    /// <summary>重连登记玩家到房间：仅房间既有同名会话才允许，返回是否成功。</summary>
+    bool RegisterPlayer(string roomId, string playerId, string playerName);
 
     /// <summary>消费空房间投递队列并执行房间移除，由协调循环周期调用。</summary>
     void ProcessPendingRoomCleanups();
