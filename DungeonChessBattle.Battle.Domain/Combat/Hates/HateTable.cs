@@ -3,7 +3,7 @@ namespace DungeonChessBattle.Battle.Domain.Combat.Hates;
 /// <summary>
 /// 单位权威仇恨表：本单位对各目标的仇恨账本，由 <see cref="UnitCombatState.Hates"/> 持有。
 /// 以目标网络 ID 为键，不持有单位引用，纯数据结构可独立单测。
-/// 增删改查与 dirty 标记，dirty 经投影节流同步到 IBattleUnit.Hates。
+/// 增删改查与 dirty 标记，dirty 经投影器节流同步。
 /// </summary>
 public sealed class HateTable {
     /// <summary>目标网络 ID → 仇恨值。</summary>

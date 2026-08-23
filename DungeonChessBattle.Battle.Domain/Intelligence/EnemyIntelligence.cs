@@ -43,7 +43,7 @@ public static class EnemyIntelligenceDefaults {
 
 /// <summary>
 /// 敌人单位决策契约。实现必须无状态，无状态实例可被任意多个单位共享。
-/// 决策只依赖 IBattleUnit 只读契约与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。
+/// 决策只依赖 <see cref="IBattleUnitView"/> 只读契约与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。
 /// </summary>
 public interface IUnitIntelligence {
     /// <summary>
@@ -58,7 +58,7 @@ public interface IUnitIntelligence {
 
 /// <summary>
 /// 默认敌人决策模块：为单个敌方单位生成当帧动作意图。
-/// 纯函数式决策，依赖 IBattleUnit 只读契约；阵营关系由调用方按副本运行时注入，不绑定实例；
+/// 纯函数式决策，依赖 <see cref="IBattleUnitView"/> 只读契约；阵营关系由调用方按副本运行时注入，不绑定实例；
 /// 施法判定复用 <see cref="SkillCastValidator"/> 唯一来源，目标选择以仇恨为优先，无仇恨回退最近者；射程一律取自技能配置而非魔数。
 /// </summary>
 /// <param name="fallbackApproachRange">技能未配置射程时的兜底逼近距离，默认 10 与迁改前 AttackRange 常量一致。</param>

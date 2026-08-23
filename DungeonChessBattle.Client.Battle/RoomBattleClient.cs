@@ -44,7 +44,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>
     /// 战斗阶段变化事件，roomId 与 phase。
-    /// 经 IBattleRoom 轮询检测到阶段变化时触发。
+    /// 直读 BattleRoomEntity SyncVar 轮询检测到阶段变化时触发。
     /// </summary>
     public event Action<string, BattlePhase>? BattlePhaseChanged;
 

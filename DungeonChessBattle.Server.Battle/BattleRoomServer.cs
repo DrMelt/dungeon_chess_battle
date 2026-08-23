@@ -17,8 +17,8 @@ namespace DungeonChessBattle.Server.Battle;
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
 /// 独立的战斗世界实例 BattleScene 与领域技能仓库 GameConfigDB，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
-/// 战斗流程由 IBattleScene 统一驱动，读条、冷却、Buff、结算与阶段；
-/// 房间级阶段状态由战斗世界直接写入载体，战斗内领域事件经整帧事件日志广播到客户端。
+/// 战斗流程由 BattleScene 统一驱动，读条、冷却、Buff、结算与阶段；
+/// 房间级阶段状态由战斗世界投影写载体，战斗内领域事件经整帧事件日志广播到客户端。
 /// 创建 Entity 时仅该房间内的客户端可见。
 /// 支持断线重连：连接资格实时查询 <see cref="IGameStateStore"/>，房间存续期间
 /// 登记成员可连接；断线玩家实体保留直至房间销毁，无宽限期机制。
@@ -80,7 +80,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>同阵营玩家出生点间距，大于两倍碰撞半径避免重叠。</summary>
     private const float SpawnSpacing = 3f;
 
-    /// <summary>本房间的战斗世界，面向 IBattleScene 契约，不依赖网络载体与配置仓库。</summary>
+    /// <summary>本房间的战斗世界，面向 BattleScene 具体类，不依赖网络载体与配置仓库。</summary>
     private readonly BattleScene _battleScene;
 
     /// <summary>本房间副本的阵营关系函数，AI 决策与战斗世界共用。</summary>
