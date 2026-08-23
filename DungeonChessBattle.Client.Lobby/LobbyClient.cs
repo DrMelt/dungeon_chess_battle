@@ -17,6 +17,10 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     private readonly ConcurrentDictionary<string, RoomSnapshot> _roomSnapshots = new();
     private HubConnection? _hub;
 
+    // 连接目标，用于回放下载 URL 组装
+    private string _host = "";
+    private int _port;
+
     // 连接代际：每次 Connect 递增，用于隔离过期的异步 StartAsync 回调，
     // 防止旧连接建立成功后干扰新连接，配合旧连接释放。
     private int _connectionVersion;
@@ -35,6 +39,12 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
 
     /// <summary>招募板房间列表接收事件。</summary>
     public event Action<List<RoomListing>>? OnRoomListReceived;
+
+    /// <summary>回放摘要列表接收事件，最近在前。</summary>
+    public event Action<IReadOnlyList<ReplaySummaryDto>>? OnReplayListReceived;
+
+    /// <summary>回放下载凭证签发结果事件。</summary>
+    public event Action<ReplayDownloadResult>? OnReplayDownloadResult;
 
     /// <summary>准备阶段战斗启动重定向事件。参数：房间 ID、端口。</summary>
     public event Action<string, int>? OnPrepareBattleRedirect;
@@ -67,6 +77,8 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
         }
 
         int version = ++_connectionVersion;
+        _host = host;
+        _port = port;
         var hub = CreateConnection(host, port);
         _hub = hub;
         _ = StartAsync(hub, version);
@@ -273,6 +285,31 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
             await hub.InvokeAsync<LobbyResult>(HubMethods.LeaveRoom);
         });
     }
+
+    /// <summary>
+    /// 请求当前登录玩家的回放摘要列表，最近在前，结果经 <see cref="OnReplayListReceived"/> 回调。
+    /// </summary>
+    public void RequestGetReplays() {
+        RunHubCall(async hub => {
+            var result = await hub.InvokeAsync<ReplayListResult>(HubMethods.GetReplays);
+            OnReplayListReceived?.Invoke([.. result.Replays]);
+        });
+    }
+
+    /// <summary>
+    /// 请求回放下载一次性凭证，结果经 <see cref="OnReplayDownloadResult"/> 回调；
+    /// 凭凭证经 <see cref="BuildReplayDownloadUrl"/> 换取回放字节流。
+    /// </summary>
+    public void RequestDownloadReplay(string roomId) {
+        RunHubCall(async hub => {
+            var result = await hub.InvokeAsync<ReplayDownloadResult>(HubMethods.DownloadReplay, roomId);
+            OnReplayDownloadResult?.Invoke(result);
+        });
+    }
+
+    /// <summary>组装回放下载 URL，凭一次性凭证换取回放字节流。</summary>
+    public string BuildReplayDownloadUrl(string roomId, string ticket)
+        => $"http://{_host}:{_port}/replay/{roomId}?ticket={Uri.EscapeDataString(ticket)}";
 
     /// <summary>处理服务端广播的房间快照：缓存并触发更新事件。</summary>
     private void HandleRoomSnapshot(RoomSnapshot snapshot) {
