@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Entities.Replay;
+using DungeonChessBattle.Protocol.Replay;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.StateStore.Abstractions;
 using Microsoft.Extensions.Logging;

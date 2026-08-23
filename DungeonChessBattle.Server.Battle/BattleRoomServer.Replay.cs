@@ -1,6 +1,6 @@
 using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.Replay;
 using DungeonChessBattle.Entities.Requests;
+using DungeonChessBattle.Protocol.Replay;
 using DungeonChessBattle.Server.Battle.Replay;
 using Microsoft.Extensions.Logging;
 
@@ -27,9 +27,8 @@ public partial class BattleRoomServer {
 
     /// <summary>创建回放记录器，玩家表序号与 <see cref="_playerIndexByNetId"/> 一致。仅房间线程调用。</summary>
     private void CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players) {
-        var header = new ReplayRecordHeader(ReplayFormatVersion.Current, RoomId, _dungeonKey,
+        _replayRecorder = new BattleReplayRecorder(RoomId, _dungeonKey,
             DateTimeOffset.UtcNow.ToUnixTimeSeconds(), FramesPerSecond, players);
-        _replayRecorder = new BattleReplayRecorder(header);
     }
 
     /// <summary>记录玩家单位移动输入；非玩家单位或未启用时跳过。</summary>

@@ -12,11 +12,11 @@ public static class SkillTargetValidator {
     /// 判定按目标阵营关系限定的技能能否作用于目标。
     /// Same 仅限友方，Different 仅限敌方，None 不可主动选择单位目标。
     /// </summary>
-    /// <param name="source">施法单位。</param>
-    /// <param name="target">目标单位。</param>
+    /// <param name="source">施法单位只读视图。</param>
+    /// <param name="target">目标单位只读视图。</param>
     /// <param name="policy">技能目标阵营策略。</param>
     /// <param name="resolver">副本配置的阵营关系函数。</param>
-    public static bool CanAffect(IBattleUnit source, IBattleUnit target, SkillTargetPolicy policy,
+    public static bool CanAffect(IBattleUnitView source, IBattleUnitView target, SkillTargetPolicy policy,
         CampRelationResolver resolver) {
         if (policy == SkillTargetPolicy.None)
             return false;

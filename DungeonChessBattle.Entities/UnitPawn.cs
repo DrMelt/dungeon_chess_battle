@@ -3,8 +3,6 @@ using DungeonChessBattle.Battle.Domain.Combat;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
-using DungeonChessBattle.Battle.Domain.Intelligence;
 
 namespace DungeonChessBattle.Entities;
 
@@ -100,24 +98,6 @@ public partial class UnitPawn : PawnLogic {
         get; set;
     } = [];
 
-    /// <summary>单位智能决策器，装配期注入后只读，不参与网络同步；null 表示由外部输入驱动（玩家单位）。</summary>
-    public IUnitIntelligence? Intelligence {
-        get; set;
-    }
-
-    /// <summary>AI 动作执行器，AddUnit 时由 BattleScene 注入；客户端或未绑定实例为空，RunAI 不动作。</summary>
-    private IAiExecutor? _aiExecutor;
-
-    /// <summary>仇恨生成倍率，引用单位配置，装配期写入后只读，不参与网络同步。</summary>
-    public float HateFactor {
-        get; set;
-    } = 1f;
-
-    /// <summary>仇恨规则，按单位配置注入，装配期写入后只读，不参与网络同步。</summary>
-    public IHateRule HateRule {
-        get; set;
-    } = DefaultHateRule.Instance;
-
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
@@ -140,14 +120,29 @@ public partial class UnitPawn : PawnLogic {
         set;
     }
 
-    /// <summary>服务端权威战斗状态，不参与网络同步；客户端实例保留空状态不推进。</summary>
-    public UnitCombatState RuntimeState { get; } = new();
-
     /// <summary>当前移动方向，由控制器逐逻辑帧注入，纯本地变量，不参与网络同步。</summary>
     private Vector2 _moveInput;
 
     /// <summary>客户端同步阶段缓存的上一次生命值，用于 HealthChanged 的 oldHealth。</summary>
     private float _lastHealth;
+
+    /// <summary>
+    /// 读取单个技能的总冷却剩余秒数（全局冷却与个体冷却取较大者），客户端展示用。
+    /// 服务端权威截止 tick 按本端插值 ServerTick 推算。
+    /// </summary>
+    public float GetTotalCooldownRemaining(SkillKeyId skillKey) {
+        var em = EntityManager;
+        float remaining = SyncTickHelper.RemainingSeconds(em, GcdEndServerTick.Value);
+        foreach (var cd in SkillCooldowns) {
+            if (cd.SkillId == skillKey.Id) {
+                float cdRemaining = SyncTickHelper.RemainingSeconds(em, cd.EndServerTick);
+                if (cdRemaining > remaining)
+                    remaining = cdRemaining;
+                break;
+            }
+        }
+        return remaining;
+    }
 
     /// <summary>
     /// 确定性移动管线，由 Server 与 Client 装配时注入 <c>Logic.Movement.MovementResolver.Move</c>。

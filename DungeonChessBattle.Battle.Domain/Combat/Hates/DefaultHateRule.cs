@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Domain.Combat.Hates;
 /// <summary>
 /// 默认仇恨规则：经典威胁模型。
 /// 伤害：被打的单位把攻击者记进自己的仇恨表；治疗：被治疗者阵营的敌对存活单位把治疗者记进自己的仇恨表。
-/// 伤害与治疗产生的仇恨量以来源单位的仇恨倍率缩放，见 <see cref="IBattleUnit.HateFactor"/>。
+/// 伤害与治疗产生的仇恨量以来源单位的仇恨倍率缩放，见 <see cref="IBattleUnitView.HateFactor"/>。
 /// 仇恨指令（嘲讽）：默认按请求原样落账，把目标仇恨抬到当前最高之上或按操作符修改。
 /// 无状态单例，可复用为任意单位的基础规则。
 /// </summary>
@@ -18,7 +18,7 @@ public sealed class DefaultHateRule : IHateRule {
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<HateEffect> Evaluate(IBattleUnit self, IBattleEvent e, HateContext ctx) {
+    public IReadOnlyList<HateEffect> Evaluate(IBattleUnitView self, IBattleEvent e, HateContext ctx) {
         return e switch {
             DamageOccurred dmg when dmg.TargetNetId == self.UnitNetId && dmg.SourceNetId != 0 => Accrue(self, dmg.SourceNetId, dmg.AppliedDamage, ctx.Settings.DamageHateFactor, ctx),
             HealOccurred heal => HealSpread(self, heal, ctx),
@@ -28,7 +28,7 @@ public sealed class DefaultHateRule : IHateRule {
     }
 
     /// <summary>按伤害量、治疗量乘来源单位仇恨倍率落账，来源缺失或死亡不落账，零负不落账。</summary>
-    private static IReadOnlyList<HateEffect> Accrue(IBattleUnit self, ushort sourceNetId, float amount,
+    private static IReadOnlyList<HateEffect> Accrue(IBattleUnitView self, ushort sourceNetId, float amount,
         float factor, HateContext ctx) {
         if (ctx.UnitOf(sourceNetId) is not { Health: > 0f } source)
             return [];
@@ -37,7 +37,7 @@ public sealed class DefaultHateRule : IHateRule {
     }
 
     /// <summary>治疗扩散：仅当自身是存活且与被治疗者敌对的单位时，对治疗者记仇。仇恨量以治疗来源倍率缩放。</summary>
-    private static IReadOnlyList<HateEffect> HealSpread(IBattleUnit self, HealOccurred heal, HateContext ctx) {
+    private static IReadOnlyList<HateEffect> HealSpread(IBattleUnitView self, HealOccurred heal, HateContext ctx) {
         if (heal.SourceNetId == 0 || self.UnitNetId == heal.SourceNetId || self.Health <= 0f)
             return [];
         if (ctx.UnitOf(heal.TargetNetId) is not { } healTarget)

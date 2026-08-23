@@ -53,7 +53,7 @@ public interface IUnitIntelligence {
     /// <param name="self">决策主体，仇恨取自其自身仇恨投影。</param>
     /// <param name="scene">战场查询视图，本帧读只读，禁止写。</param>
     /// <param name="relations">所在副本的阵营关系函数，敌我判定唯一来源。</param>
-    EnemyDecision Decide(IBattleUnit self, IBattleSceneView scene, CampRelationResolver relations);
+    EnemyDecision Decide(IBattleUnitView self, IBattleSceneView scene, CampRelationResolver relations);
 }
 
 /// <summary>
@@ -67,7 +67,7 @@ public sealed class EnemyIntelligence(
     private readonly float _fallbackApproachRange = fallbackApproachRange;
 
     /// <inheritdoc />
-    public EnemyDecision Decide(IBattleUnit self, IBattleSceneView scene, CampRelationResolver relations) {
+    public EnemyDecision Decide(IBattleUnitView self, IBattleSceneView scene, CampRelationResolver relations) {
         // 正在读条：原地等待读条完成，避免移动打断自身读条
         if (self.SkillCasting != default)
             return EnemyDecision.Idle();
@@ -92,13 +92,13 @@ public sealed class EnemyIntelligence(
     }
 
     /// <summary>选目标：存活敌对单位中仇恨最高者优先，全零仇恨回退距自身最近者。</summary>
-    private static IBattleUnit? SelectTarget(IBattleUnit self, IReadOnlyList<IBattleUnit> candidates,
+    private static IBattleUnitView? SelectTarget(IBattleUnitView self, IReadOnlyList<IBattleUnitView> candidates,
         CampRelationResolver relations) {
         var selfPos = self.Snapshot.Position;
         var hates = BuildHateLookup(self);
-        IBattleUnit? topTarget = null;
+        IBattleUnitView? topTarget = null;
         float topHate = 0f;
-        IBattleUnit? nearest = null;
+        IBattleUnitView? nearest = null;
         float nearestDistanceSq = float.MaxValue;
 
         foreach (var candidate in candidates) {
@@ -124,7 +124,7 @@ public sealed class EnemyIntelligence(
     }
 
     /// <summary>把单位自身仇恨投影整理为按目标网络 ID 查询的字典，目标选择读取用。</summary>
-    private static Dictionary<ushort, float> BuildHateLookup(IBattleUnit self) {
+    private static Dictionary<ushort, float> BuildHateLookup(IBattleUnitView self) {
         var hates = new Dictionary<ushort, float>(self.Hates.Count);
         foreach (var snapshot in self.Hates)
             hates[snapshot.TargetNetId] = snapshot.Value;
@@ -135,7 +135,7 @@ public sealed class EnemyIntelligence(
     /// 停靠距离：敌方目标技能中最远射程，属 AI 逼近偏好而非施法权威判定。
     /// 单位目标技能取 CastRange，位置目标技能取 RangeShape.FarReach。
     /// </summary>
-    private float ApproachRange(IBattleUnit self) {
+    private float ApproachRange(IBattleUnitView self) {
         float range = 0f;
         foreach (var skill in self.Skills) {
             if (!skill.TargetPolicy.HasFlag(SkillTargetPolicy.Different))

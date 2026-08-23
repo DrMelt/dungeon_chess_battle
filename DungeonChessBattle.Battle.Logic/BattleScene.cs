@@ -14,29 +14,31 @@ using DungeonChessBattle.Battle.Logic.Hates;
 using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-// 过渡期：Battle.Logic 全局 using 旧 Battle.Enums 含同名 BattlePhase，此处显式指向 Domain 权威枚举。
-// 删除旧 Battle 项目后该别名可一并移除。
-using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
 
 namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
-/// 战斗世界实现：实现 <see cref="IBattleScene"/>，统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
-/// 面向 Domain 接口 IBattleUnit 读写单位状态、经 IBattleRoom 读写房间阶段，不依赖网络载体与全局配置仓库。
-/// 单位权威状态经 <see cref="IBattleUnit.RuntimeState"/> 承载于单位自身，本类只做推进、投影与结算。
-/// <see cref="ApplyDecisions"/> 在实体移动结算前调用以触发 AI 决策，
-/// <see cref="Tick"/> 在实体更新后调用推进战斗并返回领域事件做网络广播。
+/// 战斗世界实现：自持单位权威状态并统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
+/// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
+/// 单位位置经 <see cref="IBattleMovementBridge"/> 与外部移动执行器衔接，
+/// 状态变化经 <see cref="IBattleProjector"/> 投影给外部载体或展示层。
+/// <see cref="ApplyDecisions"/> 在移动结算前调用以触发 AI 决策，移动输入本帧生效；
+/// <see cref="Tick"/> 在移动结算后调用推进战斗并返回领域事件。
 /// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建注入，与战斗世界同生命周期。</param>
 /// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
 /// <param name="logger">AI 决策日志，可选注入。</param>
+/// <param name="movementBridge">移动衔接：位置回读与移动输入输出；回放离线模式可为空。</param>
+/// <param name="projector">状态投影器：单位与阶段投影到外部载体或展示层；回放离线模式可为空。</param>
 public sealed partial class BattleScene(
     CampRelationResolver relations,
     PhysicsMovementScene movementScene,
     HateSettings? hateSettings = null,
-    ILogger<BattleScene>? logger = null) : IBattleScene, IAiExecutor {
+    ILogger<BattleScene>? logger = null,
+    IBattleMovementBridge? movementBridge = null,
+    IBattleProjector? projector = null) : IBattleSceneView {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
@@ -49,6 +51,21 @@ public sealed partial class BattleScene(
     /// <summary>竞技场移动场景：静态障碍与单位互斥的空间载体，构造后只读，与战斗世界同生命周期。</summary>
     private readonly PhysicsMovementScene _movementScene = movementScene;
 
+    /// <summary>移动衔接器；回放离线模式为空，位置由回放驱动直接结算。</summary>
+    private IBattleMovementBridge? _movementBridge = movementBridge;
+
+    /// <summary>状态投影器；回放离线模式为空。</summary>
+    private IBattleProjector? _projector = projector;
+
+    /// <summary>
+    /// 后置装配移动衔接器与投影器。服务端在完成单位创建后调用；
+    /// 回放端在构造时经参数注入，无需调用。
+    /// </summary>
+    public void Configure(IBattleMovementBridge? movementBridge, IBattleProjector? projector) {
+        _movementBridge = movementBridge;
+        _projector = projector;
+    }
+
     /// <inheritdoc />
     public IMovementScene MovementScene => _movementScene;
 
@@ -58,44 +75,43 @@ public sealed partial class BattleScene(
     /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
     private readonly List<IBattleEvent> _pendingEvents = [];
 
-    /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨投影用。</summary>
-    private readonly Dictionary<ushort, IBattleUnit> _unitById = [];
+    /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨落账用。</summary>
+    private readonly Dictionary<ushort, BattleUnit> _unitById = [];
 
-    private readonly List<IBattleUnit> _units = [];
-
-    /// <inheritdoc />
-    public IReadOnlyList<IBattleUnit> Units => _units;
+    /// <summary>全部战斗单位，按注册顺序。</summary>
+    private readonly List<BattleUnit> _units = [];
 
     /// <inheritdoc />
-    public IBattleUnit? FindUnit(ushort netId) =>
+    public IReadOnlyList<IBattleUnitView> Units => _units;
+
+    /// <inheritdoc />
+    public IBattleUnitView? FindUnit(ushort netId) =>
         _unitById.TryGetValue(netId, out var unit) ? unit : null;
 
     /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
-    private readonly HashSet<IBattleUnit> _dead = [];
+    private readonly HashSet<BattleUnit> _dead = [];
 
-    /// <summary>房间级战斗状态载体，首帧由编排层经 BindRoom 注入；阶段权威经载体读写，绑定先于任何阶段操作。</summary>
-    private IBattleRoom? _battleRoom;
+    /// <summary>当前战斗阶段，战斗世界自持权威。</summary>
+    private BattlePhase _phase = BattlePhase.Waiting;
 
-    /// <summary>绑定房间级战斗状态载体，首帧由编排层注入；绑定先于任何阶段操作。</summary>
-    public void BindRoom(IBattleRoom room) {
-        ArgumentNullException.ThrowIfNull(room);
-        _battleRoom = room;
+    /// <summary>已判定结束，避免重复执行结束判定。</summary>
+    private bool _ended;
+
+    /// <summary>战斗开始 Unix 秒，StartBattle 时写入。</summary>
+    public long BattleStartUnixTime {
+        get; private set;
     }
 
-    /// <summary>房间级状态载体访问器：未绑定属配置故障，阶段操作响亮失败而非静默。</summary>
-    private IBattleRoom BattleRoom => _battleRoom
-        ?? throw new InvalidOperationException("BattleScene 未绑定房间级状态载体，任何阶段操作前必须 BindRoom。");
+    /// <inheritdoc />
+    public BattlePhase CurrentPhase => _phase;
 
-    /// <summary>当前战斗阶段，经 IBattleRoom 读取载体权威，未绑定视为 Waiting；非 Running 时 Tick 不推进。</summary>
-    public BattlePhase CurrentPhase => _battleRoom?.CurrentPhase ?? BattlePhase.Waiting;
+    /// <summary>战斗是否已结束。</summary>
+    public bool IsFinished => _phase == BattlePhase.Finished;
 
     /// <summary>战斗已运行的秒数，Running 期间累加。</summary>
     public float ElapsedTime {
         get; private set;
     }
-
-    /// <summary>已判定结束，避免重复执行结束判定。</summary>
-    private bool _ended;
 
     /// <summary>Buff 全局结算间隔，秒；所有存活 Buff 在同一节拍点同时结算。</summary>
     private const double BuffTickInterval = 3.0;
@@ -103,29 +119,25 @@ public sealed partial class BattleScene(
     /// <summary>距下一次 Buff 全局结算的剩余时间，秒。</summary>
     private double _buffTickRemaining = BuffTickInterval;
 
-    /// <summary>注册一个战斗单位到战斗世界，空间演员注册与战斗注册同生命周期。</summary>
-    public void AddUnit(IBattleUnit unit) {
+    /// <summary>注册一个战斗单位到战斗世界。</summary>
+    public void AddUnit(BattleUnit unit) {
         ArgumentNullException.ThrowIfNull(unit);
         if (!_units.Contains(unit)) {
             _units.Add(unit);
             _unitById[unit.UnitNetId] = unit;
-            unit.BindAIExecutor(this);
-            _movementScene.AddActor(unit.UnitNetId,
-                () => unit.Snapshot.BodyRadius, () => unit.Snapshot.Position);
         }
     }
 
-    /// <summary>移除已注册的战斗单位与空间演员。仇恨表随单位载体生命周期，无需额外清理。</summary>
-    public void RemoveUnit(IBattleUnit unit) {
+    /// <summary>移除已注册的战斗单位，并清空其仇恨条目。</summary>
+    public void RemoveUnit(BattleUnit unit) {
         _units.Remove(unit);
         _unitById.Remove(unit.UnitNetId);
         _dead.Remove(unit);
         ClearHateEntries(unit);
-        _movementScene.RemoveActor(unit.UnitNetId);
     }
 
     /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
-    private void ClearHateEntries(IBattleUnit dead) {
+    private void ClearHateEntries(BattleUnit dead) {
         dead.RuntimeState.Hates.Clear();
         foreach (var unit in _units) {
             if (unit != dead)
@@ -133,32 +145,51 @@ public sealed partial class BattleScene(
         }
     }
 
-    /// <summary>
-    /// 开始战斗：Waiting 到 Running，清零计时，阶段状态经载体写入。
-    /// </summary>
+    /// <summary>开始战斗：Waiting 到 Running，清零计时并记录开始时刻。</summary>
     public void StartBattle() {
-        if (CurrentPhase != BattlePhase.Waiting)
+        if (_phase != BattlePhase.Waiting)
             return;
 
-        BattleRoom.ProjectBattleStarted();
+        _phase = BattlePhase.Running;
+        BattleStartUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         ElapsedTime = 0f;
         _buffTickRemaining = BuffTickInterval;
+        ProjectAll();
+    }
+
+    /// <summary>手动结束战斗，幂等兜底。</summary>
+    public void EndBattle() {
+        if (_phase == BattlePhase.Finished)
+            return;
+        _phase = BattlePhase.Finished;
+        ProjectAll();
     }
 
     /// <summary>
-    /// 手动结束战斗，幂等兜底，如全员断线。阶段状态经载体写入。
+    /// 从移动衔接器回读各单位位置，供本帧结算使用；离线模式跳过，位置已由回放驱动结算。
     /// </summary>
-    public void EndBattle() {
-        if (CurrentPhase == BattlePhase.Finished)
+    public void SyncUnitPositions() {
+        if (_movementBridge == null)
             return;
-        BattleRoom.ProjectBattleEnded();
+        foreach (var unit in _units)
+            unit.Position = _movementBridge.GetPosition(unit.UnitNetId);
     }
+
+    /// <summary>
+    /// 提交移动输入：写入单位移动输入并按世界规则处理"移动即打断读条"。玩家输入与回放输入共用。
+    /// </summary>
+    public void SubmitMove(ushort netId, Vector2 moveDirection) {
+        if (!_unitById.TryGetValue(netId, out var unit))
+            return;
+        SetMoveInput(unit, moveDirection);
+    }
+
 
     /// <summary>
     /// 发起读条施法：技能存在、归属、状态与目标/位置校验通过后写入读条状态并暂存目标。
     /// </summary>
     /// <returns>校验通过并成功发起返回 true。</returns>
-    public bool BeginCast(IBattleUnit caster, SkillKeyId skillKey, IBattleUnit? target, Vector2? targetPos) {
+    public bool BeginCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos) {
         var skill = caster.GetSkill(skillKey);
         if (skill == null)
             return false;
@@ -182,18 +213,9 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 单位发生移动：移动即取消读条，状态清理统一经显式取消施法收敛。
-    /// </summary>
-    public void OnUnitMoved(IBattleUnit unit, Vector2 moveDir) {
-        if (moveDir.LengthSquared() <= 0.0001f)
-            return;
-        CancelCast(unit);
-    }
-
-    /// <summary>
     /// 取消单位当前读条施法：产生 CastCanceled 事件并清理读条状态；无读条为空操作。
     /// </summary>
-    public void CancelCast(IBattleUnit unit) {
+    public void CancelCast(BattleUnit unit) {
         if (unit.SkillCasting == default)
             return;
         _pendingEvents.Add(new CastCanceled(unit.UnitNetId, unit.SkillCasting));
@@ -203,35 +225,67 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// AI 前置推进：逐个触发单位的自治决策，动作执行经单位绑定执行器回到本场景。
-    /// 本帧单位列表只读，决策输入经 <see cref="Units"/> 取本帧权威状态。
+    /// AI 前置推进：逐个触发敌方单位的自治决策，动作经本场景执行。
+    /// 必须在移动结算之前调用，移动输入本帧生效。
     /// </summary>
     public void ApplyDecisions() {
-        if (CurrentPhase != BattlePhase.Running)
+        if (_phase != BattlePhase.Running)
             return;
 
-        foreach (var unit in _units)
-            unit.RunAI(this, _relations);
+        SyncUnitPositions();
+
+        foreach (var unit in _units) {
+            if (unit.Health <= 0f || unit.Intelligence is not { } intelligence)
+                continue;
+
+            // 正在读条：原地等待读条完成，避免移动打断自身读条
+            if (unit.SkillCasting != default) {
+                SetMoveInput(unit, Vector2.Zero);
+                continue;
+            }
+
+            var decision = intelligence.Decide(unit, this, _relations);
+            switch (decision.Kind) {
+                case EnemyDecisionKind.Idle:
+                    SetMoveInput(unit, Vector2.Zero);
+                    break;
+
+                case EnemyDecisionKind.MoveTo:
+                    SetMoveInput(unit, decision.MoveDirection);
+                    break;
+
+                case EnemyDecisionKind.CastSkill:
+                    SetMoveInput(unit, Vector2.Zero);
+                    RequestCast(unit, decision.SkillId, decision.TargetNetId, decision.TargetPosition);
+                    break;
+
+                default:
+                    // 未知决策类型按静止退化，决策器为领域内可控代码，正常不产生
+                    SetMoveInput(unit, Vector2.Zero);
+                    break;
+            }
+        }
     }
 
-    /// <summary>IAiExecutor：写入移动输入并按世界规则处理"移动即打断读条"；零向量表示静止，不打断读条。</summary>
-    void IAiExecutor.SetMovement(IBattleUnit unit, Vector2 moveDirection) {
-        unit.SetMovementInput(moveDirection);
-        OnUnitMoved(unit, moveDirection);
+    /// <summary>写入移动输入并处理"移动即打断读条"；零向量表示静止，不打断读条。</summary>
+    private void SetMoveInput(BattleUnit unit, Vector2 moveDirection) {
+        unit.MoveInput = moveDirection;
+        _movementBridge?.SetMoveInput(unit.UnitNetId, moveDirection);
+        if (moveDirection.LengthSquared() > 0.0001f)
+            CancelCast(unit);
     }
 
-    /// <summary>IAiExecutor：按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
-    void IAiExecutor.RequestCast(IBattleUnit caster, SkillKeyId skillKey, ushort targetNetId, Vector2 targetPosition) {
+    /// <summary>按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
+    private void RequestCast(BattleUnit caster, SkillKeyId skillKey, ushort targetNetId, Vector2 targetPosition) {
         var skill = caster.GetSkill(skillKey);
         if (skill == null) {
             LogSkillNotFound(caster.UnitName, skillKey.Id);
             return;
         }
 
-        IBattleUnit? target = null;
+        BattleUnit? target = null;
         if (skill.NeedUnitTarget) {
-            var targetUnit = FindUnit(targetNetId);
-            if (targetUnit == null)
+            if (!_unitById.TryGetValue(targetNetId, out var targetUnit))
                 return;
             target = targetUnit;
         }
@@ -245,12 +299,13 @@ public sealed partial class BattleScene(
         LogCastStarted(caster.UnitName, skillKey.Id, targetName);
     }
 
+
     /// <summary>
     /// 按帧推进全部单位的读条、冷却与 Buff，返回本帧领域事件。
-    /// 仅在 Running 阶段推进；战斗结束条件满足时经载体切换 Finished。
+    /// 仅在 Running 阶段推进；战斗结束条件满足时切换 Finished。
     /// </summary>
     public IReadOnlyList<IBattleEvent> Tick(double deltaTime) {
-        if (CurrentPhase != BattlePhase.Running) {
+        if (_phase != BattlePhase.Running) {
             // 非 Running 不推进不外送事件；跨帧缓冲一并清空，避免战斗结束后滞留。
             _pendingEvents.Clear();
             return [];
@@ -286,7 +341,7 @@ public sealed partial class BattleScene(
         TryEndBattle();
 
         // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
-        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById, _hateSettings, _relations)) {
+        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, _hateSettings, _relations)) {
             if (_unitById.TryGetValue(effect.HolderNetId, out var holder))
                 holder.RuntimeState.Hates.ApplyEffect(effect);
         }
@@ -296,16 +351,17 @@ public sealed partial class BattleScene(
             if (unit.Health <= 0f)
                 ClearHateEntries(unit);
         }
-        ProjectHates();
+
+        ProjectAll();
 
         return _eventLog;
     }
 
     /// <summary>
-    /// 判定战斗是否结束：任一阵营无存活单位则结束；满足条件时经载体置 Finished，每场仅执行一次。
+    /// 判定战斗是否结束：任一阵营无存活单位则结束；满足条件时切换 Finished，每场仅执行一次。
     /// </summary>
     private void TryEndBattle() {
-        if (CurrentPhase != BattlePhase.Running || _ended)
+        if (_phase != BattlePhase.Running || _ended)
             return;
 
         var allCamps = _units.SelectMany(u => u.Camps).Distinct().ToHashSet();
@@ -317,12 +373,11 @@ public sealed partial class BattleScene(
             return;
 
         _ended = true;
-        BattleRoom.ProjectBattleEnded();
+        _phase = BattlePhase.Finished;
     }
 
-    #region Tick 内部
-
-    private void TickCasting(IBattleUnit unit, double deltaTime, BattleEventLog log) {
+    /// <summary>推进单位读条；读条完成时结算技能并清理读条状态。</summary>
+    private void TickCasting(BattleUnit unit, double deltaTime, BattleEventLog log) {
         if (unit.SkillCasting == default)
             return;
 
@@ -339,7 +394,8 @@ public sealed partial class BattleScene(
         unit.RuntimeState.ClearCast();
     }
 
-    private static void TickCooldowns(IBattleUnit unit, double deltaTime) {
+    /// <summary>推进个体冷却：剩余秒数递减，到期移除条目。剩余由投影器按帧投影。</summary>
+    private static void TickCooldowns(BattleUnit unit, double deltaTime) {
         var entries = unit.RuntimeState.Cooldowns;
         if (entries.Count == 0)
             return;
@@ -347,18 +403,15 @@ public sealed partial class BattleScene(
         for (int i = entries.Count - 1; i >= 0; i--) {
             CooldownEntry entry = entries[i];
             float remaining = entry.Remaining - dt;
-            if (remaining <= 0f) {
+            if (remaining <= 0f)
                 entries.RemoveAt(i);
-                unit.SetSkillCooldown(entry.SkillKey, 0f);
-            }
-            else {
+            else
                 entry.Remaining = remaining;
-                // 剩余时间由客户端按 EndServerTick 本地推算，不再每 tick 写载体
-            }
         }
     }
 
-    private static void TickBuffs(IBattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
+    /// <summary>推进 Buff 全局节拍；结构变化时保留存活实例。</summary>
+    private static void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
             return;
@@ -378,32 +431,15 @@ public sealed partial class BattleScene(
                 alive.Add(buff);
         }
 
-        // 仅结构变化时投影载体：新增与叠加在 AddBuff 投影，到期在此投影。
-        // 剩余时间由客户端按 EndServerTick 本地推算，不随每 tick 递减同步。
         if (alive.Count != list.Count) {
             list.Clear();
             list.AddRange(alive);
-            ProjectBuffs(target);
         }
     }
 
-    /// <summary>把目标单位的权威 Buff 列表全量投影到载体，低频结构变化时调用。</summary>
-    private static void ProjectBuffs(IBattleUnit target) {
-        var list = target.RuntimeState.Buffs;
-        if (list.Count == 0) {
-            target.ReplaceBuffs([]);
-            return;
-        }
-        target.ReplaceBuffs([.. list.Select(b => new BuffView {
-            BuffTypeId = b.Instance.BuffTypeId,
-            Remaining = (float)b.Instance.Remaining,
-            StackCount = (ushort)b.Instance.Stacks,
-            DamageType = EffectDamageType(b.Effect),
-        })]);
-    }
 
-    private void ResolveCast(IBattleUnit caster, SkillDefinition skill, IBattleUnit? target, Vector2? targetPos, BattleEventLog log) {
-        // 读条完成与瞬发立即结算共用：写入权威个体冷却并推进全局冷却
+    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却并推进全局冷却。</summary>
+    private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
 
@@ -442,8 +478,8 @@ public sealed partial class BattleScene(
         log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, target?.UnitNetId));
     }
 
-    /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值；权威变化立即投影回载体，保证施放校验即时生效。</summary>
-    private static void SetCooldownAuthoritative(IBattleUnit unit, SkillKeyId skillKey, float remaining) {
+    /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值。</summary>
+    private static void SetCooldownAuthoritative(BattleUnit unit, SkillKeyId skillKey, float remaining) {
         var entries = unit.RuntimeState.Cooldowns;
         foreach (var entry in entries) {
             if (entry.SkillKey != skillKey)
@@ -451,14 +487,13 @@ public sealed partial class BattleScene(
             if (remaining <= entry.Remaining)
                 return;
             entry.Remaining = remaining;
-            unit.SetSkillCooldown(skillKey, remaining);
             return;
         }
         entries.Add(new CooldownEntry(skillKey, remaining));
-        unit.SetSkillCooldown(skillKey, remaining);
     }
 
-    private void ResolveRangeDamage(IBattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, BattleEventLog log) {
+    /// <summary>范围伤害结算：对范围内全部可命中单位统一结算并产出事件。</summary>
+    private void ResolveRangeDamage(BattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, BattleEventLog log) {
         var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
         foreach (var unit in _units.ToArray()) {
             if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
@@ -472,7 +507,8 @@ public sealed partial class BattleScene(
         }
     }
 
-    private static void AddBuff(IBattleUnit target, BuffDefinition def, IBattleUnit caster, BattleEventLog log) {
+    /// <summary>施加 Buff 到目标：叠加或新建运行时实例，产出 BuffApplied 事件。</summary>
+    private static void AddBuff(BattleUnit target, BuffDefinition def, BattleUnit caster, BattleEventLog log) {
         var list = target.RuntimeState.Buffs;
         var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == def.BuffTypeId);
         int stacks;
@@ -488,28 +524,15 @@ public sealed partial class BattleScene(
         }
 
         log.Append(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
-        ProjectBuffs(target);
     }
 
-    private static void ApplyHealthDelta(IBattleUnit unit, float delta) {
+    /// <summary>生命值增量修正，钳制到 [0, MaxHealth]。</summary>
+    private static void ApplyHealthDelta(BattleUnit unit, float delta) {
         unit.Health = Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
     }
 
-    private static byte EffectDamageType(IBuffEffect effect) => effect switch {
-        DotEffect dot => (byte)dot.DamageType,
-        _ => 0,
-    };
-
-    /// <summary>把脏仇恨表全量投影到单位载体，供网络同步。无变化的单位被跳过。</summary>
-    private void ProjectHates() {
-        foreach (var unit in _units) {
-            if (!unit.RuntimeState.Hates.ConsumeDirty())
-                continue;
-            unit.ReplaceHates(unit.RuntimeState.Hates.Snapshot());
-        }
-    }
-
-    #endregion
+    /// <summary>全量投影单位状态与阶段，阶段变化与 Tick 末尾调用。</summary>
+    private void ProjectAll() => _projector?.Project(_units, _phase);
 
     #region 日志
 
@@ -527,3 +550,4 @@ public sealed partial class BattleScene(
 
     #endregion
 }
+

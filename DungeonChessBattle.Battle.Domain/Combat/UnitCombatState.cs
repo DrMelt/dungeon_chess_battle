@@ -5,12 +5,12 @@ using DungeonChessBattle.Battle.Domain.Combat.Hates;
 namespace DungeonChessBattle.Battle.Domain.Combat;
 
 /// <summary>
-/// 单位服务端权威战斗状态，由载体 UnitPawn 持有，BattleScene 经 <see cref="IBattleUnit.RuntimeState"/> 读写推进。
-/// 读条目标、Buff、冷却、仇恨权威在此；网络同步经既有投影通道，本状态不参与同步。
+/// 单位权威战斗状态，由 <see cref="BattleUnit.RuntimeState"/> 持有，BattleScene 读写推进。
+/// 读条目标、Buff、冷却、仇恨权威在此；网络同步经投影器，本状态不参与同步。
 /// </summary>
 public sealed class UnitCombatState {
     /// <summary>读条目标单位，服务端私有，不参与网络同步；null 表示无。</summary>
-    public IBattleUnit? CastTarget {
+    public BattleUnit? CastTarget {
         get; set;
     }
 

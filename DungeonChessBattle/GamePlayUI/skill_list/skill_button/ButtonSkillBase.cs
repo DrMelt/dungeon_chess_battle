@@ -1,5 +1,5 @@
 using System;
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Entities;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Services;
 using Godot;
@@ -36,8 +36,8 @@ public partial class ButtonSkillBase : Button {
     /// <summary>绑定的技能对象。</summary>
     public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
 
-    /// <summary>绑定技能所属的施法单位。</summary>
-    public IBattleUnit BindUnit {
+    /// <summary>绑定技能所属的施法单位 Pawn。</summary>
+    public UnitPawn BindUnit {
         get => field ?? throw new InvalidOperationException("BindUnit has not been initialized.");
         private set;
     }
@@ -49,9 +49,9 @@ public partial class ButtonSkillBase : Button {
     /// 初始化按钮与技能、施法单位及技能列表面板的绑定，并设置技能图标。
     /// </summary>
     /// <param name="bindSkill">要绑定的技能。</param>
-    /// <param name="bindUnit">技能所属的施法单位。</param>
+    /// <param name="bindUnit">技能所属的施法单位 Pawn。</param>
     /// <param name="skillsListRef">技能列表面板引用。</param>
-    public void Init(UnitSkillBaseGodot bindSkill, IBattleUnit bindUnit, SkillsList skillsListRef) {
+    public void Init(UnitSkillBaseGodot bindSkill, UnitPawn bindUnit, SkillsList skillsListRef) {
         _bindingSkill = bindSkill;
         BindUnit = bindUnit;
         _skillsListRef = skillsListRef;

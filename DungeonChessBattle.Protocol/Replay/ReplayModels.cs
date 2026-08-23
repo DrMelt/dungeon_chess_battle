@@ -1,17 +1,19 @@
 using MessagePack;
 
-namespace DungeonChessBattle.Entities.Replay;
+namespace DungeonChessBattle.Protocol.Replay;
 
 /// <summary>
 /// 回放记录格式版本，数据模型或编码变化时递增。
 /// </summary>
 public static class ReplayFormatVersion {
     /// <summary>当前回放记录格式版本。</summary>
-    public const int Current = 1;
+    public const int Current = 2;
 }
 
 /// <summary>
 /// 回放记录头部元数据：房间与玩家初始状态，回放端据此重建战斗世界。
+/// StartTick 为战斗开始逻辑帧，NextNetId 为服务端最后一个单位 ID + 1，回放端据此对齐单位 ID；
+/// Complete 表示录制是否被条目上限截断。
 /// </summary>
 [MessagePackObject]
 public sealed record ReplayRecordHeader(
@@ -20,11 +22,14 @@ public sealed record ReplayRecordHeader(
     [property: Key(2)] string DungeonKey,
     [property: Key(3)] long StartUnixTime,
     [property: Key(4)] int TickRate,
-    [property: Key(5)] IReadOnlyList<ReplayPlayerInfo> Players);
+    [property: Key(5)] IReadOnlyList<ReplayPlayerInfo> Players,
+    [property: Key(6)] int StartTick,
+    [property: Key(7)] ushort NextNetId,
+    [property: Key(8)] bool Complete);
 
 /// <summary>
 /// 玩家初始状态，回放端按 PlayerIndex 还原玩家单位。
-/// SpawnX/SpawnY 为出生点坐标，Y 对应场景 XZ 平面的 Z 轴。
+/// SpawnX/SpawnY 为出生点坐标，Y 对应场景 XZ 平面的 Z 轴；NetId 为服务端分配的单位网络 ID。
 /// </summary>
 [MessagePackObject]
 public sealed record ReplayPlayerInfo(
@@ -33,7 +38,8 @@ public sealed record ReplayPlayerInfo(
     [property: Key(2)] string UnitConfigKey,
     [property: Key(3)] string CampOptionKey,
     [property: Key(4)] float SpawnX,
-    [property: Key(5)] float SpawnY);
+    [property: Key(5)] float SpawnY,
+    [property: Key(6)] ushort NetId);
 
 /// <summary>
 /// 移动输入条目：逻辑帧、玩家序号与移动方向。

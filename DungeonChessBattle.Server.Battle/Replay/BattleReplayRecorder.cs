@@ -1,14 +1,13 @@
-using DungeonChessBattle.Entities.Replay;
+using DungeonChessBattle.Protocol.Replay;
 
 namespace DungeonChessBattle.Server.Battle.Replay;
 
 /// <summary>
 /// 战斗输入回放记录器：内存存储与逻辑帧时间轴，回放端经快照消费。
 /// 记录方法仅房间线程调用；快照供任意线程安全读取。
-/// 达到 <see cref="MaxEntryCount"/> 后停止记录，避免失控增长。
+/// 达到 <see cref="MaxEntryCount"/> 后停止记录，并把头部 Complete 置为不完整，避免失控增长。
 /// </summary>
-/// <param name="header">回放记录头部元数据，由房间初始化时构建。</param>
-internal sealed class BattleReplayRecorder(ReplayRecordHeader header) {
+internal sealed class BattleReplayRecorder {
     /// <summary>记录条目上限，50tick/s 满员 30 分钟约 72 万条移动输入。</summary>
     public const int MaxEntryCount = 1_000_000;
 
@@ -17,18 +16,59 @@ internal sealed class BattleReplayRecorder(ReplayRecordHeader header) {
     private readonly List<CastSkillRecord> _castSkills = [];
     private readonly List<FocusTargetRecord> _focusTargets = [];
 
+    // 头部基础元数据，构造时固定
+    private readonly string _roomId;
+    private readonly string _dungeonKey;
+    private readonly long _startUnixTime;
+    private readonly int _tickRate;
+    private readonly IReadOnlyList<ReplayPlayerInfo> _players;
+
+    /// <summary>战斗开始逻辑帧，StartBattle 时写入。</summary>
+    private int _startTick;
+
+    /// <summary>服务端最后一个单位 ID + 1，全部单位创建完成后写入，回放端据此分配敌人 ID。</summary>
+    private ushort _nextNetId;
+
+    /// <summary>录制是否完整，条目达上限后置 false。</summary>
+    private bool _complete = true;
+
     /// <summary>绝对逻辑帧，以首条记录的 tick 锚定，后续按 tick 差分递增，规避 LES ushort tick 回绕。</summary>
     private int _absoluteFrame;
+
     /// <summary>上次记录时的原始 tick，差分推进绝对帧。</summary>
     private ushort _lastTick;
+
     private bool _frameInitialized;
     private bool _full;
     private int _entryCount;
 
-    /// <summary>回放记录头部元数据。</summary>
-    public ReplayRecordHeader Header {
-        get;
-    } = header;
+    /// <param name="roomId">房间 ID。</param>
+    /// <param name="dungeonKey">副本键。</param>
+    /// <param name="startUnixTime">战斗开始 Unix 秒。</param>
+    /// <param name="tickRate">逻辑 tick 频率。</param>
+    /// <param name="players">玩家初始状态表。</param>
+    public BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
+        int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
+        _roomId = roomId;
+        _dungeonKey = dungeonKey;
+        _startUnixTime = startUnixTime;
+        _tickRate = tickRate;
+        _players = players;
+    }
+
+    /// <summary>记录战斗开始逻辑帧，StartBattle 时由房间线程写入。</summary>
+    public void SetStartTick(int startTick) {
+        lock (_lock) {
+            _startTick = startTick;
+        }
+    }
+
+    /// <summary>记录服务端最后一个单位 ID + 1，全部单位创建完成后由房间线程写入。</summary>
+    public void SetNextNetId(ushort nextNetId) {
+        lock (_lock) {
+            _nextNetId = nextNetId;
+        }
+    }
 
     /// <summary>记录移动输入，返回是否已记录；达到上限后返回 false 且不记录。</summary>
     public bool RecordMoveInput(ushort tick, byte playerIndex, float moveX, float moveY) {
@@ -59,7 +99,9 @@ internal sealed class BattleReplayRecorder(ReplayRecordHeader header) {
     /// <summary>导出只读快照，跨线程安全。</summary>
     public ReplayRecordSnapshot GetSnapshot() {
         lock (_lock) {
-            return new ReplayRecordSnapshot(Header,
+            var header = new ReplayRecordHeader(ReplayFormatVersion.Current, _roomId, _dungeonKey,
+                _startUnixTime, _tickRate, _players, _startTick, _nextNetId, _complete);
+            return new ReplayRecordSnapshot(header,
                 [.. _moveInputs],
                 [.. _castSkills],
                 [.. _focusTargets]);
@@ -89,6 +131,7 @@ internal sealed class BattleReplayRecorder(ReplayRecordHeader header) {
     private bool TryAppend(Action append) {
         if (_full || _entryCount >= MaxEntryCount) {
             _full = true;
+            _complete = false;
             return false;
         }
         append();

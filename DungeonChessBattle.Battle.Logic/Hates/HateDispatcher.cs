@@ -18,14 +18,14 @@ public static class HateDispatcher {
     /// <summary>分发一件事流到全部存活单位求值，返回聚合仇恨效果。单位索引由编排层持有，规则反查共用同一份。</summary>
     public static IReadOnlyList<HateEffect> Dispatch(
         IReadOnlyList<IBattleEvent> events,
-        IReadOnlyList<IBattleUnit> units,
-        IReadOnlyDictionary<ushort, IBattleUnit> unitById,
+        IReadOnlyList<IBattleUnitView> units,
+        Func<ushort, IBattleUnitView?> unitOf,
         HateSettings settings,
         CampRelationResolver relations) {
         if (events.Count == 0 || units.Count == 0)
             return [];
 
-        var ctx = new HateContext(settings, unitById.GetValueOrDefault, relations);
+        var ctx = new HateContext(settings, unitOf, relations);
 
         var effects = new List<HateEffect>();
         foreach (var evt in events) {

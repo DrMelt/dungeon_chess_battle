@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DungeonChessBattle.Battle.Domain.Combat;
 using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
@@ -63,6 +64,12 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>本房间的所有 UnitPawn。</summary>
     private readonly List<UnitPawn> _roomPawns = [];
+
+    /// <summary>网络实体 ID 到战斗世界领域单位的映射，与 UnitPawn 同 ID 互绑。</summary>
+    private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
+
+    /// <summary>网络实体 ID 到 UnitPawn 的映射，移动桥与投影器定位载体用。</summary>
+    private readonly Dictionary<ushort, UnitPawn> _pawnByNetId = [];
 
     /// <summary>房间网络实体，房间级战斗状态载体；整帧事件日志经传输层可靠通道外送，不经本实体承载。房间线程首帧初始化时填充。</summary>
     private BattleRoomEntity? _roomEntity;
@@ -188,7 +195,8 @@ public partial class BattleRoomServer : INetEventListener {
         // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗世界注册才是线程安全的
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
-            _battleScene.RemoveUnit(pawn);
+            if (_battleUnitByNetId.TryGetValue(pawn.Id, out var unit))
+                _battleScene.RemoveUnit(unit);
         }
 
         // 销毁全部保留实体，断线玩家实体随房间销毁一并清理，房间线程已退出

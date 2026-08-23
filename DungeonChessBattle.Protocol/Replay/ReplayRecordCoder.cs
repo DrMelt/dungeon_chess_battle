@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace DungeonChessBattle.Entities.Replay;
+namespace DungeonChessBattle.Protocol.Replay;
 
 /// <summary>
 /// 回放记录二进制编解码唯一权威，服务端导出与客户端下载解析共用。

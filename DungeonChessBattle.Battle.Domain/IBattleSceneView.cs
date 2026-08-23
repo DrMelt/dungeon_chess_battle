@@ -4,10 +4,10 @@ namespace DungeonChessBattle.Battle.Domain;
 
 /// <summary>
 /// 战场查询视图：AI 决策只读入口，不含写通道与推进方法。
-/// 单位权威状态经 <see cref="IBattleUnit"/> 只读成员读取；实现方为 <see cref="IBattleScene"/>。
+/// 单位权威状态经 <see cref="IBattleUnitView"/> 只读成员读取；实现方为 BattleScene。
 /// </summary>
 public interface IBattleSceneView {
-    /// <summary>战斗阶段，经 <see cref="IBattleRoom"/> 读取载体权威。</summary>
+    /// <summary>战斗阶段，战斗世界自持权威。</summary>
     BattlePhase CurrentPhase {
         get;
     }
@@ -17,11 +17,11 @@ public interface IBattleSceneView {
         get;
     }
 
-    /// <summary>本房间全部战斗单位。AI 决策只读使用，禁止写。</summary>
-    IReadOnlyList<IBattleUnit> Units {
+    /// <summary>本房间全部战斗单位只读视图。AI 决策只读使用，禁止写。</summary>
+    IReadOnlyList<IBattleUnitView> Units {
         get;
     }
 
-    /// <summary>按网络 ID 查单位，不存在返回 null。</summary>
-    IBattleUnit? FindUnit(ushort netId);
+    /// <summary>按网络 ID 查单位只读视图，不存在返回 null。</summary>
+    IBattleUnitView? FindUnit(ushort netId);
 }

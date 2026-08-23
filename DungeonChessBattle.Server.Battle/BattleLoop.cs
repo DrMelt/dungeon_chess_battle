@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Domain;
 using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Logic;
 using LiteEntitySystem;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -9,12 +10,12 @@ namespace DungeonChessBattle.Server.Battle;
 /// 与实体同步严格 1:1。Update 在 OnLogicTick 之前执行 ApplyDecisions，AI 输入先于单位位移结算；
 /// LateUpdate 在实体更新后、状态包发送前执行 Tick，战斗变更本 tick 同步。
 /// LocalSingleton 不参与预测回滚：回滚只重放实体的 Update()。
-/// 本类只做推进转发与整帧领域事件外送，战斗状态与 AI 决策全部在 <see cref="IBattleScene"/> 内。
+/// 本类只做推进转发与整帧领域事件外送，战斗状态与 AI 决策全部在 <see cref="BattleScene"/> 内。
 /// </summary>
 internal sealed class BattleLoop(
-    IBattleScene battleScene,
+    BattleScene battleScene,
     Action<IReadOnlyList<IBattleEvent>> battleEventHandler) : ILocalSingletonWithUpdate {
-    private readonly IBattleScene _battleScene = battleScene;
+    private readonly BattleScene _battleScene = battleScene;
 
     private readonly Action<IReadOnlyList<IBattleEvent>> _battleEventHandler = battleEventHandler;
     /// <summary>每个逻辑 tick 在 OnLogicTick 之前执行：AI 前置推进，注入移动输入与施法请求。</summary>
