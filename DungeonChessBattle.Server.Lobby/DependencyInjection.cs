@@ -1,5 +1,5 @@
 using DungeonChessBattle.Server.Abstractions;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

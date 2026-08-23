@@ -1,7 +1,6 @@
-﻿using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Shared;
 
-namespace DungeonChessBattle.Server.StateStore.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 房间状态存储接口：大厅级房间配置、密码与招募板状态的查询与写入。
@@ -29,7 +28,7 @@ public interface IRoomStateStore {
     bool IsRoomMember(string roomId, string playerId);
 
     /// <summary>获取所有有效房间的招募板列表，按创建时间倒序排列。</summary>
-    IReadOnlyList<RoomListing> ListActiveRooms();
+    IReadOnlyList<GameRoom> ListActiveRooms();
 
     /// <summary>更新房间的招募板状态。</summary>
     void UpdateRoomStatus(string roomId, RoomStatus status);

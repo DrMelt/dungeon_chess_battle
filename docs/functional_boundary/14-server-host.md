@@ -5,7 +5,7 @@
 ## 职责范围
 
 - 入口装配：解析端口与密码参数，建日志工厂、安装 LES 日志、启动宿主。
-- DI 组合根：模块配置切片、状态存储、广播端口、房间管理绑定、协调器与 Hub 注册。
+- DI 组合根：模块配置切片、数据存储、广播端口、房间管理绑定、协调器与 Hub 注册。
 - 空房间清理后台循环。
 - 回放下载端点：验证一次性凭证后经回放存储流式输出回放字节流，不经 SignalR 通道。
 - 进程看护：检测父进程消失或 PID 复用触发优雅退出；Ctrl+C 优雅停机。
@@ -19,4 +19,4 @@
 
 ## 依赖项
 
-- Server.Lobby、Server.Battle、Server.Abstractions、Server.StateStore、Server.StateStore.Abstractions 与共享层契约（Protocol、Entities）。
+- Server.Lobby、Server.Battle、Server.Abstractions、Server.DataStore、Server.DataStore.Shared 与共享层契约（Protocol、Entities）。

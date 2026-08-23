@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace DungeonChessBattle.Protocol.Replay;
+namespace DungeonChessBattle.Replay.Shared;
 
 /// <summary>
 /// 回放记录格式版本，数据模型或编码变化时递增。

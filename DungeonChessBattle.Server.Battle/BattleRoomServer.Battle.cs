@@ -10,11 +10,11 @@ using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
-using DungeonChessBattle.Protocol.Replay;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Replay.Shared;
+using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
 using LiteNetLib.Utils;
 using Microsoft.Extensions.Logging;
@@ -418,7 +418,7 @@ public partial class BattleRoomServer {
 
 
         /// <summary>仇恨全量投影，内容一致时跳过。</summary>
-        private void ProjectHates(BattleUnit unit, UnitPawn pawn) {
+        private static void ProjectHates(BattleUnit unit, UnitPawn pawn) {
             var hates = unit.RuntimeState.Hates.Snapshot();
             bool changed = pawn.HatesList.Count != hates.Count;
             if (!changed) {

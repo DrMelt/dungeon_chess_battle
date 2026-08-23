@@ -1,5 +1,5 @@
 using System;
-using DungeonChessBattle.Protocol.Replay;
+using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Replay;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -53,7 +53,8 @@ public partial class ReplayCoordinator : Node {
         _accumulator = 0;
         _isPaused = false;
         SpawnUnitShows();
-        _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", snapshot.Header.RoomId, _shows.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", snapshot.Header.RoomId, _shows.Count);
     }
 
     /// <summary>每帧推进回放引擎：按倍速累积固定步长，未加载/暂停/结束时为空操作。</summary>

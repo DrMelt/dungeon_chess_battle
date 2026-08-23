@@ -17,4 +17,4 @@
 
 ## 依赖项
 
-- Battle.Domain、Battle.Logic、GameConfig、Protocol。
+- Battle.Domain、Battle.Logic、GameConfig、Replay.Shared。

@@ -1,8 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Protocol.Replay;
+using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.Abstractions;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Battle;
@@ -119,9 +118,6 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
 
         _roomServers[roomId] = server;
 
-        // 更新招募板状态
-        _stateStore.UpdateRoomStatus(roomId, RoomStatus.InProgress);
-
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Room '{RoomId}' battle started on port {Port}",
                 roomId, port);
@@ -209,11 +205,11 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 输出所有房间的基本信息，用于控制台命令 rooms。
     /// </summary>
     public void ListRooms() {
-        foreach (var listing in _stateStore.ListActiveRooms()) {
-            bool isBattle = _roomServers.ContainsKey(listing.RoomId);
+        foreach (var room in _stateStore.ListActiveRooms()) {
+            bool isBattle = _roomServers.ContainsKey(room.RoomId);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("  {RoomId}: Phase={Phase}, HasPassword={HasPwd}",
-                    listing.RoomId, isBattle ? "Battle" : "Prepare", listing.HasPassword);
+                    room.RoomId, isBattle ? "Battle" : "Prepare", room.HasPassword);
         }
     }
 }

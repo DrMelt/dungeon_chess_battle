@@ -220,12 +220,14 @@ public class GameConfigDB : IGameConfigDB {
         ],
     };
 
+    /// <summary>默认副本键，创建房间未指定副本时使用。</summary>
+    public const string DefaultDungeonKey = "goblin_camp";
+
     /// <summary>副本一：哥布林营地，少量哥布林投石兵与一名首领。</summary>
     public static DungeonConfig DungeonGoblinCamp {
         get;
     } = new(
-        // 副本键对齐 Protocol.EntityConstants.DefaultDungeonKey，GameConfig 不反向依赖协议层
-        DungeonKey: "goblin_camp",
+        DungeonKey: DefaultDungeonKey,
         PlayerCampOptions: [new(CampConstants.CampA, [CampConstants.CampA])],
         EnemyCamps: [CampConstants.CampBoss],
         Enemies: [

@@ -38,8 +38,7 @@ public partial class ReplayHud : Control {
             _timeLabel.Text = $"{FormatTime(current)} / {FormatTime(total)}";
         }
 
-        if (_playButton != null)
-            _playButton.Text = _coordinator?.IsPaused == true ? "播放" : "暂停";
+        _playButton?.Text = _coordinator?.IsPaused == true ? "播放" : "暂停";
     }
 
     /// <summary>播放/暂停按钮回调（Godot 信号接线）。</summary>

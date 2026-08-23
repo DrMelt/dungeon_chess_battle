@@ -13,12 +13,12 @@
 
 ## 不负责
 
-- 不感知状态存储实现，经状态存储契约读写。
+- 不感知数据存储实现，经数据存储契约读写。
 - 战斗房间服务器实现不在本项目，经房间管理契约调用。
 - 不承载进程装配：Kestrel、DI 组合根与进程看护由服务器宿主承担。
 
 
 ## 依赖项
 
-- Protocol、Server.StateStore.Abstractions、Server.Abstractions（契约）、Battle.Domain、GameConfig（副本键解析）。
+- Protocol、Server.DataStore.Shared、Server.Abstractions（契约）、Battle.Domain、GameConfig（副本键解析）。
 - ASP.NET Core 共享框架 Microsoft.AspNetCore.App，承载 Hub 与广播上下文。

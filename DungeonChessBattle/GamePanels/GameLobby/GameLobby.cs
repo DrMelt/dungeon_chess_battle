@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Lobby.Shared;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;
 
@@ -50,7 +50,7 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
     /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
-    private string _selectedDungeonKey = EntityConstants.DefaultDungeonKey;
+    private string _selectedDungeonKey = GameConfigDB.DefaultDungeonKey;
 
     #endregion
 
@@ -140,7 +140,7 @@ public partial class GameLobby : BaseGamePanel {
             _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
-            DungeonKey: dungeon?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
+            DungeonKey: dungeon?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
             Description: _dungeonResourceTable?.GetDescription(_selectedDungeonKey) ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config: config);
@@ -179,7 +179,7 @@ public partial class GameLobby : BaseGamePanel {
             var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
             var config = new RoomListing {
                 RoomId = roomId,
-                DungeonKey = dungeon?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
+                DungeonKey = dungeon?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
                 HostName = ServiceLocator.ClientService.PlayerName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -209,7 +209,7 @@ public partial class GameLobby : BaseGamePanel {
             // 使用缓存的选中房间配置，或构造默认配置
             var config = _selectedRoomConfig ?? new RoomListing {
                 RoomId = joinedRoomId,
-                DungeonKey = EntityConstants.DefaultDungeonKey,
+                DungeonKey = GameConfigDB.DefaultDungeonKey,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,

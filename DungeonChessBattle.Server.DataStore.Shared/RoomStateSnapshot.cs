@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.StateStore.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 房间准备状态快照，用于向房间内玩家广播。

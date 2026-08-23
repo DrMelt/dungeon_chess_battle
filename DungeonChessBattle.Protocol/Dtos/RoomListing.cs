@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Lobby.Shared;
 
 namespace DungeonChessBattle.Protocol.Dtos;
 
@@ -11,7 +11,7 @@ public class RoomListing {
     public string RoomId { get; init; } = string.Empty;
 
     /// <summary>选中的副本键。</summary>
-    public string DungeonKey { get; init; } = EntityConstants.DefaultDungeonKey;
+    public string DungeonKey { get; init; } = string.Empty;
 
     /// <summary>招募板展示的房间描述。</summary>
     public string Description { get; init; } = string.Empty;

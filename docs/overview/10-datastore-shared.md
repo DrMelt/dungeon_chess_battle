@@ -1,6 +1,6 @@
-# DungeonChessBattle.Server.StateStore.Abstractions
+# DungeonChessBattle.Server.DataStore.Shared
 
-服务器状态存储抽象，所属分组 Server。定义大厅级房间与玩家准备状态的存储契约与快照模型，不绑定具体存储实现。职责边界见 `functional_boundary/10`。
+服务器数据存储抽象，所属分组 Server。定义大厅级房间与玩家准备状态的存储契约与快照模型，不绑定具体存储实现。职责边界见 `functional_boundary/10`。
 
 ## 门面组合
 
@@ -24,4 +24,9 @@
 
 - `GameRoom` 房间配置、`RoomStateSnapshot` 准备状态、`PlayerReadyState`、`UnitSelection` 单位选择记录。
 - 战斗单位状态不在此模型，由战斗世界自持的领域单位 `BattleUnit` 权威持有。
+
+## 回放存储契约
+
+- `IReplayStore`：`Add`（以房间 ID 主键幂等归档）、`GetReplaysByPlayerId`（按玩家记录主键查询）、`TryGetReplay`。实现：Server.DataStore `InMemoryReplayStore`。
+- `ReplaySummary` / `ReplayPlayer` 纯原语摘要模型，`PlayerRecordId` 为玩家记录主键，与战斗内玩家 ID 无关。
 

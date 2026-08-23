@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Battle.Domain.Enums;
+namespace DungeonChessBattle.Lobby.Shared;
 
 /// <summary>
 /// 房间状态，招募板使用。

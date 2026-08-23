@@ -1,8 +1,8 @@
 ﻿using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.Battle;
 using DungeonChessBattle.Server.Lobby;
-using DungeonChessBattle.Server.StateStore;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Server.DataStore;
+using DungeonChessBattle.Server.DataStore.Shared;
 
 namespace DungeonChessBattle.Server.Host;
 
@@ -75,6 +75,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                     options.TimestampFormat = "HH:mm:ss.fff ";
                 });
                 builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
+                builder.Services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
                 builder.Services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
                 builder.Services.AddBattleServer(new BattleServerConfig {
                     ConnectionKey = config.ServerPassword ?? config.ConnectionKey,

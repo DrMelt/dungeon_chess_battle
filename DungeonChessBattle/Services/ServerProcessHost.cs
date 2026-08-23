@@ -97,7 +97,7 @@ public sealed class ServerProcessHost : IServerHost {
 
             string exe = ResolveExecutablePath();
             if (string.IsNullOrEmpty(exe) || !File.Exists(exe)) {
-                error = $"服务器可执行文件不存在: {exe}。请构建 DungeonChessBattle.Server，或设置环境变量 {ServerProcessEnv.ExecutablePath} 指定路径。";
+                error = $"服务器可执行文件不存在: {exe}。请先构建 DungeonChessBattle.Server 工程。";
                 _logger.LogError("{Error}", error);
             }
             else {
@@ -336,21 +336,10 @@ public sealed class ServerProcessHost : IServerHost {
         process.Dispose();
     }
 
-    /// <summary>
-    /// 解析服务器可执行文件路径。优先级：配置项 → 环境变量
-    /// <c>DCB_SERVER_EXE</c> → 相对 Godot 工程目录的 Server 工程输出目录。
-    /// </summary>
-    private string ResolveExecutablePath() {
-        if (!string.IsNullOrEmpty(_config.ExecutablePath))
-            return _config.ExecutablePath;
-
-        string? overridden = System.Environment.GetEnvironmentVariable(ServerProcessEnv.ExecutablePath);
-        if (!string.IsNullOrEmpty(overridden))
-            return overridden;
-
-        string config = System.Environment.GetEnvironmentVariable(ServerProcessEnv.BuildConfig) ?? "Debug";
+    /// <summary>解析服务器可执行文件路径：相对 Godot 工程目录的 Server 工程 Debug 输出目录。</summary>
+    private static string ResolveExecutablePath() {
         string projectDir = ProjectSettings.GlobalizePath("res://");
-        string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server.Host", "bin", config, "net10.0");
+        string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server.Host", "bin", "Debug", "net10.0");
         string exe = Path.Combine(outDir, "DungeonChessBattle.Server.Host.exe");
         return File.Exists(exe) ? exe : Path.Combine(outDir, "DungeonChessBattle.Server.Host.dll");
     }

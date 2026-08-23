@@ -10,5 +10,4 @@
     <ItemGroup>
         <ProjectReference Include="..\DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
     </ItemGroup>
-
 </Project>

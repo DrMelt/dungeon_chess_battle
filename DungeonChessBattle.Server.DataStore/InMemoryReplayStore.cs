@@ -1,12 +1,12 @@
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 
-namespace DungeonChessBattle.Server.Battle.Replay;
+namespace DungeonChessBattle.Server.DataStore;
 
 /// <summary>
 /// 基于进程内字典的回放存储实现：roomId 主表与玩家记录主键索引。
 /// 保留最近 <see cref="MaxReplays"/> 场，超出移除最旧归档，避免长期运行失控。
 /// </summary>
-internal sealed class InMemoryReplayStore : IReplayStore {
+public sealed class InMemoryReplayStore : IReplayStore {
     /// <summary>内存保留的最大回放场数。</summary>
     public const int MaxReplays = 256;
 

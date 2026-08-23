@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Dtos;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.StateStore;
+namespace DungeonChessBattle.Server.DataStore;
 
 /// <summary>
 /// 基于进程内 ConcurrentDictionary 的状态存储实现。
@@ -137,22 +137,12 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<RoomListing> ListActiveRooms() {
+    public IReadOnlyList<GameRoom> ListActiveRooms() {
         // 跨房间枚举统一不加锁，避免多锁获取顺序造成死锁，
         // 依赖 ConcurrentDictionary 的弱一致性快照语义；字段可能略旧，可接受。
         return [.. _roomConfigs
             .Where(kvp => kvp.Value.Status != RoomStatus.Finished)
-            .Select(kvp => new RoomListing {
-                RoomId = kvp.Value.RoomId,
-                DungeonKey = kvp.Value.DungeonKey,
-                Description = kvp.Value.Description,
-                HostName = kvp.Value.HostName,
-                CurrentPlayers = kvp.Value.CurrentPlayers,
-                MaxPlayers = kvp.Value.MaxPlayers,
-                HasPassword = kvp.Value.HasPassword,
-                Status = kvp.Value.Status,
-                CreatedAt = kvp.Value.CreatedAt,
-            })
+            .Select(kvp => CloneRoom(kvp.Value))
             .OrderByDescending(r => r.CreatedAt)];
     }
 
@@ -350,8 +340,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         lock (GetRoomLock(roomId)) {
             string hostName = _roomHosts.TryGetValue(roomId, out var host) ? host : "";
             string dungeonKey = _roomConfigs.TryGetValue(roomId, out var config)
-                ? config.DungeonKey ?? Protocol.EntityConstants.DefaultDungeonKey
-                : Protocol.EntityConstants.DefaultDungeonKey;
+                ? config.DungeonKey ?? GameConfigDB.DefaultDungeonKey
+                : GameConfigDB.DefaultDungeonKey;
             var players = new List<PlayerReadyState>();
             if (_roomReadyStates.TryGetValue(roomId, out var states)) {
                 foreach (var kv in states)

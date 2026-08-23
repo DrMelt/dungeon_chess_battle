@@ -1,9 +1,9 @@
+using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Battle.Domain.Enums;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
-using DungeonChessBattle.Server.StateStore.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Server.Lobby;
@@ -44,7 +44,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <returns>合法的副本键。</returns>
     public static string ResolveDungeonKey(string? dungeonKey) {
         var info = DungeonRegistry.Instance.GetByKey(dungeonKey);
-        return info?.DungeonKey ?? EntityConstants.DefaultDungeonKey;
+        return info?.DungeonKey ?? GameConfigDB.DefaultDungeonKey;
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         else {
             // 启用默认值填充房间，无配置直接进入战斗
             config = new GameRoom(roomId) {
-                DungeonKey = EntityConstants.DefaultDungeonKey,
+                DungeonKey = GameConfigDB.DefaultDungeonKey,
                 HostName = hostDisplayName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
@@ -158,6 +158,17 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     public Task<RoomListResult> HandleListRoomsAsync() {
         var rooms = _stateStore.ListActiveRooms()
             .Where(r => r.Status == RoomStatus.Waiting)
+            .Select(r => new RoomListing {
+                RoomId = r.RoomId,
+                DungeonKey = r.DungeonKey,
+                Description = r.Description,
+                HostName = r.HostName,
+                CurrentPlayers = r.CurrentPlayers,
+                MaxPlayers = r.MaxPlayers,
+                HasPassword = r.HasPassword,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+            })
             .ToList();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Sent listing of {Count} rooms.", rooms.Count);
@@ -280,7 +291,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             config?.MaxPlayers ?? 2,
             config?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? EntityConstants.DefaultDungeonKey,
+            DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))]);

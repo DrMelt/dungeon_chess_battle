@@ -1,4 +1,4 @@
-using DungeonChessBattle.Protocol.Replay;
+using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Server.Battle.Replay;
 
@@ -7,7 +7,13 @@ namespace DungeonChessBattle.Server.Battle.Replay;
 /// 记录方法仅房间线程调用；快照供任意线程安全读取。
 /// 达到 <see cref="MaxEntryCount"/> 后停止记录，并把头部 Complete 置为不完整，避免失控增长。
 /// </summary>
-internal sealed class BattleReplayRecorder {
+/// <param name="roomId">房间 ID。</param>
+/// <param name="dungeonKey">副本键。</param>
+/// <param name="startUnixTime">战斗开始 Unix 秒。</param>
+/// <param name="tickRate">逻辑 tick 频率。</param>
+/// <param name="players">玩家初始状态表。</param>
+internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
+    int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
     /// <summary>记录条目上限，50tick/s 满员 30 分钟约 72 万条移动输入。</summary>
     public const int MaxEntryCount = 1_000_000;
 
@@ -17,11 +23,11 @@ internal sealed class BattleReplayRecorder {
     private readonly List<FocusTargetRecord> _focusTargets = [];
 
     // 头部基础元数据，构造时固定
-    private readonly string _roomId;
-    private readonly string _dungeonKey;
-    private readonly long _startUnixTime;
-    private readonly int _tickRate;
-    private readonly IReadOnlyList<ReplayPlayerInfo> _players;
+    private readonly string _roomId = roomId;
+    private readonly string _dungeonKey = dungeonKey;
+    private readonly long _startUnixTime = startUnixTime;
+    private readonly int _tickRate = tickRate;
+    private readonly IReadOnlyList<ReplayPlayerInfo> _players = players;
 
     /// <summary>战斗开始逻辑帧，StartBattle 时写入。</summary>
     private int _startTick;
@@ -41,20 +47,6 @@ internal sealed class BattleReplayRecorder {
     private bool _frameInitialized;
     private bool _full;
     private int _entryCount;
-
-    /// <param name="roomId">房间 ID。</param>
-    /// <param name="dungeonKey">副本键。</param>
-    /// <param name="startUnixTime">战斗开始 Unix 秒。</param>
-    /// <param name="tickRate">逻辑 tick 频率。</param>
-    /// <param name="players">玩家初始状态表。</param>
-    public BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
-        int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
-        _roomId = roomId;
-        _dungeonKey = dungeonKey;
-        _startUnixTime = startUnixTime;
-        _tickRate = tickRate;
-        _players = players;
-    }
 
     /// <summary>记录战斗开始逻辑帧，StartBattle 时由房间线程写入。</summary>
     public void SetStartTick(int startTick) {

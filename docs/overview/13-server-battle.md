@@ -34,5 +34,5 @@
 
 - 全部活跃连接断开且初始化完成 → `RoomEmpty` 事件 → 投递队列 → 大厅后台清理循环 `ProcessPendingRoomCleanups` → `RemoveRoom`（停止线程 → 回收端口 → 归档回放）。
 - 回放录制：`BattleReplayRecorder` 在既有输入消费点旁路记录移动/施法/聚焦，三类记录共享同一帧轴（首条 tick 锚定绝对逻辑帧，规避 ushort 回绕），上限 100 万条。
-- 归档：房间销毁或关服时编码 `ReplayRecordSnapshot` 经 `IReplayStore` 写入 `InMemoryReplayStore`（保留最近 256 场），供大厅查询与 HTTP 下载。
+- 归档：房间销毁或关服时编码 `ReplayRecordSnapshot` 经 `IReplayStore` 写入实现层 `InMemoryReplayStore`（保留最近 256 场），供大厅查询与 HTTP 下载。
 

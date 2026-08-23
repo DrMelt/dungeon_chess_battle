@@ -1,4 +1,5 @@
-﻿using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Lobby.Shared;
+using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -49,6 +50,9 @@ public partial class GameServer {
 
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
         int port = _battleRoomManager.StartRoomBattle(roomId);
+
+        // 房间状态迁移由拥有状态所有权的协调层执行，战斗实现层不触碰房间状态
+        _stateStore.UpdateRoomStatus(roomId, RoomStatus.InProgress);
 
         // 向房间内所有玩家广播重定向，含端口号，确保非房主也能进入战斗
         await BroadcastToRoomAsync(roomId, HubMethods.OnPrepareBattleRedirect,

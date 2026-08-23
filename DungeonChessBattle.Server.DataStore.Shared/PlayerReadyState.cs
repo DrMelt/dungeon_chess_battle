@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.StateStore.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 房间内单个玩家的准备状态，只读快照项。

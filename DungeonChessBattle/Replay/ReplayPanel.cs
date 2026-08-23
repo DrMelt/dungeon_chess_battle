@@ -41,12 +41,12 @@ public partial class ReplayPanel : Control {
         _downloadRequest?.RequestCompleted += OnDownloadCompleted;
     }
 
-    /// <summary>刷新回放列表（Godot 按钮信号接线）。</summary>
-    public void Refresh() {
+    /// <summary>刷新回放列表。</summary>
+    public static void Refresh() {
         ServiceLocator.ClientService.RequestGetReplays();
     }
 
-    /// <summary>播放选中回放（Godot 按钮信号接线）。</summary>
+    /// <summary>播放选中回放。</summary>
     public void OnPlayPressed() {
         var selected = _replayList?.GetSelectedItems();
         if (selected == null || selected.Length == 0) {

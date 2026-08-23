@@ -1,10 +1,11 @@
-# DungeonChessBattle.Server.StateStore
+# DungeonChessBattle.Server.DataStore
 
-服务器状态存储实现，所属分组 Server。当前唯一实现为基于 `ConcurrentDictionary` 的进程内版本。职责边界见 `functional_boundary/11`。
+服务器数据存储实现，所属分组 Server。当前唯一实现为基于 `ConcurrentDictionary` 的进程内版本。职责边界见 `functional_boundary/11`。
 
 ## 数据表
 
 - 房间配置、房间密码、房主名、准备状态（房间 → 玩家名 → 是否就绪）、连接归属（connectionId → 房间+玩家名）、登录会话（connectionId → 登录名）、玩家记录注册表（登录名 → 主键）、playerId 映射（房间 → 玩家名 → playerId）、准备单位列表。
+- 回放归档（roomId → 摘要 + 字节流）、玩家记录索引（记录主键 → 房间列表）、归档顺序（最近 256 场，超出移除最旧）。
 
 ## 并发策略
 

@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.StateStore.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 玩家状态存储接口：房间内玩家归属、准备状态与准备单位的选择记录。

@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.StateStore.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 准备阶段的一单位选择记录，只读快照项。

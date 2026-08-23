@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.GameAssets;
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Services;

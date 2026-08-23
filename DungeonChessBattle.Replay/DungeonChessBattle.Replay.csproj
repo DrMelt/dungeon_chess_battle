@@ -11,7 +11,7 @@
         <ProjectReference Include="..\DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
     </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@ using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Models;
-using DungeonChessBattle.Protocol.Replay;
+using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Replay;
 

@@ -10,10 +10,4 @@ public static class ServerProcessEnv {
 
     /// <summary>父进程 PID，服务器端 ParentProcessWatcher 读取，客户端消失时防孤儿进程。</summary>
     public const string ParentPid = "DCB_SERVER_PARENT_PID";
-
-    /// <summary>服务器可执行文件显式路径覆盖。</summary>
-    public const string ExecutablePath = "DCB_SERVER_EXE";
-
-    /// <summary>服务器构建配置，Debug / Release。</summary>
-    public const string BuildConfig = "DCB_SERVER_CONFIG";
 }

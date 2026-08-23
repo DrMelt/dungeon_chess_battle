@@ -12,7 +12,7 @@
 `GameServerHost.Start` 构建 `WebApplication`：
 
 - `ServerConfig.FromEnvironment` 产出装配配置，映射为模块配置切片：`LobbyServerConfig`（密码）、`BattleServerConfig`（连接密钥 + 房间端口池起点）。
-- 注册 `InMemoryGameStateStore`、`AddLobbyServer`、`AddBattleServer`、`AddSignalR`；绑定 `IBattleRoomManager` 到 `BattleRoomManager`。
+- 注册 `InMemoryGameStateStore`、`InMemoryReplayStore`、`AddLobbyServer`、`AddBattleServer`、`AddSignalR`；绑定 `IBattleRoomManager` 到 `BattleRoomManager`。
 - `MapHub<LobbyHub>("/lobby")` 承载大厅端点。
 - `MapGet("/replay/{roomId}")` 回放下载端点：验证一次性凭证（`IReplayDownloadTicketStore.TryConsume`，绑定房间匹配）后经 `IReplayStore` 流式输出回放字节，不经 SignalR 通道。
 
