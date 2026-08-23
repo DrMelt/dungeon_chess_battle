@@ -84,6 +84,9 @@ public sealed partial class BattleScene(
     /// <inheritdoc />
     public IReadOnlyList<IBattleUnitView> Units => _units;
 
+    /// <summary>全部战斗单位具体列表，回放端位移结算与外部装配用。</summary>
+    public IReadOnlyList<BattleUnit> BattleUnits => _units;
+
     /// <inheritdoc />
     public IBattleUnitView? FindUnit(ushort netId) =>
         _unitById.TryGetValue(netId, out var unit) ? unit : null;

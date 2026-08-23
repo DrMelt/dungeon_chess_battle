@@ -13,6 +13,7 @@
     <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <Project Path="DungeonChessBattle.Client.Lobby\DungeonChessBattle.Client.Lobby.csproj" />
     <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
+    <Project Path="DungeonChessBattle.Client.Replay\DungeonChessBattle.Client.Replay.csproj" />
   </Folder>
 
   <Project Path="DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />

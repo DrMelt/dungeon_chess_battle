@@ -66,9 +66,12 @@ public partial class BattleRoomServer {
         // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
         SpawnDungeonEnemies();
 
-        // 战斗输入回放记录：全部单位创建完成后装配，NextNetId 供回放端对齐单位 ID
+        // 战斗输入回放记录：全部单位创建完成后装配，NextNetId 供回放端从玩家之后对齐敌人 ID
         CreateReplayRecorder(playerInfos);
-        _replayRecorder?.SetNextNetId((ushort)(_roomPawns.Count == 0 ? 2 : _roomPawns.Max(p => p.Id) + 1));
+        ushort nextNetId = playerInfos.Count > 0
+            ? (ushort)(playerInfos[^1].NetId + 1)
+            : (ushort)(1 + 1);
+        _replayRecorder?.SetNextNetId(nextNetId);
 
         // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions 先于位移，
         // LateUpdate=Tick 在实体更新后、状态包发送前。
