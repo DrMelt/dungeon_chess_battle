@@ -19,7 +19,6 @@ graph TD
         Client["Client<br>门面与连接状态机"]
         LobbyClient["Client.Lobby<br>SignalR 大厅客户端"]
         BattleClient["Client.Battle<br>LES 房间客户端"]
-        ReplayClient["Client.Replay<br>本地回放引擎"]
     end
 
     subgraph ServerLayer["服务端库 Server"]
@@ -35,6 +34,7 @@ graph TD
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
+        Replay["Replay<br>回放引擎"]
     end
 
     subgraph DomainLayer["纯领域模型"]
@@ -44,7 +44,7 @@ graph TD
     Godot --> Client
     Godot --> LobbyClient
     Godot --> BattleClient
-    Godot --> ReplayClient
+    Godot --> Replay
     Godot --> Protocol
     Godot --> Logic
     Godot --> Entities
@@ -59,10 +59,10 @@ graph TD
     BattleClient --> Logic
     BattleClient --> Entities
     BattleClient --> GameConfig
-    ReplayClient --> Logic
-    ReplayClient --> Domain
-    ReplayClient --> GameConfig
-    ReplayClient --> Protocol
+    Replay --> Logic
+    Replay --> Domain
+    Replay --> GameConfig
+    Replay --> Protocol
 
     Host --> LobbySrv
     Host --> BattleSrv
@@ -106,7 +106,7 @@ graph TD
 | `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) | [02-client](overview/02-client.md) |
 | `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) | [04-client-battle](overview/04-client-battle.md) |
-| `DungeonChessBattle.Client.Replay` | 客户端本地回放引擎 `ReplayEngine` | [16-client-replay](functional_boundary/16-client-replay.md) | [16-client-replay](overview/16-client-replay.md) |
+| `DungeonChessBattle.Replay` | 回放引擎 `ReplayEngine`，回放子系统重放端 | [16-client-replay](functional_boundary/16-client-replay.md) | [16-client-replay](overview/16-client-replay.md) |
 | `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) | [05-protocol](overview/05-protocol.md) |
 | `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) | [06-battle-domain](overview/06-battle-domain.md) |
 | `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |

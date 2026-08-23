@@ -1,10 +1,10 @@
 using System;
-using DungeonChessBattle.Client.Replay;
 using DungeonChessBattle.Protocol.Replay;
+using DungeonChessBattle.Replay;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Replay;
+namespace DungeonChessBattle.ReplayUI;
 
 /// <summary>
 /// 回放场景编排：加载回放字节流构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
@@ -90,7 +90,7 @@ public partial class ReplayCoordinator : Node {
         _isPaused = false;
     }
 
-    /// <summary>按引擎单位视图生成展示节点，加载与重置时调用。</summary>
+    /// <summary>按引擎单位生成展示节点，加载回放时调用。</summary>
     private void SpawnUnitShows() {
         foreach (var (_, show) in _shows)
             show.QueueFree();
@@ -100,11 +100,11 @@ public partial class ReplayCoordinator : Node {
         if (engine == null || _unitShowScene == null)
             return;
 
-        foreach (var (netId, view) in engine.UnitViews) {
+        foreach (var unit in engine.Units) {
             var show = _unitShowScene.Instantiate<ReplayUnitShow>();
-            show.View = view;
+            show.Bind(engine, unit.UnitNetId);
             AddChild(show);
-            _shows[netId] = show;
+            _shows[unit.UnitNetId] = show;
         }
     }
 

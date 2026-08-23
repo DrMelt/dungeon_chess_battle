@@ -13,7 +13,6 @@
     <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <Project Path="DungeonChessBattle.Client.Lobby\DungeonChessBattle.Client.Lobby.csproj" />
     <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
-    <Project Path="DungeonChessBattle.Client.Replay\DungeonChessBattle.Client.Replay.csproj" />
   </Folder>
 
   <Project Path="DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
@@ -21,6 +20,7 @@
   <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
   <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
+  <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />
 
 
   <Folder Name="/Server/">

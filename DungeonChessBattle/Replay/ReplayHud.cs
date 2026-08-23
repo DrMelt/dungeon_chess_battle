@@ -1,6 +1,6 @@
 using Godot;
 
-namespace DungeonChessBattle.Replay;
+namespace DungeonChessBattle.ReplayUI;
 
 /// <summary>
 /// 回放控制条：播放/暂停、进度拖动与时间显示。

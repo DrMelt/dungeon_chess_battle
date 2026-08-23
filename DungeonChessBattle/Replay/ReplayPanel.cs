@@ -4,7 +4,7 @@ using DungeonChessBattle.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Replay;
+namespace DungeonChessBattle.ReplayUI;
 
 /// <summary>
 /// 回放入口面板：查询当前登录玩家的回放列表，选择并下载后启动回放场景。
