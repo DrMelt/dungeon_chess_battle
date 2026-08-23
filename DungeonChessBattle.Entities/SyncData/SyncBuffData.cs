@@ -13,12 +13,6 @@ public struct SyncBuffData : ISpanSerializable {
     /// <summary>Buff 截止的服务器逻辑 tick，客户端据此本地推算剩余时间。</summary>
     public ushort EndServerTick;
 
-    /// <summary>每跳间隔，秒，0 表示非周期性 Buff。</summary>
-    public float TickInterval;
-
-    /// <summary>每跳数值。DOT 为正，伤害量，HOT 为负，治疗量。非周期性 Buff 为 0。</summary>
-    public float TickValue;
-
     /// <summary>当前叠加层数。</summary>
     public ushort StackCount;
 
@@ -32,7 +26,7 @@ public struct SyncBuffData : ISpanSerializable {
     public byte DamageType;
 
     /// <summary>序列化后的最大字节数。</summary>
-    public readonly int MaxSize => 2 + 2 + 4 + 4 + 2 + 2 + 2 + 1; // 19 bytes
+    public readonly int MaxSize => 2 + 2 + 2 + 2 + 2 + 1; // 11 bytes
 
     /// <summary>
     /// 序列化到网络缓冲区。
@@ -41,8 +35,6 @@ public struct SyncBuffData : ISpanSerializable {
     public readonly void Serialize(ref SpanWriter writer) {
         writer.Put(BuffTypeId);
         writer.Put(EndServerTick);
-        writer.Put(TickInterval);
-        writer.Put(TickValue);
         writer.Put(StackCount);
         writer.Put(MaxStackCount);
         writer.Put(SourceUnitNetId);
@@ -56,23 +48,11 @@ public struct SyncBuffData : ISpanSerializable {
     public void Deserialize(ref SpanReader reader) {
         BuffTypeId = reader.GetUShort();
         EndServerTick = reader.GetUShort();
-        TickInterval = reader.GetFloat();
-        TickValue = reader.GetFloat();
         StackCount = reader.GetUShort();
         MaxStackCount = reader.GetUShort();
         SourceUnitNetId = reader.GetUShort();
         DamageType = reader.GetByte();
     }
-
-    /// <summary>
-    /// 判断此 Buff 是否为 DOT，持续伤害。
-    /// </summary>
-    public readonly bool IsDOT => TickInterval > 0 && TickValue > 0;
-
-    /// <summary>
-    /// 判断此 Buff 是否为 HOT，持续治疗。
-    /// </summary>
-    public readonly bool IsHOT => TickInterval > 0 && TickValue < 0;
 
     /// <summary>
     /// 判断此 Buff 是否可叠加

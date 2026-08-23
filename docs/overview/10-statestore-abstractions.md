@@ -23,5 +23,5 @@
 ## 快照模型
 
 - `GameRoom` 房间配置、`RoomStateSnapshot` 准备状态、`PlayerReadyState`、`UnitSelection` 单位选择记录。
-- 战斗单位状态不在此模型，由 BattleScene 面向 `IBattleUnit` 权威持有。
+- 战斗单位状态不在此模型，由战斗世界自持的领域单位 `BattleUnit` 权威持有。
 

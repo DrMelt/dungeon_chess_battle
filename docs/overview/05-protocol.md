@@ -15,6 +15,7 @@
 - 请求与结果：`CreateRoomRequest`/`JoinRoomRequest`/`ReconnectRoomRequest` 等请求 DTO + `LobbyResult`/`LoginResult` 等结果 DTO。房间 ID 与玩家名一律服务端权威，客户端不提交或反查。
 - 房间快照 `RoomSnapshot`：服务端组装单发的房间权威视图（配置 + 准备状态 + 单位），客户端以它为准。
 - 回放 DTO：摘要列表 `ReplayListResult` 与下载凭证 `ReplayDownloadResult`。
+- 回放数据契约：`ReplayModels` 记录模型与快照、`ReplayRecordCoder` 编解码，MessagePack 显式索引与格式版本门控，服务端导出与客户端下载解析共用。
 
 ## 最小连接契约
 

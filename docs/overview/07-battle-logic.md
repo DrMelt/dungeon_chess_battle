@@ -1,16 +1,16 @@
 # DungeonChessBattle.Battle.Logic
 
-战斗逻辑实现层，所属分组 Shared。以 `BattleScene` 实现战斗世界契约 `IBattleScene` 并编排战斗节拍，提供 Buff、仇恨、移动与战斗结算的具体逻辑，只面向领域接口，不依赖网络。职责边界见 `functional_boundary/07`。
+战斗逻辑实现层，所属分组 Shared。以 `BattleScene` 实现战场查询视图 `IBattleSceneView` 并编排战斗节拍，提供 Buff、仇恨、移动与战斗结算的具体逻辑，只面向领域类型，不依赖网络。职责边界见 `functional_boundary/07`。
 
 ## 战斗世界
 
-- `BattleScene` 实现 `IBattleScene`：`AddUnit` 注册单位、绑定 AI 执行器并同步注册空间演员；`BindRoom` 绑定房间状态载体；房间级阶段经 `IBattleRoom` 直接读写，单位权威状态经 `IBattleUnit.RuntimeState` 读写，场景只做推进、投影与结算。
+- `BattleScene` 实现 `IBattleSceneView`：`AddUnit` 注册领域单位 `BattleUnit`，`Configure` 装配移动桥与投影器；阶段与单位权威状态自持，经 `IBattleProjector` 投影到外部载体，场景只做推进、投影与结算。
 - 瞬发技能（SpellTime=0）校验通过即立即结算，不进入读条状态机，不受移动打断影响。
 
 ## 帧节拍
 
 - 战斗循环经 LES `BattleLoop`（LocalSingleton）收编：`Update` = `ApplyDecisions`（AI 决策前置，输入本帧生效）；`LateUpdate` = `Tick`（推进 + 整帧事件外送）。与实体同步严格 1:1，时间由 LES accumulator 管理。
-- `ApplyDecisions` 仅 Running 阶段逐单位触发 `IBattleUnit.RunAI`，决策动作经 `IAiExecutor` 回请求场景（移动、施法）。
+- `ApplyDecisions` 仅 Running 阶段逐单位触发 `IUnitIntelligence.Decide`，决策动作在战斗世界内统一执行（移动输入、施法请求）。
 
 ## Tick 推进管线
 
@@ -30,7 +30,7 @@
 ## 同步策略
 
 - 冷却与 Buff 以截止 tick（EndServerTick）投影：服务端在起始与结构变化时写入，剩余由两端按本端 tick 本地推算（`SyncTickHelper`），避免每 tick 全量推送。读条剩余（SkillCastRemaining）逐帧写回。
-- 仇恨表 dirty 节流：`HateTable.ConsumeDirty` 标记变更，`ProjectHates` 仅同步有变化的单位。
+- 仇恨表全量内容比较节流：投影器逐帧比对仇恨列表，仅变化时重建 SyncList，避免每帧全量重建。
 
 ## 确定性移动
 

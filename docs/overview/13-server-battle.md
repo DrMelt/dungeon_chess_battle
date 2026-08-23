@@ -12,7 +12,7 @@
 
 房间线程启动后 `InitializeFromStore` 依次：
 
-1. 创建 `BattleRoomEntity` 并 `BindRoom` 绑定战斗世界，注入权威副本键。
+1. 创建 `BattleRoomEntity` 注入权威副本键，`BattleScene.Configure` 装配移动桥与投影器。
 2. 从 Store 迁移准备期单位：按副本配置解析玩家阵营、同阵营错开出出生点、建 Pawn、注入战斗系数与移动管线。
 3. 按副本配置生成敌人（配置键经注册表反查，注入智能决策器）。
 4. 创建回放录制器，注册 `BattleLoop` LocalSingleton。

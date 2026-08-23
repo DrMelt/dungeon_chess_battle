@@ -3,14 +3,11 @@ namespace DungeonChessBattle.Battle.Domain.Combat.Hates;
 /// <summary>
 /// 单位权威仇恨表：本单位对各目标的仇恨账本，由 <see cref="UnitCombatState.Hates"/> 持有。
 /// 以目标网络 ID 为键，不持有单位引用，纯数据结构可独立单测。
-/// 增删改查与 dirty 标记，dirty 经投影器节流同步。
+/// 增删改查，变更经投影器内容比较节流同步。
 /// </summary>
 public sealed class HateTable {
     /// <summary>目标网络 ID → 仇恨值。</summary>
     private readonly Dictionary<ushort, float> _hates = [];
-
-    /// <summary>仇恨表发生变化，供投影节流消费。</summary>
-    private bool _dirty;
 
     /// <summary>仇恨退场阈值：低于该值视为无仇恨并移除条目，防止脏条目堆积。</summary>
     private const float Epsilon = 0.01f;
@@ -37,7 +34,6 @@ public sealed class HateTable {
         if (value == 0f)
             return;
         SetInternal(targetNetId, _hates.GetValueOrDefault(targetNetId) + value);
-        _dirty = true;
     }
 
     /// <summary>对目标乘倍率，目标不存在时忽略。</summary>
@@ -45,28 +41,22 @@ public sealed class HateTable {
         if (!_hates.TryGetValue(targetNetId, out float current))
             return;
         SetInternal(targetNetId, current * multiplier);
-        _dirty = true;
     }
 
     /// <summary>把对目标的仇恨抬到当前最高之上指定余量，实现嘲讽。</summary>
     public void SetTop(ushort targetNetId, float overage) {
         float top = _hates.Count == 0 ? 0f : _hates.Values.Max();
         SetInternal(targetNetId, top + overage);
-        _dirty = true;
     }
 
     /// <summary>移除对目标的仇恨条目，目标不存在时忽略；供单位死亡清理调用。</summary>
     public void RemoveTarget(ushort targetNetId) {
-        if (_hates.Remove(targetNetId))
-            _dirty = true;
+        _hates.Remove(targetNetId);
     }
 
-    /// <summary>清空整张仇恨表，供单位死亡清理调用；空表不标 dirty。</summary>
+    /// <summary>清空整张仇恨表，供单位死亡清理调用。</summary>
     public void Clear() {
-        if (_hates.Count == 0)
-            return;
         _hates.Clear();
-        _dirty = true;
     }
 
     private void SetInternal(ushort targetNetId, float value) {
@@ -82,11 +72,4 @@ public sealed class HateTable {
     /// <summary>仇恨快照，按仇恨值降序。</summary>
     public IReadOnlyList<HateSnapshot> Snapshot() =>
         [.. _hates.OrderByDescending(kv => kv.Value).Select(kv => new HateSnapshot(kv.Key, kv.Value))];
-
-    /// <summary>取出并清空脏标记，供 BattleScene 投影节流消费。</summary>
-    public bool ConsumeDirty() {
-        bool dirty = _dirty;
-        _dirty = false;
-        return dirty;
-    }
 }
