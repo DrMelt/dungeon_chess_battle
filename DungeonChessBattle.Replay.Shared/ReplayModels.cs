@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Replay.Shared;
 /// </summary>
 public static class ReplayFormatVersion {
     /// <summary>当前回放记录格式版本。</summary>
-    public const int Current = 2;
+    public const int Current = 3;
 }
 
 /// <summary>
@@ -58,7 +58,7 @@ public readonly record struct MoveInputRecord(
 public readonly record struct CastSkillRecord(
     [property: Key(0)] int Frame,
     [property: Key(1)] byte PlayerIndex,
-    [property: Key(2)] ushort SkillTypeId,
+    [property: Key(2)] string SkillTypeId,
     [property: Key(3)] ushort TargetNetId,
     [property: Key(4)] float TargetPosX,
     [property: Key(5)] float TargetPosZ,

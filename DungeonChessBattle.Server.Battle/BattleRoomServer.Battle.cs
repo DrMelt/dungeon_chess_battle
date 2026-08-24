@@ -216,6 +216,11 @@ public partial class BattleRoomServer {
             return false;
         }
 
+        if (string.IsNullOrEmpty(req.SkillTypeId) || req.SkillTypeId.Length > SkillKeyId.MaxKeyLength) {
+            _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: skill key invalid or too long.", RoomId);
+            return false;
+        }
+
         if (FindBattleUnit(casterPawn.Id) is not { } caster)
             return false;
 
@@ -356,30 +361,38 @@ public partial class BattleRoomServer {
             ProjectHates(unit, pawn);
         }
 
-        /// <summary>个体冷却全量投影，内容一致时跳过，避免每帧重建 SyncList 产生网络流量。</summary>
+        /// <summary>个体冷却整包投影，内容一致时跳过，避免每帧重建产生网络流量。</summary>
         private void ProjectCooldowns(IProjectableBattleState unit, UnitPawn pawn) {
             var cds = unit.Cooldowns;
-            bool changed = pawn.SkillCooldowns.Count != cds.Count;
-            if (!changed) {
-                for (int i = 0; i < cds.Count; i++) {
-                    var existing = pawn.SkillCooldowns[i];
-                    if (existing.SkillId != cds[i].SkillKey.Id
-                        || existing.EndServerTick != SyncTickHelper.EndTick(entityManager, cds[i].Remaining)) {
-                        changed = true;
-                        break;
+            var entries = new SyncSkillCooldownSnapshot.Entry[cds.Count];
+            for (int i = 0; i < cds.Count; i++)
+                entries[i] = new SyncSkillCooldownSnapshot.Entry(
+                    cds[i].SkillKey.Id,
+                    SyncTickHelper.EndTick(entityManager, cds[i].Remaining));
+
+            var current = pawn.SkillCooldowns.Value;
+            bool changed;
+            if (current == null) {
+                changed = true;
+            }
+            else {
+                changed = current.Entries.Count != entries.Length;
+                if (!changed) {
+                    for (int i = 0; i < entries.Length; i++) {
+                        if (current.Entries[i].SkillId != entries[i].SkillId
+                            || current.Entries[i].EndServerTick != entries[i].EndServerTick) {
+                            changed = true;
+                            break;
+                        }
                     }
                 }
             }
             if (!changed)
                 return;
 
-            while (pawn.SkillCooldowns.Count > 0)
-                pawn.SkillCooldowns.RemoveAt(pawn.SkillCooldowns.Count - 1);
-            foreach (var cd in cds)
-                pawn.SkillCooldowns.Add(new SyncSkillCooldown {
-                    SkillId = cd.SkillKey.Id,
-                    EndServerTick = SyncTickHelper.EndTick(entityManager, cd.Remaining),
-                });
+            var snapshot = new SyncSkillCooldownSnapshot();
+            snapshot.Set(entries);
+            pawn.SkillCooldowns.Value = snapshot;
         }
 
         /// <summary>Buff 全量投影，内容一致时跳过。</summary>

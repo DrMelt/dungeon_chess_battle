@@ -55,30 +55,33 @@ public static class BattleEventCoder {
             },
             BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetNetId, B = be.BuffTypeId },
             CastCompleted cc => new SyncBattleEvent {
-                Type = TypeCastCompleted, A = cc.CasterNetId, B = cc.SkillId.Id, C = cc.TargetNetId ?? 0,
+                Type = TypeCastCompleted, A = cc.CasterNetId, C = cc.TargetNetId ?? 0, SkillKey = cc.SkillId.Id,
             },
             CastStarted cs => new SyncBattleEvent {
-                Type = TypeCastStarted, A = cs.CasterNetId, B = cs.SkillId.Id, C = cs.TargetNetId ?? 0,
+                Type = TypeCastStarted, A = cs.CasterNetId, C = cs.TargetNetId ?? 0, SkillKey = cs.SkillId.Id,
             },
             CastCanceled ccl => new SyncBattleEvent {
-                Type = TypeCastCanceled, A = ccl.CasterNetId, B = ccl.SkillId.Id,
+                Type = TypeCastCanceled, A = ccl.CasterNetId, SkillKey = ccl.SkillId.Id,
             },
             UnitDied ud => new SyncBattleEvent { Type = TypeUnitDied, A = ud.UnitNetId },
             _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
         };
     }
 
-    /// <summary>解码单个同步事件为领域事件；未知 tag 返回 null，由调用方按丢弃处理。</summary>
+    /// <summary>解码单个同步事件为领域事件；未知 tag 或技能键非法返回 null，由调用方按丢弃处理。</summary>
     public static IBattleEvent? Decode(SyncBattleEvent e) {
+        if ((e.Type is TypeCastStarted or TypeCastCompleted or TypeCastCanceled)
+            && (string.IsNullOrEmpty(e.SkillKey) || e.SkillKey.Length > SkillKeyId.MaxKeyLength))
+            return null;
         return e.Type switch {
             TypeDamage => new DamageOccurred(e.A, e.B, e.Value, (DamageType)e.C),
             TypeHeal => new HealOccurred(e.A, e.B, e.Value),
             TypeHateRequested => new HateRequested(e.A, e.B, (HateEffectOp)e.C, e.Value),
             TypeBuffApplied => new BuffApplied(e.A, e.B, e.C),
             TypeBuffExpired => new BuffExpired(e.A, e.B),
-            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.B), e.C == 0 ? null : e.C),
-            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.B), e.C == 0 ? null : e.C),
-            TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.B)),
+            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : e.C),
+            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : e.C),
+            TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.SkillKey)),
             TypeUnitDied => new UnitDied(e.A),
             _ => null,
         };

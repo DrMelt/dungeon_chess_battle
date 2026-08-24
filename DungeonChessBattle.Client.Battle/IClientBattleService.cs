@@ -33,10 +33,10 @@ public interface IClientBattleService {
     /// <param name="roomId">房间 ID。</param>
     /// <param name="casterNetId">施法单位网络实体 ID。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，范围伤害技能传 0。</param>
-    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="skillId">技能配置键。</param>
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
-    void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, ushort skillId,
+    void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, string skillId,
         float targetPosX = 0f, float targetPosZ = 0f);
 
     /// <summary>

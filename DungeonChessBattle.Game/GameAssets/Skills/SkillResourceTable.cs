@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 ///
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有技能 .tres 资源到 SkillResources 数组。
 /// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态技能定义实例）
-/// 自动构建反向查找字典，无需任何字符串 ID。
+/// 自动构建反向查找字典，以技能定义对象为键，查询不依赖技能键字符串。
 ///
 /// 新增技能时只需在 res_skill_resource_table.tres 中拖入对应的 .tres 资源即可。
 /// </summary>

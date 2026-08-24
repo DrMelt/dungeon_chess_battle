@@ -55,12 +55,11 @@ public partial class UnitPawn : PawnLogic {
     [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<ushort> GcdEndServerTick;
 
-    /// <summary>技能个体冷却列表，服务端权威回写。</summary>
-    public readonly SyncList<SyncSkillCooldown> SkillCooldowns = [];
+    /// <summary>技能个体冷却整包快照，服务端权威回写。</summary>
+    public readonly SyncNetSerializable<SyncSkillCooldownSnapshot> SkillCooldowns = new(() => new SyncSkillCooldownSnapshot());
 
-    /// <summary>当前施法技能 ID，0 表示无施法。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
-    public SyncVar<ushort> SkillCasting;
+    /// <summary>当前施法技能键，空字符串表示无施法。</summary>
+    public readonly SyncString SkillCasting = new();
 
     /// <summary>当前施法剩余读条时间，秒。</summary>
     [SyncVarFlags(SyncFlags.NeverRollBack)]
@@ -133,7 +132,10 @@ public partial class UnitPawn : PawnLogic {
     public float GetTotalCooldownRemaining(SkillKeyId skillKey) {
         var em = EntityManager;
         float remaining = SyncTickHelper.RemainingSeconds(em, GcdEndServerTick.Value);
-        foreach (var cd in SkillCooldowns) {
+        var snapshot = SkillCooldowns.Value;
+        if (snapshot == null)
+            return remaining;
+        foreach (var cd in snapshot.Entries) {
             if (cd.SkillId == skillKey.Id) {
                 float cdRemaining = SyncTickHelper.RemainingSeconds(em, cd.EndServerTick);
                 if (cdRemaining > remaining)

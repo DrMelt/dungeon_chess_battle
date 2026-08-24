@@ -30,7 +30,7 @@ public partial class SkillProgressBar : Control {
             return;
 
         var castingId = pawn.SkillCasting.Value;
-        if (castingId == 0) {
+        if (string.IsNullOrEmpty(castingId)) {
             Visible = false;
             return;
         }

@@ -253,10 +253,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <param name="roomId">房间 ID。</param>
     /// <param name="casterNetId">施法单位网络实体 ID（仅作接口兼容，施法者以控制器为准）。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，范围伤害技能传 0。</param>
-    /// <param name="skillId">技能配置 ID。</param>
+    /// <param name="skillId">技能配置键。</param>
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
-    public void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, ushort skillId,
+    public void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, string skillId,
         float targetPosX = 0f, float targetPosZ = 0f) {
         var controller = _localController;
         if (controller == null)

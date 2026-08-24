@@ -71,7 +71,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     }
 
     /// <summary>记录施法请求与接受结果，返回是否已记录；达到上限后返回 false 且不记录。</summary>
-    public bool RecordCastSkill(ushort tick, byte playerIndex, ushort skillTypeId, ushort targetNetId,
+    public bool RecordCastSkill(ushort tick, byte playerIndex, string skillTypeId, ushort targetNetId,
         float targetPosX, float targetPosZ, bool accepted) {
         lock (_lock) {
             return TryAppend(() =>

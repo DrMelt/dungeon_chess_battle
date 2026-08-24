@@ -8,8 +8,8 @@ namespace DungeonChessBattle.Entities.Requests;
 /// 施法者不在此结构声明，服务端从请求来源控制器持有的单位推导，杜绝伪造施法者。
 /// </summary>
 public struct CastSkillRequest : INetSerializable {
-    /// <summary>技能配置 ID。</summary>
-    public ushort SkillTypeId;
+    /// <summary>技能配置键。</summary>
+    public string SkillTypeId;
 
     /// <summary>目标单位网络 ID，位置型技能为 0。</summary>
     public ushort TargetNetId;
@@ -30,7 +30,7 @@ public struct CastSkillRequest : INetSerializable {
 
     /// <inheritdoc />
     public void Deserialize(NetDataReader reader) {
-        SkillTypeId = reader.GetUShort();
+        SkillTypeId = reader.GetString();
         TargetNetId = reader.GetUShort();
         TargetPosX = reader.GetFloat();
         TargetPosZ = reader.GetFloat();

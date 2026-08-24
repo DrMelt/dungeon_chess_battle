@@ -62,7 +62,7 @@ public class GameConfigDB : IGameConfigDB {
     public static DamageSkillDefinition SkillMagicDamage {
         get;
     } = new() {
-        SkillId = new SkillKeyId(1),
+        SkillId = new SkillKeyId("skill_magic_damage"),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -79,7 +79,7 @@ public class GameConfigDB : IGameConfigDB {
     public static HealSkillDefinition SkillCure {
         get;
     } = new() {
-        SkillId = new SkillKeyId(2),
+        SkillId = new SkillKeyId("skill_cure"),
         SpellTime = 0.5f,
         CooldownTime = 0.5f,
         GcdTime = 2.0f,
@@ -95,7 +95,7 @@ public class GameConfigDB : IGameConfigDB {
     public static AddBuffSkillDefinition SkillAddDotMagic {
         get;
     } = new() {
-        SkillId = new SkillKeyId(3),
+        SkillId = new SkillKeyId("skill_add_dot_magic"),
         SpellTime = 0.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -111,7 +111,7 @@ public class GameConfigDB : IGameConfigDB {
     public static AddBuffSkillDefinition SkillAddHot {
         get;
     } = new() {
-        SkillId = new SkillKeyId(4),
+        SkillId = new SkillKeyId("skill_add_hot"),
         SpellTime = 0.0f,
         CooldownTime = 1.5f,
         GcdTime = 2.0f,
@@ -127,7 +127,7 @@ public class GameConfigDB : IGameConfigDB {
     public static RangeDamageSkillDefinition SkillRectRangeDamage {
         get;
     } = new() {
-        SkillId = new SkillKeyId(5),
+        SkillId = new SkillKeyId("skill_rect_range_damage"),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
         GcdTime = 3.0f,
@@ -147,7 +147,7 @@ public class GameConfigDB : IGameConfigDB {
     public static HateSkillDefinition SkillTaunt {
         get;
     } = new() {
-        SkillId = new SkillKeyId(6),
+        SkillId = new SkillKeyId("skill_taunt"),
         SpellTime = 0.5f,
         CooldownTime = 8.0f,
         GcdTime = 3.0f,
@@ -290,12 +290,12 @@ public class GameConfigDB : IGameConfigDB {
     /// <returns>对应的技能定义；未找到返回 null。</returns>
     public static SkillDefinition? GetSkillById(SkillKeyId skillKey) {
         return skillKey.Id switch {
-            1 => SkillMagicDamage,
-            2 => SkillCure,
-            3 => SkillAddDotMagic,
-            4 => SkillAddHot,
-            5 => SkillRectRangeDamage,
-            6 => SkillTaunt,
+            "skill_magic_damage" => SkillMagicDamage,
+            "skill_cure" => SkillCure,
+            "skill_add_dot_magic" => SkillAddDotMagic,
+            "skill_add_hot" => SkillAddHot,
+            "skill_rect_range_damage" => SkillRectRangeDamage,
+            "skill_taunt" => SkillTaunt,
             _ => null,
         };
     }

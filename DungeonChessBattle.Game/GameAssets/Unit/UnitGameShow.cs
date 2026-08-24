@@ -47,7 +47,7 @@ public partial class UnitGameShow : Node3D {
     /// <returns>匹配的 Godot 技能资源；无施法返回 null。</returns>
     public UnitSkillBaseGodot? GetSpellingSkill() {
         var castingId = Pawn.SkillCasting.Value;
-        if (castingId == 0)
+        if (string.IsNullOrEmpty(castingId))
             return null;
         foreach (var skill in SkillsList) {
             if (skill.SkillId.Id == castingId)

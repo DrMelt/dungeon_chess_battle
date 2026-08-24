@@ -342,7 +342,7 @@ public sealed partial class BattleScene(
         _eventLog.AppendRange(_pendingEvents);
         _pendingEvents.Clear();
         foreach (var unit in _units.ToArray()) {
-            TickCasting(unit, deltaTime, _eventLog);
+            TickCasting(unit, (float)deltaTime, _eventLog);
         }
 
         foreach (var unit in _units.ToArray()) {
@@ -528,15 +528,15 @@ public sealed partial class BattleScene(
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "[BattleScene] {Enemy} cannot find skill {SkillId}.")]
-    private partial void LogSkillNotFound(string enemy, ushort skillId);
+    private partial void LogSkillNotFound(string enemy, string skillId);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "[BattleScene] {Enemy} cast rejected: {SkillId} on {Target}.")]
-    private partial void LogCastRejected(string enemy, ushort skillId, string target);
+    private partial void LogCastRejected(string enemy, string skillId, string target);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "[BattleScene] {Enemy} starts casting skill {SkillId} on {Target}.")]
-    private partial void LogCastStarted(string enemy, ushort skillId, string target);
+    private partial void LogCastStarted(string enemy, string skillId, string target);
 
     #endregion
 }
