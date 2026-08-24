@@ -75,7 +75,7 @@ public sealed partial class BattleScene(
     /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
     private readonly List<IBattleEvent> _pendingEvents = [];
 
-    /// <summary>网络 ID 到单位的索引，AI 目标查询与仇恨落账用。</summary>
+    /// <summary> ID 到单位的索引。</summary>
     private readonly Dictionary<ushort, BattleUnit> _unitById = [];
 
     /// <summary>全部战斗单位，按注册顺序。</summary>
@@ -140,12 +140,26 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
-    private void ClearHateEntries(BattleUnit dead) {
-        dead.RuntimeState.Hates.Clear();
+    private void ClearHateEntries(BattleUnit deadUnit) {
+        deadUnit.RuntimeState.Hates.Clear();
         foreach (var unit in _units) {
-            if (unit != dead)
-                unit.RuntimeState.Hates.RemoveTarget(dead.UnitNetId);
+            if (unit != deadUnit)
+                unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitNetId);
         }
+    }
+
+    /// <summary>登记本帧死者并产出 UnitDied；依赖 _dead 去重，在仇恨推衍前调用。</summary>
+    private void RegisterDeaths() {
+        foreach (var unit in _units.ToArray())
+            if (unit.Health <= 0f && _dead.Add(unit))
+                _eventLog.Append(new UnitDied(unit.UnitNetId));
+    }
+
+    /// <summary>清理本帧死者仇恨账本，在仇恨推衍后调用，避免死者因自身伤害事件被重写。</summary>
+    private void CleanupDeaths() {
+        foreach (var unit in _units.ToArray())
+            if (unit.Health <= 0f)
+                ClearHateEntries(unit);
     }
 
     /// <summary>开始战斗：Waiting 到 Running，清零计时并记录开始时刻。</summary>
@@ -329,17 +343,20 @@ public sealed partial class BattleScene(
         _pendingEvents.Clear();
         foreach (var unit in _units.ToArray()) {
             TickCasting(unit, deltaTime, _eventLog);
+        }
+
+        foreach (var unit in _units.ToArray()) {
             TickCooldowns(unit, deltaTime);
+        }
+
+        foreach (var unit in _units.ToArray()) {
             TickBuffs(unit, deltaTime, _eventLog, buffJumps);
         }
 
         // 全量死亡扫描：本帧内所有 Health<=0 的单位统一产出 UnitDied。
         // 若在单位迭代内判定，同帧互杀时后死者可能因战斗已切 Finished 而丢失死亡事件。
         // 仇恨账本清理延迟到增量推衍之后，避免本帧死者因自身伤害事件重写进账本。
-        foreach (var unit in _units.ToArray()) {
-            if (unit.Health <= 0f && _dead.Add(unit))
-                _eventLog.Append(new UnitDied(unit.UnitNetId));
-        }
+        RegisterDeaths();
 
         TryEndBattle();
 
@@ -350,10 +367,7 @@ public sealed partial class BattleScene(
         }
 
         // 死亡清理：本帧死者清空自身表并从其他单位表移除其条目，保证死者不残留
-        foreach (var unit in _units.ToArray()) {
-            if (unit.Health <= 0f)
-                ClearHateEntries(unit);
-        }
+        CleanupDeaths();
 
         ProjectAll();
 
@@ -380,11 +394,11 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>推进单位读条；读条完成时结算技能并清理读条状态。</summary>
-    private void TickCasting(BattleUnit unit, double deltaTime, BattleEventLog log) {
+    private void TickCasting(BattleUnit unit, float deltaTime, BattleEventLog log) {
         if (unit.SkillCasting == default)
             return;
 
-        unit.SkillCastRemaining -= (float)deltaTime;
+        unit.SkillCastRemaining -= deltaTime;
         if (unit.SkillCastRemaining > 0f)
             return;
 
@@ -414,7 +428,7 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>推进 Buff 全局节拍；结构变化时保留存活实例。</summary>
-    private static void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
+    private void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
             return;
@@ -424,11 +438,8 @@ public sealed partial class BattleScene(
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
             foreach (var e in BuffTickProcessor.Tick(buff.Definition, buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
+                ApplyEventEffect(e);
                 log.Append(e);
-                if (e is DamageOccurred dmg)
-                    ApplyHealthDelta(target, -dmg.AppliedDamage);
-                else if (e is HealOccurred heal)
-                    ApplyHealthDelta(target, heal.ActualHeal);
             }
             if (buff.Instance.IsAlive)
                 alive.Add(buff);
@@ -448,7 +459,7 @@ public sealed partial class BattleScene(
 
         var resolution = skill.Effect.Resolve(new SkillResolveContext(skill, caster, target, targetPos, _units, _relations));
         foreach (var evt in resolution.Events) {
-            ApplyEventHealth(evt);
+            ApplyEventEffect(evt);
             log.Append(evt);
         }
         foreach (var buff in resolution.Buffs)
@@ -471,8 +482,8 @@ public sealed partial class BattleScene(
         entries.Add(new CooldownEntry(skillKey, remaining));
     }
 
-    /// <summary>把领域伤害/治疗事件应用到对应单位生命值，单位已移除则忽略。</summary>
-    private void ApplyEventHealth(IBattleEvent evt) {
+    /// <summary>领域事件副作用统一应用：伤害/治疗落到目标生命值，单位已移除则忽略；新副作用在此扩展。</summary>
+    private void ApplyEventEffect(IBattleEvent evt) {
         if (evt is DamageOccurred dmg) {
             if (_unitById.TryGetValue(dmg.TargetNetId, out var unit))
                 ApplyHealthDelta(unit, -dmg.AppliedDamage);
