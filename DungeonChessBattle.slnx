@@ -6,7 +6,7 @@
   </Configurations>
 
   <Folder Name="/Godot/">
-    <Project Path="DungeonChessBattle\DungeonChessBattle.csproj" />
+    <Project Path="DungeonChessBattle.Game\DungeonChessBattle.Game.csproj" />
   </Folder>
 
   <Folder Name="/Client/">

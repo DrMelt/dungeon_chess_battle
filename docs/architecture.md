@@ -12,7 +12,7 @@
 graph TD
     subgraph AppLayer["装配与入口"]
         Host["Server.Host<br>Kestrel + SignalR 装配"]
-        Godot["DungeonChessBattle（Godot）<br>场景 / UI / 资源装配"]
+        Godot["DungeonChessBattle.Game（Godot）<br>场景 / UI / 资源装配"]
     end
 
     subgraph ClientLayer["客户端库 Client"]
@@ -107,7 +107,7 @@ graph TD
 
 | 项目 | 职责 | 边界描述 | 快速了解 |
 | --- | --- | --- | --- |
-| `DungeonChessBattle` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-dungeonchessbattle](functional_boundary/01-dungeonchessbattle.md) | [01-dungeonchessbattle](overview/01-dungeonchessbattle.md) |
+| `DungeonChessBattle.Game` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-game](functional_boundary/01-game.md) | [01-game](overview/01-game.md) |
 | `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) | [02-client](overview/02-client.md) |
 | `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) | [04-client-battle](overview/04-client-battle.md) |
