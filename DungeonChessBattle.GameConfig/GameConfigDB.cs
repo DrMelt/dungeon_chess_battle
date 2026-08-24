@@ -1,10 +1,14 @@
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Domain.Intelligence;
-using DungeonChessBattle.Battle.Domain.Range;
+using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Intelligence;
+using DungeonChessBattle.Battle.Shared.Range;
 using DungeonChessBattle.GameConfig.Models;
-using DungeonChessBattle.Battle.Domain.Movement;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.Movement;
+using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Logic.Intelligence;
+using DungeonChessBattle.GameConfig.Buffs;
+using DungeonChessBattle.GameConfig.Skills;
 
 namespace DungeonChessBattle.GameConfig;
 
@@ -28,6 +32,7 @@ public class GameConfigDB : IGameConfigDB {
         MaxStacks = 1,
         DamageType = DamageType.Magic,
         DamagePerSec = 10.0f,
+        Effect = new DotEffect(),
     };
 
     /// <summary>物理持续伤害 Buff 定义。</summary>
@@ -39,6 +44,7 @@ public class GameConfigDB : IGameConfigDB {
         MaxStacks = 1,
         DamageType = DamageType.Physical,
         DamagePerSec = 100.0f,
+        Effect = new DotEffect(),
     };
 
     /// <summary>持续治疗 Buff 定义。</summary>
@@ -49,6 +55,7 @@ public class GameConfigDB : IGameConfigDB {
         Duration = 15.0,
         MaxStacks = 1,
         HealthPerSec = 100.0f,
+        Effect = new HotEffect(),
     };
 
     /// <summary>魔法单体伤害技能定义。</summary>
@@ -65,6 +72,7 @@ public class GameConfigDB : IGameConfigDB {
         CastRange = 10f,
         Damage = 140.0f,
         DamageType = DamageType.Magic,
+        Effect = new DamageEffect(),
     };
 
     /// <summary>治疗技能定义。</summary>
@@ -80,6 +88,7 @@ public class GameConfigDB : IGameConfigDB {
         TargetPolicy = SkillTargetPolicy.Same,
         CastRange = 8f,
         CurePotency = 500.0f,
+        Effect = new HealEffect(),
     };
 
     /// <summary>添加魔法持续伤害 Buff 的技能定义。</summary>
@@ -95,6 +104,7 @@ public class GameConfigDB : IGameConfigDB {
         TargetPolicy = SkillTargetPolicy.Different,
         CastRange = 10f,
         Buff = BuffDotMagic,
+        Effect = new AddBuffEffect(),
     };
 
     /// <summary>添加持续治疗 Buff 的技能定义。</summary>
@@ -110,6 +120,7 @@ public class GameConfigDB : IGameConfigDB {
         TargetPolicy = SkillTargetPolicy.Same,
         CastRange = 8f,
         Buff = BuffHot,
+        Effect = new AddBuffEffect(),
     };
 
     /// <summary>矩形范围物理伤害技能定义。</summary>
@@ -125,10 +136,11 @@ public class GameConfigDB : IGameConfigDB {
         TargetPolicy = SkillTargetPolicy.Different,
         Damage = 200.0f,
         DamageType = DamageType.Physical,
-        Range = new RectShape {
+        CastArea = new RectShape {
             NearClamp = 0f,
             FarClamp = 5.0f,
         },
+        Effect = new RangeDamageEffect(),
     };
 
     /// <summary>单体嘲讽仇恨技能定义：把目标敌人对本单位的仇恨抬到最高之上。</summary>
@@ -145,6 +157,7 @@ public class GameConfigDB : IGameConfigDB {
         CastRange = 5f,
         Op = HateEffectOp.SetTop,
         Value = 1000.0f,
+        Effect = new HateSkillEffect(),
     };
 
     /// <summary>白法师单位配置。</summary>

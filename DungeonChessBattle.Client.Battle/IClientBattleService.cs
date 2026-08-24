@@ -1,5 +1,5 @@
-using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
-using DungeonChessBattle.Battle.Domain.Events;
+using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
+using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Client.Battle;
 

@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Battle.Domain。
+- Battle.Shared。

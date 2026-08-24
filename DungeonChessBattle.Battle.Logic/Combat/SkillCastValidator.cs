@@ -1,0 +1,55 @@
+using System.Numerics;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Enums;
+
+namespace DungeonChessBattle.Battle.Logic.Combat;
+
+/// <summary>
+/// 技能施放静态判定唯一来源，服务端权威校验、客户端预输入与 AI 决策共用同一实现。
+/// 基于施法单位状态、技能定义与已解析的目标/位置判断，不接触技能仓库。
+/// </summary>
+public static class SkillCastValidator {
+    /// <summary>
+    /// 判定单位能否发起指定技能的施法：归属、状态与目标/位置因素全部聚合。
+    /// </summary>
+    /// <param name="caster">施法单位只读视图。</param>
+    /// <param name="skill">目标技能定义。</param>
+    /// <param name="target">已解析的单位目标；无单位目标需求时传 null。</param>
+    /// <param name="targetPos">已解析的位置目标；无位置目标需求时传 null。</param>
+    /// <param name="relations">副本配置的阵营关系函数。</param>
+    public static bool CanCast(IBattleUnitView caster, SkillDefinition skill, IBattleUnitView? target, Vector2? targetPos,
+        CampRelationResolver relations) {
+        if (!caster.HasSkill(skill.SkillId))
+            return false;
+        if (!CanCastState(caster, skill.SkillId))
+            return false;
+        if (skill.NeedUnitTarget)
+            return target != null
+                && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy, relations)
+                && IsUnitTargetInRange(caster, target, skill);
+        if (skill.NeedPosTarget)
+            return IsTargetPosInRange(caster, skill, targetPos);
+        return true;
+    }
+
+    /// <summary>单位目标距离因素：CastRange 大于 0 时要求中心距含双方碰撞半径不超过射程，0 视为不设限。</summary>
+    private static bool IsUnitTargetInRange(IBattleUnitView caster, IBattleUnitView target, SkillDefinition skill) {
+        if (skill.CastRange <= 0f)
+            return true;
+        float reach = skill.CastRange + caster.Snapshot.BodyRadius + target.Snapshot.BodyRadius;
+        return Vector2.Distance(caster.Snapshot.Position, target.Snapshot.Position) <= reach;
+    }
+
+    /// <summary>状态因素聚合：存活、非读条与技能总冷却（全局与个体取较大）均就绪。单值查询，无托管对象分配。</summary>
+    private static bool CanCastState(IBattleUnitView caster, SkillKeyId skillKey) {
+        if (caster.Health <= 0f || caster.SkillCasting != default)
+            return false;
+        return caster.GetTotalCooldownRemaining(skillKey) <= 0f;
+    }
+
+    /// <summary>位置因素：目标点非空且落在技能有效范围内，读取定义形状判定。</summary>
+    private static bool IsTargetPosInRange(IBattleUnitView caster, SkillDefinition skill, Vector2? targetPos) {
+        return targetPos is { } pos && skill.CastArea is { } area
+            && area.Contains(pos, caster.Snapshot.Position, pos - caster.Snapshot.Position, 0f);
+    }
+}

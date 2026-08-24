@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 
 namespace DungeonChessBattle.Game.GamePlayUI.skill_list;
 

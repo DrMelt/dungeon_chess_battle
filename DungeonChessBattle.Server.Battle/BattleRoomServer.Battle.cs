@@ -1,12 +1,11 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain;
-using DungeonChessBattle.Battle.Domain.Buffs;
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Domain.Events;
-using DungeonChessBattle.Battle.Domain.Movement;
-using DungeonChessBattle.Battle.Logic.Buffs;
+using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
@@ -325,7 +324,7 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用（BattleScene.Tick 末尾）。
     /// </summary>
     private sealed class SyncVarProjector(BattleRoomServer room, ServerEntityManager entityManager) : IBattleProjector {
-        public void Project(IReadOnlyList<BattleUnit> units, BattlePhase phase) {
+        public void Project(IReadOnlyList<IProjectableBattleState> units, BattlePhase phase) {
             foreach (var unit in units)
                 if (room._pawnByNetId.TryGetValue(unit.UnitNetId, out var pawn))
                     ProjectUnit(unit, pawn);
@@ -338,7 +337,7 @@ public partial class BattleRoomServer {
                 entity.BattleStartUnixTime.Value = room._battleScene.BattleStartUnixTime;
         }
 
-        private void ProjectUnit(BattleUnit unit, UnitPawn pawn) {
+        private void ProjectUnit(IProjectableBattleState unit, UnitPawn pawn) {
             pawn.Health.Value = unit.Health;
             pawn.MaxHealth.Value = unit.MaxHealth;
             pawn.UnitState.Value = unit.Health <= 0f ? (byte)1 : (byte)0;
@@ -358,8 +357,8 @@ public partial class BattleRoomServer {
         }
 
         /// <summary>个体冷却全量投影，内容一致时跳过，避免每帧重建 SyncList 产生网络流量。</summary>
-        private void ProjectCooldowns(BattleUnit unit, UnitPawn pawn) {
-            var cds = unit.RuntimeState.Cooldowns;
+        private void ProjectCooldowns(IProjectableBattleState unit, UnitPawn pawn) {
+            var cds = unit.Cooldowns;
             bool changed = pawn.SkillCooldowns.Count != cds.Count;
             if (!changed) {
                 for (int i = 0; i < cds.Count; i++) {
@@ -384,8 +383,8 @@ public partial class BattleRoomServer {
         }
 
         /// <summary>Buff 全量投影，内容一致时跳过。</summary>
-        private void ProjectBuffs(BattleUnit unit, UnitPawn pawn) {
-            var buffs = unit.RuntimeState.Buffs;
+        private void ProjectBuffs(IProjectableBattleState unit, UnitPawn pawn) {
+            var buffs = unit.Buffs;
             bool changed = pawn.BuffsList.Count != buffs.Count;
             if (!changed) {
                 for (int i = 0; i < buffs.Count; i++) {
@@ -412,14 +411,14 @@ public partial class BattleRoomServer {
                     StackCount = (ushort)buff.Instance.Stacks,
                     MaxStackCount = (ushort)Math.Max(1, buff.Instance.MaxStacks),
                     SourceUnitNetId = buff.Instance.FromNetId,
-                    DamageType = EffectDamageType(buff.Effect),
+                    DamageType = (byte)buff.Instance.DamageType,
                 });
         }
 
 
         /// <summary>仇恨全量投影，内容一致时跳过。</summary>
-        private static void ProjectHates(BattleUnit unit, UnitPawn pawn) {
-            var hates = unit.RuntimeState.Hates.Snapshot();
+        private static void ProjectHates(IProjectableBattleState unit, UnitPawn pawn) {
+            var hates = unit.Hates;
             bool changed = pawn.HatesList.Count != hates.Count;
             if (!changed) {
                 for (int i = 0; i < hates.Count; i++) {
@@ -439,13 +438,7 @@ public partial class BattleRoomServer {
             foreach (var hate in hates)
                 pawn.HatesList.Add(new SyncHateData { TargetUnitNetId = hate.TargetNetId, HateValue = hate.Value });
         }
-
-        private static byte EffectDamageType(IBuffEffect effect) => effect switch {
-            DotEffect dot => (byte)dot.DamageType,
-            _ => 0,
-        };
     }
-
     /// <summary>
     /// 战斗世界移动衔接：位置读实体 SyncVar 回写领域单位，AI 移动输入写实体移动输入。
     /// 仅房间线程调用。

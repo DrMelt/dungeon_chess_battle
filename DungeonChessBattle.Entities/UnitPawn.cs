@@ -1,5 +1,5 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Entities.SyncData;

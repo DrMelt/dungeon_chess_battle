@@ -1,5 +1,5 @@
 using System;
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Game.Common;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.MainScene;

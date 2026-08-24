@@ -1,6 +1,6 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.GameConfig;

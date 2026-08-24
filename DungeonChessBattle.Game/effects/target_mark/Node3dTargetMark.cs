@@ -1,5 +1,5 @@
 using System;
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Battle.Shared.Enums;
 using Godot;
 
 namespace DungeonChessBattle.Effects;

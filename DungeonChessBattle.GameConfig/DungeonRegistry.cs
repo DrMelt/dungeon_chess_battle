@@ -1,5 +1,5 @@
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GameConfig;

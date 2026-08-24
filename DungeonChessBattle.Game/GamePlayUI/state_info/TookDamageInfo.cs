@@ -1,7 +1,7 @@
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
+using DamageType = DungeonChessBattle.Battle.Shared.Combat.DamageType;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 

@@ -1,5 +1,5 @@
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Entities.SyncData;
 

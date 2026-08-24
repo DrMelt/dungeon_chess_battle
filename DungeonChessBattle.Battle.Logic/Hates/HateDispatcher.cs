@@ -1,7 +1,7 @@
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Battle.Logic.Hates;
 

@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.MainScene;
 using Godot;

@@ -4,7 +4,7 @@ using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
-using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
+using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 
 namespace DungeonChessBattle.MainScene;
 

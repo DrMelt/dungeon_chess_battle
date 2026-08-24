@@ -1,5 +1,5 @@
-using DungeonChessBattle.Battle.Domain;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using LiteEntitySystem;
 

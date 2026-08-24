@@ -1,6 +1,6 @@
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
-using DungeonChessBattle.Battle.Domain.Intelligence;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.Intelligence;
 
 namespace DungeonChessBattle.GameConfig.Models;
 

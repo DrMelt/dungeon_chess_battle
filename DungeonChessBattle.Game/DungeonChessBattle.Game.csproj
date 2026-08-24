@@ -1,4 +1,4 @@
-﻿<Project Sdk="Godot.NET.Sdk/4.7.1">
+<Project Sdk="Godot.NET.Sdk/4.7.1">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -14,7 +14,7 @@
     <ProjectReference Include="..\DungeonChessBattle.Client.Lobby\DungeonChessBattle.Client.Lobby.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />

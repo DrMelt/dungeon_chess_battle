@@ -21,4 +21,4 @@
 
 ## 依赖
 
-- Client 及其 Lobby/Battle 两端；共享层 Protocol、GameConfig、Entities、Battle.Domain 与 Battle.Logic。
+- Client 及其 Lobby/Battle 两端；共享层 Protocol、GameConfig、Entities、Battle.Shared 与 Battle.Logic。

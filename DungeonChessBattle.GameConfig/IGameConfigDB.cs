@@ -1,4 +1,5 @@
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.GameConfig.Models;
 
 namespace DungeonChessBattle.GameConfig;

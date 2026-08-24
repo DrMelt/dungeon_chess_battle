@@ -6,11 +6,11 @@ using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.Requests;
 using DungeonChessBattle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic.Movement;
-using DungeonChessBattle.Battle.Domain;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Protocol;
-using BattlePhase = DungeonChessBattle.Battle.Domain.Combat.BattlePhase;
+using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;
 

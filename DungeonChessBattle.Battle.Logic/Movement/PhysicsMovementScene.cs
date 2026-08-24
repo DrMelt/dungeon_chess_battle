@@ -1,5 +1,5 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Shared.Movement;
 using AetherWorld = nkast.Aether.Physics2D.Dynamics.World;
 using AetherBodyType = nkast.Aether.Physics2D.Dynamics.BodyType;
 using AetherFixture = nkast.Aether.Physics2D.Dynamics.Fixture;

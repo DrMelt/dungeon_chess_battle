@@ -16,7 +16,7 @@
   </Folder>
 
   <Project Path="DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
-  <Project Path="DungeonChessBattle.Battle.Domain\DungeonChessBattle.Battle.Domain.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   <Project Path="DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
   <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
   <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
@@ -33,4 +33,5 @@
     <Project Path="DungeonChessBattle.Server.Battle\DungeonChessBattle.Server.Battle.csproj" />
     <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
   </Folder>
+
 </Solution>

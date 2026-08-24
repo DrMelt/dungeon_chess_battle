@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.GameConfig;
 using Godot;
 

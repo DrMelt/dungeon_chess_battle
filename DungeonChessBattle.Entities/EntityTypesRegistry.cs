@@ -1,5 +1,5 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain.Math;
+using DungeonChessBattle.Battle.Shared.Math;
 using LiteEntitySystem;
 
 namespace DungeonChessBattle.Entities;

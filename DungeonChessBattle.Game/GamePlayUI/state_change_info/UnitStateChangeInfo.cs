@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Entities.SyncData;
@@ -8,7 +8,7 @@ using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DamageType = DungeonChessBattle.Battle.Domain.Combat.DamageType;
+using DamageType = DungeonChessBattle.Battle.Shared.Combat.DamageType;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 

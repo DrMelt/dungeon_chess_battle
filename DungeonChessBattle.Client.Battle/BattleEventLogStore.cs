@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Client.Battle;
 

@@ -6,7 +6,7 @@
 
 ## 解决方案划分
 
-下图按实际 `ProjectReference` 依赖方向从上到下分层，`A --> B` 表示 A 依赖 B；底层为纯领域、中间为库、上层为装配与入口。
+下图按实际 `ProjectReference` 依赖方向从上到下分层，`A --> B` 表示 A 依赖 B；底层为契约与数据结构、中间为库、上层为装配与入口。
 
 ```mermaid
 graph TD
@@ -39,8 +39,8 @@ graph TD
         ReplayShared["Replay.Shared<br>回放格式契约"]
     end
 
-    subgraph DomainLayer["纯领域模型"]
-        Domain["Battle.Domain<br>战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策"]
+    subgraph ModelLayer["契约与数据结构"]
+        Shared["Battle.Shared<br>契约与数据结构（战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策）"]
     end
 
     Godot --> LobbyShared
@@ -53,7 +53,7 @@ graph TD
     Godot --> Logic
     Godot --> Entities
     Godot --> GameConfig
-    Godot --> Domain
+    Godot --> Shared
 
     Client --> LobbyClient
     Client --> BattleClient
@@ -64,7 +64,7 @@ graph TD
     BattleClient --> Entities
     BattleClient --> GameConfig
     Replay --> Logic
-    Replay --> Domain
+    Replay --> Shared
     Replay --> GameConfig
     Replay --> ReplayShared
 
@@ -95,10 +95,11 @@ graph TD
 
     Protocol --> LobbyShared
     LobbySrv --> LobbyShared
-    Logic --> Domain
+    Logic --> Shared
     Entities --> Protocol
-    Entities --> Domain
-    GameConfig --> Domain
+    Entities --> Shared
+    GameConfig --> Shared
+    GameConfig --> Logic
 ```
 
 ## 项目文档索引
@@ -115,7 +116,7 @@ graph TD
 | `DungeonChessBattle.Lobby.Shared` | 大厅共享值类型：房间状态枚举 | [17-lobby-shared](functional_boundary/17-lobby-shared.md) | [17-lobby-shared](overview/17-lobby-shared.md) |
 | `DungeonChessBattle.Replay.Shared` | 回放格式契约：记录模型与编解码 | [18-replay-shared](functional_boundary/18-replay-shared.md) | [18-replay-shared](overview/18-replay-shared.md) |
 | `DungeonChessBattle.Protocol` | 网络契约：Hub 方法名、DTO、字段长度约束、端口与协议默认值 | [05-protocol](functional_boundary/05-protocol.md) | [05-protocol](overview/05-protocol.md) |
-| `DungeonChessBattle.Battle.Domain` | 纯领域模型：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-domain](functional_boundary/06-battle-domain.md) | [06-battle-domain](overview/06-battle-domain.md) |
+| `DungeonChessBattle.Battle.Shared` | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md) | [06-battle-shared](overview/06-battle-shared.md) |
 | `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |
 | `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) | [08-entities](overview/08-entities.md) |
 | `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) | [09-gameconfig](overview/09-gameconfig.md) |

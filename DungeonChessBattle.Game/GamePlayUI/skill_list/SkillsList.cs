@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Battle.Domain.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Entities;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;

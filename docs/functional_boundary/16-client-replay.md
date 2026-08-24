@@ -16,4 +16,4 @@
 
 ## 依赖
 
-- Battle.Domain、Battle.Logic、GameConfig、Replay.Shared。
+- Battle.Shared、Battle.Logic、GameConfig、Replay.Shared。

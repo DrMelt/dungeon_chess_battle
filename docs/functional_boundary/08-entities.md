@@ -17,4 +17,4 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 
 ## 依赖
 
-- Protocol、Battle.Domain。
+- Protocol、Battle.Shared。

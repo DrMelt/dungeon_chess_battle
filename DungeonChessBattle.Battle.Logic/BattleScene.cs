@@ -1,12 +1,12 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Domain;
-using DungeonChessBattle.Battle.Domain.Buffs;
-using DungeonChessBattle.Battle.Domain.Combat;
-using DungeonChessBattle.Battle.Domain.Combat.Hates;
-using DungeonChessBattle.Battle.Domain.Enums;
-using DungeonChessBattle.Battle.Domain.Events;
-using DungeonChessBattle.Battle.Domain.Intelligence;
-using DungeonChessBattle.Battle.Domain.Movement;
+using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.Intelligence;
+using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Events;
@@ -34,7 +34,7 @@ namespace DungeonChessBattle.Battle.Logic;
 /// <param name="projector">状态投影器：单位与阶段投影到外部载体或展示层；回放离线模式可为空。</param>
 public sealed partial class BattleScene(
     CampRelationResolver relations,
-    PhysicsMovementScene movementScene,
+    IMovementScene movementScene,
     HateSettings? hateSettings = null,
     ILogger<BattleScene>? logger = null,
     IBattleMovementBridge? movementBridge = null,
@@ -49,7 +49,7 @@ public sealed partial class BattleScene(
     private readonly ILogger<BattleScene> _logger = logger ?? NullLogger<BattleScene>.Instance;
 
     /// <summary>竞技场移动场景：静态障碍与单位互斥的空间载体，构造后只读，与战斗世界同生命周期。</summary>
-    private readonly PhysicsMovementScene _movementScene = movementScene;
+    private readonly IMovementScene _movementScene = movementScene;
 
     /// <summary>移动衔接器；回放离线模式为空，位置由回放驱动直接结算。</summary>
     private IBattleMovementBridge? _movementBridge = movementBridge;
@@ -423,7 +423,7 @@ public sealed partial class BattleScene(
         var snapshot = target.Snapshot;
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
-            foreach (var e in BuffTickProcessor.Tick(buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
+            foreach (var e in BuffTickProcessor.Tick(buff.Definition, buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
                 log.Append(e);
                 if (e is DamageOccurred dmg)
                     ApplyHealthDelta(target, -dmg.AppliedDamage);
@@ -441,42 +441,18 @@ public sealed partial class BattleScene(
     }
 
 
-    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却并推进全局冷却。</summary>
+    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却，推进全局冷却，并执行技能多态结算。</summary>
     private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
 
-        switch (skill) {
-            case DamageSkillDefinition d:
-                if (target is { } damageTarget) {
-                    var res = CastResolver.ComputeDamage(caster.Snapshot, damageTarget.Snapshot, d.Damage, d.DamageType);
-                    damageTarget.Health = res.RemainingHealth;
-                    log.Append(new DamageOccurred(caster.UnitNetId, damageTarget.UnitNetId, res.AppliedDamage, d.DamageType));
-                }
-                break;
-
-            case HealSkillDefinition h:
-                if (target is { } healTarget) {
-                    var heal = CastResolver.ComputeHeal(caster.Snapshot, healTarget.Snapshot, h.CurePotency);
-                    healTarget.Health = heal.RemainingHealth;
-                    log.Append(new HealOccurred(caster.UnitNetId, healTarget.UnitNetId, heal.ActualHeal));
-                }
-                break;
-
-            case RangeDamageSkillDefinition r:
-                ResolveRangeDamage(caster, r, targetPos, log);
-                break;
-
-            case AddBuffSkillDefinition ab:
-                if (target is { } buffTarget)
-                    AddBuff(buffTarget, ab.Buff, caster, log);
-                break;
-
-            case HateSkillDefinition t:
-                if (target is { } hateTarget)
-                    log.Append(new HateRequested(hateTarget.UnitNetId, caster.UnitNetId, t.Op, t.Value));
-                break;
+        var resolution = skill.Effect.Resolve(new SkillResolveContext(skill, caster, target, targetPos, _units, _relations));
+        foreach (var evt in resolution.Events) {
+            ApplyEventHealth(evt);
+            log.Append(evt);
         }
+        foreach (var buff in resolution.Buffs)
+            ApplyBuffToTarget(buff, log);
 
         log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, target?.UnitNetId));
     }
@@ -495,38 +471,38 @@ public sealed partial class BattleScene(
         entries.Add(new CooldownEntry(skillKey, remaining));
     }
 
-    /// <summary>范围伤害结算：对范围内全部可命中单位统一结算并产出事件。</summary>
-    private void ResolveRangeDamage(BattleUnit caster, RangeDamageSkillDefinition skill, Vector2? targetPos, BattleEventLog log) {
-        var aim = (targetPos ?? Vector2.Zero) - caster.Snapshot.Position;
-        foreach (var unit in _units.ToArray()) {
-            if (unit == caster || !SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
-                continue;
-            if (!CastResolver.IsInRange(skill.Range, caster.Snapshot, unit.Snapshot, aim))
-                continue;
-
-            var res = CastResolver.ComputeDamage(caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);
-            unit.Health = res.RemainingHealth;
-            log.Append(new DamageOccurred(caster.UnitNetId, unit.UnitNetId, res.AppliedDamage, skill.DamageType));
+    /// <summary>把领域伤害/治疗事件应用到对应单位生命值，单位已移除则忽略。</summary>
+    private void ApplyEventHealth(IBattleEvent evt) {
+        if (evt is DamageOccurred dmg) {
+            if (_unitById.TryGetValue(dmg.TargetNetId, out var unit))
+                ApplyHealthDelta(unit, -dmg.AppliedDamage);
+        }
+        else if (evt is HealOccurred heal) {
+            if (_unitById.TryGetValue(heal.TargetNetId, out var unit))
+                ApplyHealthDelta(unit, heal.ActualHeal);
         }
     }
 
     /// <summary>施加 Buff 到目标：叠加或新建运行时实例，产出 BuffApplied 事件。</summary>
-    private static void AddBuff(BattleUnit target, BuffDefinition def, BattleUnit caster, BattleEventLog log) {
+    private void ApplyBuffToTarget(BuffToApply buff, BattleEventLog log) {
+        if (!_unitById.TryGetValue(buff.TargetNetId, out var target))
+            return;
+
         var list = target.RuntimeState.Buffs;
-        var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == def.BuffTypeId);
+        var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == buff.Definition.BuffTypeId);
         int stacks;
         if (existing != null) {
-            existing.Instance.Remaining = Math.Max(existing.Instance.Remaining, def.Duration);
-            existing.Instance.Stacks = Math.Min(existing.Instance.Stacks + 1, def.MaxStacks);
+            existing.Instance.Remaining = Math.Max(existing.Instance.Remaining, buff.Definition.Duration);
+            existing.Instance.Stacks = Math.Min(existing.Instance.Stacks + 1, buff.Definition.MaxStacks);
             stacks = existing.Instance.Stacks;
         }
         else {
-            list.Add(new ActiveBuff(BuffFactory.CreateInstance(def, target.UnitNetId, caster.Snapshot, caster.UnitNetId),
-                BuffFactory.CreateEffect(def)));
+            list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitNetId, buff.From, buff.FromNetId),
+                buff.Definition, buff.Definition.Effect));
             stacks = 1;
         }
 
-        log.Append(new BuffApplied(target.UnitNetId, def.BuffTypeId, stacks));
+        log.Append(new BuffApplied(target.UnitNetId, buff.Definition.BuffTypeId, stacks));
     }
 
     /// <summary>生命值增量修正，钳制到 [0, MaxHealth]。</summary>

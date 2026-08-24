@@ -1,5 +1,5 @@
 using System.Text;
-using DungeonChessBattle.Battle.Domain.Enums;
+using DungeonChessBattle.Battle.Shared.Enums;
 using LiteEntitySystem;
 
 namespace DungeonChessBattle.Entities.SyncData;

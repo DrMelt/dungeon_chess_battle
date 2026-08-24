@@ -18,5 +18,5 @@
 
 ## 依赖
 
-- Protocol、Server.DataStore.Shared、Server.Abstractions（契约）、Battle.Domain、GameConfig（副本键解析）。
+- Protocol、Server.DataStore.Shared、Server.Abstractions（契约）、Battle.Shared、GameConfig（副本键解析）。
 - ASP.NET Core 共享框架 Microsoft.AspNetCore.App，承载 Hub 与广播上下文。

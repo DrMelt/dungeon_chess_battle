@@ -1,5 +1,5 @@
 using System.Collections;
-using DungeonChessBattle.Battle.Domain.Events;
+using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Battle.Logic.Events;
 
