@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// Server.Lobby 的 DI 装配扩展。注册大厅配置切片、广播端口与业务协调器。

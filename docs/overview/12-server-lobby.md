@@ -1,4 +1,4 @@
-# DungeonChessBattle.Server.Lobby
+# DungeonChessBattle.Lobby.Server
 
 大厅服务器，所属分组 Server。承载大厅 SignalR 传输端点、业务实现与协调门面，经 `IBattleRoomManager` 契约编排战斗房间生命周期。职责边界见 `functional_boundary/12`。
 

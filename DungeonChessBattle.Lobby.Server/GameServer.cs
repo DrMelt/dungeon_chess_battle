@@ -3,7 +3,7 @@ using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 游戏服务端业务协调器，大厅服务器门面。

@@ -1,6 +1,6 @@
 ﻿using DungeonChessBattle.Protocol.Dtos;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// GameServer 的大厅业务转发门面：将大厅 SignalR 请求转发给

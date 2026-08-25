@@ -1,6 +1,6 @@
 ﻿using DungeonChessBattle.Protocol.Dtos;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 大厅应用服务契约，协调层抽象：SignalR Hub 端点面向本接口，

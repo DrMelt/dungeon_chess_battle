@@ -4,7 +4,7 @@ using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// GameServer 的战斗编排请求处理。

@@ -3,7 +3,7 @@ using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 大厅 SignalR Hub，ASP.NET Core 网络端点。

@@ -6,7 +6,7 @@ using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 大厅业务协调者，Server.Lobby：处理大厅 SignalR 协议的各类业务请求，

@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 大厅侧配置切片：仅包含大厅业务 GameLobby 所需的字段。

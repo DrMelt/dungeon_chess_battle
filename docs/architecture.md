@@ -123,7 +123,7 @@ graph TD
 | `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型 | [10-datastore-shared](functional_boundary/10-datastore-shared.md) | [10-datastore-shared](overview/10-datastore-shared.md) |
 | `DungeonChessBattle.Server.DataStore` | 内存数据存储实现 | [11-datastore](functional_boundary/11-datastore.md) | [11-datastore](overview/11-datastore.md) |
 | `DungeonChessBattle.Server.Abstractions` | 服务端抽象契约：房间生命周期与广播端口 | [15-server-abstractions](functional_boundary/15-server-abstractions.md) | [15-server-abstractions](overview/15-server-abstractions.md) |
-| `DungeonChessBattle.Server.Lobby` | 大厅服务器：Hub 端点、业务与协调 | [12-server-lobby](functional_boundary/12-server-lobby.md) | [12-server-lobby](overview/12-server-lobby.md) |
+| `DungeonChessBattle.Lobby.Server` | 大厅服务器：Hub 端点、业务与协调 | [12-server-lobby](functional_boundary/12-server-lobby.md) | [12-server-lobby](overview/12-server-lobby.md) |
 | `DungeonChessBattle.Server.Battle` | 战斗房间服务与生命周期 | [13-server-battle](functional_boundary/13-server-battle.md) | [13-server-battle](overview/13-server-battle.md) |
 | `DungeonChessBattle.Server.Host` | Kestrel + SignalR 装配与进程入口 | [14-server-host](functional_boundary/14-server-host.md) | [14-server-host](overview/14-server-host.md) |
 

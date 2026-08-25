@@ -1,7 +1,7 @@
 using DungeonChessBattle.Protocol.Dtos;
 using DungeonChessBattle.Server.DataStore.Shared;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// GameServer 的回放查询与下载处理。

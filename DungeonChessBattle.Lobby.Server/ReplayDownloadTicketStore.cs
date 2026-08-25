@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using DungeonChessBattle.Server.Abstractions;
 
-namespace DungeonChessBattle.Server.Lobby;
+namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 回放下载一次性凭证存储：内存字典，凭证到绑定房间与过期时间。
