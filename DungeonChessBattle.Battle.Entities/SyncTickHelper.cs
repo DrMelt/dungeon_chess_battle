@@ -1,6 +1,6 @@
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 服务器逻辑 tick 与剩余秒数的换算工具。

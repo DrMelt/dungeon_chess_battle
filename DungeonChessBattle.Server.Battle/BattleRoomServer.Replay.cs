@@ -1,5 +1,5 @@
-using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.Requests;
+using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.Battle.Replay;
 using Microsoft.Extensions.Logging;

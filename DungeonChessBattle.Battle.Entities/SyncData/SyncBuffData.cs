@@ -1,6 +1,6 @@
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// Buff 的扁平化同步数据。RPC 广播与 SyncList 均以本结构传输。

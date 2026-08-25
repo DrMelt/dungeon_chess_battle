@@ -1,6 +1,6 @@
 using LiteNetLib.Utils;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 技能个体冷却列表的整包同步数据，经 SyncNetSerializable 以 LiteNetLib 变长序列化传输。

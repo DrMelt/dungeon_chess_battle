@@ -124,7 +124,7 @@ graph TD
 | `DungeonChessBattle.Protocol` | 网络契约：字段长度约束、网络默认值与跨进程环境变量契约 | [05-protocol](functional_boundary/05-protocol.md) | [05-protocol](overview/05-protocol.md) |
 | `DungeonChessBattle.Battle.Shared` | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md) | [06-battle-shared](overview/06-battle-shared.md) |
 | `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |
-| `DungeonChessBattle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) | [08-entities](overview/08-entities.md) |
+| `DungeonChessBattle.Battle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) | [08-entities](overview/08-entities.md) |
 | `DungeonChessBattle.GameConfig` | 单位 / 副本配置库 | [09-gameconfig](functional_boundary/09-gameconfig.md) | [09-gameconfig](overview/09-gameconfig.md) |
 | `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型 | [10-datastore-shared](functional_boundary/10-datastore-shared.md) | [10-datastore-shared](overview/10-datastore-shared.md) |
 | `DungeonChessBattle.Server.DataStore` | 内存数据存储实现 | [11-datastore](functional_boundary/11-datastore.md) | [11-datastore](overview/11-datastore.md) |

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;

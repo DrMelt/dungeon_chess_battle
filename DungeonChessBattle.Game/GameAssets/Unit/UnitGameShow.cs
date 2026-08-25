@@ -1,7 +1,7 @@
 using System;
 using Godot;
 using Godot.Collections;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 
 namespace DungeonChessBattle.Game.GameAssets;
 

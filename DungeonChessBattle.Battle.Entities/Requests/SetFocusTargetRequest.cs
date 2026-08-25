@@ -1,6 +1,6 @@
 using LiteNetLib.Utils;
 
-namespace DungeonChessBattle.Entities.Requests;
+namespace DungeonChessBattle.Battle.Entities.Requests;
 
 /// <summary>
 /// 客户端请求设置聚焦目标的事件载荷，经可靠请求通道送抵服务端，

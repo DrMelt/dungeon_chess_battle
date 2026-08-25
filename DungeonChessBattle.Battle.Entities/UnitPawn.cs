@@ -2,9 +2,9 @@ using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
-using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Entities.SyncData;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 实时化的单位 Pawn 实体。继承 PawnLogic，支持移动、技能、预测回滚。

@@ -1,4 +1,4 @@
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;

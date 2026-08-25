@@ -1,7 +1,7 @@
 using DungeonChessBattle.Protocol;
 using LiteNetLib.Utils;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 房间端口服务器可靠消息帧的编解码唯一权威。

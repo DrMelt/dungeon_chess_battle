@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// UnitPawn 对领域单位只读视图的适配：客户端技能预拦与展示数据源。

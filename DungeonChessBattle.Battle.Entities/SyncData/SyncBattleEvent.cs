@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 战斗事件日志的扁平化同步结构。整帧事件日志编码为 SyncBattleEvent 数组经传输层可靠通道外送，

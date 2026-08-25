@@ -11,7 +11,7 @@
         <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,8 +1,8 @@
 using System.Numerics;
-using DungeonChessBattle.Entities.Requests;
+using DungeonChessBattle.Battle.Entities.Requests;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 单位的人工输入控制器。由 Godot UI 层每帧注入输入，框架自动发送到服务端。

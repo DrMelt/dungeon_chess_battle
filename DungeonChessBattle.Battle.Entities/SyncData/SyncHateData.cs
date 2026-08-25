@@ -1,6 +1,6 @@
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 仇恨数据的扁平化同步结构，用于 SyncList 传输。

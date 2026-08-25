@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.GamePlayUI.skill_list;

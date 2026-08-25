@@ -1,7 +1,7 @@
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 战斗房间的网络同步 Entity。房间级战斗状态展示载体。

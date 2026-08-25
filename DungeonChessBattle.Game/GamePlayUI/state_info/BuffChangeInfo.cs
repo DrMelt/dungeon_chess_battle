@@ -1,7 +1,7 @@
 using DungeonChessBattle.Game.Services;
 using Godot;
 using System;
-using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Game.GameAssets;
 using Microsoft.Extensions.Logging;
 

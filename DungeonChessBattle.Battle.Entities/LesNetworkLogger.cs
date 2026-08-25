@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 将 LiteEntitySystem 框架静态日志 LiteEntitySystem.Logger.LoggerImpl

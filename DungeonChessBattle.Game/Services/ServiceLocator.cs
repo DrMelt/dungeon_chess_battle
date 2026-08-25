@@ -1,6 +1,6 @@
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.Services;

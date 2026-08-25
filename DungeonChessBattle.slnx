@@ -19,7 +19,7 @@
   <Project Path="DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   <Project Path="DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
-  <Project Path="DungeonChessBattle.Entities\DungeonChessBattle.Entities.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
   <Project Path="DungeonChessBattle.GameConfig\DungeonChessBattle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />

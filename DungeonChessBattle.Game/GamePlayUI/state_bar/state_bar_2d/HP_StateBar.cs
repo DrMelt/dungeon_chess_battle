@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Enums;
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.MainScene;
 using Godot;
 

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Game.Common;
-using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Entities.SyncData;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;

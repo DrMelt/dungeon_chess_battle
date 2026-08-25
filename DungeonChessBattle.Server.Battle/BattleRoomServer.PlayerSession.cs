@@ -1,4 +1,4 @@
-using DungeonChessBattle.Entities;
+using DungeonChessBattle.Battle.Entities;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using LiteNetLib;

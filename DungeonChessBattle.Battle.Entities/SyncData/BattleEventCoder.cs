@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 领域战斗事件与 SyncBattleEvent 的双向映射，事件类型 tag 与槽位语义唯一权威来源。

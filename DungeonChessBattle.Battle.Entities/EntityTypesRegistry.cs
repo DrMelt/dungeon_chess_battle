@@ -2,7 +2,7 @@ using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Math;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// Entity 类型注册表。必须使用枚举类型来注册 Entity。

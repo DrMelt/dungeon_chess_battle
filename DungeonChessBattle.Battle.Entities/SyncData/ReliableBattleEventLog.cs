@@ -1,6 +1,6 @@
 using LiteNetLib.Utils;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 服务器到客户端的可靠事件日志消息，经传输层 ReliableOrdered 通道送达。

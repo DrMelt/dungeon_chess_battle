@@ -2,7 +2,7 @@ using System.Text;
 using DungeonChessBattle.Battle.Shared.Enums;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Entities.SyncData;
+namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 单位所属阵营列表的扁平化同步数据，ISpanSerializable 单值整包传输。

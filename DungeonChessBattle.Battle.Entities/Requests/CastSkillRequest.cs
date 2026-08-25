@@ -1,6 +1,6 @@
 using LiteNetLib.Utils;
 
-namespace DungeonChessBattle.Entities.Requests;
+namespace DungeonChessBattle.Battle.Entities.Requests;
 
 /// <summary>
 /// 客户端请求施放技能的事件载荷，实现 LiteNetLib INetSerializable 以便经

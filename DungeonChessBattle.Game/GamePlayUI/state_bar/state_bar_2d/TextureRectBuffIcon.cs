@@ -1,5 +1,5 @@
-using DungeonChessBattle.Entities;
-using DungeonChessBattle.Entities.SyncData;
+using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
 using Godot;
