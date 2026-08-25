@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />

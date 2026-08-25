@@ -1,6 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
 
-namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 
 /// <summary>
 /// 轻量房间列表模型，用于招募板列表展示和网络传输。

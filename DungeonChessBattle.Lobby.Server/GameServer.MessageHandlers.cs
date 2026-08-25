@@ -1,6 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using Microsoft.Extensions.Logging;
 

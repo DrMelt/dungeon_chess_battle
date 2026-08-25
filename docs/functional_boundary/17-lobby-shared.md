@@ -9,7 +9,7 @@
 ## 边界外
 
 - 不含业务实现与运行时逻辑，纯 .NET 类库，零项目引用。
-- 不承载网络 DTO 与传输结构，网络契约仍归 Protocol。
+- 不承载网络 DTO 与传输结构，网络契约归 Lobby.Protocol 与 Protocol。
 
 ## 依赖
 

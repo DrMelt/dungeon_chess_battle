@@ -1,4 +1,4 @@
-﻿namespace DungeonChessBattle.Protocol;
+﻿namespace DungeonChessBattle.Lobby.Protocol;
 
 /// <summary>
 /// SignalR Hub 方法名常量，客户端与服务端共用，消除硬编码字符串。

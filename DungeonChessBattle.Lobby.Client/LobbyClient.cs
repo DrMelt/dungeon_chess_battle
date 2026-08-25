@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using DungeonChessBattle.Lobby.Protocol;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 

@@ -3,10 +3,9 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Protocol;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 
 namespace DungeonChessBattle.Game.GamePanels;

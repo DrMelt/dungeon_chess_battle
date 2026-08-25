@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Protocol.Dtos;
+﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Lobby.Server;
 

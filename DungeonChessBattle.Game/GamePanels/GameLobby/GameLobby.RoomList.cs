@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Game.GamePanels;
 

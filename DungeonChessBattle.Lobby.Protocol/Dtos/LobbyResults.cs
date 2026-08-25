@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 
 /// <summary>大厅请求的通用结果。</summary>
 /// <param name="RoomId">相关房间 ID。</param>

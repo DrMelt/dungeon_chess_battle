@@ -1,6 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
 
-namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 
 /// <summary>
 /// 房间完整状态快照：服务端组装后单次下发给客户端的房间权威视图。

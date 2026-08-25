@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 
 /// <summary>
 /// 客房招募板配置传输对象，create_room 的可选配置。

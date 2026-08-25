@@ -1,5 +1,5 @@
 using System;
-using DungeonChessBattle.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;

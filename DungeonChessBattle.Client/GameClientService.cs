@@ -1,7 +1,7 @@
 ﻿using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Lobby.Client;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Protocol;
-using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;

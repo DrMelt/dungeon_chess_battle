@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol.Dtos;
+namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 
 /// <summary>玩家回放列表结果。</summary>
 /// <param name="Replays">回放摘要列表，最近在前。</param>
