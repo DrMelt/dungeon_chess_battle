@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
@@ -396,7 +396,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// <inheritdoc />
     public bool TryRegisterLoginSession(string connectionId, string playerName) {
         // 登录名是服务端权威身份，非法名字直接拒绝，不做降级，避免身份名与显示名漂移
-        if (string.IsNullOrWhiteSpace(playerName) || playerName.Length > EntityConstants.MaxPlayerNameLength)
+        if (string.IsNullOrWhiteSpace(playerName) || playerName.Length > PlayerName.MaxLength)
             return false;
         _loginSessions[connectionId] = playerName;
         return true;

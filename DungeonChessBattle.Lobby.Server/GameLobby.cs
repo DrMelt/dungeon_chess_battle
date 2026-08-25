@@ -1,6 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Lobby.Protocol;
-using DungeonChessBattle.Battle.Shared;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
@@ -184,7 +184,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(req.UnitConfigKey))
             return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
-        if (req.UnitConfigKey.Length > EntityConstants.MaxUnitConfigKeyLength || string.IsNullOrEmpty(req.CampOptionKey))
+        if (req.UnitConfigKey.Length > UnitConfigKey.MaxLength || string.IsNullOrEmpty(req.CampOptionKey))
             return new LobbyResult(string.Empty, false, "Invalid unit params.");
 
         string? roomId = _stateStore.GetRoomIdForConnection(connectionId);

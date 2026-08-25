@@ -11,7 +11,6 @@ using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Events;
 using DungeonChessBattle.Battle.Logic.Hates;
-using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 

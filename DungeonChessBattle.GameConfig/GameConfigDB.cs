@@ -1,7 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
-using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.Shared.Range;
 using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Battle.Shared.Movement;

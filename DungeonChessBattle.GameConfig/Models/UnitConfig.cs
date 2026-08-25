@@ -1,6 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Intelligence;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.GameConfig.Models;
 
@@ -49,7 +50,7 @@ public class UnitConfig {
     }
 
     /// <summary>单位配置键，唯一身份标识，注册表与协议身份来源。</summary>
-    public required string ConfigKey {
+    public required UnitConfigKey ConfigKey {
         get; init;
     }
 

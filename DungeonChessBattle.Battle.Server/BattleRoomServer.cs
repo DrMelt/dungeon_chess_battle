@@ -5,7 +5,6 @@ using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
 using LiteNetLib;

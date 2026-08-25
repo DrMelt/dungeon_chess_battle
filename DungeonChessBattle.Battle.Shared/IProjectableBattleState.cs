@@ -1,6 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Combat.Hates;
 
 namespace DungeonChessBattle.Battle.Shared;
 

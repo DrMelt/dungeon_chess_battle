@@ -1,4 +1,3 @@
-using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using LiteEntitySystem;

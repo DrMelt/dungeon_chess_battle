@@ -1,8 +1,7 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared;
-using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Movement;
@@ -11,7 +10,6 @@ using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
@@ -119,10 +117,7 @@ public partial class BattleRoomServer {
     /// 在本房间的 SEM 中创建 UnitPawn 实体，并按同一 NetId 创建领域单位 BattleUnit 注册进战斗世界。
     /// 战斗系数与技能装配在 BattleUnit，投影器写 SyncVar 供客户端展示。仅房间线程调用。
     /// </summary>
-    public UnitPawn CreatePawnEntity(string unitName, IReadOnlyList<string> camps, Vector2 spawnPos) {
-        // 兜底防御，上游网络入口已校验，这里仅防未来新增路径绕过校验
-        if (unitName.Length > EntityConstants.MaxUnitConfigKeyLength)
-            unitName = unitName[..EntityConstants.MaxUnitConfigKeyLength];
+    public UnitPawn CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<string> camps, Vector2 spawnPos) {
         if (!CampConstants.IsValidCamps(camps))
             throw new InvalidOperationException(
                 $"Invalid camps '{(camps == null ? string.Empty : string.Join(",", camps))}' for unit '{unitName}' in room '{RoomId}'.");

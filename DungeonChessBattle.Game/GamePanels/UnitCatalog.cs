@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.GameConfig.Models;
@@ -11,15 +12,15 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// </summary>
 public static class UnitCatalog {
     /// <summary>按配置键的单位注册表（数据源：UnitRegistry）。</summary>
-    private static readonly Dictionary<string, UnitConfig> ByKey = BuildByKey();
+    private static readonly Dictionary<UnitConfigKey, UnitConfig> ByKey = BuildByKey();
 
     /// <summary>
     /// 从 UnitRegistry 构建客户端目录：单位配置共享服务端来源。
     /// 构建前执行技能资源自检，配置与客户端资源的漂移在首次使用即暴露。
     /// </summary>
-    private static Dictionary<string, UnitConfig> BuildByKey() {
+    private static Dictionary<UnitConfigKey, UnitConfig> BuildByKey() {
         SkillResourceTable.Validate();
-        var dict = new Dictionary<string, UnitConfig>();
+        var dict = new Dictionary<UnitConfigKey, UnitConfig>();
         foreach (var config in UnitRegistry.Instance.All)
             dict[config.ConfigKey] = config;
         return dict;
@@ -29,6 +30,6 @@ public static class UnitCatalog {
     public static IEnumerable<UnitConfig> All => ByKey.Values;
 
     /// <summary>按配置键获取单位配置；不存在返回 null。</summary>
-    public static UnitConfig? GetByKey(string configKey) =>
+    public static UnitConfig? GetByKey(UnitConfigKey configKey) =>
         ByKey.GetValueOrDefault(configKey);
 }
