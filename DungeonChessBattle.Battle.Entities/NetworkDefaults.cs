@@ -1,4 +1,4 @@
-﻿namespace DungeonChessBattle.Protocol;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 网络协议默认值，客户端与服务端共享，消除各端重复的魔法数字。

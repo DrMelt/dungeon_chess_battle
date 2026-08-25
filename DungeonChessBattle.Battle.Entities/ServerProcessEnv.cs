@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Protocol;
+namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 服务器子进程跨进程契约的环境变量名。

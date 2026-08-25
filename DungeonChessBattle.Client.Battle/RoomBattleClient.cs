@@ -9,7 +9,7 @@ using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Entities;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;

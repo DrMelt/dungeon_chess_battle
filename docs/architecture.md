@@ -32,7 +32,7 @@ graph TD
     subgraph SharedLayer["共享库 Shared"]
         LobbyShared["Lobby.Shared<br>大厅共享值类型（房间状态）"]
         LobbyProtocol["Lobby.Protocol<br>大厅网络契约（Hub 方法名与 DTO）"]
-        Protocol["Protocol<br>网络契约与网络默认值"]
+        ClientShared["Client.Shared<br>客户端连接契约"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
@@ -50,7 +50,6 @@ graph TD
     Godot --> BattleClient
     Godot --> Replay
     Godot --> ReplayShared
-    Godot --> Protocol
     Godot --> LobbyProtocol
     Godot --> Logic
     Godot --> Entities
@@ -59,11 +58,12 @@ graph TD
 
     Client --> LobbyClient
     Client --> BattleClient
-    Client --> Protocol
+    Client --> ClientShared
+    Client --> Entities
     Client --> LobbyProtocol
-    LobbyClient --> Protocol
+    LobbyClient --> ClientShared
     LobbyClient --> LobbyProtocol
-    BattleClient --> Protocol
+    BattleClient --> ClientShared
     BattleClient --> Logic
     BattleClient --> Entities
     BattleClient --> GameConfig
@@ -77,31 +77,29 @@ graph TD
     Host --> Store
     Host --> StoreAbst
     Host --> ServerAbst
-    Host --> Protocol
     Host --> Entities
 
     LobbySrv --> ServerAbst
     LobbySrv --> StoreAbst
     LobbySrv --> GameConfig
-    LobbySrv --> Protocol
+    LobbySrv --> Shared
     LobbySrv --> LobbyProtocol
     BattleSrv --> ServerAbst
     BattleSrv --> StoreAbst
     BattleSrv --> Logic
     BattleSrv --> Entities
     BattleSrv --> GameConfig
-    BattleSrv --> Protocol
+    BattleSrv --> Shared
     BattleSrv --> ReplayShared
 
     Store --> StoreAbst
-    Store --> Protocol
+    Store --> Shared
     Store --> LobbyShared
     StoreAbst --> LobbyShared
 
     LobbyProtocol --> LobbyShared
     LobbySrv --> LobbyShared
     Logic --> Shared
-    Entities --> Protocol
     Entities --> Shared
     GameConfig --> Shared
     GameConfig --> Logic
@@ -121,7 +119,7 @@ graph TD
 | `DungeonChessBattle.Lobby.Shared` | 大厅共享值类型：房间状态枚举 | [17-lobby-shared](functional_boundary/17-lobby-shared.md) | [17-lobby-shared](overview/17-lobby-shared.md) |
 | `DungeonChessBattle.Lobby.Protocol` | 大厅网络契约：Hub 方法名与大厅 DTO | [19-lobby-protocol](functional_boundary/19-lobby-protocol.md) | [19-lobby-protocol](overview/19-lobby-protocol.md) |
 | `DungeonChessBattle.Replay.Shared` | 回放格式契约：记录模型与编解码 | [18-replay-shared](functional_boundary/18-replay-shared.md) | [18-replay-shared](overview/18-replay-shared.md) |
-| `DungeonChessBattle.Protocol` | 网络契约：字段长度约束、网络默认值与跨进程环境变量契约 | [05-protocol](functional_boundary/05-protocol.md) | [05-protocol](overview/05-protocol.md) |
+| `DungeonChessBattle.Client.Shared` | 客户端连接契约：`IClientConnection` 最小连接抽象 | [20-client-shared](functional_boundary/20-client-shared.md) | [20-client-shared](overview/20-client-shared.md) |
 | `DungeonChessBattle.Battle.Shared` | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md) | [06-battle-shared](overview/06-battle-shared.md) |
 | `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |
 | `DungeonChessBattle.Battle.Entities` | LES 网络实体与类型注册表 | [08-entities](functional_boundary/08-entities.md) | [08-entities](overview/08-entities.md) |

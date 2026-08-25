@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Server.Lobby、Server.Battle、Server.Abstractions、Server.DataStore、Server.DataStore.Shared 与共享层契约（Protocol、Entities）。
+- Server.Lobby、Server.Battle、Server.Abstractions、Server.DataStore、Server.DataStore.Shared 与共享层契约（Entities）。

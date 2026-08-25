@@ -10,7 +10,7 @@
 ## 边界外
 
 - 不含业务实现与运行时逻辑，纯 .NET 类库，无第三方运行时依赖。
-- 不含网络默认值与字段长度约束，归 Protocol，见 `functional_boundary/05`。
+- 不含网络默认值与字段长度约束，网络默认值归 Battle.Entities，字段长度约束归 Battle.Shared。
 - 回放记录格式与编解码，归 Replay.Shared。
 - 不受理连接建立与重连，连接事件由大厅与房间两端各自实现。
 

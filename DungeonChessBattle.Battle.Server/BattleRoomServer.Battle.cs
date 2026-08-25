@@ -11,7 +11,7 @@ using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;

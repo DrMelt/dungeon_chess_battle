@@ -15,4 +15,4 @@
 
 ## 依赖
 
-- Server.DataStore.Shared（契约）、Protocol（常量）、GameConfig（默认副本键）、Lobby.Shared（房间状态枚举）。
+- Server.DataStore.Shared（契约）、Battle.Shared（字段长度常量）、GameConfig（默认副本键）、Lobby.Shared（房间状态枚举）。

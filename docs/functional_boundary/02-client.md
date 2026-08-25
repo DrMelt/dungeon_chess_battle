@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Protocol、Lobby.Protocol 契约；Lobby.Client 与 Client.Battle 两端经连接工厂创建。
+- Client.Shared、Lobby.Protocol 契约；Lobby.Client 与 Client.Battle 两端经连接工厂创建。

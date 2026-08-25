@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 

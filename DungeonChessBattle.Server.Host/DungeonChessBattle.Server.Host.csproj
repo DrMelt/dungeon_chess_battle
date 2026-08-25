@@ -9,7 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />

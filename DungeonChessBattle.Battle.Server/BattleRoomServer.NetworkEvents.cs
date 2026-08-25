@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Entities;
 using LiteEntitySystem.Transport;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;

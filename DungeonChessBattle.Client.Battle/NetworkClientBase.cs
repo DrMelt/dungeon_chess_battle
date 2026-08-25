@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Client.Shared;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,7 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     /// <summary>日志记录器。</summary>
     protected readonly ILogger _logger;
 
-    /// <summary>默认连接密钥，收口于 Protocol.NetworkDefaults。</summary>
+    /// <summary>默认连接密钥，收口于 Battle.Entities.NetworkDefaults。</summary>
     public const string ConnectionKey = NetworkDefaults.ConnectionKey;
     /// <summary>默认服务端端口。</summary>
     protected const int DefaultPort = NetworkDefaults.LobbyPort;

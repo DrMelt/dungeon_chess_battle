@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Protocol\DungeonChessBattle.Protocol.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
     </ItemGroup>
 

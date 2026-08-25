@@ -1,4 +1,4 @@
-﻿namespace DungeonChessBattle.Protocol;
+namespace DungeonChessBattle.Client.Shared;
 
 /// <summary>
 /// 客户端连接抽象，大厅或房间，供 GameClientService 统一管理连接生命周期。

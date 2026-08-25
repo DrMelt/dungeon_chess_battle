@@ -1,6 +1,6 @@
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Game.Services;
 
 namespace DungeonChessBattle.Game.GamePanels;

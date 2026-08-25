@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Entities;
 
 namespace DungeonChessBattle.Server.Host;
 

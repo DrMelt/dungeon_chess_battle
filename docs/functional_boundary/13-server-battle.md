@@ -21,4 +21,4 @@
 
 ## 依赖
 
-- 共享层 Battle.Logic、Battle.Shared、Entities、GameConfig、Protocol 与 Replay.Shared；存储层经数据存储契约；契约层 Server.Abstractions。
+- 共享层 Battle.Logic、Battle.Shared、Entities、GameConfig 与 Replay.Shared；存储层经数据存储契约；契约层 Server.Abstractions。

@@ -1,4 +1,4 @@
-using DungeonChessBattle.Protocol;
+using DungeonChessBattle.Battle.Entities;
 using LiteNetLib.Utils;
 
 namespace DungeonChessBattle.Battle.Entities.SyncData;

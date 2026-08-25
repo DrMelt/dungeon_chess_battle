@@ -11,8 +11,8 @@
 
 - 不包含战斗房间客户端与 LES 实体系统。
 - 不在回调线程触碰客户端状态，消费方负责转主线程。
-- 不定义协议契约，Hub 方法与大厅 DTO 归 Lobby.Protocol，字段约束归 Protocol。
+- 不定义协议契约，Hub 方法与大厅 DTO 归 Lobby.Protocol，连接契约归 Client.Shared。
 
 ## 依赖
 
-- Protocol、Lobby.Protocol。
+- Client.Shared、Lobby.Protocol。
