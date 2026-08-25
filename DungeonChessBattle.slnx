@@ -11,7 +11,8 @@
 
   <Folder Name="/Client/">
     <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
-    <Project Path="DungeonChessBattle.Client.Lobby\DungeonChessBattle.Client.Lobby.csproj" />
+    <Project Path="DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />
+
     <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
   </Folder>
 

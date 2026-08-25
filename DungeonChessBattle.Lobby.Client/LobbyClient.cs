@@ -4,7 +4,7 @@ using DungeonChessBattle.Protocol.Dtos;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Client.Lobby;
+namespace DungeonChessBattle.Lobby.Client;
 
 /// <summary>
 /// 大厅客户端，ASP.NET Core SignalR 版，负责与大厅端口的 LobbyHub 通信。

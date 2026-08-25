@@ -17,7 +17,7 @@ graph TD
 
     subgraph ClientLayer["客户端库 Client"]
         Client["Client<br>门面与连接状态机"]
-        LobbyClient["Client.Lobby<br>SignalR 大厅客户端"]
+        LobbyClient["Lobby.Client<br>SignalR 大厅客户端"]
         BattleClient["Client.Battle<br>LES 房间客户端"]
     end
 
@@ -110,7 +110,7 @@ graph TD
 | --- | --- | --- | --- |
 | `DungeonChessBattle.Game` | Godot 主工程：场景、UI、资源装配与网络驱动 | [01-game](functional_boundary/01-game.md) | [01-game](overview/01-game.md) |
 | `DungeonChessBattle.Client` | 网络客户端门面 `GameClientService` 与连接状态机 | [02-client](functional_boundary/02-client.md) | [02-client](overview/02-client.md) |
-| `DungeonChessBattle.Client.Lobby` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
+| `DungeonChessBattle.Lobby.Client` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) | [04-client-battle](overview/04-client-battle.md) |
 | `DungeonChessBattle.Replay` | 回放引擎 `ReplayEngine`，回放子系统重放端 | [16-client-replay](functional_boundary/16-client-replay.md) | [16-client-replay](overview/16-client-replay.md) |
 | `DungeonChessBattle.Lobby.Shared` | 大厅共享值类型：房间状态枚举 | [17-lobby-shared](functional_boundary/17-lobby-shared.md) | [17-lobby-shared](overview/17-lobby-shared.md) |

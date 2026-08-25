@@ -1,4 +1,4 @@
-# DungeonChessBattle.Client.Lobby
+# DungeonChessBattle.Lobby.Client
 
 大厅客户端，SignalR 传输，所属分组 Client。只承载大厅与准备阶段的请求与广播回调，不包含 LES 实体系统。
 
