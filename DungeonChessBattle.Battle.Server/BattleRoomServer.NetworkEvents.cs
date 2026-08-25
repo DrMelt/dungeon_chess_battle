@@ -5,7 +5,7 @@ using LiteEntitySystem.Transport;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// BattleRoomServer 的网络事件处理：连接验证、断线保留会话与 LES 数据反序列化。

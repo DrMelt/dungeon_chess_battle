@@ -1,4 +1,4 @@
-# DungeonChessBattle.Server.Battle
+# DungeonChessBattle.Battle.Server
 
 战斗房间服务层，所属分组 Server。每个房间拥有独立的 LES 实体服务器与战斗世界，运行于独立线程。职责边界见 `functional_boundary/13`。
 

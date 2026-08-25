@@ -1,5 +1,5 @@
 ﻿using DungeonChessBattle.Server.Abstractions;
-using DungeonChessBattle.Server.Battle;
+using DungeonChessBattle.Battle.Server;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Server.DataStore;
 using DungeonChessBattle.Server.DataStore.Shared;

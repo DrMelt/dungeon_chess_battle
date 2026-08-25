@@ -4,7 +4,7 @@ using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 战斗房间生命周期管理器，协调层。

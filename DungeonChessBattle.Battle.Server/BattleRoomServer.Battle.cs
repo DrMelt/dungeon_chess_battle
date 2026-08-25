@@ -18,7 +18,7 @@ using LiteEntitySystem;
 using LiteNetLib.Utils;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// BattleRoomServer 的初始化：从 Store 自取数据、单位实体与领域单位对称创建、战斗管理与 RPC 处理。

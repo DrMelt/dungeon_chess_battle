@@ -31,7 +31,7 @@
     <Project Path="DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
     <Project Path="DungeonChessBattle.Server.DataStore\DungeonChessBattle.Server.DataStore.csproj" />
     <Project Path="DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
-    <Project Path="DungeonChessBattle.Server.Battle\DungeonChessBattle.Server.Battle.csproj" />
+    <Project Path="DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
     <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
   </Folder>
 

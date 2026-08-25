@@ -11,7 +11,7 @@ using LiteEntitySystem;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，

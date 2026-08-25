@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Entities;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 聚合单个玩家在房间内的所有关联状态。

@@ -3,7 +3,7 @@ using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// Server.Battle 的 DI 装配扩展。注册战斗配置切片与房间生命周期管理器实现，

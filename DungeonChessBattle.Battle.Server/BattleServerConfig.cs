@@ -1,6 +1,6 @@
 using DungeonChessBattle.Protocol;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 战斗侧配置切片：仅包含战斗房间所需的字段。

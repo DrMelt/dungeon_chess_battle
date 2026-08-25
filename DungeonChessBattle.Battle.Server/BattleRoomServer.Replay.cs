@@ -1,10 +1,10 @@
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Replay.Shared;
-using DungeonChessBattle.Server.Battle.Replay;
+using DungeonChessBattle.Battle.Server.Replay;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// BattleRoomServer 的战斗输入回放录制。

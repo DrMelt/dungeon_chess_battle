@@ -1,6 +1,6 @@
 using DungeonChessBattle.Replay.Shared;
 
-namespace DungeonChessBattle.Server.Battle.Replay;
+namespace DungeonChessBattle.Battle.Server.Replay;
 
 /// <summary>
 /// 战斗输入回放记录器：内存存储与逻辑帧时间轴，回放端经快照消费。

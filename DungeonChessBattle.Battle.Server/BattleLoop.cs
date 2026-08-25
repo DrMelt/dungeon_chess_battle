@@ -3,7 +3,7 @@ using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 战斗循环的 LES LocalSingleton 适配器，把战斗世界收编进 EntityManager 的逻辑 tick 生命周期，

@@ -4,7 +4,7 @@ using LiteEntitySystem.Transport;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Server.Battle;
+namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// BattleRoomServer 的玩家会话与断线重连管理。

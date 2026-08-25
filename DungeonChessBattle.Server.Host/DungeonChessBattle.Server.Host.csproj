@@ -13,7 +13,7 @@
         <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.Battle\DungeonChessBattle.Server.Battle.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.DataStore\DungeonChessBattle.Server.DataStore.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
     </ItemGroup>
