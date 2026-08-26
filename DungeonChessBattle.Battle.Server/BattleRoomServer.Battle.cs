@@ -84,7 +84,7 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用。
     /// </summary>
     private IReadOnlyList<string> ResolvePlayerCamps(UnitSelection selection) {
-        var dungeon = DungeonRegistry.Instance.GetByKey(_dungeonKey);
+        var dungeon = _dungeonRegistry.GetByKey(_dungeonKey);
         var camps = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey)?.Camps;
         if (camps == null || camps.Count == 0)
             throw new InvalidOperationException(
@@ -97,13 +97,13 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用。
     /// </summary>
     private void SpawnDungeonEnemies() {
-        var dungeon = DungeonRegistry.Instance.GetByKey(_dungeonKey);
+        var dungeon = _dungeonRegistry.GetByKey(_dungeonKey);
         if (dungeon == null)
             return;
 
         foreach (var spawn in dungeon.Enemies) {
             // 敌人生成以注册表权威配置键为准，杜绝错配
-            var config = UnitRegistry.Instance.GetByConfig(spawn.Unit)
+            var config = _unitRegistry.GetByConfig(spawn.Unit)
                 ?? throw new InvalidOperationException(
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
@@ -136,7 +136,7 @@ public partial class BattleRoomServer {
         _pawnByNetId[entity.Id] = entity;
 
         // 领域单位（权威）：战斗世界结算读写，投影器写 SyncVar
-        var config = UnitRegistry.Instance.GetByKey(unitName)
+        var config = _unitRegistry.GetByKey(unitName)
             ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
         var unit = new BattleUnit {
             UnitNetId = entity.Id,

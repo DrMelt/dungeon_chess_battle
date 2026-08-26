@@ -22,12 +22,17 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="broadcaster">大厅广播端口，向房间内连接推送消息。</param>
 /// <param name="config">服务器配置，服务器密码等。</param>
+/// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
+/// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
-    ILobbyBroadcaster broadcaster, LobbyServerConfig config) {
+    ILobbyBroadcaster broadcaster, LobbyServerConfig config,
+    IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly ILobbyBroadcaster _broadcaster = broadcaster;
     private readonly LobbyServerConfig _config = config;
+    private readonly IUnitRegistry _unitRegistry = unitRegistry;
+    private readonly IDungeonRegistry _dungeonRegistry = dungeonRegistry;
 
     /// <summary>
     /// 校验服务器密码；不匹配时返回 false，调用方负责构造失败结果。
@@ -43,8 +48,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>解析权威副本键：非法键回落默认副本。</summary>
     /// <param name="dungeonKey">客户端提交的副本键。</param>
     /// <returns>合法的副本键。</returns>
-    public static string ResolveDungeonKey(string? dungeonKey) {
-        var info = DungeonRegistry.Instance.GetByKey(dungeonKey);
+    private string ResolveDungeonKey(string? dungeonKey) {
+        var info = _dungeonRegistry.GetByKey(dungeonKey);
         return info?.DungeonKey ?? GameConfigDB.DefaultDungeonKey;
     }
 
@@ -199,13 +204,13 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
         // 阵营由副本配置权威解析：客户端只提交选项键，不直接设置阵营数组
         var roomConfig = _stateStore.GetRoomConfig(roomId);
-        var dungeon = roomConfig == null ? null : DungeonRegistry.Instance.GetByKey(roomConfig.DungeonKey);
+        var dungeon = roomConfig == null ? null : _dungeonRegistry.GetByKey(roomConfig.DungeonKey);
         var campOption = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == req.CampOptionKey);
         if (campOption == null)
             return new LobbyResult(roomId, false, "Invalid camp option.");
 
         // 单位必须为已注册且可被玩家选择的配置，拒绝虚构键与敌人单位
-        var unitConfig = UnitRegistry.Instance.GetByKey(req.UnitConfigKey);
+        var unitConfig = _unitRegistry.GetByKey(req.UnitConfigKey);
         if (unitConfig == null || !unitConfig.IsPlayerSelectable)
             return new LobbyResult(roomId, false, "Invalid unit config.");
 
@@ -292,7 +297,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             config?.MaxPlayers ?? 2,
             config?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            DungeonRegistry.Instance.GetByKey(state.DungeonKey)?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
+            _dungeonRegistry.GetByKey(state.DungeonKey)?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))]);

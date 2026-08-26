@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -21,13 +22,18 @@ namespace DungeonChessBattle.Battle.Server;
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="config">战斗侧配置切片，房间端口池起点。</param>
 /// <param name="replayStore">回放存储，房间销毁时归档战斗输入快照。</param>
+/// <param name="unitRegistry">单位目录，房间单位装配权威来源。</param>
+/// <param name="dungeonRegistry">副本目录，阵营关系与移动布局来源。</param>
 public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore,
-    BattleServerConfig config, IReplayStore replayStore) : IBattleRoomManager {
+    BattleServerConfig config, IReplayStore replayStore,
+    IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) : IBattleRoomManager {
     private readonly ILogger<BattleRoomManager> _logger = loggerFactory.CreateLogger<BattleRoomManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly BattleServerConfig _config = config;
     private readonly IReplayStore _replayStore = replayStore;
+    private readonly IUnitRegistry _unitRegistry = unitRegistry;
+    private readonly IDungeonRegistry _dungeonRegistry = dungeonRegistry;
 
     /// <summary>房间服务器注册表，线程安全。准备阶段房间不在此表中。</summary>
     private readonly ConcurrentDictionary<string, BattleRoomServer> _roomServers = new();
@@ -97,7 +103,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         int port = AllocatePort();
         var server = new BattleRoomServer(port, roomId,
             _loggerFactory,
-            _config, _stateStore);
+            _config, _stateStore, _unitRegistry, _dungeonRegistry);
         server.Start();
 
         // 房间全部活跃连接断开后自动销毁，闭合 RoomEmpty 事件链，仅入队

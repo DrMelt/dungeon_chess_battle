@@ -1,4 +1,5 @@
-﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
+﻿using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
@@ -24,10 +25,14 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="stateStore">大厅级状态存储，存储引擎由装配层注入，可替换。</param>
 /// <param name="replayStore">回放存储，玩家回放查询。</param>
 /// <param name="replayTicketStore">回放下载一次性凭证存储，字节流经 HTTP 端点凭凭证获取。</param>
+/// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
+/// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
 public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster broadcaster,
     LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore,
-    IReplayStore replayStore, IReplayDownloadTicketStore replayTicketStore) : ILobbyApplication {
-    private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig);
+    IReplayStore replayStore, IReplayDownloadTicketStore replayTicketStore,
+    IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) : ILobbyApplication {
+    private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig,
+        unitRegistry, dungeonRegistry);
     private readonly IBattleRoomManager _battleRoomManager = battleRoomManager;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly IReplayStore _replayStore = replayStore;

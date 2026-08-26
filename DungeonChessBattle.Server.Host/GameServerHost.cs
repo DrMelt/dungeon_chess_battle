@@ -1,5 +1,6 @@
 ﻿using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Battle.Server;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Server.DataStore;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -76,6 +77,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 });
                 builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
                 builder.Services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
+                builder.Services.AddSingleton<IUnitRegistry>(UnitRegistry.Instance);
+                builder.Services.AddSingleton<IDungeonRegistry>(DungeonRegistry.Instance);
                 builder.Services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
                 builder.Services.AddBattleServer(new BattleServerConfig {
                     ConnectionKey = config.ServerPassword ?? config.ConnectionKey,

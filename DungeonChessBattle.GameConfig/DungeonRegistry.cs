@@ -8,12 +8,12 @@ namespace DungeonChessBattle.GameConfig;
 /// 副本目录的纯 C# 权威注册表：副本键 ↔ 副本配置。
 /// 服务端按房间选中的副本键生成敌人，客户端按副本键选择环境表现。
 /// </summary>
-public sealed class DungeonRegistry {
+public sealed class DungeonRegistry : IDungeonRegistry {
     /// <summary>副本条目。</summary>
     /// <param name="Config">副本配置。</param>
     public sealed record DungeonEntry(DungeonConfig Config);
 
-    /// <summary>全局单例。</summary>
+    /// <summary>全局单例，Godot 脚本无 DI 场景下访问。</summary>
     public static readonly DungeonRegistry Instance = new();
 
     private readonly Dictionary<string, DungeonConfig> _byKey;

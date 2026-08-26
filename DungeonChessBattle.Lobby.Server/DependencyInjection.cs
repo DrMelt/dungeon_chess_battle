@@ -1,3 +1,4 @@
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.AspNetCore.SignalR;
@@ -24,7 +25,9 @@ public static class LobbyServiceCollectionExtensions {
             sp.GetRequiredService<IBattleRoomManager>(),
             sp.GetRequiredService<IGameStateStore>(),
             sp.GetRequiredService<IReplayStore>(),
-            sp.GetRequiredService<IReplayDownloadTicketStore>()));
+            sp.GetRequiredService<IReplayDownloadTicketStore>(),
+            sp.GetRequiredService<IUnitRegistry>(),
+            sp.GetRequiredService<IDungeonRegistry>()));
         services.AddSingleton<ILobbyApplication>(sp => sp.GetRequiredService<GameServer>());
         return services;
     }

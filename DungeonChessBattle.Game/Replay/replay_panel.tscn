@@ -1,0 +1,88 @@
+[gd_scene format=3 uid="uid://ck5ahdfwjheaw"]
+
+[ext_resource type="Script" uid="uid://cbdke876uutgr" path="res://Replay/ReplayPanel.cs" id="1_panel"]
+[ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="3_theme"]
+
+[sub_resource type="StyleBoxFlat" id="Panel_bg"]
+bg_color = Color(0, 0, 0, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.4, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="ReplayPanel" type="Control" unique_id=75307350 node_paths=PackedStringArray("_replayList", "_downloadRequest", "_replayScene", "_coordinator")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_theme")
+script = ExtResource("1_panel")
+_replayList = NodePath("CenterContainer/VBoxContainer/ReplayList")
+_downloadRequest = NodePath("")
+_replayScene = NodePath("")
+_coordinator = NodePath("")
+
+[node name="Panel" type="Panel" parent="." unique_id=1383736503]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Panel_bg")
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1933412998]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=347417163]
+custom_minimum_size = Vector2(560, 520)
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer" unique_id=453626755]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "回放"
+horizontal_alignment = 1
+
+[node name="ReplayList" type="ItemList" parent="CenterContainer/VBoxContainer" unique_id=24878510]
+custom_minimum_size = Vector2(0, 380)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=1694532253]
+layout_mode = 2
+
+[node name="RefreshButton" type="Button" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=317839124]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "刷新"
+
+[node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=1122456389]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "播放"
+
+[node name="CloseButton" type="Button" parent="CenterContainer/VBoxContainer/HBoxContainer" unique_id=342973970]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "关闭"
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/HBoxContainer/RefreshButton" to="." method="OnRefreshPressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/HBoxContainer/PlayButton" to="." method="OnPlayPressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/HBoxContainer/CloseButton" to="." method="OnClosePressed"]

@@ -1,3 +1,4 @@
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Battle.Server.Replay;
@@ -92,7 +93,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     public ReplayRecordSnapshot GetSnapshot() {
         lock (_lock) {
             var header = new ReplayRecordHeader(ReplayFormatVersion.Current, _roomId, _dungeonKey,
-                _startUnixTime, _tickRate, _players, _startTick, _nextNetId, _complete);
+                _startUnixTime, _tickRate, _players, _startTick, _nextNetId, _complete, GameConfigDB.DataRevision);
             return new ReplayRecordSnapshot(header,
                 [.. _moveInputs],
                 [.. _castSkills],

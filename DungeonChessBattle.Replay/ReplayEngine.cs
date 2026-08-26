@@ -15,9 +15,11 @@ namespace DungeonChessBattle.Replay;
 /// 玩家输入按记录帧注入，事件流逐帧返回，单位状态经 BattleScene 直读。
 /// 纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// </summary>
-public sealed class ReplayEngine {
+public sealed class ReplayEngine : IBattleViewSource {
     private readonly BattleScene _battleScene;
     private readonly DungeonConfig _dungeon;
+    private readonly IUnitRegistry _unitRegistry;
+    private readonly IDungeonRegistry _dungeonRegistry;
     private readonly List<MoveInputRecord> _moves;
     private readonly List<CastSkillRecord> _casts;
     private readonly List<FocusTargetRecord> _focuses;
@@ -43,10 +45,10 @@ public sealed class ReplayEngine {
     public bool IsFinished => _battleScene.IsFinished;
 
     /// <summary>战斗世界全部单位，展示层直读状态。</summary>
-    public IReadOnlyList<BattleUnit> Units => _battleScene.BattleUnits;
+    public IReadOnlyList<IUnitUiView> Units => _battleScene.BattleUnits;
 
     /// <summary>按网络 ID 查战斗单位，不存在返回 null。</summary>
-    public BattleUnit? FindUnit(ushort netId) => _battleScene.FindUnit(netId) as BattleUnit;
+    public IUnitUiView? FindUnit(ushort netId) => _battleScene.FindUnit(netId) as IUnitUiView;
 
     /// <summary>玩家聚焦映射，网络 ID → 目标网络 ID，0 表示无聚焦目标。</summary>
     public IReadOnlyDictionary<ushort, ushort> FocusByNetId => _focusByNetId;
@@ -54,12 +56,16 @@ public sealed class ReplayEngine {
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
 
-    /// <summary>
-    /// 构建回放：解析头部构建战斗世界与单位（玩家按记录、敌人按副本配置从 NextNetId 对齐），
-    /// 并立即开始战斗。配置缺失属录制环境不一致，响亮失败。
-    /// </summary>
-    public ReplayEngine(ReplayRecordSnapshot snapshot) {
+    /// <summary>构建回放：使用默认配置注册表；配置缺失属录制环境不一致，响亮失败。</summary>
+    public ReplayEngine(ReplayRecordSnapshot snapshot)
+        : this(snapshot, UnitRegistry.Instance, DungeonRegistry.Instance) {
+    }
+
+    /// <summary>构建回放：注入配置注册表解析头部、构建战斗世界与单位并立即开始战斗。</summary>
+    public ReplayEngine(ReplayRecordSnapshot snapshot, IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
         Snapshot = snapshot;
+        _unitRegistry = unitRegistry;
+        _dungeonRegistry = dungeonRegistry;
         _startTick = snapshot.Header.StartTick;
         _dt = 1f / snapshot.Header.TickRate;
         _moves = [.. snapshot.MoveInputs.OrderBy(m => m.Frame)];
@@ -67,10 +73,15 @@ public sealed class ReplayEngine {
         _focuses = [.. snapshot.FocusTargets.OrderBy(f => f.Frame)];
         _playerNetIdByIndex = [.. snapshot.Header.Players.Select(p => p.NetId)];
 
-        var dungeon = DungeonRegistry.Instance.GetByKey(snapshot.Header.DungeonKey)
+        // 内容一致校验：录制端内容修订号与当前一致才允许重放，把数据演化导致的静默漂移变成声响失败
+        if (snapshot.Header.DataVersion != GameConfigDB.DataRevision)
+            throw new InvalidDataException(
+                $"Replay content mismatch: record data={snapshot.Header.DataVersion}, current={GameConfigDB.DataRevision}.");
+
+        var dungeon = _dungeonRegistry.GetByKey(snapshot.Header.DungeonKey)
             ?? throw new InvalidDataException($"Replay references unknown dungeon key: {snapshot.Header.DungeonKey}");
         _dungeon = dungeon;
-        var movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(snapshot.Header.DungeonKey));
+        var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(snapshot.Header.DungeonKey));
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
         BuildUnits();
         _battleScene.StartBattle();
@@ -79,7 +90,7 @@ public sealed class ReplayEngine {
     /// <summary>按副本配置与头部信息构建全部单位：玩家按 PlayerIndex 还原，敌人按副本生成顺序从 NextNetId 对齐。</summary>
     private void BuildUnits() {
         foreach (var player in Snapshot.Header.Players) {
-            var config = UnitRegistry.Instance.GetByKey(player.UnitConfigKey)
+            var config = _unitRegistry.GetByKey(player.UnitConfigKey)
                 ?? throw new InvalidDataException($"Replay references unknown unit config: {player.UnitConfigKey}");
             var camps = _dungeon.PlayerCampOptions.FirstOrDefault(o => o.Key == player.CampOptionKey)?.Camps
                 ?? throw new InvalidDataException($"Replay camp option '{player.CampOptionKey}' not found in dungeon '{_dungeon.DungeonKey}'.");
@@ -105,7 +116,7 @@ public sealed class ReplayEngine {
 
         ushort nextNetId = Snapshot.Header.NextNetId;
         foreach (var spawn in _dungeon.Enemies) {
-            var config = UnitRegistry.Instance.GetByConfig(spawn.Unit)
+            var config = _unitRegistry.GetByConfig(spawn.Unit)
                 ?? throw new InvalidDataException($"Dungeon '{_dungeon.DungeonKey}' references unregistered unit config.");
             for (int i = 0; i < spawn.Count; i++) {
                 var pos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
@@ -175,19 +186,9 @@ public sealed class ReplayEngine {
     }
 
     /// <summary>本地位移结算，等价服务端 UnitPawn.Update：MoveResolver + 物理场景。</summary>
-    private void ResolveMovement() {
-        foreach (var unit in _battleScene.BattleUnits) {
-            if (unit.Health <= 0f)
-                continue;
-            if (unit.MoveInput.LengthSquared() <= 0.0001f || unit.BaseSpeed <= 0f)
-                continue;
-            unit.Position = MovementResolver.Move(unit.Position, unit.MoveInput, unit.BaseSpeed,
-                _dt, unit.BodyRadius, _battleScene.MovementScene, unit.UnitNetId);
-            var dir = Vector2.Normalize(unit.MoveInput);
-            if (unit.Direction != dir)
-                unit.Direction = dir;
-        }
-    }
+    /// <summary>整场本地位移结算，复用 <see cref="BattleMovementResolver"/> 与服务端 UnitPawn 同源。</summary>
+    private void ResolveMovement() =>
+        BattleMovementResolver.ResolveTurn(_battleScene.BattleUnits, _dt, _battleScene.MovementScene);
 
     /// <summary>按帧注入玩家输入：移动、施法（仅接受）与聚焦，三类共享同一帧轴。</summary>
     private void InjectInputs() {
@@ -248,6 +249,8 @@ public sealed class ReplayEngine {
         _focusCursor = 0;
         _frame = 0;
         _focusByNetId.Clear();
+        foreach (var unit in _battleScene.BattleUnits.ToArray())
+            _battleScene.RemoveUnit(unit);
         BuildUnits();
         _battleScene.StartBattle();
     }

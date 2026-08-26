@@ -62,7 +62,7 @@ public partial class BattleCoordinator : Node {
         _battleService = roomClient;
 
         roomClient.BattlePhaseChanged += OnBattlePhase;
-        _unitManager?.Bind(roomClient, roomClient, _roomId);
+        _unitManager?.Bind(roomClient.Mirror);
         _sessionContext?.Bind(roomClient, roomClient, _roomId);
         _inputController?.Reset();
 
@@ -95,6 +95,7 @@ public partial class BattleCoordinator : Node {
         if (!IsInBattle || _battleService == null)
             return;
         _inputController?.Tick(_battleService);
+        _unitManager?.Tick();
     }
 
     /// <summary>节点退出场景树：兜底退出战斗（防止中途释放导致事件悬挂）。</summary>

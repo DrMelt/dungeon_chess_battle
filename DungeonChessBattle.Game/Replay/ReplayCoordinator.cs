@@ -2,6 +2,7 @@ using System;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Replay;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.MainScene;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +10,7 @@ namespace DungeonChessBattle.ReplayUI;
 
 /// <summary>
 /// 回放场景编排：加载回放字节流构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
-/// 生成单位展示节点并驱动。提供播放/暂停/倍速/拖动控制。
+/// 经 UnitShowManager 对齐驱动单位展示。提供播放/暂停/倍速/拖动控制。
 /// 由回放入口面板 LoadReplay 启动，退出时释放引擎与展示。
 /// </summary>
 public partial class ReplayCoordinator : Node {
@@ -17,12 +18,11 @@ public partial class ReplayCoordinator : Node {
     private static readonly ILogger<ReplayCoordinator> _logger =
         ServiceLocator.GetLogger<ReplayCoordinator>();
 
-    /// <summary>单位展示场景（含 ReplayUnitShow 脚本）。</summary>
+    /// <summary>单位展示管理器（回放数据源对齐驱动）。</summary>
     [Export]
-    private PackedScene? _unitShowScene;
+    private UnitShowManager? _unitManager;
 
     private ReplayEngine? _engine;
-    private readonly System.Collections.Generic.Dictionary<ushort, ReplayUnitShow> _shows = [];
     private double _accumulator;
     private bool _isPaused;
 
@@ -50,12 +50,21 @@ public partial class ReplayCoordinator : Node {
             return;
         }
 
-        _engine = new ReplayEngine(snapshot);
+        ReplayEngine engine;
+        try {
+            engine = new ReplayEngine(snapshot);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex, "回放引擎构建失败（内容版本不一致或配置缺失）");
+            return;
+        }
+
+        _engine = engine;
         _accumulator = 0;
         _isPaused = false;
-        SpawnUnitShows();
+        _unitManager?.Bind(_engine);
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", snapshot.Header.RoomId, _shows.Count);
+            _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", snapshot.Header.RoomId, _engine.Units.Count);
     }
 
     /// <summary>每帧推进回放引擎：按倍速累积固定步长，未加载/暂停/结束时为空操作。</summary>
@@ -69,6 +78,7 @@ public partial class ReplayCoordinator : Node {
             engine.Step();
             _accumulator -= engine.FixedDelta;
         }
+        _unitManager?.Tick();
     }
 
     /// <summary>切换播放/暂停。</summary>
@@ -84,35 +94,15 @@ public partial class ReplayCoordinator : Node {
 
     /// <summary>退出回放：释放引擎与单位展示。</summary>
     public void ExitReplay() {
-        foreach (var (_, show) in _shows)
-            show.QueueFree();
-        _shows.Clear();
+        _unitManager?.Unbind();
         _engine = null;
         _accumulator = 0;
         _isPaused = false;
     }
 
-    /// <summary>按引擎单位生成展示节点，加载回放时调用。</summary>
-    private void SpawnUnitShows() {
-        foreach (var (_, show) in _shows)
-            show.QueueFree();
-        _shows.Clear();
-
-        var engine = _engine;
-        if (engine == null || _unitShowScene == null)
-            return;
-
-        foreach (var unit in engine.Units) {
-            var show = _unitShowScene.Instantiate<ReplayUnitShow>();
-            show.Bind(engine, unit.UnitNetId);
-            AddChild(show);
-            _shows[unit.UnitNetId] = show;
-        }
-    }
-
-    /// <summary>节点退出场景树：兜底释放引擎。</summary>
+    /// <summary>节点退出场景树：兜底释放引擎与展示。</summary>
     public override void _ExitTree() {
+        _unitManager?.Unbind();
         _engine = null;
-        _shows.Clear();
     }
 }

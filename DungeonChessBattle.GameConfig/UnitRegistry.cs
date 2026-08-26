@@ -8,8 +8,8 @@ namespace DungeonChessBattle.GameConfig;
 /// 服务端建模与控制器绑定校验、客户端 UnitCatalog 展示共享同一份配置，
 /// 新增单位只需在此登记一处。协议与实体按配置键 ConfigKey 传输。
 /// </summary>
-public sealed class UnitRegistry {
-    /// <summary>全局单例。</summary>
+public sealed class UnitRegistry : IUnitRegistry {
+    /// <summary>全局单例，Godot 脚本无 DI 场景下访问。</summary>
     public static readonly UnitRegistry Instance = new();
 
     private readonly Dictionary<UnitConfigKey, UnitConfig> _byKey;

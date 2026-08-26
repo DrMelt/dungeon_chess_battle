@@ -46,6 +46,12 @@ public partial class ReplayPanel : Control {
         ServiceLocator.ClientService.RequestGetReplays();
     }
 
+    /// <summary>刷新按钮回调（Godot 信号接线）。</summary>
+    public static void OnRefreshPressed() => Refresh();
+
+    /// <summary>关闭按钮回调（Godot 信号接线），隐藏面板回到主界面。</summary>
+    public void OnClosePressed() => Visible = false;
+
     /// <summary>播放选中回放。</summary>
     public void OnPlayPressed() {
         var selected = _replayList?.GetSelectedItems();

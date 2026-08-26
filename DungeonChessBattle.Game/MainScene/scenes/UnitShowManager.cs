@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
@@ -11,9 +10,9 @@ namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 单位展示管理器：单位视图（UnitGameShow）的全生命周期所有者。
-/// 订阅服务端单位创建/死亡事件驱动视图生成与隐藏，并装配技能展示资源；
-/// Pawn 数据投影与玩家操作归 BattleSessionContext，本组件不对外提供数据查询。
-/// 由 MainScene 在进入/退出战斗时 Bind/Unbind。
+/// 面向 IBattleViewSource 每帧对齐驱动，在线经 RoomBattleStateMirror、回放经 ReplayEngine。
+/// 单位数据查询与玩家操作归 BattleSessionContext。
+/// 由 MainScene / 回放控制器在进入/退出战斗时 Bind/Unbind。
 /// </summary>
 public partial class UnitShowManager : Node {
     /// <summary>日志记录器。</summary>
@@ -23,44 +22,22 @@ public partial class UnitShowManager : Node {
     [Export]
     private PackedScene? _unitShowScene;
 
-    /// <summary>当前战斗服务（Bind 时注入，用于单位事件订阅）。</summary>
-    private IClientBattleService? _battleService;
-
-    /// <summary>房间客户端（Bind 时注入，用于 Pawn 查询）。</summary>
-    private RoomBattleClient? _roomClient;
-
-    /// <summary>当前房间 ID（Bind 时注入，用于事件过滤）。</summary>
-    private string _roomId = "";
+    /// <summary>当前展示数据源（Bind 时注入），在线为 RoomBattleStateMirror、回放为 ReplayEngine。</summary>
+    private IBattleViewSource? _source;
 
     /// <summary>单位网络实体 ID → UnitGameShow 映射。</summary>
     private readonly Dictionary<ushort, UnitGameShow> _unitShows = [];
 
-    /// <summary>
-    /// 进入战斗：注入服务与房间客户端，订阅单位事件并初始化缓存单位。
-    /// </summary>
-    public void Bind(IClientBattleService service, RoomBattleClient roomClient, string roomId) {
-        _battleService = service;
-        _roomClient = roomClient;
-        _roomId = roomId;
-
-        service.OnUnitCreated += OnServiceUnitCreated;
-        service.UnitDied += OnUnitDied;
-
-        InitializeUnitsFromPawns();
+    /// <summary>进入战斗：注入展示数据源并清空旧视图。</summary>
+    public void Bind(IBattleViewSource source) {
+        ClearUnits();
+        _source = source;
     }
 
-    /// <summary>退出战斗：退订单位事件并清理全部单位视图。</summary>
+    /// <summary>退出战斗：清理全部单位视图并释放数据源。</summary>
     public void Unbind() {
-        if (_battleService != null) {
-            _battleService.OnUnitCreated -= OnServiceUnitCreated;
-            _battleService.UnitDied -= OnUnitDied;
-        }
-
         ClearUnits();
-
-        _battleService = null;
-        _roomClient = null;
-        _roomId = "";
+        _source = null;
     }
 
     /// <summary>节点退出场景树：兜底退订（防止战斗中途场景被释放导致事件悬挂）。</summary>
@@ -69,34 +46,28 @@ public partial class UnitShowManager : Node {
     }
 
     /// <summary>
-    /// 服务事件：单位创建。网络模式下单位实体可能晚于战斗开始到达；
-    /// 与 InitializeUnitsFromPawns 缓存兜底共用幂等入口，保证不重不漏。
+    /// 每帧对齐展示数据源：按 netId 重取单位视图引用并同步存活，对新增单位生成视图。
+    /// 在线单位晚到与回放 Seek 重建均在此收敛。
     /// </summary>
-    private void OnServiceUnitCreated(string eventRoomId, ushort netId, string unitName, IReadOnlyList<string> camps) {
-        if (eventRoomId != _roomId)
+    public void Tick() {
+        var source = _source;
+        if (source == null)
             return;
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Unit created via service: {UnitName} (camps={Camps}, netId={NetId})", unitName, string.Join(",", camps), netId);
-        CallDeferred(nameof(SpawnUnitFromCache), netId);
-    }
 
-    /// <summary>延迟生成单位（CallDeferred 入口）。</summary>
-    private void SpawnUnitFromCache(ushort netId) {
-        var unit = _roomClient?.Mirror.FindUnit(netId);
-        if (unit is not null)
-            TrySpawnUnit(unit);
-        else
-            _logger.LogWarning("Unit netId={NetId} not found in local mirror; entity may not have arrived yet", netId);
-    }
+        foreach (var (netId, show) in _unitShows) {
+            var unit = source.FindUnit(netId);
+            if (unit == null) {
+                show.Visible = false;
+                continue;
+            }
+            show.Unit = unit;
+            show.Visible = unit.Health > 0f;
+        }
 
-    /// <summary>
-    /// 幂等生成单位视图：同名单位已存在时跳过。
-    /// 事件驱动路径（OnServiceUnitCreated）与缓存兜底路径（InitializeUnitsFromPawns）共用。
-    /// </summary>
-    private void TrySpawnUnit(IUnitUiView unit) {
-        if (_unitShows.ContainsKey(unit.UnitNetId))
-            return;
-        SpawnUnit(unit);
+        foreach (var unit in source.Units) {
+            if (!_unitShows.ContainsKey(unit.UnitNetId))
+                SpawnUnit(unit);
+        }
     }
 
     private void SpawnUnit(IUnitUiView unit) {
@@ -128,31 +99,10 @@ public partial class UnitShowManager : Node {
             _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, unit.Position);
     }
 
-    private void InitializeUnitsFromPawns() {
-        if (_roomClient == null)
-            return;
-
-        var units = _roomClient.Mirror.Units;
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Initializing units: total={Total}", units.Count);
-
-        foreach (var unit in units)
-            TrySpawnUnit(unit);
-    }
-
     private void ClearUnits() {
         foreach (var (_, unitShow) in _unitShows) {
             unitShow.QueueFree();
         }
         _unitShows.Clear();
-    }
-
-    /// <summary>服务事件：单位死亡（主线程直接同步隐藏）。</summary>
-    private void OnUnitDied(ushort netId) {
-        if (_unitShows.TryGetValue(netId, out var show)) {
-            show.Visible = false;
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Unit died: netId={NetId}", netId);
-        }
     }
 }

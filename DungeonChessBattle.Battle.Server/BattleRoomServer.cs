@@ -31,6 +31,8 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly ILogger<BattleRoomServer> _logger;
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
+    private readonly IUnitRegistry _unitRegistry;
+    private readonly IDungeonRegistry _dungeonRegistry;
 
     private const int FramesPerSecond = 50;
 
@@ -129,18 +131,23 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="loggerFactory">日志工厂，供 BattleRoomServer 与子组件创建日志器</param>
     /// <param name="config">战斗侧配置切片，连接密钥。</param>
     /// <param name="stateStore">大厅级状态存储，房间线程用于自取初始化数据与成员校验。</param>
+    /// <param name="unitRegistry">单位目录，房间单位装配权威来源。</param>
+    /// <param name="dungeonRegistry">副本目录，阵营关系与移动布局来源。</param>
     public BattleRoomServer(int port, string roomId, ILoggerFactory loggerFactory,
-        BattleServerConfig config, IGameStateStore stateStore) {
+        BattleServerConfig config, IGameStateStore stateStore,
+        IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
         Port = port;
         RoomId = roomId;
         _logger = loggerFactory.CreateLogger<BattleRoomServer>();
         _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
-        _dungeonKey = DungeonRegistry.Instance.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
+        _unitRegistry = unitRegistry;
+        _dungeonRegistry = dungeonRegistry;
+        _dungeonKey = _dungeonRegistry.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");
-        _campRelations = DungeonRegistry.Instance.GetRelations(_dungeonKey);
-        var movementScene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(_dungeonKey));
+        _campRelations = _dungeonRegistry.GetRelations(_dungeonKey);
+        var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(_dungeonKey));
         _battleScene = new BattleScene(_campRelations, movementScene, logger: loggerFactory.CreateLogger<BattleScene>());
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;

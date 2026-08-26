@@ -38,6 +38,7 @@
 [ext_resource type="Script" uid="uid://bolcdqihs7w6m" path="res://MainScene/scenes/BattleCoordinator.cs" id="39_coordinator"]
 [ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
 [ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
+[ext_resource type="PackedScene" uid="uid://ck5ahdfwjheaw" path="res://Replay/replay_panel.tscn" id="42_replay"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -337,10 +338,11 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_42c4a")
 
-[node name="MainMenu" parent="FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel") instance=ExtResource("27_kkbek")]
+[node name="MainMenu" parent="FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel", "_replayPanel") instance=ExtResource("27_kkbek")]
 layout_mode = 1
 _gameLobby = NodePath("../GameLobby")
 _serverMgmtPanel = NodePath("../ServerManagementPanel")
+_replayPanel = NodePath("../ReplayPanel")
 
 [node name="ServerManagementPanel" parent="FrontUI" unique_id=-355691268 instance=ExtResource("28_prmww")]
 visible = false
@@ -358,6 +360,10 @@ anchor_bottom = 0.9
 _roomPreparation = NodePath("../RoomPreparation")
 
 [node name="RoomPreparation" parent="FrontUI" unique_id=416023587 instance=ExtResource("30_1hpbe")]
+visible = false
+layout_mode = 1
+
+[node name="ReplayPanel" parent="FrontUI" unique_id=276490758 instance=ExtResource("42_replay")]
 visible = false
 layout_mode = 1
 

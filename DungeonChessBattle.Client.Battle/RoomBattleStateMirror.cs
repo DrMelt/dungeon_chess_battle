@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Client.Battle;
 /// UI 统一按本镜像取数，与回放重放的 BattleUnit 展示口径一致。
 /// 仅做状态落点，不驱动战斗逻辑；阶段与聚焦独立维护。
 /// </summary>
-public sealed class RoomBattleStateMirror {
+public sealed class RoomBattleStateMirror : IBattleViewSource {
     private readonly List<MirrorUnit> _units = [];
     private readonly Dictionary<ushort, MirrorUnit> _byId = [];
     private readonly Dictionary<ushort, ushort> _focusByNetId = [];
