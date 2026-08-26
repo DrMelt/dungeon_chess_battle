@@ -1,5 +1,4 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Game.GameAssets;
 using Godot;
 
@@ -24,12 +23,12 @@ public partial class SkillProgressBar : Control {
     /// <summary>
     /// 根据单位 Pawn 刷新施法进度条；无施法时隐藏。
     /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    public void UpdateUI_WithUnit(UnitPawn pawn) {
+    /// <param name="unit">目标单位展示视图。</param>
+    public void UpdateUI_WithUnit(IUnitUiView unit) {
         if (InterRefs == null)
             return;
 
-        var castingId = pawn.SkillCasting.Value;
+        string castingId = unit.SkillCasting.Id;
         if (string.IsNullOrEmpty(castingId)) {
             Visible = false;
             return;
@@ -43,7 +42,7 @@ public partial class SkillProgressBar : Control {
 
         Visible = true;
         InterRefs.LabelSkillNameRef?.Text = skill.SkillName;
-        var remaining = pawn.SkillCastRemaining.Value;
+        var remaining = unit.SkillCastRemaining;
         InterRefs.LabelRemainingTimeRef?.Text = remaining.ToString("F1");
         var total = Mathf.Max(skill.SkillSpellTime, 0.001f);
         InterRefs.ProgressBarRef?.Value = Mathf.Clamp(1f - remaining / total, 0f, 1f);

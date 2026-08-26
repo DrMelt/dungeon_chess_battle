@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -60,7 +60,7 @@ public partial class UserCamera3D : Camera3D {
     private Vector3 _followOffset;
 
     /// <summary>上一帧是否存在本地单位 Pawn，用于检测进入战斗的上升沿。</summary>
-    private bool _hadLocalPawn;
+    private bool _hadLocalUnit;
 
     /// <summary>上一帧的鼠标位置。</summary>
     private Vector2 mousePos;
@@ -80,15 +80,15 @@ public partial class UserCamera3D : Camera3D {
     public override void _Process(double delta) {
         Vector2 currentMouse = GetViewport().GetMousePosition() * GetViewport().GetVisibleRect().Size;
 
-        var localPawn = _sessionRef?.LocalUnitPawn;
-        Vector3? localPos = PawnWorldPos(localPawn);
+        var localUnit = _sessionRef?.LocalUnit;
+        Vector3? localPos = PawnWorldPos(localUnit);
 
         // 本地单位从无到有视为进入战斗，默认进入锁定并立即居中
-        if (localPos != null && !_hadLocalPawn) {
+        if (localPos != null && !_hadLocalUnit) {
             _followPlayerEnabled = true;
             AlignToLocalUnit(localPos.Value);
         }
-        _hadLocalPawn = localPos != null;
+        _hadLocalUnit = localPos != null;
 
         if (_rotationEnabled && Input.IsActionPressed("Camera_Rotate")) {
             Vector2 deltaMouse = (currentMouse - mousePos) * 0.0001f * RotateSpeed;
@@ -99,8 +99,8 @@ public partial class UserCamera3D : Camera3D {
             Vector3 centerPos = GlobalPosition + cameraPreDir * (GlobalPosition.Y / -cameraPreDir.Y);
 
             // 锁定跟随模式下以本地玩家为旋转中心，保证角色始终位于屏幕中心
-            var focusPawn = _followPlayerEnabled ? localPawn : _sessionRef?.LocalFocusPawn;
-            Vector3? focusPos = PawnWorldPos(focusPawn);
+            var focusUnit = _followPlayerEnabled ? localUnit : _sessionRef?.LocalFocus;
+            Vector3? focusPos = PawnWorldPos(focusUnit);
             if (focusPos != null) {
                 centerPos = focusPos.Value;
             }
@@ -147,7 +147,7 @@ public partial class UserCamera3D : Camera3D {
 
         // 锁定跟随模式下已居中，跳过聚焦移动
         if (!_followPlayerEnabled && Input.IsActionJustPressed("Camera_MoveToFocus")) {
-            Vector3? focusPos = PawnWorldPos(_sessionRef?.LocalFocusPawn);
+            Vector3? focusPos = PawnWorldPos(_sessionRef?.LocalFocus);
             if (focusPos != null) {
                 Vector3 vecToFocus = focusPos.Value - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));
@@ -170,11 +170,11 @@ public partial class UserCamera3D : Camera3D {
         }
     }
 
-    /// <summary>从 Pawn 网络位置派生场景坐标（与 UnitGameShow 同一投影公式）。</summary>
-    private static Vector3? PawnWorldPos(UnitPawn? pawn)
-        => pawn == null
+    /// <summary>从本地展示视图位置派生场景坐标（与 UnitGameShow 同一投影公式）。</summary>
+    private static Vector3? PawnWorldPos(IUnitUiView? unit)
+        => unit == null
             ? null
-            : new Vector3(pawn.Position.InterpolatedValue.X, 0f, pawn.Position.InterpolatedValue.Y);
+            : new Vector3(unit.Position.X, 0f, unit.Position.Y);
 
     /// <summary>
     /// 锁定归中：相机 XZ 对齐本地单位并保留高度，使角色处于视野中心。

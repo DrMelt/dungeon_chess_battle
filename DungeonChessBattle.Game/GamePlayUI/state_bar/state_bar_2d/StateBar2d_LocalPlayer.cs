@@ -32,14 +32,14 @@ public partial class StateBar2d_LocalPlayer : Control {
     public override void _Process(double delta) {
         if (InterRefs == null)
             return;
-        var localPawn = _sessionRef?.LocalUnitPawn;
+        var localUnit = _sessionRef?.LocalUnit;
 
-        if (localPawn != null) {
+        if (localUnit != null) {
             Visible = true;
 
-            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(localPawn);
-            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(localPawn, _sessionRef);
-            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(localPawn);
+            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(localUnit);
+            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(localUnit, _sessionRef);
+            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(localUnit);
         }
         else {
             Visible = false;

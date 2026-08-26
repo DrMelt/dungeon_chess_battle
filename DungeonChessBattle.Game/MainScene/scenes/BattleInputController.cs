@@ -87,7 +87,7 @@ public partial class BattleInputController : Node {
         }
 
         var hit = RaycastUnitFromCamera();
-        var targetNetId = hit?.UnitShowRef.Pawn.Id ?? 0;
+        var targetNetId = hit?.UnitShowRef.Unit.UnitNetId ?? 0;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
         sessionRef.SetLocalFocusTarget(targetNetId);

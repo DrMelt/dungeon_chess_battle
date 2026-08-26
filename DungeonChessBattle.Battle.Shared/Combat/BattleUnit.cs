@@ -9,8 +9,9 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// 战斗单位领域实体：战斗世界自持的全部权威状态。
 /// 属性与技能装配期写入，战斗状态由 BattleScene 推进，移动输入由外部移动执行器消费。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端与回放共用。
+/// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffUiView"/> 供展示层读取。
 /// </summary>
-public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState {
+public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState, IUnitUiView {
     /// <inheritdoc />
     public required ushort UnitNetId {
         get; init;
@@ -181,4 +182,7 @@ public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState {
 
     /// <inheritdoc />
     public IReadOnlyList<ActiveBuff> Buffs => RuntimeState.Buffs;
+
+    /// <inheritdoc />
+    IReadOnlyList<IBuffUiView> IUnitUiView.Buffs => RuntimeState.Buffs;
 }

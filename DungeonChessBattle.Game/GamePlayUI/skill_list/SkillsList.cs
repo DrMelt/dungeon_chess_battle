@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.GamePlayUI.skill_list;
@@ -90,20 +88,20 @@ public partial class SkillsList : Control {
             new BattleSkillCaster(
                 () => session.BattleService,
                 () => session.RoomId,
-                () => session.LocalUnitPawn?.Id ?? 0),
+                () => session.LocalUnit?.UnitNetId ?? 0),
             clock: null);
     }
 
-    /// <summary>本地位施放判定：本地方单位状态 + 解析目标后统一走 SkillCastValidator。</summary>
+    /// <summary>本地位施放判定：本地方单位权威状态 + 解析目标后统一走 SkillCastValidator。</summary>
     private static bool CanCastLocal(BattleSessionContext session, SkillDefinition skill,
         ushort targetNetId, float posX, float posZ) {
-        var pawn = session.LocalUnitPawn;
-        if (pawn == null)
+        var caster = session.LocalCaster;
+        if (caster == null)
             return false;
         if (!session.TryGetCampRelations(out var relations))
             return false;
-        var target = targetNetId != 0 ? session.Units.FirstOrDefault(u => u.Id == targetNetId) : null;
-        return SkillCastValidator.CanCast(pawn, skill, target, new System.Numerics.Vector2(posX, posZ), relations);
+        var target = targetNetId != 0 ? session.FindCaster(targetNetId) : null;
+        return SkillCastValidator.CanCast(caster, skill, target, new System.Numerics.Vector2(posX, posZ), relations);
     }
 
     /// <summary>
@@ -114,12 +112,12 @@ public partial class SkillsList : Control {
         HandleWaitPosTargetInput();
         _preInput?.Refresh();
 
-        var showPawn = _sessionRef?.LocalUnitPawn;
-        ushort? shownId = showPawn?.Id;
+        var showUnit = _sessionRef?.LocalUnit;
+        ushort? shownId = showUnit?.UnitNetId;
         if (shownId == _shownUnitId)
             return;
         _shownUnitId = shownId;
-        UpdateSkillsList(showPawn);
+        UpdateSkillsList(showUnit);
     }
 
     /// <summary>处理等待位置目标时的确认/取消输入。</summary>
@@ -145,11 +143,11 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 按本地单位 Pawn 重建技能按钮列表，无显示单位时清空。
+    /// 按本地单位展示视图重建技能按钮列表，无显示单位时清空。
     /// 技能展示资源经 UnitCatalog 配置与 SkillResourceTable 装配，不依赖视图层。
     /// </summary>
-    /// <param name="pawn">本地单位的 Pawn，无则清空按钮。</param>
-    private void UpdateSkillsList(UnitPawn? pawn) {
+    /// <param name="unit">本地单位展示视图，无则清空按钮。</param>
+    private void UpdateSkillsList(IUnitUiView? unit) {
         CancelWait();
         _preInput?.Clear();
 
@@ -164,17 +162,17 @@ public partial class SkillsList : Control {
         _skillButtonList.Clear();
 
         var packedScene = InterRefs?.SkillButtonPackedScene;
-        if (pawn == null || packedScene == null)
+        if (unit == null || packedScene == null)
             return;
 
-        var config = UnitCatalog.GetByKey(pawn.UnitName.Value);
+        var config = UnitCatalog.GetByKey(unit.UnitName);
         if (config == null)
             return;
 
         foreach (var skillDefinition in config.Skills) {
             var skill = SkillResourceTable.LoadResource(skillDefinition);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
-            buttonSkill.Init(skill, pawn, this);
+            buttonSkill.Init(skill, unit, this);
             hBox.AddChild(buttonSkill);
             _skillButtonList.Add(buttonSkill);
         }
@@ -194,20 +192,20 @@ public partial class SkillsList : Control {
 
         // NeedUnitTarget：优先使用已锁定的本地焦点单位，目标阵营需满足技能目标策略
         if (skill.NeedUnitTarget) {
-            var focusPawn = session.LocalFocusPawn;
-            var selfPawn = session.LocalUnitPawn;
+            var focusUnit = session.LocalFocus;
+            var selfUnit = session.LocalUnit;
 
             // 焦点目标合法时直接施放到焦点目标
-            if (focusPawn != null
+            if (focusUnit != null
                 && session.TryGetCampRelations(out var relations)
-                && SkillTargetValidator.CanAffect(button.BindUnit, focusPawn, skill.TargetPolicy, relations)) {
-                SubmitCast(skill, focusPawn.Id, 0f, 0f, button);
+                && SkillTargetValidator.CanAffect(button.BindUnit, focusUnit, skill.TargetPolicy, relations)) {
+                SubmitCast(skill, focusUnit.UnitNetId, 0f, 0f, button);
                 return;
             }
 
             // 无焦点目标或焦点目标不合法：允许对友方释放的技能回退为对自身施放
-            if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfPawn != null) {
-                SubmitCast(skill, selfPawn.Id, 0f, 0f, button);
+            if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfUnit != null) {
+                SubmitCast(skill, selfUnit.UnitNetId, 0f, 0f, button);
                 return;
             }
 

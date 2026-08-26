@@ -1,7 +1,7 @@
 using System;
 using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Common;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -27,7 +27,7 @@ public partial class UnitTargetMarks : Node {
     private PackedScene? _targetMarkPackedScene;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
-    private readonly CacheSynchronizer<ushort, UnitPawn, Node3dTargetMark> _marks;
+    private readonly CacheSynchronizer<ushort, IUnitUiView, Node3dTargetMark> _marks;
 
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
@@ -58,7 +58,7 @@ public partial class UnitTargetMarks : Node {
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
-    private static ushort GetKey(UnitPawn pawn) => pawn.Id;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
 
     /// <summary>创建目标标记并挂载到本节点。</summary>
     private Node3dTargetMark CreateMark() {
@@ -78,26 +78,26 @@ public partial class UnitTargetMarks : Node {
     /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
     /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
-    private void UpdateMark(Node3dTargetMark mark, UnitPawn pawn) {
+    private void UpdateMark(Node3dTargetMark mark, IUnitUiView unit) {
         var session = _sessionRef;
-        var focusPawn = session?.LocalFocusPawn;
-        bool isFocus = pawn == focusPawn;
+        var focusUnit = session?.LocalFocus;
+        bool isFocus = unit == focusUnit;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
-                pawn.Id, isFocus, pawn.BodyRadius.Value);
+                unit.UnitNetId, isFocus, unit.BodyRadius);
 
         mark.Visible = isFocus;
-        mark.SetRadius(pawn.BodyRadius.Value);
-        var relation = session?.ResolveLocalCampRelation(pawn.CampTags) ?? CampRelation.Unknown;
+        mark.SetRadius(unit.BodyRadius);
+        var relation = session?.ResolveLocalCampRelation(unit.Camps) ?? CampRelation.Unknown;
         mark.SetColor(relation);
         if (relation == CampRelation.Unknown && !_unknownRelationLogged) {
             _unknownRelationLogged = true;
             _logger.LogWarning("[UnitTargetMarks] 阵营关系未知，目标标记着色置灰。");
         }
-        var pos = pawn.Position.InterpolatedValue;
+        var pos = unit.Position;
         mark.GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
-        var dir = pawn.Direction.InterpolatedValue;
+        var dir = unit.Direction;
         if (dir.LengthSquared() > 0.0001f) {
             mark.LookAt(mark.GlobalPosition + new Vector3(dir.X, 0f, dir.Y));
         }

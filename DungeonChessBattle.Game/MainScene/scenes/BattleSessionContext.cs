@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -40,22 +40,20 @@ public partial class BattleSessionContext : Node {
     /// <summary>战斗开始时刻（服务端权威 Unix 秒），未进战斗或实体未同步时为 null。</summary>
     public long? BattleStartUnixTime => _roomClient?.BattleStartUnixTime;
 
-    /// <summary>本地玩家控制的单位 Pawn，控制器未就绪时返回 null。</summary>
-    public UnitPawn? LocalUnitPawn => _roomClient?.LocalUnitPawn;
+    /// <summary>本地玩家单位的展示视图，控制器未就绪时返回 null。</summary>
+    public IUnitUiView? LocalUnit => _roomClient?.Mirror.LocalUnit;
 
-    /// <summary>场景全部单位 Pawn 快照，直接派生自客户端网络实体集合（UI 展示数据源）。</summary>
-    public IReadOnlyList<UnitPawn> Units => _roomClient?.GetPawns() ?? [];
+    /// <summary>场景全部单位展示视图集合，由本地状态镜像提供（UI 展示数据源）。</summary>
+    public IReadOnlyList<IUnitUiView> Units => _roomClient?.Mirror.Units ?? [];
 
-    /// <summary>本地玩家单位的聚焦目标 Pawn；焦点为 0 或实体未到达时返回 null。</summary>
-    public UnitPawn? LocalFocusPawn {
-        get {
-            var pawn = LocalUnitPawn;
-            if (pawn == null)
-                return null;
-            ushort targetNetId = pawn.FocusTargetNetId.Value;
-            return targetNetId != 0 ? _roomClient?.FindPawnById(targetNetId) : null;
-        }
-    }
+    /// <summary>本地玩家单位的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
+    public IUnitUiView? LocalFocus => _roomClient?.Mirror.LocalFocusUnit;
+
+    /// <summary>本地玩家单位的施法判定视图（权威位置），控制器未就绪时返回 null。</summary>
+    public ISkillCasterView? LocalCaster => _roomClient?.Mirror.LocalCaster;
+
+    /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
+    public ISkillCasterView? FindCaster(ushort netId) => _roomClient?.Mirror.FindCaster(netId);
 
     /// <summary>阵营关系函数，Bind 后按权威副本键装配并随房间实体同步收敛；null 表示未就绪。</summary>
     private CampRelationResolver? _relations;
@@ -93,19 +91,19 @@ public partial class BattleSessionContext : Node {
     /// </summary>
     /// <param name="targetNetId">目标单位网络 ID，0 表示清除。</param>
     public void SetLocalFocusTarget(ushort targetNetId) {
-        var pawn = _roomClient?.LocalUnitPawn;
-        if (pawn == null || _battleService == null) {
+        var localUnitNetId = _roomClient?.Mirror.LocalUnit?.UnitNetId ?? 0;
+        if (localUnitNetId == 0 || _battleService == null) {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning(
-                    "Focus RPC dropped: hasPawn={HasPawn}, hasService={HasService}, target={TargetId}",
-                    pawn != null, _battleService != null, targetNetId);
+                    "Focus RPC dropped: hasUnit={HasUnit}, hasService={HasService}, target={TargetId}",
+                    localUnitNetId != 0, _battleService != null, targetNetId);
             return;
         }
-        _battleService.SetFocusTarget(_roomId, pawn.Id, targetNetId);
+        _battleService.SetFocusTarget(_roomId, localUnitNetId, targetNetId);
         _cycleTargetId = targetNetId;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("SetLocalFocusTarget: selector={UnitId} -> target={TargetId}",
-                pawn.Id, targetNetId);
+                localUnitNetId, targetNetId);
     }
 
     /// <summary>
@@ -114,30 +112,32 @@ public partial class BattleSessionContext : Node {
     /// 仍不可用时从第一个敌方单位开始；没有存活敌方单位时不发起请求。
     /// </summary>
     public void CycleEnemyTarget() {
-        var pawn = _roomClient?.LocalUnitPawn;
-        if (pawn == null || _battleService == null) {
+        var localUnit = _roomClient?.Mirror.LocalUnit;
+        ushort localUnitNetId = localUnit?.UnitNetId ?? 0;
+        if (localUnit == null || _battleService == null) {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning(
-                    "CycleEnemyTarget dropped: hasPawn={HasPawn}, hasService={HasService}",
-                    pawn != null, _battleService != null);
+                    "CycleEnemyTarget dropped: hasUnit={HasUnit}, hasService={HasService}",
+                    localUnit != null, _battleService != null);
             return;
         }
 
-        var enemies = GetLivingEnemies(pawn);
+        var enemies = GetLivingEnemies(localUnit);
         if (enemies.Count == 0) {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("CycleEnemyTarget: no living enemy targets.");
             return;
         }
 
-        int index = enemies.FindIndex(e => e.Id == _cycleTargetId);
+        ushort focusId = _roomClient?.Mirror.FocusByNetId.GetValueOrDefault(localUnitNetId) ?? 0;
+        int index = enemies.FindIndex(e => e.UnitNetId == _cycleTargetId);
         if (index < 0)
-            index = enemies.FindIndex(e => e.Id == pawn.FocusTargetNetId.Value);
-        ushort next = enemies[(index + 1) % enemies.Count].Id;
+            index = enemies.FindIndex(e => e.UnitNetId == focusId);
+        ushort next = enemies[(index + 1) % enemies.Count].UnitNetId;
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("CycleEnemyTarget: cycle={CycleId}, focus={FocusId} -> next={NextId}",
-                _cycleTargetId, pawn.FocusTargetNetId.Value, next);
+                _cycleTargetId, focusId, next);
         SetLocalFocusTarget(next);
     }
 
@@ -175,10 +175,10 @@ public partial class BattleSessionContext : Node {
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
     public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps) {
         var relations = RelationsOrResolve();
-        var localPawn = _roomClient?.LocalUnitPawn;
-        if (relations == null || localPawn == null)
+        var localUnit = _roomClient?.Mirror.LocalUnit;
+        if (relations == null || localUnit == null)
             return CampRelation.Unknown;
-        return relations.Invoke(localPawn.CampTags, targetCamps);
+        return relations.Invoke(localUnit.Camps, targetCamps);
     }
 
     /// <summary>Running 阶段就绪校验：战斗已开始仍无阵营判定能力属时序故障，响亮报告。</summary>
@@ -197,16 +197,16 @@ public partial class BattleSessionContext : Node {
         AssertCampRelationsReady();
     }
 
-    /// <summary>收集与本地单位阵营敌对且存活（UnitState==0）的单位，按房间 Pawn 顺序排列。</summary>
-    private List<UnitPawn> GetLivingEnemies(UnitPawn self) {
-        List<UnitPawn> enemies = [];
-        var pawns = _roomClient?.GetPawns();
-        if (pawns == null)
+    /// <summary>收集与本地单位阵营敌对且存活（Health&gt;0）的单位，按镜像单位顺序排列。</summary>
+    private List<IUnitUiView> GetLivingEnemies(IUnitUiView self) {
+        List<IUnitUiView> enemies = [];
+        var units = _roomClient?.Mirror.Units;
+        if (units == null)
             return enemies;
-        foreach (var candidate in pawns) {
-            if (candidate.Id == self.Id || candidate.UnitState.Value == 1)
+        foreach (var candidate in units) {
+            if (candidate.UnitNetId == self.UnitNetId || candidate.Health <= 0f)
                 continue;
-            if (ResolveLocalCampRelation(candidate.CampTags) != CampRelation.Enemy)
+            if (ResolveLocalCampRelation(candidate.Camps) != CampRelation.Enemy)
                 continue;
             enemies.Add(candidate);
         }

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
@@ -97,35 +97,35 @@ public partial class UnitStateChangeInfo : Node {
         foreach (var battleEvent in events) {
             switch (battleEvent) {
                 case DamageOccurred dmg:
-                    if (FindPawn(dmg.TargetNetId) is { } dmgPawn)
+                    if (FindUnit(dmg.TargetNetId) is { } dmgPawn)
                         ShowDamagePopup(dmgPawn, dmg.AppliedDamage, dmg.DamageType);
                     break;
 
                 case HealOccurred heal:
-                    if (FindPawn(heal.TargetNetId) is { } healPawn)
+                    if (FindUnit(heal.TargetNetId) is { } healPawn)
                         ShowHealPopup(healPawn, heal.ActualHeal);
                     break;
 
                 case BuffApplied buff:
-                    if (FindPawn(buff.TargetNetId) is { } buffPawn)
+                    if (FindUnit(buff.TargetNetId) is { } buffPawn)
                         ShowBuffPopup(buffPawn, buff.BuffTypeId, added: true);
                     break;
 
                 case BuffExpired expired:
-                    if (FindPawn(expired.TargetNetId) is { } expPawn)
+                    if (FindUnit(expired.TargetNetId) is { } expPawn)
                         ShowBuffPopup(expPawn, expired.BuffTypeId, added: false);
                     break;
             }
         }
     }
 
-    /// <summary>按网络实体 ID 查找场景单位。</summary>
-    private UnitPawn? FindPawn(ushort netId) {
+    /// <summary>按网络实体 ID 查找场景单位展示视图。</summary>
+    private IUnitUiView? FindUnit(ushort netId) {
         var session = _sessionRef;
         if (session == null)
             return null;
         foreach (var unit in session.Units) {
-            if (unit.Id == netId)
+            if (unit.UnitNetId == netId)
                 return unit;
         }
         return null;
@@ -152,33 +152,33 @@ public partial class UnitStateChangeInfo : Node {
     /// <summary>
     /// 单位受击提示：在单位位置弹出受击伤害浮字。
     /// </summary>
-    private void ShowDamagePopup(UnitPawn pawn, float damage, DamageType damageType) {
+    private void ShowDamagePopup(IUnitUiView unit, float damage, DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         AddChild(tookDamageInfo);
         ApplyPopupScale(tookDamageInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
         tookDamageInfo.Init(damage, damageType, uiSettings);
-        PopupAtUnit(tookDamageInfo, pawn);
+        PopupAtUnit(tookDamageInfo, unit);
     }
 
     /// <summary>
     /// 单位治疗提示：在单位位置弹出治疗浮字。
     /// </summary>
-    private void ShowHealPopup(UnitPawn pawn, float heal) {
+    private void ShowHealPopup(IUnitUiView unit, float heal) {
         TookDamageInfo healInfo = NewTookDamageInfo;
         AddChild(healInfo);
         ApplyPopupScale(healInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
         healInfo.Init(heal, uiSettings.HealthInfoColor);
-        PopupAtUnit(healInfo, pawn);
+        PopupAtUnit(healInfo, unit);
     }
 
     /// <summary>
     /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 BuffTypeId 从资源表匹配。
     /// </summary>
-    private void ShowBuffPopup(UnitPawn pawn, ushort buffTypeId, bool added) {
+    private void ShowBuffPopup(IUnitUiView unit, ushort buffTypeId, bool added) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         AddChild(buffChangeInfo);
         ApplyPopupScale(buffChangeInfo);
@@ -186,12 +186,12 @@ public partial class UnitStateChangeInfo : Node {
         buffChangeInfo.Init(buffData, added
             ? BuffChangeInfo.Enum_BuffChangeType.Added
             : BuffChangeInfo.Enum_BuffChangeType.Removed);
-        PopupAtUnit(buffChangeInfo, pawn);
+        PopupAtUnit(buffChangeInfo, unit);
     }
 
     /// <summary>把提示节点定位到单位头顶。</summary>
-    private static void PopupAtUnit(Control info, UnitPawn pawn) {
-        var pos = pawn.Position.InterpolatedValue;
+    private static void PopupAtUnit(Control info, IUnitUiView unit) {
+        var pos = unit.Position;
         info.GlobalPosition = WorldToScreenPos(info, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }
 }

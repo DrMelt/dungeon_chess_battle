@@ -72,9 +72,9 @@ public partial class SkillInfoPanel : Control {
                 skillDescriptionLabel?.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
                 isShow = true;
             }
-            else if (control is TextureRectBuffIcon buffIcon) {
-                var buffRes = buffResourceTable?.GetResourceByBuffTypeId(buffIcon.BindingBuffData.BuffTypeId);
-                skillNameLabel?.Text = buffRes?.BuffName ?? $"Buff({buffIcon.BindingBuffData.BuffTypeId})";
+            else if (control is TextureRectBuffIcon { BindingBuffData: { } buffData }) {
+                var buffRes = buffResourceTable?.GetResourceByBuffTypeId(buffData.BuffTypeId);
+                skillNameLabel?.Text = buffRes?.BuffName ?? $"Buff({buffData.BuffTypeId})";
                 skillDescriptionLabel?.Text = buffRes?.BuffDescription ?? string.Empty;
                 isShow = true;
             }

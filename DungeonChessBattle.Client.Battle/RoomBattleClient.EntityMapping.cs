@@ -6,8 +6,8 @@ using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
-/// RoomBattleClient 的 LES 实体创建回调与本地 Pawn 查询工具。
-/// 展示层直读 UnitPawn 的 SyncVar，不再维护客户端模型中转。
+/// RoomBattleClient 的 LES 实体创建回调。
+/// 实体创建时同步落到本地状态镜像（RoomBattleStateMirror），展示层统一从镜像取数。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
@@ -47,6 +47,10 @@ public partial class RoomBattleClient {
         pawn.FocusTargetChanged += (u, target) =>
             UnitFocusTargetChanged?.Invoke(u.Id, target);
 
+        // 同步到本地状态镜像：单位创建时立即建骨架，其余状态由 UpdateAfterPollEvents 每帧刷新。
+        // 先落点再发事件，保证事件触发时刻镜像已可查询（UnitShowManager 延迟建视图依赖此顺序）。
+        _mirror.SyncFromPawn(pawn, EndTickToRemaining);
+
         // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;
         if (roomId != null)
@@ -74,24 +78,9 @@ public partial class RoomBattleClient {
             return;
 
         _localController = controller;
+        _mirror.SetLocalUnit(controller.ControlledEntity?.Id ?? 0);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Local UnitController bound: {PawnName}", pawnName);
     }
 
-    /// <summary>按网络实体 ID 查找本房间的 Pawn 实体。</summary>
-    public UnitPawn? FindPawnById(ushort netId) {
-        lock (_lock) {
-            return _roomPawns.Find(p => p.Id == netId);
-        }
-    }
-
-    /// <summary>获取本房间全部 Pawn 实体的只读视图。返回内部列表引用，实体变更统一在主线程网络更新阶段发生，调用方仅允许枚举。</summary>
-    public IReadOnlyList<UnitPawn> GetPawns() {
-        lock (_lock) {
-            return _roomPawns;
-        }
-    }
-
-    /// <summary>本地玩家控制的单位 Pawn，控制器未就绪时返回 null。</summary>
-    public UnitPawn? LocalUnitPawn => _localController?.ControlledEntity;
 }

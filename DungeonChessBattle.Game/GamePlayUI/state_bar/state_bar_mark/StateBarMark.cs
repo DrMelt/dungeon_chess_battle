@@ -1,6 +1,6 @@
 using System;
 using DungeonChessBattle.Game.Common;
-using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -24,7 +24,7 @@ public partial class StateBarMark : Control {
     private PackedScene? stateBarSimple2d_PKD;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
-    private readonly CacheSynchronizer<ushort, UnitPawn, StateBarMark2d> _marks;
+    private readonly CacheSynchronizer<ushort, IUnitUiView, StateBarMark2d> _marks;
 
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
@@ -52,7 +52,7 @@ public partial class StateBarMark : Control {
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
-    private static ushort GetKey(UnitPawn pawn) => pawn.Id;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
 
     /// <summary>创建状态标记并挂载到本节点。</summary>
     private StateBarMark2d CreateMark() {
@@ -66,7 +66,7 @@ public partial class StateBarMark : Control {
     private static void RemoveMark(StateBarMark2d mark) => mark.QueueFree();
 
     /// <summary>更新状态标记的位置与血条显示。</summary>
-    private void UpdateMark(StateBarMark2d mark, UnitPawn pawn) {
-        mark.UpdateUI_WithUnit(pawn, _sessionRef);
+    private void UpdateMark(StateBarMark2d mark, IUnitUiView unit) {
+        mark.UpdateUI_WithUnit(unit, _sessionRef);
     }
 }

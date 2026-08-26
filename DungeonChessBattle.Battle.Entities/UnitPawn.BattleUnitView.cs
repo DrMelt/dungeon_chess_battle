@@ -1,3 +1,4 @@
+using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 
@@ -33,10 +34,10 @@ public partial class UnitPawn : IBattleUnitView {
     };
 
     /// <inheritdoc />
-    float ICombatStatsView.Health => Health.Value;
+    float ICombatValuesView.Health => Health.Value;
 
     /// <inheritdoc />
-    SkillKeyId ICombatStatsView.SkillCasting => new(SkillCasting.Value);
+    SkillKeyId ICombatValuesView.SkillCasting => new(SkillCasting.Value);
 
     /// <inheritdoc />
     bool ISkillSource.HasSkill(SkillKeyId skillKey) {
@@ -62,6 +63,12 @@ public partial class UnitPawn : IBattleUnitView {
     /// <inheritdoc />
     float ISkillSource.GetTotalCooldownRemaining(SkillKeyId skillKey)
         => GetTotalCooldownRemaining(skillKey);
+
+    /// <inheritdoc />
+    Vector2 IWorldPoseView.Position => Position.Value;
+
+    /// <inheritdoc />
+    float IWorldPoseView.BodyRadius => BodyRadius.Value;
 
     /// <inheritdoc />
     IReadOnlyList<HateSnapshot> IHateActorView.Hates {

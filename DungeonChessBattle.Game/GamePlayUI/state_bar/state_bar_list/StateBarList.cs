@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Common;
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.MainScene;
 using Godot;
 
@@ -26,10 +26,10 @@ public partial class StateBarList : Control {
     private BattleSessionContext? _sessionRef;
 
     /// <summary>可点击状态条缓存，键为单位网络实体 ID，仅在单位增删时建/删条。</summary>
-    private readonly CacheSynchronizer<ushort, UnitPawn, ClickableStateBar> _bars;
+    private readonly CacheSynchronizer<ushort, IUnitUiView, ClickableStateBar> _bars;
 
     /// <summary>过滤后仅含本地阵营单位的源列表，Sync 每帧复用避免分配。</summary>
-    private readonly List<UnitPawn> _filteredUnits = [];
+    private readonly List<IUnitUiView> _filteredUnits = [];
 
     /// <summary>构造函数：注入键提取、创建、移除与更新回调。</summary>
     public StateBarList() {
@@ -44,7 +44,7 @@ public partial class StateBarList : Control {
     }
 
     /// <summary>提取单位网络实体 ID 作为条键。</summary>
-    private static ushort GetKey(UnitPawn pawn) => pawn.Id;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
 
     /// <summary>创建可点击状态条并挂载到列表容器。</summary>
     private ClickableStateBar CreateBar() {
@@ -61,7 +61,7 @@ public partial class StateBarList : Control {
     private static void RemoveBar(ClickableStateBar bar) => bar.QueueFree();
 
     /// <summary>更新可点击状态条绑定的单位。</summary>
-    private static void UpdateBar(ClickableStateBar bar, UnitPawn pawn) => bar.BindUnitState(pawn);
+    private static void UpdateBar(ClickableStateBar bar, IUnitUiView unit) => bar.BindUnitState(unit);
 
     /// <summary>
     /// 每帧直读单位集合，过滤本地阵营后同步状态条缓存，单位增删时自动建/删条。
@@ -72,10 +72,10 @@ public partial class StateBarList : Control {
         if (session == null || InterRefs == null)
             return;
 
-        var localCamps = session.LocalUnitPawn?.CampTags;
+        var localCamps = session.LocalUnit?.Camps;
         _filteredUnits.Clear();
         foreach (var unit in session.Units) {
-            if (CampConstants.HasAnyCamp(unit.CampTags, localCamps))
+            if (CampConstants.HasAnyCamp(unit.Camps, localCamps))
                 _filteredUnits.Add(unit);
         }
         _bars.Sync(_filteredUnits);

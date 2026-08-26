@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -28,8 +28,8 @@ public partial class ClickableStateBar : Control {
     /// <summary>鼠标是否悬停在该状态条上。</summary>
     private bool mouseOn = false;
 
-    /// <summary>当前绑定的单位 Pawn。</summary>
-    private UnitPawn? bindingPawn;
+    /// <summary>当前绑定的单位展示视图。</summary>
+    private IUnitUiView? bindingUnit;
 
     /// <summary>
     /// 节点就绪：获取引用集合，并监听鼠标悬停与左键点击事件。
@@ -57,32 +57,32 @@ public partial class ClickableStateBar : Control {
         if (@event is InputEventMouseButton mouseBtn
             && mouseBtn.ButtonIndex == MouseButton.Left
             && mouseBtn.Pressed
-            && bindingPawn != null) {
+            && bindingUnit != null) {
             if (SessionRef == null)
                 _logger.LogWarning("SessionRef is not assigned!");
             else
-                SessionRef.SetLocalFocusTarget(bindingPawn.Id);
+                SessionRef.SetLocalFocusTarget(bindingUnit.UnitNetId);
             AcceptEvent();
         }
     }
 
     /// <summary>
-    /// 绑定要展示的单位 Pawn。
+    /// 绑定要展示的单位视图。
     /// </summary>
-    /// <param name="pawn">目标单位 Pawn。</param>
-    public void BindUnitState(UnitPawn pawn) {
-        bindingPawn = pawn;
+    /// <param name="unit">目标单位展示视图。</param>
+    public void BindUnitState(IUnitUiView unit) {
+        bindingUnit = unit;
     }
 
     /// <summary>
-    /// 每帧刷新子组件的单位 Pawn 展示。
+    /// 每帧刷新子组件的单位展示。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        if (InterRefs == null || bindingPawn == null)
+        if (InterRefs == null || bindingUnit == null)
             return;
-        InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingPawn);
-        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingPawn, SessionRef);
-        InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingPawn);
+        InterRefs.ContainerBuffsRef?.UpdateUI_WithUnit(bindingUnit);
+        InterRefs.HpStateBarRef?.UpdateUI_WithUnit(bindingUnit, SessionRef);
+        InterRefs.SkillProgressBarRef?.UpdateUI_WithUnit(bindingUnit);
     }
 }

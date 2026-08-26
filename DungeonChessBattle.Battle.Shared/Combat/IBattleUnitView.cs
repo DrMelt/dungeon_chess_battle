@@ -20,20 +20,13 @@ public interface IUnitIdentityView {
     }
 }
 
-/// <summary>战斗数值与读条状态只读视图，结算与施法校验用。</summary>
-public interface ICombatStatsView {
+/// <summary>战斗数值与读条状态只读视图，结算用。</summary>
+/// <remarks>
+/// 标量状态（生命、读条）经 <see cref="ICombatValuesView"/> 收敛；本接口追加结算所需聚合快照。
+/// </remarks>
+public interface ICombatStatsView : ICombatValuesView {
     /// <summary>当前战斗结算快照，只读输入。</summary>
     UnitSnapshot Snapshot {
-        get;
-    }
-
-    /// <summary>当前生命值。</summary>
-    float Health {
-        get;
-    }
-
-    /// <summary>当前施法技能，default 表示无施法。</summary>
-    SkillKeyId SkillCasting {
         get;
     }
 }
@@ -75,9 +68,10 @@ public interface IHateActorView {
 
 /// <summary>
 /// 战斗单位只读视图：AI 决策、施法校验与仇恨规则的只读消费入口。
-/// 按角色拆分为 <see cref="IUnitIdentityView"/>、<see cref="ICombatStatsView"/>、
-/// <see cref="ISkillSource"/>、<see cref="IHateActorView"/>，各消费者按需依赖最小子集；
+/// 按角色聚合：<see cref="ISkillCasterView"/>（施法判定子集）、<see cref="ICombatStatsView"/>（结算快照）与
+/// <see cref="IHateActorView"/>（仇恨通道），各消费者按需依赖最小子集。
+/// 标量状态经公共面 <see cref="IUnitCombatView"/> 收敛，不做重复声明。
 /// 读写能力只保留在 <see cref="BattleUnit"/> 具体类，本接口不暴露任何写通道。
 /// </summary>
-public interface IBattleUnitView : IUnitIdentityView, ICombatStatsView, ISkillSource, IHateActorView {
+public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView {
 }

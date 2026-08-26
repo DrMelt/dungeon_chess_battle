@@ -32,14 +32,14 @@ public partial class StateBar2d_Selected : Control {
     public override void _Process(double delta) {
         if (InterRefs == null)
             return;
-        var focusPawn = _sessionRef?.LocalFocusPawn;
+        var focusUnit = _sessionRef?.LocalFocus;
 
-        if (focusPawn != null) {
+        if (focusUnit != null) {
             Visible = true;
 
-            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(focusPawn);
-            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(focusPawn, _sessionRef);
-            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(focusPawn);
+            InterRefs.HboxContainerBuffsRef?.UpdateUI_WithUnit(focusUnit);
+            InterRefs.PanelFocusStateRef?.UpdateUI_WithUnit(focusUnit, _sessionRef);
+            InterRefs.PanelSkillProgressBarRef?.UpdateUI_WithUnit(focusUnit);
         }
         else {
             Visible = false;

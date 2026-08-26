@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Client.Battle;
-using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
@@ -82,25 +82,25 @@ public partial class UnitShowManager : Node {
 
     /// <summary>延迟生成单位（CallDeferred 入口）。</summary>
     private void SpawnUnitFromCache(ushort netId) {
-        var pawn = _roomClient?.FindPawnById(netId);
-        if (pawn is not null)
-            TrySpawnUnit(pawn);
+        var unit = _roomClient?.Mirror.FindUnit(netId);
+        if (unit is not null)
+            TrySpawnUnit(unit);
         else
-            _logger.LogWarning("Unit netId={NetId} not found in pawn cache; entity may not have arrived yet", netId);
+            _logger.LogWarning("Unit netId={NetId} not found in local mirror; entity may not have arrived yet", netId);
     }
 
     /// <summary>
     /// 幂等生成单位视图：同名单位已存在时跳过。
     /// 事件驱动路径（OnServiceUnitCreated）与缓存兜底路径（InitializeUnitsFromPawns）共用。
     /// </summary>
-    private void TrySpawnUnit(UnitPawn pawn) {
-        if (_unitShows.ContainsKey(pawn.Id))
+    private void TrySpawnUnit(IUnitUiView unit) {
+        if (_unitShows.ContainsKey(unit.UnitNetId))
             return;
-        SpawnUnit(pawn);
+        SpawnUnit(unit);
     }
 
-    private void SpawnUnit(UnitPawn pawn) {
-        var unitName = pawn.UnitName.Value;
+    private void SpawnUnit(IUnitUiView unit) {
+        var unitName = unit.UnitName;
 
         // 按配置键取配置（技能资源构建来源）
         var config = UnitCatalog.GetByKey(unitName);
@@ -111,35 +111,33 @@ public partial class UnitShowManager : Node {
         if (unitShow == null)
             return;
 
-        // 注入网络同步 Pawn（setter 先于挂载，_Ready 校验不会误报）
-        unitShow.Pawn = pawn;
+        // 注入本地展示视图（setter 先于挂载，_Ready 校验不会误报）
+        unitShow.Unit = unit;
 
-        // 从配置构建 Godot 技能资源列表，并向 Pawn 本地写入技能定义列表（不参与网络同步，两端各自从共享配置读取）
+        // 从配置构建 Godot 技能资源列表（展示资源不参与网络同步，两端各自从共享配置读取）
         if (config != null) {
-            pawn.Skills = config.Skills;
-
             foreach (var skillDefinition in config.Skills) {
                 unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillDefinition));
             }
         }
 
         AddChild(unitShow);
-        _unitShows[pawn.Id] = unitShow;
+        _unitShows[unit.UnitNetId] = unitShow;
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, pawn.Position.Value);
+            _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, unit.Position);
     }
 
     private void InitializeUnitsFromPawns() {
         if (_roomClient == null)
             return;
 
-        var pawns = _roomClient.GetPawns();
+        var units = _roomClient.Mirror.Units;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Initializing units: total={Total}", pawns.Count);
+            _logger.LogInformation("Initializing units: total={Total}", units.Count);
 
-        foreach (var pawn in pawns)
-            TrySpawnUnit(pawn);
+        foreach (var unit in units)
+            TrySpawnUnit(unit);
     }
 
     private void ClearUnits() {

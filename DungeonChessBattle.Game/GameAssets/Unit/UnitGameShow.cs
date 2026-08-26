@@ -1,23 +1,23 @@
 using System;
 using Godot;
 using Godot.Collections;
-using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Combat;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
 /// 单位 3D 展示组件。
-/// 持有网络同步 UnitPawn（LES SyncVar，服务端权威），每帧直读位置/朝向驱动网格。
+/// 绑定本地展示视图（<see cref="IUnitUiView"/>），每帧直读位置/朝向驱动网格。
 /// 技能展示资源（UnitSkillBaseGodot）由 UnitShowManager 注入。
 /// </summary>
 public partial class UnitGameShow : Node3D {
-    /// <summary>网络同步单位 Pawn（运行时注入，由 UnitShowManager.SpawnUnit 赋值）。</summary>
-    private UnitPawn? _pawn;
+    /// <summary>本地展示视图（运行时注入，由 UnitShowManager.SpawnUnit 赋值）。</summary>
+    private IUnitUiView? _unit;
 
-    /// <summary>网络同步单位 Pawn。</summary>
-    public UnitPawn Pawn {
-        get => _pawn ?? throw new InvalidOperationException("Pawn has not been assigned.");
-        set => _pawn = value;
+    /// <summary>本地展示视图。</summary>
+    public IUnitUiView Unit {
+        get => _unit ?? throw new InvalidOperationException("Unit has not been assigned.");
+        set => _unit = value;
     }
 
     /// <summary>单位技能展示列表（Godot Resource，由 UnitShowManager 注入）。</summary>
@@ -42,11 +42,11 @@ public partial class UnitGameShow : Node3D {
 
     /// <summary>
     /// 获取当前正在施放的单位技能，用于施法进度展示。
-    /// 按 Pawn.SkillCasting（技能配置键）匹配 SkillsList。
+    /// 按单位 SkillCasting（技能配置键）匹配 SkillsList。
     /// </summary>
     /// <returns>匹配的 Godot 技能资源；无施法返回 null。</returns>
     public UnitSkillBaseGodot? GetSpellingSkill() {
-        var castingId = Pawn.SkillCasting.Value;
+        string castingId = Unit.SkillCasting.Id;
         if (string.IsNullOrEmpty(castingId))
             return null;
         foreach (var skill in SkillsList) {
@@ -57,14 +57,14 @@ public partial class UnitGameShow : Node3D {
     }
 
     /// <summary>
-    /// 每帧从 Pawn 直读网络位置与朝向（XZ 平面 SyncVar）。
+    /// 每帧从本地展示视图直读位置与朝向（XZ 平面）。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     override public void _Process(double delta) {
-        var pos = Pawn.Position.InterpolatedValue;
+        var pos = Unit.Position;
         GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
-        var dir = Pawn.Direction.InterpolatedValue;
+        var dir = Unit.Direction;
         if (dir.LengthSquared() > 0.0001f) {
             LookAt(GlobalPosition + new Vector3(dir.X, 0f, dir.Y));
         }

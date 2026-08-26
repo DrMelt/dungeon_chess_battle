@@ -23,6 +23,15 @@ namespace DungeonChessBattle.Client.Battle;
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
     private ClientEntityManager? _entityManager;
 
+    private readonly RoomBattleStateMirror _mirror = new();
+
+    /// <summary>客户端战斗状态镜像：UI 统一展示数据源。在线把 UnitPawn 状态落成本地 IUnitUiView。</summary>
+    public RoomBattleStateMirror Mirror => _mirror;
+
+    /// <summary>把服务器截止 tick 换算为剩余秒数；实体管理器未就绪时返回 0。</summary>
+    private float EndTickToRemaining(ushort tick) =>
+        _entityManager is { } em ? SyncTickHelper.RemainingSeconds(em, tick) : 0f;
+
     private BattleRoomEntity? _roomEntity;
     private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
@@ -112,6 +121,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _movementScene = null;
         _pendingScenePawns.Clear();
         _registeredActorIds.Clear();
+        _mirror.Clear();
         _eventLog.Clear();
         _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
@@ -140,6 +150,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         GetOrCreateMovementScene();
         _entityManager?.Update();
 
+        // 镜像单位状态：实体更新后把 UnitPawn SyncVar 落成本地 IUnitUiView，供 UI 统一读取
+        foreach (var pawn in _roomPawns)
+            _mirror.SyncFromPawn(pawn, EndTickToRemaining);
+
         // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;
         if (_secondAccumulator >= 1f) {
@@ -156,6 +170,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
         if (_roomEntity is { } room) {
             var phase = (BattlePhase)room.BattlePhase.Value;
+            _mirror.SetPhase(phase);
             if (phase != _lastKnownPhase) {
                 _lastKnownPhase = phase;
                 var roomId = _currentRoomId;
