@@ -10,7 +10,7 @@ namespace DungeonChessBattle.MainScene;
 
 /// <summary>
 /// 单位展示管理器：单位视图（UnitGameShow）的全生命周期所有者。
-/// 面向 IBattleViewSource 每帧对齐驱动，在线经 RoomBattleStateMirror、回放经 ReplayEngine。
+/// 面向 IBattleViewSource 每帧对齐驱动，在线经在线战斗世界、回放经 ReplayEngine。
 /// 单位数据查询与玩家操作归 BattleSessionContext。
 /// 由 MainScene / 回放控制器在进入/退出战斗时 Bind/Unbind。
 /// </summary>
@@ -22,7 +22,7 @@ public partial class UnitShowManager : Node {
     [Export]
     private PackedScene? _unitShowScene;
 
-    /// <summary>当前展示数据源（Bind 时注入），在线为 RoomBattleStateMirror、回放为 ReplayEngine。</summary>
+    /// <summary>当前展示数据源（Bind 时注入），在线为在线战斗世界、回放为 ReplayEngine。</summary>
     private IBattleViewSource? _source;
 
     /// <summary>单位网络实体 ID → UnitGameShow 映射。</summary>

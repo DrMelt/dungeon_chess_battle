@@ -23,7 +23,7 @@ public partial class UnitStateChangeInfo : Node {
     [Export]
     private float _popupScale = 1f;
 
-    /// <summary>当前展示数据源（在线为状态镜像、回放为回放引擎），用于单位取数。</summary>
+    /// <summary>当前展示数据源（在线为领域战斗世界、回放为回放引擎），用于单位取数。</summary>
     private IBattleViewSource? _viewSource;
 
     /// <summary>浮字容器：承载全部表现浮字，浮字淡出后自行销毁，容器随本节点释放。</summary>

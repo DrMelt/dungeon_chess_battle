@@ -41,7 +41,7 @@ public sealed class TargetCycleSelector {
         return next;
     }
 
-    /// <summary>收集与本地玩家阵营敌对且存活（Health&gt;0）的单位，按镜像单位顺序排列。</summary>
+    /// <summary>收集与本地玩家阵营敌对且存活（Health&gt;0）的单位，按单位展示列表顺序排列。</summary>
     private static List<IUnitUiView> CollectLivingEnemies(
         IReadOnlyList<IUnitUiView> units,
         ushort localNetId,

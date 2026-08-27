@@ -5,10 +5,13 @@ using LiteEntitySystem.Transport;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
+using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Movement;
+using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.GameConfig;
-using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Client.Battle.Diagnostics;
 
@@ -16,17 +19,13 @@ namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
-/// 实现 IClientBattleService，管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
-/// 客户端同时只连接一个房间，使用单实例字段替代多房间 Dictionary。
+/// 实现 IClientBattleService 与 IBattleViewSource，管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
+/// 在线端构建 BattleScene（领域单位 BattleUnit 直接实现展示契约），每帧把 UnitPawn SyncVar 回填到领域，
+/// 客户端不做领域推导与移动预测；作为 IBattleViewSource 供 UI 取数。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
-public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService {
+public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService, IBattleViewSource {
     private ClientEntityManager? _entityManager;
-
-    private readonly RoomBattleStateMirror _mirror = new();
-
-    /// <summary>客户端战斗状态镜像：UI 统一展示数据源。在线把 UnitPawn 状态落成本地 IUnitUiView。</summary>
-    public RoomBattleStateMirror Mirror => _mirror;
 
     /// <summary>把服务器截止 tick 换算为剩余秒数；实体管理器未就绪时返回 0。</summary>
     private float EndTickToRemaining(ushort tick) =>
@@ -73,55 +72,27 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private int _packetsOutPerSecond;
     private long _bytesOutPerSecond;
     private CountingNetPeer? _countingPeer;
-    /// <summary>客户端权威移动物理场景，按房间副本键构建，与服务端同源；断开/重连时置空重建。</summary>
-    private PhysicsMovementScene? _movementScene;
 
-    /// <summary>副本键同步前尚未注册进场景的 Pawn，场景创建时统一补注册。</summary>
-    private readonly List<UnitPawn> _pendingScenePawns = [];
+    /// <summary>在线端战斗世界：领域单位 BattleUnit 作为展示源，仅作容器与回填落点，不推进领域逻辑。</summary>
+    private BattleScene? _battleScene;
 
-    /// <summary>已注册进场景的单位网络 ID 集合，幂等防重注册。</summary>
-    private readonly HashSet<ushort> _registeredActorIds = [];
+    /// <summary>网络实体 ID 到领域单位映射，定位回填目标。</summary>
+    private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
 
-    /// <summary>
-    /// 获取或创建客户端权威移动物理场景：仅在副本键同步后就绪时按布局构建并缓存，
-    /// 未同步时返回 null，由移动管线按自由移动回退，规避副本键迟到导致固化错误布局。
-    /// 构建时统一补注册等待中的 Pawn；房间断开/重连时置空重建。
-    /// </summary>
-    private PhysicsMovementScene? GetOrCreateMovementScene() {
-        if (_movementScene != null)
-            return _movementScene;
-        if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
-            return null;
+    /// <summary>单位网络 ID → 聚焦目标网络 ID，0 表示无聚焦目标。</summary>
+    private readonly Dictionary<ushort, ushort> _focusByNetId = [];
 
-        var scene = new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(room.DungeonKey.Value));
-        _movementScene = scene;
-        foreach (var pawn in _pendingScenePawns)
-            scene.AddActor(pawn.Id, () => pawn.BodyRadius.Value, () => pawn.Position.Value);
-        _pendingScenePawns.Clear();
-        return scene;
-    }
+    /// <summary>本地玩家单位网络 ID，控制器就绪后写入，0 表示未就绪。</summary>
+    private ushort _localNetId;
 
-    /// <summary>
-    /// 将 Pawn 注册进移动场景参与互斥：场景未就绪时挂入等待队列，
-    /// 由场景创建时的统一补注册接管。幂等，重复调用仅首次生效。
-    /// </summary>
-    private void TryRegisterPawn(UnitPawn pawn) {
-        if (!_registeredActorIds.Add(pawn.Id))
-            return;
-        if (GetOrCreateMovementScene() is { } scene)
-            scene.AddActor(pawn.Id, () => pawn.BodyRadius.Value, () => pawn.Position.Value);
-        else
-            _pendingScenePawns.Add(pawn);
-    }
-
-    /// <summary>清理房间会话本地状态：实体缓存、移动场景、阶段检测基准与传输统计。</summary>
+    /// <summary>清理房间会话本地状态：实体缓存、战斗世界、阶段检测基准与传输统计。</summary>
     private void ClearRoomSessionState() {
         _entityManager = null;
         _localController = null;
-        _movementScene = null;
-        _pendingScenePawns.Clear();
-        _registeredActorIds.Clear();
-        _mirror.Clear();
+        _battleScene = null;
+        _battleUnitByNetId.Clear();
+        _focusByNetId.Clear();
+        _localNetId = 0;
         _eventLog.Clear();
         _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
@@ -144,15 +115,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         ClearRoomSessionState();
     }
 
-    /// <summary>轮询网络事件后更新实体、结算每秒流量并检测战斗阶段变化。</summary>
+    /// <summary>轮询网络事件后更新实体、回填领域单位、结算每秒流量并检测战斗阶段变化。</summary>
     protected override void UpdateAfterPollEvents(float delta) {
-        // 副本键同步后构建移动场景并补注册等待单位；未同步时为空操作，随下一帧重试
-        GetOrCreateMovementScene();
+        // 副本键同步后构建战斗世界；未同步时为空操作，随下一帧重试
+        EnsureBattleScene();
         _entityManager?.Update();
 
-        // 镜像单位状态：实体更新后把 UnitPawn SyncVar 落成本地 IUnitUiView，供 UI 统一读取
-        foreach (var pawn in _roomPawns)
-            _mirror.SyncFromPawn(pawn, EndTickToRemaining);
+        // 实体更新后把 UnitPawn SyncVar 回填到领域单位 BattleUnit，供 UI 经 IBattleViewSource 只读取数
+        SyncBattleUnits();
 
         // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;
@@ -170,13 +140,121 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
         if (_roomEntity is { } room) {
             var phase = (BattlePhase)room.BattlePhase.Value;
-            _mirror.SetPhase(phase);
             if (phase != _lastKnownPhase) {
                 _lastKnownPhase = phase;
                 var roomId = _currentRoomId;
                 if (roomId != null)
                     BattlePhaseChanged?.Invoke(roomId, phase);
             }
+        }
+    }
+
+    /// <summary>
+    /// 副本键同步后就绪时构建在线战斗世界：领域单位 BattleUnit 作为展示源。
+    /// 副本键未同步返回并随下一帧重试；构建时补注册已到达的单位。
+    /// </summary>
+    private void EnsureBattleScene() {
+        if (_battleScene != null)
+            return;
+        if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
+            return;
+
+        var dungeonKey = room.DungeonKey.Value;
+        _battleScene = new BattleScene(
+            DungeonRegistry.Instance.GetRelations(dungeonKey),
+            new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(dungeonKey)));
+        foreach (var unit in _battleUnitByNetId.Values)
+            _battleScene.AddUnit(unit);
+    }
+
+    /// <summary>Pawn 创建时构建领域单位并注册；战斗世界未就绪时先存映射，构建时统一补注册。</summary>
+    private void AddPawnUnit(UnitPawn pawn) {
+        if (_battleUnitByNetId.ContainsKey(pawn.Id))
+            return;
+
+        var unit = new BattleUnit {
+            UnitNetId = pawn.Id,
+            UnitName = pawn.UnitName.Value,
+            Camps = pawn.CampTags,
+            Skills = pawn.Skills,
+        };
+        _battleUnitByNetId[pawn.Id] = unit;
+        _battleScene?.AddUnit(unit);
+    }
+
+    /// <summary>逐 UnitPawn 回填对应领域单位：展示状态以服务端 SyncVar 为准。</summary>
+    private void SyncBattleUnits() {
+        foreach (var pawn in _roomPawns)
+            SyncUnit(pawn);
+    }
+
+    /// <summary>把单个 UnitPawn 的状态回填到领域 BattleUnit；缺失单位说明尚未创建，跳过。</summary>
+    private void SyncUnit(UnitPawn pawn) {
+        if (!_battleUnitByNetId.TryGetValue(pawn.Id, out var unit))
+            return;
+
+        unit.Position = pawn.Position.Value;
+        unit.Direction = pawn.Direction.Value;
+        unit.Health = pawn.Health.Value;
+        unit.MaxHealth = pawn.MaxHealth.Value;
+        unit.BodyRadius = pawn.BodyRadius.Value;
+        string casting = pawn.SkillCasting.Value;
+        unit.SkillCasting = string.IsNullOrEmpty(casting) ? default : new SkillKeyId(casting);
+        unit.SkillCastRemaining = pawn.SkillCastRemaining.Value;
+        unit.GcdRemaining = EndTickToRemaining(pawn.GcdEndServerTick.Value);
+        SyncBuffs(unit, pawn);
+        SyncCooldowns(unit, pawn.SkillCooldowns.Value);
+        _focusByNetId[pawn.Id] = pawn.FocusTargetNetId.Value;
+    }
+
+    /// <summary>回填 Buff 展示：从网络数据重建运行时 Buff 壳，在线端不推进效果，仅承载展示字段。</summary>
+    private void SyncBuffs(BattleUnit unit, UnitPawn pawn) {
+        var list = unit.RuntimeState.Buffs;
+        list.Clear();
+        foreach (var b in pawn.BuffsList) {
+            var instance = new BuffInstance {
+                BuffTypeId = b.BuffTypeId,
+                TargetNetId = unit.UnitNetId,
+                FromNetId = b.SourceUnitNetId,
+                MaxStacks = Math.Max(1, (int)b.MaxStackCount),
+                Remaining = EndTickToRemaining(b.EndServerTick),
+                Stacks = b.StackCount,
+                DamageType = (DamageType)b.DamageType,
+            };
+            list.Add(new ActiveBuff(instance, NetworkBuffDefinition.Instance, NoOpBuffEffect.Instance));
+        }
+    }
+
+    /// <summary>回填技能冷却展示：从网络整包还原个体冷却条目。</summary>
+    private void SyncCooldowns(BattleUnit unit, SyncSkillCooldownSnapshot? snapshot) {
+        var list = unit.RuntimeState.Cooldowns;
+        list.Clear();
+        if (snapshot == null)
+            return;
+        foreach (var entry in snapshot.Entries)
+            list.Add(new CooldownEntry(new SkillKeyId(entry.SkillId), EndTickToRemaining(entry.EndServerTick)));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<IUnitUiView> Units => _battleScene?.BattleUnits ?? [];
+
+    /// <inheritdoc />
+    public IUnitUiView? FindUnit(ushort netId) => _battleScene?.FindUnit(netId) as IUnitUiView;
+
+    /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
+    public ISkillCasterView? FindCaster(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId) as ISkillCasterView;
+
+    /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
+    public IUnitUiView? LocalUnit => FindUnit(_localNetId);
+
+    /// <summary>本地玩家单位施法判定视图（权威位置），控制器未就绪返回 null。</summary>
+    public ISkillCasterView? LocalCaster => FindCaster(_localNetId);
+
+    /// <summary>本地玩家聚焦目标单位展示视图，焦点为 0 或无目标返回 null。</summary>
+    public IUnitUiView? LocalFocus {
+        get {
+            ushort target = _focusByNetId.GetValueOrDefault(_localNetId);
+            return target == 0 ? null : FindUnit(target);
         }
     }
 

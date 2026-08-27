@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.MainScene.scenes;
 
 /// <summary>
-/// 战斗会话只读投影：把当前房间的权威实体与镜像状态投影为 UI 可消费的只读视图。
+/// 战斗会话只读投影：把当前房间的权威实体与领域状态投影为 UI 可消费的只读视图。
 /// 实现 <see cref="IBattleViewSource"/> 统一在线投影口径，另提供本地/聚焦/施法语义视图、
 /// 事件日志流读取与阵营关系判定能力。
 /// 不承载玩家命令（写侧归 <see cref="IBattleSessionCommand"/>）与交互循环状态。
@@ -40,22 +40,22 @@ public sealed class BattleSessionState : IBattleViewSource {
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<IUnitUiView> Units => _client?.Mirror.Units ?? [];
+    public IReadOnlyList<IUnitUiView> Units => _client?.Units ?? [];
 
     /// <inheritdoc />
-    public IUnitUiView? FindUnit(ushort netId) => _client?.Mirror.FindUnit(netId);
+    public IUnitUiView? FindUnit(ushort netId) => _client?.FindUnit(netId);
 
-    /// <summary>本地玩家单位的展示视图，控制器未就绪时返回 null。</summary>
-    public IUnitUiView? LocalUnit => _client?.Mirror.LocalUnit;
+    /// <summary>本地玩家的展示视图，控制器未就绪时返回 null。</summary>
+    public IUnitUiView? LocalUnit => _client?.LocalUnit;
 
-    /// <summary>本地玩家单位的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
-    public IUnitUiView? LocalFocus => _client?.Mirror.LocalFocusUnit;
+    /// <summary>本地玩家的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
+    public IUnitUiView? LocalFocus => _client?.LocalFocus;
 
-    /// <summary>本地玩家单位的施法判定视图（权威位置），控制器未就绪时返回 null。</summary>
-    public ISkillCasterView? LocalCaster => _client?.Mirror.LocalCaster;
+    /// <summary>本地玩家的施法判定视图（权威位置），控制器未就绪时返回 null。</summary>
+    public ISkillCasterView? LocalCaster => _client?.LocalCaster;
 
     /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _client?.Mirror.FindCaster(netId);
+    public ISkillCasterView? FindCaster(ushort netId) => _client?.FindCaster(netId);
 
     /// <summary>当前房间副本键，来自服务端权威 BattleRoomEntity 同步；实体未同步时为 null。</summary>
     public string? DungeonKey => _client?.DungeonKey;
@@ -82,7 +82,7 @@ public sealed class BattleSessionState : IBattleViewSource {
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
     public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps) {
         var relations = RelationsOrResolve();
-        var localUnit = _client?.Mirror.LocalUnit;
+        var localUnit = _client?.LocalUnit;
         if (relations == null || localUnit == null)
             return CampRelation.Unknown;
         return relations.Invoke(localUnit.Camps, targetCamps);

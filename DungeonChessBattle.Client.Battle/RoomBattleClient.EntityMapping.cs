@@ -1,5 +1,4 @@
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 
@@ -7,7 +6,7 @@ namespace DungeonChessBattle.Client.Battle;
 
 /// <summary>
 /// RoomBattleClient 的 LES 实体创建回调。
-/// 实体创建时同步落到本地状态镜像（RoomBattleStateMirror），展示层统一从镜像取数。
+/// 实体创建时构建领域 BattleUnit，展示层经 IBattleViewSource 取数。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
@@ -27,13 +26,6 @@ public partial class RoomBattleClient {
 
     /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
-        // 注入移动管线，Logic 层 MovementResolver，含场景交互，并注册单位互斥。
-        // 与服务端注入同一实现；场景在副本键同步后就绪，就绪前按自由移动回退；
-        // 半径与位置延迟读取，规避实体构造时同步未完成的时序。
-        pawn.MoveResolver = (pos, dir, speed, dt) =>
-            MovementResolver.Move(pos, dir, speed, dt, pawn.BodyRadius.Value, GetOrCreateMovementScene(), pawn.Id);
-        TryRegisterPawn(pawn);
-
         var unitName = pawn.UnitName.Value;
         lock (_lock) {
             _roomPawns.Add(pawn);
@@ -47,9 +39,9 @@ public partial class RoomBattleClient {
         pawn.FocusTargetChanged += (u, target) =>
             UnitFocusTargetChanged?.Invoke(u.Id, target);
 
-        // 同步到本地状态镜像：单位创建时立即建骨架，其余状态由 UpdateAfterPollEvents 每帧刷新。
-        // 先落点再发事件，保证事件触发时刻镜像已可查询（UnitShowManager 延迟建视图依赖此顺序）。
-        _mirror.SyncFromPawn(pawn, EndTickToRemaining);
+        // 在线端不做本地移动预测：不注入 MoveResolver，位移以服务端 SyncVar 为准。
+        // 构建领域单位并注册；其余状态由 UpdateAfterPollEvents 每帧回填。
+        AddPawnUnit(pawn);
 
         // 触发 OnUnitCreated 事件，通知 UI 层
         var roomId = _currentRoomId;
@@ -78,7 +70,7 @@ public partial class RoomBattleClient {
             return;
 
         _localController = controller;
-        _mirror.SetLocalUnit(controller.ControlledEntity?.Id ?? 0);
+        _localNetId = controller.ControlledEntity?.Id ?? 0;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Local UnitController bound: {PawnName}", pawnName);
     }

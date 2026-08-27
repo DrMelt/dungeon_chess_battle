@@ -27,7 +27,7 @@ public partial class BattleSessionContext : Node {
     // 只读投影（委托 BattleSessionState）
     // =============================================================
 
-    /// <summary>场景全部单位展示视图集合，由本地状态镜像提供（UI 展示数据源）。</summary>
+    /// <summary>场景全部单位展示视图集合，由在线战斗世界提供（UI 展示数据源）。</summary>
     public IReadOnlyList<IUnitUiView> Units => _state.Units;
 
     /// <summary>按网络 ID 查询单位展示视图，不存在返回 null。</summary>

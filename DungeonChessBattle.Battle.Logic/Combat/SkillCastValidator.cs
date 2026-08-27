@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Battle.Logic.Combat;
 public static class SkillCastValidator {
     /// <summary>
     /// 判定单位能否发起指定技能的施法：归属、状态与目标/位置因素全部聚合。
-    /// 泛型约束收敛为施法判定子集 <see cref="ISkillCasterView"/>，服务端 BattleUnit、AI 视图与客户端预判（镜像权威角色）均可传入。
+    /// 泛型约束收敛为施法判定子集 <see cref="ISkillCasterView"/>，服务端 BattleUnit、AI 视图与客户端预判（领域回填角色）均可传入。
     /// </summary>
     /// <param name="caster">施法单位只读视图。</param>
     /// <param name="skill">目标技能定义。</param>

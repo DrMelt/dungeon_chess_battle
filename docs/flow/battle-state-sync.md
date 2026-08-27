@@ -27,35 +27,33 @@
 - `OnNetworkReceiveInternal` 分流：
   - `ReliableMessageFrame` 可靠消息帧 → `BattleEventCoder` 解码为领域事件 → 存 `BattleEventLogStore` 并触发 `BattleEventsReceived`；
   - 其余 `0xDC` 帧 → `ClientEntityManager.Deserialize`。
-- `EntityManager.Update()` 驱动 LES 实体同步、插值与预测回滚。
+- `EntityManager.Update()` 驱动 LES 实体同步与状态回放。
 
-## 客户端状态镜像
+## 客户端战斗世界（领域回填）
 
-客户端不经网络推导逻辑，把 `UnitPawn` SyncVar 映射为本地展示视图。核心类 `RoomBattleStateMirror`，其中 `MirrorUnit : IUnitUiView, ISkillCasterView`。
+客户端不经网络推导逻辑，在线端构建 `BattleScene`，把 `UnitPawn` SyncVar 回填为领域 `BattleUnit`（实现 `IUnitUiView`/`ISkillCasterView`），UI 统一从领域取数。
 
 ### 实体创建回调 `OnPawnEntityCreated`
 
-1. 注入客户端移动管线 `MovementResolver`（与服务端同实现，本地预测即时反馈）。
-2. 登记到 `_roomPawns`，订阅 `HealthChanged`/`UnitDied`/`FocusTargetChanged` 并转发为接口事件。
-3. **先** `SyncFromPawn` 让骨架就位，**再**触发 `OnUnitCreated` 事件，保证事件时刻镜像可查询。
+1. 登记到 `_roomPawns`，订阅 `HealthChanged`/`UnitDied`/`FocusTargetChanged` 并转发为接口事件。
+2. **先** `AddPawnUnit` 构建 `BattleUnit` 并注册，**再**触发 `OnUnitCreated` 事件，保证事件时刻领域单位已可查询。
+3. 不注入 `MoveResolver`，不做本地移动预测，位移以服务端 SyncVar 为准。
 
-### 每帧落地 `UpdateAfterPollEvents`
+### 每帧回填 `UpdateAfterPollEvents`
 
-副本键同步后就绪时构建客户端权威物理场景；`EntityManager.Update()` 后，对每个 Pawn 调 `_mirror.SyncFromPawn(pawn, EndTickToRemaining)`：
+副本键同步后就绪时 `EnsureBattleScene` 构建 `BattleScene`（本地 `PhysicsMovementScene`，仅结构同构）；`EntityManager.Update()` 后，对每个 Pawn 调 `SyncUnit(pawn)` 回填领域 `BattleUnit`：
 
-- 展示位置与朝向 `IUnitUiView.Position/Direction` ← SyncVar `InterpolatedValue`（渲染平滑）；
-- 权威位置 `ISkillCasterView.Position` ← SyncVar `Value`（供施法预判）；
-- 生命、最大生命、半径、施法技能、读条剩余、全局冷却 ← 逻辑值；
-- Buff / 冷却原地改建（复用 `MirrorBuff`/`MirrorCooldown`，收缩时 `RemoveRange`），剩余秒数经 `EndTickToRemaining` 换算；
+- 位置/朝向/生命/最大生命/半径/施法技能/读条剩余/全局冷却 ← SyncVar `Value`（服务端权威），不做插值；
+- Buff/冷却从网络数据重建运行时壳（`ActiveBuff`/`CooldownEntry`），剩余秒数经 `EndTickToRemaining` 换算；
 - 聚焦映射 `FocusByNetId` 每帧刷新。
 
 ### 截止 tick 换算
 
 `SyncTickHelper.RemainingSeconds` 用客户端插值 `ServerTick` 与截止 tick 做 `SequenceDiff`（处理 16 位回绕）推算剩余秒数；服务端用自身 `Tick`。倒计时同步统一为截止 tick，避免逐帧推送当前值。
 
-## 镜像 → UI
+## 领域单位 → UI
 
-`RoomBattleStateMirror.Units`（`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `BattleSessionContext.Units` 暴露；另提供 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 权威角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `BattleSessionContext.Units` 暴露；另提供 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 权威角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
 
 ## 契约分层
 

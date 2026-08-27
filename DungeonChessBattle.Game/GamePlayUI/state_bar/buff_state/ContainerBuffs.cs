@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
 /// Buff 图标容器，同步单位展示视图的 Buff 列表到图标视图。
-/// 数据源为 <see cref="IUnitUiView.Buffs"/>（在线来自本地镜像，回放来自 BattleUnit），复用 CacheSynchronizer：
+/// 数据源为 <see cref="IUnitUiView.Buffs"/>（在线来自领域 BattleUnit，回放来自 BattleUnit），复用 CacheSynchronizer：
 /// 键为 BuffTypeId，仅在列表增删时建/删图标，内容变化由 update 回调刷新对应图标，
 /// 剩余时间由图标每帧按本地 Buff 剩余时间刷新。
 /// </summary>

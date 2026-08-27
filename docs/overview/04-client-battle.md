@@ -11,21 +11,21 @@
 
 `UpdateAfterPollEvents` 每帧依次：
 
-1. 按房间副本键构建 `PhysicsMovementScene`（与服务端同源布局，用于客户端权威移动预测）；副本键未同步时返回 null，移动按自由移动回退。
-2. `EntityManager.Update()` 驱动 LES 实体同步与预测回滚。
-3. 逐 `UnitPawn` 调 `_mirror.SyncFromPawn(...)` 把 SyncVar 落成本地状态镜像 `RoomBattleStateMirror`（展示位置/朝向取 `InterpolatedValue`，另落权威 `Value` 供施法预判，其余逻辑值），供 UI 统一取数。
+1. 副本键同步后就绪时 `EnsureBattleScene` 构建在线 `BattleScene`（本地 `PhysicsMovementScene` 仅结构同构，不结算移动）；未同步时随下一帧重试。
+2. `EntityManager.Update()` 驱动 LES 实体同步与状态回放。
+3. 逐 `UnitPawn` 调 `SyncUnit(...)` 把 SyncVar 回填领域 `BattleUnit`（位置/朝向/状态取 SyncVar `Value` 服务端权威，不做插值；Buff/冷却重建运行时壳），供 UI 统一取数。
 4. 每秒流量统计结算。
-5. 轮询 `BattleRoomEntity` 阶段变化：写 `_mirror.SetPhase` 并触发 `BattlePhaseChanged`（LES 无公开 Changed 事件）。
+5. 轮询 `BattleRoomEntity` 阶段变化：触发 `BattlePhaseChanged`（LES 无公开 Changed 事件，无需镜像）。
 
 ## 同步结构
 
-单一真相源为 `BattleScene`（Battle.Logic）→ `BattleUnit` 领域实体，服务端与回放共用，不依赖网络载体。
+单一真相源为 `BattleScene`（Battle.Logic）→ `BattleUnit` 领域实体，服务端与在线/回放共用，不依赖网络载体。
 
-- **投影契约**：`IProjectableBattleState` 供投影器读取领域只读状态；`IBattleProjector` 把状态写往外部载体，服务端实现为 `SyncVarProjector`（写 LES SyncVar + 房间阶段），回放不注入（`null`）。
-- **展示契约**：`IUnitUiView` / `IBuffUiView`（Battle.Shared.Combat）是 UI 唯一取数口径，在线镜像 `MirrorUnit` 与回放 `BattleUnit` 都实现它。
-- **契约分层**：`IWorldPoseView`（权威位置）→ `ISkillCasterView`（施法判定子集）；`IUnitUiView`（展示位置）与 `ISkillCasterView` 共享公共面 `IUnitCombatView`（身份/数值/技能源），移动端不重复声明。客户端施法预判经镜像取 `ISkillCasterView` 权威位置，UI 取 `IUnitUiView` 展示位置，位置语义分离。
+- **投影契约**：`IProjectableBattleState` 供投影器读取领域只读状态；`IBattleProjector` 把状态写往外部载体，服务端实现为 `SyncVarProjector`（写 LES SyncVar + 房间阶段），回放不注入（`null`）。在线端反向把载体 SyncVar 回填领域（`RoomBattleClient`）。
+- **展示契约**：`IUnitUiView` / `IBuffUiView`（Battle.Shared.Combat）是 UI 唯一取数口径，在线与回放都以 `BattleUnit` 作为其实现。
+- **契约分层**：`IWorldPoseView`（权威位置）→ `ISkillCasterView`（施法判定子集）；`IUnitUiView`（展示位置）与 `ISkillCasterView` 共享公共面（身份/数值/技能源），位置语义一致（服务端权威）。客户端施法预判与 UI 取同源位置，不再分离插值/权威。
 
-在线链：`BattleScene.Tick` 末尾 `ProjectAll()` → `SyncVarProjector` 写 `UnitPawn` SyncVars → LES 下发 → `UpdateAfterPollEvents` 逐 Pawn `SyncFromPawn` → `RoomBattleStateMirror.Units` → `BattleSessionContext.Units` → UI。计数型字段直接写（LES diff），冷却/Buff/仇恨内容比对节流重建 SyncList，倒计时写 `EndServerTick`。
+在线链：`BattleScene.Tick` 末尾 `ProjectAll()` → `SyncVarProjector` 写 `UnitPawn` SyncVars → LES 下发 → 客户端 `SyncUnit` 回填 `BattleUnit` → `RoomBattleClient.Units` → `BattleSessionContext.Units` → UI。计数型字段直接写（LES diff），冷却/Buff/仇恨内容比对节流重建 SyncList，倒计时写 `EndServerTick`。
 
 回放链：`ReplayEngine` 构建 `BattleScene`（无投影器）每帧确定性重跑，直接读 `BattleUnit`（实现 `IUnitUiView`）供同一套展示契约消费，无需镜像。
 

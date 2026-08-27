@@ -3,7 +3,7 @@ using System.Numerics;
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
-/// Buff 展示只读视图：在线状态镜像与回放重放共用，仅暴露 UI 展示所需字段。
+/// Buff 展示只读视图：在线战斗世界与回放重放共用，仅暴露 UI 展示所需字段。
 /// </summary>
 public interface IBuffUiView {
     /// <summary>Buff 类型 ID。</summary>
@@ -38,13 +38,12 @@ public interface IBuffUiView {
 }
 
 /// <summary>
-/// 单位展示层统一只读视图：在线状态镜像与回放重放共用，UI 一律按本契约取数。
-/// 在公共面 <see cref="IUnitCombatView"/>（身份、数值、技能源）之上追加展示所需字段。
-/// 不与 <see cref="ISkillCasterView"/> 共用世界姿态：Position 定义为展示/渲染位置（在线为插值、回放为权威），
-/// 客户端施法预拦经镜像以 <see cref="ISkillCasterView"/> 角色取权威位置，二者语义分离。
+/// 单位展示层统一只读视图：在线战斗世界与回放重放共用，UI 一律按本契约取数。
+/// 在公共面（身份、数值、技能源）之上追加展示所需字段。
+/// 位置语义与 <see cref="ISkillCasterView"/> 一致：Position 即领域权威位置（在线为服务端同步，回放为本地结算）。
 /// </summary>
-public interface IUnitUiView : IUnitCombatView {
-    /// <summary>当前世界位置，XZ 平面，取展示/渲染位置。</summary>
+public interface IUnitUiView : IUnitIdentityView, ICombatValuesView, ISkillSource {
+    /// <summary>当前世界位置，XZ 平面，即领域权威位置。</summary>
     Vector2 Position {
         get;
     }

@@ -69,8 +69,8 @@ public partial class BattleCoordinator : Node {
         _battleService = roomClient;
 
         roomClient.BattlePhaseChanged += OnBattlePhase;
-        _unitManager?.Bind(roomClient.Mirror);
-        _stateChangeInfo?.Bind(roomClient.Mirror);
+        _unitManager?.Bind(roomClient);
+        _stateChangeInfo?.Bind(roomClient);
         _battleService.BattleEventsReceived += OnBattleEvents;
         _sessionContext?.Bind(roomClient, _roomId);
         _inputController?.Reset();

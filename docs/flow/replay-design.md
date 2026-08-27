@@ -8,7 +8,7 @@
 
 - 权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，服务端与回放共用，不依赖网络载体。
 - 回放 `ReplayEngine` 构建 `BattleScene` 时**不注入投影器与移动桥**，移动由引擎本地按 `BattleMovementResolver` + `PhysicsMovementScene` 结算（等价服务端 `UnitPawn.Update`）。
-- 领域层与展示契约一致：在线经"领域→`SyncVarProjector`→LES→`RoomBattleStateMirror`→UI"，回放"领域→`BattleUnit`→UI"，都收敛到 `IUnitUiView`/`IBuffUiView`，UI 不感知来源。仅在线多一层投影/反投影。
+- 领域层与展示契约一致：在线经"领域→`SyncVarProjector`→LES→载体→领域回填→`BattleUnit`→UI"，回放"领域→`BattleUnit`→UI"，都收敛到 `IUnitUiView`/`IBuffUiView`，UI 不感知来源。仅在线多一层投影/回填。
 
 ## 确定性契约
 
