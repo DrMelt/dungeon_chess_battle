@@ -13,4 +13,6 @@ public enum GameScreenState : byte {
     RoomPrep,
     /// <summary>战斗中（FrontUI 整体隐藏）。</summary>
     Battle,
+    /// <summary>回放中（FrontUI 与在线战斗 UI 均隐藏，回放控制条由回放场景自管）。</summary>
+    Replay,
 }

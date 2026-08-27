@@ -114,6 +114,12 @@ public sealed partial class GameClientService {
     /// </summary>
     public event Action<string, RoomSnapshot>? OnRoomSnapshotUpdated;
 
+    /// <summary>
+    /// 离开房间事件（主动断开战斗连接），主线程派发。参数：离开的房间 ID。
+    /// 战斗退出由 MainScene.ExitBattle 调用 LeaveRoom 触发，面板据此清理并返回来源界面。
+    /// </summary>
+    public event Action<string>? OnRoomLeft;
+
     /// <summary>成功加入房间事件，主线程派发。参数：房间 ID。</summary>
     public event Action<string>? OnRoomJoined;
 
@@ -262,6 +268,8 @@ public sealed partial class GameClientService {
     /// 战斗退出由 MainScene.ExitBattle 调用。
     /// </summary>
     public void LeaveRoom() {
+        // 离开前读取当前房间 id，ClearRoomSessionCache 会清空缓存
+        var roomId = _cachedRoomId;
         try {
             RoomClient.Disconnect();
         }
@@ -276,6 +284,9 @@ public sealed partial class GameClientService {
         SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
 
         _logger.LogInformation("已离开房间");
+
+        if (!string.IsNullOrEmpty(roomId))
+            OnRoomLeft?.Invoke(roomId!);
     }
 
     /// <summary>清空断线重连所需的本房间会话缓存。</summary>
@@ -353,6 +364,9 @@ public sealed partial class GameClientService {
         });
         // 房间快照及大厅中继事件：SignalR 后台回调转到主线程派发，显示层无需自行 CallDeferred
         LobbyClient.OnRoomSnapshotUpdated += (roomId, snapshot) => EnqueueMainThread(() => {
+            // 只转发当前房间的快照，旧房间在途/竞态快照在此丢弃，显示层无需自行比对房间
+            if (roomId != _cachedRoomId)
+                return;
             OnRoomSnapshotUpdated?.Invoke(roomId, snapshot);
         });
         LobbyClient.OnRoomJoined += (roomId) => EnqueueMainThread(() => OnRoomJoined?.Invoke(roomId));

@@ -13,9 +13,9 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
 /// 战斗事件日志面板：文字化显示当前房间会话的全部战斗事件。
-/// 从 IClientBattleService.GetEventLog 按会话版本与显示游标增量同步，版本变化（会话重置）游标归零重同步，
+/// 从 BattleSessionContext 事件日志投影按会话版本与显示游标增量同步，版本变化（会话重置）游标归零重同步，
 /// 打开面板自动回填历史；
-/// 绑定切换模式对齐 UnitStateChangeInfo，进出战斗自动订阅/退订，退出战斗隐藏。
+/// 绑定切换由会话 IsInBattle 变化驱动，进出战斗自动显示/隐藏，退出战斗隐藏。
 /// UI 节点树定义于 battle_event_log_panel.tscn，本脚本只承载业务逻辑。F4 切换显隐。
 /// </summary>
 public partial class BattleEventLogPanel : Control {
@@ -32,7 +32,7 @@ public partial class BattleEventLogPanel : Control {
     private static readonly Lazy<BuffResourceTable?> _buffTable = new(
         () => GD.Load<BuffResourceTable>("res://GameAssets/Buffs/res_buff_resource_table.tres"));
 
-    /// <summary>战斗会话上下文引用，提供战斗服务与单位名称映射。</summary>
+    /// <summary>战斗会话上下文引用，提供事件日志投影与单位名称映射。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
 
@@ -41,8 +41,8 @@ public partial class BattleEventLogPanel : Control {
         get; private set;
     }
 
-    /// <summary>当前已绑定战斗服务，进出战斗时切换。</summary>
-    private IClientBattleService? _boundService;
+    /// <summary>上一帧是否在战斗中，用于检测进出战斗切换。</summary>
+    private bool _wasInBattle;
 
     /// <summary>已同步到面板的事件条数游标。</summary>
     private int _shownCount;
@@ -69,15 +69,15 @@ public partial class BattleEventLogPanel : Control {
         if (session == null)
             return;
 
-        var service = session.BattleService;
-        if (service != _boundService) {
-            _boundService = service;
-            ResetDisplay(service?.GetEventLogVersion() ?? 0);
-            Visible = service != null;
+        bool inBattle = session.IsInBattle;
+        if (inBattle != _wasInBattle) {
+            _wasInBattle = inBattle;
+            ResetDisplay(session.EventLogVersion);
+            Visible = inBattle;
         }
 
-        if (service != null)
-            SyncNewEvents(service);
+        if (inBattle)
+            SyncNewEvents(session);
     }
 
     /// <summary>处理显隐切换快捷键。</summary>
@@ -94,12 +94,12 @@ public partial class BattleEventLogPanel : Control {
         _dirty = true;
     }
 
-    /// <summary>从服务日志仓库同步尚未显示的事件；仓库会话版本变化（清空）时游标归零重同步。</summary>
-    private void SyncNewEvents(IClientBattleService service) {
-        long version = service.GetEventLogVersion();
+    /// <summary>从会话投影同步尚未显示的事件；会话版本变化（清空）时游标归零重同步。</summary>
+    private void SyncNewEvents(BattleSessionContext session) {
+        long version = session.EventLogVersion;
         if (version != _seenVersion)
             ResetDisplay(version);
-        var entries = service.GetEventLog();
+        var entries = session.EventLog;
         for (; _shownCount < entries.Count; _shownCount++)
             AppendLine(entries[_shownCount]);
         RebuildLabel();

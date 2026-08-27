@@ -1,5 +1,6 @@
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.ReplayUI;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -30,6 +31,14 @@ public partial class MainScene : Node {
     [Export]
     private BattleCoordinator? _coordinator;
 
+    /// <summary>回放场景编排器引用，订阅回放启动/结束以仲裁屏幕态。</summary>
+    [Export]
+    private ReplayCoordinator? _replayCoordinator;
+
+    /// <summary>在线战斗 UI 根（GamePlayUI），供屏幕态机统一仲裁显隐。</summary>
+    [Export]
+    private Control? _onlineBattleUI;
+
     #endregion
 
     #region State
@@ -50,11 +59,15 @@ public partial class MainScene : Node {
         // 订阅战斗会话终结事件：重连失败或完全断开时退出战斗
         ServiceLocator.ClientService.OnBattleSessionLost += OnBattleSessionLost;
 
-        // 构造屏幕状态机（FrontUI 容器在战斗中整体隐藏）
-        _screenMachine = new ScreenStateMachine(_frontUI);
+        // 构造屏幕状态机（FrontUI 与在线战斗 UI 显隐统一仲裁）
+        _screenMachine = new ScreenStateMachine(_frontUI, _onlineBattleUI);
 
         // 战斗完成通知：Finished 阶段由 BattleCoordinator 转发，走应用级退出流程
         _coordinator?.OnBattleFinished = ExitBattle;
+
+        // 回放启动/结束仲裁：回放期间隐藏前厅与在线战斗 UI，结束恢复
+        _replayCoordinator?.ReplayStarted += OnReplayStarted;
+        _replayCoordinator?.ReplayFinished += OnReplayFinished;
 
         _logger.LogInformation("_Ready Initialized.");
     }
@@ -80,7 +93,7 @@ public partial class MainScene : Node {
         _coordinator?.EnterBattle(roomId);
 
         if (!wasInBattle) {
-            // 首次进入：隐藏整个前厅 UI（FrontUI + 全屏背景 Panel）
+            // 首次进入：隐藏整个前厅 UI 并显示在线战斗 UI（显隐统一由屏幕态机仲裁）
             _screenMachine?.EnterBattle();
         }
 
@@ -112,6 +125,16 @@ public partial class MainScene : Node {
         ExitBattle();
     }
 
+    /// <summary>回放启动：经由屏幕态机进入回放态，隐藏前厅与在线战斗 UI，回放 3D 世界复用共享环境与相机。</summary>
+    private void OnReplayStarted() {
+        _screenMachine?.EnterReplay();
+    }
+
+    /// <summary>回放结束：经由屏幕态机退出回放态，恢复前厅，回到进入前的屏幕。</summary>
+    private void OnReplayFinished() {
+        _screenMachine?.ExitReplay();
+    }
+
     // =============================================================
     // 帧循环：委托战斗编排器
     // =============================================================
@@ -130,5 +153,7 @@ public partial class MainScene : Node {
     public override void _ExitTree() {
         ServiceLocator.ClientService.OnBattleStarted -= OnBattleStarted;
         ServiceLocator.ClientService.OnBattleSessionLost -= OnBattleSessionLost;
+        _replayCoordinator?.ReplayStarted -= OnReplayStarted;
+        _replayCoordinator?.ReplayFinished -= OnReplayFinished;
     }
 }

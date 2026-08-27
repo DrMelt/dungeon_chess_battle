@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace DungeonChessBattle.ReplayUI;
@@ -23,6 +24,13 @@ public partial class ReplayHud : Control {
     [Export]
     private Label? _timeLabel;
 
+    /// <summary>倍速循环按钮。</summary>
+    [Export]
+    private Button? _speedButton;
+
+    /// <summary>可选播放倍速档位，循环切换。</summary>
+    private static readonly float[] Speeds = [1f, 2f, 4f];
+
     /// <summary>每帧刷新进度与时间文本；拖动中不覆盖滑条位置。</summary>
     public override void _Process(double delta) {
         var engine = _coordinator?.Engine;
@@ -39,11 +47,25 @@ public partial class ReplayHud : Control {
         }
 
         _playButton?.Text = _coordinator?.IsPaused == true ? "播放" : "暂停";
+        _speedButton?.Text = $"倍速 {(_coordinator?.PlaySpeed ?? 1f):0}x";
     }
 
     /// <summary>播放/暂停按钮回调（Godot 信号接线）。</summary>
     public void OnPlayPressed() {
         _coordinator?.TogglePause();
+    }
+
+    /// <summary>退出回放按钮回调（Godot 信号接线）。</summary>
+    public void OnExitPressed() {
+        _coordinator?.ExitReplay();
+    }
+
+    /// <summary>倍速按钮回调：在当前档位基础上循环切换。</summary>
+    public void OnSpeedPressed() {
+        if (_coordinator == null)
+            return;
+        int index = Array.IndexOf(Speeds, _coordinator.PlaySpeed);
+        _coordinator.PlaySpeed = Speeds[(index + 1) % Speeds.Length];
     }
 
     /// <summary>进度拖动回调（Godot 信号接线）。</summary>

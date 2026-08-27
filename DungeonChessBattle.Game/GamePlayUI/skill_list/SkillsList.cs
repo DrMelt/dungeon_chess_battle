@@ -85,10 +85,7 @@ public partial class SkillsList : Control {
         return new SkillPreInput(
             (skill, targetNetId, posX, posZ) =>
                 CanCastLocal(session, skill, targetNetId, posX, posZ),
-            new BattleSkillCaster(
-                () => session.BattleService,
-                () => session.RoomId,
-                () => session.LocalUnit?.UnitNetId ?? 0),
+            session.Command,
             clock: null);
     }
 

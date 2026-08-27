@@ -1,6 +1,7 @@
 using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI;
+using DungeonChessBattle.Game.MainScene.scenes;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Godot.Collections;
@@ -24,6 +25,9 @@ public partial class BattleInputController : Node {
     /// <summary>战斗会话上下文引用（左键聚焦目标 RPC）。</summary>
     [Export]
     private BattleSessionContext? sessionRef;
+
+    /// <summary>目标循环选择器，持有选敌游标，切换下一敌方目标用。</summary>
+    private readonly TargetCycleSelector _targetCycle = new();
 
     /// <summary>单位选择射线最大距离。</summary>
     private const float RaycastMaxDistance = 200f;
@@ -103,7 +107,29 @@ public partial class BattleInputController : Node {
         }
         if (playerInterfaceResRef?.IsWaitingSkillTarget == true)
             return;
-        sessionRef.CycleEnemyTarget();
+
+        var session = sessionRef;
+        var localUnit = session.LocalUnit;
+        if (localUnit == null) {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("SwitchToNextEnemy: no local unit.");
+            return;
+        }
+
+        ushort next = _targetCycle.NextTarget(
+            session.Units,
+            localUnit.UnitNetId,
+            session.LocalFocus?.UnitNetId ?? 0,
+            camps => session.ResolveLocalCampRelation(camps));
+        if (next == 0) {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("SwitchToNextEnemy: no living enemy targets.");
+            return;
+        }
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("SwitchToNextEnemy: -> target={TargetId}", next);
+        session.SetLocalFocusTarget(next);
     }
 
     /// <summary>
@@ -153,8 +179,9 @@ public partial class BattleInputController : Node {
         return origin + dir * t;
     }
 
-    /// <summary>退出战斗时清零输入缓冲。</summary>
+    /// <summary>退出战斗时清零输入缓冲并重置目标循环游标。</summary>
     public void Reset() {
         _moveDir = Vector2.Zero;
+        _targetCycle.Reset();
     }
 }

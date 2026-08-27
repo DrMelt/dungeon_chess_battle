@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Client.Battle;
 using DungeonChessBattle.Battle.Entities.SyncData;
-using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -13,26 +11,23 @@ using DamageType = DungeonChessBattle.Battle.Shared.Combat.DamageType;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 状态变化信息管理器，订阅战斗事件日志流并在对应位置弹出受击/治疗/Buff 增减提示。
-/// 瞬时表现数据源为服务端权威事件日志；HP/Buff 等状态展示以 SyncVar 为准，本组件不投影状态。
+/// 状态变化信息渲染器：把 <see cref="IBattleEvent"/> 流渲染为单位头顶的受击/治疗/Buff 增减浮字。
+/// 纯表现组件：单位取数经注入的 <see cref="IBattleViewSource"/>，事件由驱动方（在线/回放编排器）喂入。
+/// 在线与回放共用此唯一实例，UI 不感知事件来源。
 /// </summary>
 public partial class UnitStateChangeInfo : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitStateChangeInfo> _logger = ServiceLocator.GetLogger<UnitStateChangeInfo>();
 
-    /// <summary>战斗会话上下文引用，提供场景单位集合与服务。</summary>
-    [Export]
-    private BattleSessionContext? _sessionRef;
-
     /// <summary>状态变化提示的缩放系数。</summary>
     [Export]
     private float _popupScale = 1f;
 
-    /// <summary>当前已订阅事件流的战斗服务，进出战斗时切换。</summary>
-    private IClientBattleService? _boundService;
+    /// <summary>当前展示数据源（在线为状态镜像、回放为回放引擎），用于单位取数。</summary>
+    private IBattleViewSource? _viewSource;
 
-    /// <summary>当前房间 ID，用于事件过滤。</summary>
-    private string _roomId = "";
+    /// <summary>浮字容器：承载全部表现浮字，浮字淡出后自行销毁，容器随本节点释放。</summary>
+    private Node? _effects_root;
 
     /// <summary>导出引用集合节点。</summary>
     public UnitStateChangeInfoInterRefs? InterRefs {
@@ -52,48 +47,29 @@ public partial class UnitStateChangeInfo : Node {
         InterRefsOrThrow.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()
         ?? throw new InvalidOperationException("[StateChangeInfo] BuffChangeInfoPackedScene is not assigned or instantiation failed.");
 
-    /// <summary>
-    /// 节点就绪：获取引用集合节点。
-    /// </summary>
+    /// <summary>节点就绪：获取引用集合节点。</summary>
     public override void _Ready() {
         InterRefs = GetNode<UnitStateChangeInfoInterRefs>("UnitStateChangeInfoInterRefs");
-        if (InterRefs == null) {
+        if (InterRefs == null)
             _logger.LogError("StateChangeInfoInterRefs node not found.");
-        }
-        if (_sessionRef == null)
-            _logger.LogError("_sessionRef is not assigned!");
+        _effects_root = new Node { Name = "EffectsRoot" };
+        AddChild(_effects_root);
+    }
+
+    /// <summary>绑定展示数据源。</summary>
+    public void Bind(IBattleViewSource source) {
+        _viewSource = source;
+    }
+
+    /// <summary>解绑展示数据源。</summary>
+    public void Unbind() {
+        _viewSource = null;
     }
 
     /// <summary>
-    /// 每帧同步事件流订阅：进出战斗时切换绑定的战斗服务，避免跨战斗悬挂。
+    /// 消费一帧战斗事件：按事件类型在目标单位位置弹出现时表现提示。由驱动方（在线/回放编排器）喂入。
     /// </summary>
-    public override void _Process(double delta) {
-        var session = _sessionRef;
-        if (session == null)
-            return;
-
-        var service = session.BattleService;
-        if (service != _boundService) {
-            _boundService?.BattleEventsReceived -= OnBattleEventsReceived;
-            _boundService = service;
-            service?.BattleEventsReceived += OnBattleEventsReceived;
-        }
-        _roomId = session.RoomId;
-    }
-
-    /// <summary>节点退出场景树：兜底退订事件流，防止战斗中途场景被释放导致事件悬挂。</summary>
-    public override void _ExitTree() {
-        _boundService?.BattleEventsReceived -= OnBattleEventsReceived;
-        _boundService = null;
-    }
-
-    /// <summary>
-    /// 战斗事件日志订阅：按事件类型在对应单位位置弹出现时表现提示。
-    /// </summary>
-    private void OnBattleEventsReceived(string roomId, IReadOnlyList<IBattleEvent> events) {
-        if (roomId != _roomId)
-            return;
-
+    public void Consume(IReadOnlyList<IBattleEvent> events) {
         foreach (var battleEvent in events) {
             switch (battleEvent) {
                 case DamageOccurred dmg:
@@ -119,17 +95,8 @@ public partial class UnitStateChangeInfo : Node {
         }
     }
 
-    /// <summary>按网络实体 ID 查找场景单位展示视图。</summary>
-    private IUnitUiView? FindUnit(ushort netId) {
-        var session = _sessionRef;
-        if (session == null)
-            return null;
-        foreach (var unit in session.Units) {
-            if (unit.UnitNetId == netId)
-                return unit;
-        }
-        return null;
-    }
+    /// <summary>按网络实体 ID 查找展示单位，来源为注入的展示数据源。</summary>
+    private IUnitUiView? FindUnit(ushort netId) => _viewSource?.FindUnit(netId);
 
     /// <summary>
     /// 将世界坐标投影为屏幕坐标。
@@ -154,7 +121,7 @@ public partial class UnitStateChangeInfo : Node {
     /// </summary>
     private void ShowDamagePopup(IUnitUiView unit, float damage, DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
-        AddChild(tookDamageInfo);
+        _effects_root?.AddChild(tookDamageInfo);
         ApplyPopupScale(tookDamageInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
@@ -167,7 +134,7 @@ public partial class UnitStateChangeInfo : Node {
     /// </summary>
     private void ShowHealPopup(IUnitUiView unit, float heal) {
         TookDamageInfo healInfo = NewTookDamageInfo;
-        AddChild(healInfo);
+        _effects_root?.AddChild(healInfo);
         ApplyPopupScale(healInfo);
         var uiSettings = InterRefsOrThrow.PlayerUISettingsRes
             ?? throw new InvalidOperationException("[StateChangeInfo] PlayerUISettingsRes is not assigned in InterRefs.");
@@ -180,7 +147,7 @@ public partial class UnitStateChangeInfo : Node {
     /// </summary>
     private void ShowBuffPopup(IUnitUiView unit, ushort buffTypeId, bool added) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
-        AddChild(buffChangeInfo);
+        _effects_root?.AddChild(buffChangeInfo);
         ApplyPopupScale(buffChangeInfo);
         var buffData = new SyncBuffData { BuffTypeId = buffTypeId };
         buffChangeInfo.Init(buffData, added

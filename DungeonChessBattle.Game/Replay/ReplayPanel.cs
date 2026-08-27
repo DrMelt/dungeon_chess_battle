@@ -23,10 +23,6 @@ public partial class ReplayPanel : Control {
     [Export]
     private HttpRequest? _downloadRequest;
 
-    /// <summary>回放场景根节点（Node3D 后代），启动后显示。</summary>
-    [Export]
-    private Node3D? _replayScene;
-
     /// <summary>回放场景编排器。</summary>
     [Export]
     private ReplayCoordinator? _coordinator;
@@ -93,13 +89,13 @@ public partial class ReplayPanel : Control {
             _logger.LogWarning("回放下载请求失败：result={Result}, code={Code}", result, responseCode);
             return;
         }
-        if (_coordinator == null || _replayScene == null) {
-            _logger.LogError("回放场景未绑定，无法启动回放");
+        if (_coordinator == null) {
+            _logger.LogError("回放协调器未绑定，无法启动回放");
             return;
         }
+        // 回放启动与屏幕态切换由 ReplayCoordinator 信号（ReplayStarted）驱动主场景仲裁，
+        // 前厅整体显隐不再由面板自行处理。
         _coordinator.LoadReplay(body);
-        _replayScene.Visible = true;
-        Visible = false;
     }
 
     /// <summary>节点退出：退订事件。</summary>

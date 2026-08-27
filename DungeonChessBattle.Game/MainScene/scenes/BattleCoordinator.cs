@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.GamePlayUI;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -36,6 +39,10 @@ public partial class BattleCoordinator : Node {
     [Export]
     private DungeonEnv? _dungeonEnv;
 
+    /// <summary>状态变化信息渲染器引用（受击/治疗/Buff 浮字），喂入战斗事件。</summary>
+    [Export]
+    private UnitStateChangeInfo? _stateChangeInfo;
+
     /// <summary>当前战斗服务（EnterBattle 时注入，用于阶段订阅与输入提交）。</summary>
     private IClientBattleService? _battleService;
 
@@ -63,7 +70,9 @@ public partial class BattleCoordinator : Node {
 
         roomClient.BattlePhaseChanged += OnBattlePhase;
         _unitManager?.Bind(roomClient.Mirror);
-        _sessionContext?.Bind(roomClient, roomClient, _roomId);
+        _stateChangeInfo?.Bind(roomClient.Mirror);
+        _battleService.BattleEventsReceived += OnBattleEvents;
+        _sessionContext?.Bind(roomClient, _roomId);
         _inputController?.Reset();
 
         // 按房间选中副本应用环境主题（地面/天空/光照差异化）
@@ -80,7 +89,9 @@ public partial class BattleCoordinator : Node {
             return;
 
         _battleService?.BattlePhaseChanged -= OnBattlePhase;
+        _battleService?.BattleEventsReceived -= OnBattleEvents;
         _unitManager?.Unbind();
+        _stateChangeInfo?.Unbind();
         _sessionContext?.Unbind();
         _inputController?.Reset();
         _dungeonEnv?.ResetTheme();
@@ -101,6 +112,13 @@ public partial class BattleCoordinator : Node {
     /// <summary>节点退出场景树：兜底退出战斗（防止中途释放导致事件悬挂）。</summary>
     public override void _ExitTree() {
         ExitBattle();
+    }
+
+    /// <summary>战斗事件流订阅：转发给状态变化渲染器弹出现时浮字。</summary>
+    private void OnBattleEvents(string roomId, IReadOnlyList<IBattleEvent> events) {
+        if (roomId != _roomId)
+            return;
+        _stateChangeInfo?.Consume(events);
     }
 
     private void OnBattlePhase(string roomId, BattlePhase phase) {

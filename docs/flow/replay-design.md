@@ -22,7 +22,7 @@
 
 ## 预留改进
 
-- 事件反馈消费：`ReplayEngine.Step()` 已返回 `IBattleEvent` 流，但 Godot 侧尚未消费，回放缺受击/治疗/Buff 浮字等瞬时表现；应接入与在线共用的表现消费者。
+- 事件反馈消费：`ReplayEngine.Step()` 返回的 `IBattleEvent` 流已由 `Game` 侧复用在线 `UnitStateChangeInfo` 消费，弹出与在线共用的受击/治疗/Buff 浮字；倍速下逐帧消费的观感与在线插值平滑度仍待补。
 - 关键帧快照：`SeekTo` 反向跳现为 O(n) 从首帧快进；后续以周期 keyframe 快照就近重建，跳转与确定性校验都可从任意点起步。
 - 展示插值：回放逐 tick 直读权威位，低 tick 观感跳格；如需与在线渲染同平滑度，补渲染层插值。
 - 输入管线集中化：录制分散在 `BattleRoomServer.TryRecord*` 旁路，后续收敛为统一输入管线，录制作为透明观察者。

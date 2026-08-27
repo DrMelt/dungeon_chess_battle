@@ -39,6 +39,8 @@
 [ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
 [ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
 [ext_resource type="PackedScene" uid="uid://ck5ahdfwjheaw" path="res://Replay/replay_panel.tscn" id="42_replay"]
+[ext_resource type="Script" uid="uid://b8shyx6hpxkjm" path="res://Replay/ReplayCoordinator.cs" id="44_replaycoord"]
+[ext_resource type="PackedScene" uid="uid://baidpltv52ny4" path="res://Replay/replay_hud.tscn" id="45_replayhud"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
 
@@ -84,22 +86,31 @@ shader_parameter/outline_width = 0.002
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]
 bg_color = Color(0, 0, 0, 1)
 
-[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI", "_coordinator")]
+[node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI", "_coordinator", "_replayCoordinator", "_onlineBattleUI")]
 script = ExtResource("1_2n8vo")
 _frontUI = NodePath("FrontUI")
 _coordinator = NodePath("BattleInterface/BattleCoordinator")
+_replayCoordinator = NodePath("ReplayCoordinator")
+_onlineBattleUI = NodePath("BattleInterface/GamePlayUI")
 
 [node name="GameClientDriver" type="Node" parent="." unique_id=64894980]
 script = ExtResource("3_m78bw")
 
+[node name="ReplayCoordinator" type="Node" parent="." unique_id=1265385099 node_paths=PackedStringArray("_unitManager", "_hud", "_stateChangeInfo")]
+script = ExtResource("44_replaycoord")
+_unitManager = NodePath("../BattleInterface/UnitShowManager")
+_hud = NodePath("../BattleInterface/ReplayHud")
+_stateChangeInfo = NodePath("../BattleInterface/GamePlayEffects/UnitStateChange_Info")
+
 [node name="BattleInterface" type="Node" parent="." unique_id=1240739248]
 
-[node name="BattleCoordinator" type="Node" parent="BattleInterface" unique_id=1868664182 node_paths=PackedStringArray("_unitManager", "_sessionContext", "_inputController", "_dungeonEnv")]
+[node name="BattleCoordinator" type="Node" parent="BattleInterface" unique_id=1868664182 node_paths=PackedStringArray("_unitManager", "_sessionContext", "_inputController", "_dungeonEnv", "_stateChangeInfo")]
 script = ExtResource("39_coordinator")
 _unitManager = NodePath("../UnitShowManager")
 _sessionContext = NodePath("../BattleSessionContext")
 _inputController = NodePath("../BattleInputController")
 _dungeonEnv = NodePath("../Env/DungeonEnv")
+_stateChangeInfo = NodePath("../GamePlayEffects/UnitStateChange_Info")
 
 [node name="BattleSessionContext" type="Node" parent="BattleInterface" unique_id=1868664181]
 script = ExtResource("37_battleSession")
@@ -173,9 +184,8 @@ outLineMeshInstance = NodePath("MeshInstance3D_Outline")
 [node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="BattleInterface/GamePlayEffects/FocusOn_Outline" unique_id=317289446]
 material_override = SubResource("ShaderMaterial_3um0x")
 
-[node name="UnitStateChange_Info" type="Node" parent="BattleInterface/GamePlayEffects" unique_id=820233417 node_paths=PackedStringArray("_sessionRef")]
+[node name="UnitStateChange_Info" type="Node" parent="BattleInterface/GamePlayEffects" unique_id=820233417]
 script = ExtResource("7_6vwic")
-_sessionRef = NodePath("../../BattleSessionContext")
 _popupScale = 0.5
 
 [node name="UnitStateChangeInfoInterRefs" type="Node" parent="BattleInterface/GamePlayEffects/UnitStateChange_Info" unique_id=188019131]
@@ -184,7 +194,7 @@ PlayerUISettingsRes = ExtResource("9_i3pf0")
 TookDamageInfoPackedScene = ExtResource("10_2ac7b")
 BuffChangeInfoPackedScene = ExtResource("11_f6kqk")
 
-[node name="GamePlayUI" type="Control" parent="BattleInterface/GamePlayEffects" unique_id=955543473]
+[node name="GamePlayUI" type="Control" parent="BattleInterface" unique_id=955543473]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -194,15 +204,15 @@ grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("18_50oy0")
 
-[node name="StateBar_Units" type="Control" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=885250196 node_paths=PackedStringArray("_sessionRef")]
+[node name="StateBar_Units" type="Control" parent="BattleInterface/GamePlayUI" unique_id=885250196 node_paths=PackedStringArray("_sessionRef")]
 layout_mode = 1
 anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("22_cdc5x")
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 stateBarSimple2d_PKD = ExtResource("23_hfd03")
 
-[node name="DungeonTimeLabel" type="Label" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=2106499744 node_paths=PackedStringArray("_sessionRef")]
+[node name="DungeonTimeLabel" type="Label" parent="BattleInterface/GamePlayUI" unique_id=2106499744 node_paths=PackedStringArray("_sessionRef")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -214,14 +224,14 @@ grow_horizontal = 0
 text = "DungeonTimeLabel"
 vertical_alignment = 1
 script = ExtResource("20_bmhqt")
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 
-[node name="StateBar2d_Selected" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=716113945 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
+[node name="StateBar2d_Selected" parent="BattleInterface/GamePlayUI" unique_id=716113945 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
 layout_mode = 1
 mouse_filter = 2
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 
-[node name="StateBar2d_LocalPlayer" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=1122334455 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
+[node name="StateBar2d_LocalPlayer" parent="BattleInterface/GamePlayUI" unique_id=1122334455 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -236,27 +246,27 @@ grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("40_localplayer")
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 
-[node name="HP_StateBar" parent="BattleInterface/GamePlayEffects/GamePlayUI/StateBar2d_LocalPlayer" index="1" unique_id=1600851250]
+[node name="HP_StateBar" parent="BattleInterface/GamePlayUI/StateBar2d_LocalPlayer" index="1" unique_id=1600851250]
 offset_left = 79.0
 offset_top = 1.0
 offset_right = 479.0
 offset_bottom = 33.0
 
-[node name="Panel_Skill_ProgressBar" parent="BattleInterface/GamePlayEffects/GamePlayUI/StateBar2d_LocalPlayer" index="2" unique_id=1753394107]
+[node name="Panel_Skill_ProgressBar" parent="BattleInterface/GamePlayUI/StateBar2d_LocalPlayer" index="2" unique_id=1753394107]
 offset_left = -195.0
 offset_top = -201.0
 offset_right = -45.0
 offset_bottom = -169.0
 
-[node name="HBoxContainer_Buffs" parent="BattleInterface/GamePlayEffects/GamePlayUI/StateBar2d_LocalPlayer" index="3" unique_id=1095143621]
+[node name="HBoxContainer_Buffs" parent="BattleInterface/GamePlayUI/StateBar2d_LocalPlayer" index="3" unique_id=1095143621]
 offset_left = -18.0
 offset_top = -219.0
 offset_right = 462.0
 offset_bottom = -91.0
 
-[node name="StateBar_List" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=318767437 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("24_o75dv")]
+[node name="StateBar_List" parent="BattleInterface/GamePlayUI" unique_id=318767437 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("24_o75dv")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -268,9 +278,9 @@ offset_bottom = 132.0
 grow_horizontal = 0
 scale = Vector2(0.5, 0.5)
 mouse_filter = 2
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 
-[node name="Skills_List" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("25_5lst5")]
+[node name="Skills_List" parent="BattleInterface/GamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("25_5lst5")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -286,10 +296,10 @@ grow_vertical = 0
 scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
 PlayerInterfaceRes = ExtResource("6_8ka0p")
 
-[node name="SkillInfoPanel" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
+[node name="SkillInfoPanel" parent="BattleInterface/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -299,7 +309,7 @@ offset_top = -145.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="NetworkDebugOverlay" type="Label" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=2106499745]
+[node name="NetworkDebugOverlay" type="Label" parent="BattleInterface/GamePlayUI" unique_id=2106499745]
 layout_mode = 0
 offset_left = 15.0
 offset_top = 92.0
@@ -309,7 +319,7 @@ theme_override_font_sizes/font_size = 12
 text = "Disconnected"
 script = ExtResource("33_ovly")
 
-[node name="BattleEventLogPanel" parent="BattleInterface/GamePlayEffects/GamePlayUI" unique_id=2106499746 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("41_evtlog")]
+[node name="BattleEventLogPanel" parent="BattleInterface/GamePlayUI" unique_id=2106499746 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("41_evtlog")]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -319,7 +329,15 @@ offset_top = -211.0
 offset_right = 323.0
 offset_bottom = -34.0
 grow_vertical = 0
-_sessionRef = NodePath("../../../BattleSessionContext")
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="ReplayHud" parent="BattleInterface" unique_id=1013972245 node_paths=PackedStringArray("_coordinator") instance=ExtResource("45_replayhud")]
+visible = false
+offset_left = 122.0
+offset_top = 549.0
+offset_right = 122.0
+offset_bottom = 549.0
+_coordinator = NodePath("../../ReplayCoordinator")
 
 [node name="FrontUI" type="Control" parent="." unique_id=437760611]
 layout_mode = 3
@@ -363,8 +381,9 @@ _roomPreparation = NodePath("../RoomPreparation")
 visible = false
 layout_mode = 1
 
-[node name="ReplayPanel" parent="FrontUI" unique_id=276490758 instance=ExtResource("42_replay")]
+[node name="ReplayPanel" parent="FrontUI" unique_id=276490758 node_paths=PackedStringArray("_coordinator") instance=ExtResource("42_replay")]
 visible = false
 layout_mode = 1
+_coordinator = NodePath("../../ReplayCoordinator")
 
-[editable path="BattleInterface/GamePlayEffects/GamePlayUI/StateBar2d_LocalPlayer"]
+[editable path="BattleInterface/GamePlayUI/StateBar2d_LocalPlayer"]

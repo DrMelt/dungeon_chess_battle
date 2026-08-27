@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://baidpltv52ny4"]
+
+[ext_resource type="Script" uid="uid://bfa07cj3747m1" path="res://Replay/ReplayHud.cs" id="1_hud"]
+[ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="2_theme"]
+
+[node name="ReplayHud" type="Control" unique_id=1289960439 node_paths=PackedStringArray("_playButton", "_progressSlider", "_timeLabel", "_speedButton")]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_hud")
+_playButton = NodePath("Bar/PlayButton")
+_progressSlider = NodePath("Bar/ProgressSlider")
+_timeLabel = NodePath("Bar/TimeLabel")
+_speedButton = NodePath("Bar/SpeedButton")
+
+[node name="Bar" type="HBoxContainer" parent="." unique_id=877537190]
+layout_mode = 1
+offset_right = 901.0
+offset_bottom = 48.0
+theme_override_constants/separation = 12
+
+[node name="PlayButton" type="Button" parent="Bar" unique_id=1451954933]
+layout_mode = 2
+text = "暂停"
+
+[node name="SpeedButton" type="Button" parent="Bar" unique_id=317523402]
+layout_mode = 2
+text = "倍速 1x"
+
+[node name="ExitButton" type="Button" parent="Bar" unique_id=1665815916]
+layout_mode = 2
+text = "退出回放"
+
+[node name="ProgressSlider" type="HSlider" parent="Bar" unique_id=1010130757]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="TimeLabel" type="Label" parent="Bar" unique_id=327198113]
+layout_mode = 2
+text = "00:00 / 00:00"
+vertical_alignment = 1
+
+[connection signal="pressed" from="Bar/PlayButton" to="." method="OnPlayPressed"]
+[connection signal="pressed" from="Bar/SpeedButton" to="." method="OnSpeedPressed"]
+[connection signal="pressed" from="Bar/ExitButton" to="." method="OnExitPressed"]
+[connection signal="value_changed" from="Bar/ProgressSlider" to="." method="OnSliderChanged"]
