@@ -160,6 +160,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "加入房间"
 
+[node name="HSeparator3" type="HSeparator" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=936043547]
+layout_mode = 2
+
+[node name="PlaybackListButton" type="Button" parent="MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer" unique_id=617585830]
+layout_mode = 2
+text = "回放列表"
+
 [node name="VSeparator" type="VSeparator" parent="MarginContainer/BoxContainer" unique_id=1167169560]
 layout_mode = 2
 
