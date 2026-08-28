@@ -6,6 +6,8 @@
 
 - 持有 `LobbyClient`（SignalR）与 `RoomBattleClient`（LiteNetLib + LES）两个持久实例，经 `IClientConnectionFactory` 创建，门面不依赖传输实现。
 - 主线程驱动：LiteNetLib NetManager 非线程安全，SignalR 后台线程回调一律入队 `_mainThreadActions`，由 Godot 主线程每帧 `Update` 消费后再驱动两端网络轮询。所有对 RoomClient 的操作收敛主线程。
+- 不含回放获取：`Replay.Client` 直连服务端 HTTP 端点，门面不转发回放请求，只经 `SessionToken` 透传 `LobbyClient` 持有的会话凭证。
+- 另存 `LobbyPort`：`Port` 会随进入房间重定向变成房间端口，而与大厅同宿主同端口的 HTTP 端点（回放）地址不随之变。
 
 ## 连接状态机
 

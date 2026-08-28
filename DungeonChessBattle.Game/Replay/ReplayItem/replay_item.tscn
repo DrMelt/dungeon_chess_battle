@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://bhu61t1py1ces"]
+
+[ext_resource type="Script" uid="uid://c5xg7m7txiw07" path="res://Replay/ReplayItem/ReplayItem.cs" id="1_item"]
+[ext_resource type="Script" uid="uid://inioid1klg7g" path="res://Replay/ReplayItem/ReplayItemInterRefs.cs" id="2_irfs"]
+[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_resource_table.tres" id="3_dungeonTable"]
+
+[node name="ReplayItem" type="Control" unique_id=425651724]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 289.0
+offset_bottom = 40.0
+script = ExtResource("1_item")
+_dungeonResourceTable = ExtResource("3_dungeonTable")
+
+[node name="ReplayItemInterRefs" type="Node" parent="." unique_id=689076948 node_paths=PackedStringArray("InfoLabel", "ActionButton", "PlayButton")]
+script = ExtResource("2_irfs")
+InfoLabel = NodePath("../MarginContainer/HBoxContainer/InfoLabel")
+ActionButton = NodePath("../MarginContainer/HBoxContainer/ActionButton")
+PlayButton = NodePath("../MarginContainer/HBoxContainer/PlayButton")
+
+[node name="Panel" type="Panel" parent="." unique_id=678297121]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=791143324]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=2013120863]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=2071534617]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "回放条目"
+
+[node name="ActionButton" type="Button" parent="MarginContainer/HBoxContainer" unique_id=1534186311]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "下载"
+
+[node name="PlayButton" type="Button" parent="MarginContainer/HBoxContainer" unique_id=2071534618]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "播放"

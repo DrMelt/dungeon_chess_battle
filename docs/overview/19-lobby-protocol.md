@@ -8,7 +8,7 @@
 
 ## DTO 分层
 
-- 请求与结果：`CreateRoomRequest`/`JoinRoomRequest`/`ReconnectRoomRequest` 等请求 DTO + `LobbyResult`/`LoginResult` 等结果 DTO。房间 ID 与玩家名一律服务端权威，客户端不提交或反查。
+- 请求与结果 DTO：`CreateRoomRequest`/`JoinRoomRequest`/`ReconnectRoomRequest` 等请求，`LobbyResult`/`LoginResult` 等结果。房间 ID 与玩家名一律服务端权威，客户端不提交或反查。
+- `LoginResult.SessionToken`：登录成功时服务端签发的连接级会话凭证，随登录会话作废。它让身份能延伸到服务端 HTTP 端点，当前唯一消费方是回放，大厅不解释它被谁用。
 - 房间快照 `RoomSnapshot`：服务端组装单发的房间权威视图（配置 + 准备状态 + 单位），客户端以它为准。
-- 回放 DTO：摘要列表 `ReplayListResult` 与下载凭证 `ReplayDownloadResult`。
-- 回放数据契约归 Replay.Shared，见 `functional_boundary/18`。
+- 回放契约不在本层：DTO、路由与序列化约定见 Replay.Protocol。

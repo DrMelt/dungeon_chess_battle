@@ -17,15 +17,12 @@ public static class LobbyServiceCollectionExtensions {
         services.AddSingleton(lobbyConfig);
         services.AddSingleton<ILobbyBroadcaster>(sp =>
             new SignalRBroadcaster(sp.GetRequiredService<IHubContext<LobbyHub>>()));
-        services.AddSingleton<IReplayDownloadTicketStore, ReplayDownloadTicketStore>();
         services.AddSingleton(sp => new GameServer(
             sp.GetRequiredService<ILoggerFactory>(),
             sp.GetRequiredService<ILobbyBroadcaster>(),
             sp.GetRequiredService<LobbyServerConfig>(),
             sp.GetRequiredService<IBattleRoomManager>(),
             sp.GetRequiredService<IGameStateStore>(),
-            sp.GetRequiredService<IReplayStore>(),
-            sp.GetRequiredService<IReplayDownloadTicketStore>(),
             sp.GetRequiredService<IUnitRegistry>(),
             sp.GetRequiredService<IDungeonRegistry>()));
         services.AddSingleton<ILobbyApplication>(sp => sp.GetRequiredService<GameServer>());

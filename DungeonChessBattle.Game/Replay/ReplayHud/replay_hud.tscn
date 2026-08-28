@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://baidpltv52ny4"]
 
-[ext_resource type="Script" uid="uid://bfa07cj3747m1" path="res://Replay/ReplayHud.cs" id="1_hud"]
+[ext_resource type="Script" uid="uid://bfa07cj3747m1" path="res://Replay/ReplayHud/ReplayHud.cs" id="1_hud"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="2_theme"]
 
 [node name="ReplayHud" type="Control" unique_id=1289960439 node_paths=PackedStringArray("_playButton", "_progressSlider", "_timeLabel", "_speedButton")]

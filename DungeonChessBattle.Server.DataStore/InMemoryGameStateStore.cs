@@ -34,6 +34,9 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
     /// <summary>大厅登录会话表：connectionId 到登录名，服务端权威身份，连接断开时清理。</summary>
     private readonly ConcurrentDictionary<string, string> _loginSessions = new();
+    // 会话凭证双向登记：凭证 → 玩家名（HTTP 侧解析用），连接 → 凭证（换发与撤销用）
+    private readonly ConcurrentDictionary<string, string> _sessionPlayerNames = new();
+    private readonly ConcurrentDictionary<string, string> _connectionSessions = new();
 
     /// <summary>房间内玩家的 playerId 映射表：房间 ID 到玩家名与 playerId 的映射。</summary>
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string>> _roomPlayerIds = new();
@@ -211,6 +214,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         _peerPlayers.Clear();
         _playerRecords.Clear();
         _loginSessions.Clear();
+        _sessionPlayerNames.Clear();
+        _connectionSessions.Clear();
         // 锁表随状态一并清空，停机后不再有房间，旧锁对象无保留价值
         _roomLocks.Clear();
     }
@@ -411,6 +416,32 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// <inheritdoc />
     public void RemoveLoginSession(string connectionId) {
         _loginSessions.TryRemove(connectionId, out _);
+        // 凭证随会话作废：连接都没了，HTTP 侧不该还留着身份
+        if (_connectionSessions.TryRemove(connectionId, out var token))
+            _sessionPlayerNames.TryRemove(token, out _);
+    }
+
+    /// <inheritdoc />
+    public string? IssueSessionToken(string connectionId) {
+        if (!_loginSessions.TryGetValue(connectionId, out var playerName))
+            return null;
+
+        // 换发即撤销旧凭证：一条连接同时最多一条有效凭证，不留双活身份
+        if (_connectionSessions.TryRemove(connectionId, out var stale))
+            _sessionPlayerNames.TryRemove(stale, out _);
+
+        string token = Guid.NewGuid().ToString("N");
+        _connectionSessions[connectionId] = token;
+        _sessionPlayerNames[token] = playerName;
+        return token;
+    }
+
+    /// <inheritdoc />
+    public string? GetSessionPlayerName(string sessionToken) {
+        if (string.IsNullOrEmpty(sessionToken))
+            return null;
+        _sessionPlayerNames.TryGetValue(sessionToken, out var playerName);
+        return playerName;
     }
 
     /// <inheritdoc />

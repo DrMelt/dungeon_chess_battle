@@ -1,6 +1,6 @@
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.ReplayUI;
+using DungeonChessBattle.Game.ReplayUI;
 using Godot;
 using Microsoft.Extensions.Logging;
 

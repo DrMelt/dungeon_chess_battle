@@ -2,7 +2,6 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.ReplayUI;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -29,10 +28,6 @@ public partial class MainMenu : BaseGamePanel {
     /// <summary>服务器管理面板引用。</summary>
     [Export]
     private ServerManagementPanel? _serverMgmtPanel;
-
-    /// <summary>回放入口面板引用。</summary>
-    [Export]
-    private ReplayPanel? _replayPanel;
 
     /// <summary>导出引用集合节点。</summary>
     public MainMenuInterRefs? InterRefs {
@@ -127,14 +122,6 @@ public partial class MainMenu : BaseGamePanel {
     /// </summary>
     private void OnServerManagePressed() {
         NavigateTo(_serverMgmtPanel);
-    }
-
-    /// <summary>
-    /// 点击回放按钮：刷新回放列表并显示回放入口面板。
-    /// </summary>
-    private void OnReplayPressed() {
-        ReplayPanel.Refresh();
-        _replayPanel?.Visible = true;
     }
 
     #endregion

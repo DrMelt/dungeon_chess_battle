@@ -1,9 +1,9 @@
-using DungeonChessBattle.Server.DataStore.Shared;
+using DungeonChessBattle.Server.Abstractions;
 
 namespace DungeonChessBattle.Server.DataStore;
 
 /// <summary>
-/// 基于进程内字典的回放存储实现：roomId 主表与玩家记录主键索引。
+/// 基于进程内字典的回放归档存储实现：roomId 主表与玩家记录主键索引。
 /// 保留最近 <see cref="MaxReplays"/> 场，超出移除最旧归档，避免长期运行失控。
 /// </summary>
 public sealed class InMemoryReplayStore : IReplayStore {

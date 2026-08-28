@@ -2,6 +2,7 @@
 using DungeonChessBattle.Battle.Server;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Server;
+using DungeonChessBattle.Replay.Server;
 using DungeonChessBattle.Server.DataStore;
 using DungeonChessBattle.Server.DataStore.Shared;
 
@@ -77,6 +78,8 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 });
                 builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
                 builder.Services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
+                builder.Services.AddSingleton<IPlayerIdentityResolver>(sp =>
+                    new PlayerIdentityResolver(sp.GetRequiredService<IGameStateStore>()));
                 builder.Services.AddSingleton<IUnitRegistry>(UnitRegistry.Instance);
                 builder.Services.AddSingleton<IDungeonRegistry>(DungeonRegistry.Instance);
                 builder.Services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
@@ -84,23 +87,17 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                     ConnectionKey = config.ServerPassword ?? config.ConnectionKey,
                     FirstRoomPort = config.FirstRoomPort,
                 });
+                builder.Services.AddReplayServer();
                 builder.Services.AddSignalR();
 
                 var app = builder.Build();
                 app.MapHub<LobbyHub>("/lobby");
-                // 回放下载端点：凭一次性凭证换取回放字节流，直接流式输出，不经 SignalR 通道
-                app.MapGet("/replay/{roomId}", (string roomId, string ticket,
-                    IReplayDownloadTicketStore ticketStore, IReplayStore replayStore) => {
-                        if (!ticketStore.TryConsume(ticket, out string authorizedRoom) || authorizedRoom != roomId)
-                            return Results.NotFound();
-                        if (!replayStore.TryGetReplay(roomId, out byte[] data))
-                            return Results.NotFound();
-                        return Results.File(data, "application/octet-stream", $"{roomId}.replay");
-                    });
+                // 回放 HTTP 端点：列表与字节流下载，路由与凭证鉴权由回放服务端提供
+                app.MapReplayEndpoints();
                 app.Start();
 
                 _app = app;
-                // 解析 GameServer 校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
+                // 解析大厅应用契约校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
                 _ = app.Services.GetRequiredService<GameServer>();
                 _battleRoomManager = app.Services.GetRequiredService<IBattleRoomManager>();
                 _running = true;

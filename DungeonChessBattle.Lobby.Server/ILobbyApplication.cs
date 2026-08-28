@@ -37,12 +37,6 @@ public interface ILobbyApplication {
     /// <summary>登入大厅，登记登录会话身份。</summary>
     Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req);
 
-    /// <summary>查询当前登录玩家的回放列表，最近在前。</summary>
-    Task<ReplayListResult> HandleGetReplaysAsync(string connectionId);
-
-    /// <summary>按房间 ID 下载回放字节流，仅参与者可下载。</summary>
-    Task<ReplayDownloadResult> HandleDownloadReplayAsync(string connectionId, string roomId);
-
     /// <summary>连接断开清理。</summary>
     Task ConnectionLostAsync(string connectionId);
 }

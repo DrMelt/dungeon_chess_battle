@@ -30,7 +30,7 @@ theme = ExtResource("1_dnge3")
 script = ExtResource("1_bw6yo")
 _dungeonResourceTable = ExtResource("5_dungeonTable")
 
-[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("DungeonSelect", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton")]
+[node name="GameLobbyInterRefs" type="Node" parent="." unique_id=1408328535 node_paths=PackedStringArray("DungeonSelect", "CreateButton", "RefreshButton", "JoinButton", "DetailLabel", "RoomListContainer", "BackButton", "PlaybackListButton")]
 script = ExtResource("4_irfs")
 DungeonSelect = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/DungeonRow/DungeonSelect")
 CreateButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/ButtonRow/CreateButton")
@@ -40,6 +40,7 @@ DetailLabel = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContaine
 RoomListContainer = NodePath("../MarginContainer/BoxContainer/PanelRight/MarginContainer/VBoxContainer/RoomScroll/RoomListContainer")
 RoomInfoScene = ExtResource("2_wj6uy")
 BackButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/BackButton")
+PlaybackListButton = NodePath("../MarginContainer/BoxContainer/PanelLeft/MarginContainer/VBoxContainer/PlaybackListButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=690445032]
 layout_mode = 1

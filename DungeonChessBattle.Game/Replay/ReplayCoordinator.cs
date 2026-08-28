@@ -7,10 +7,10 @@ using DungeonChessBattle.MainScene;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.ReplayUI;
+namespace DungeonChessBattle.Game.ReplayUI;
 
 /// <summary>
-/// 回放编排：加载回放字节流构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
+/// 回放编排：以回放获取端交来的快照构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
 /// 复用 BattleInterface 的共享 <see cref="UnitShowManager"/> 对齐驱动单位展示。提供播放/暂停/倍速/拖动控制。
 /// 由回放入口面板 LoadReplay 启动，退出时释放引擎与展示。
 /// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换屏幕态。
@@ -51,32 +51,22 @@ public partial class ReplayCoordinator : Node {
     public bool IsActive => _engine != null;
 
     /// <summary>是否暂停。</summary>
-    public bool IsPaused {
-        get => _isPaused;
-    }
+    public bool IsPaused => _isPaused;
 
     /// <summary>播放倍速。</summary>
     public float PlaySpeed {
         get; set;
     } = 1f;
 
-    /// <summary>加载回放字节流并启动：解码、构建引擎、生成单位展示。</summary>
-    public void LoadReplay(byte[] replayData) {
-        ReplayRecordSnapshot snapshot;
-        try {
-            snapshot = ReplayRecordCoder.Decode(replayData);
-        }
-        catch (Exception ex) {
-            _logger.LogError(ex, "回放数据解码失败");
-            return;
-        }
-
+    /// <summary>启动回放：以回放获取端解码并门控后的快照构建引擎，生成单位展示。</summary>
+    public void LoadReplay(ReplayRecordSnapshot snapshot) {
         ReplayEngine engine;
         try {
             engine = new ReplayEngine(snapshot);
         }
         catch (Exception ex) {
-            _logger.LogError(ex, "回放引擎构建失败（内容版本不一致或配置缺失）");
+            // 引擎构造自带门控：配置缺失与内容版本不符都在这里挡下，不进入半启动状态
+            _logger.LogError(ex, "回放引擎构建失败");
             return;
         }
 
@@ -131,15 +121,7 @@ public partial class ReplayCoordinator : Node {
     }
 
     /// <summary>节点退出场景树：兜底释放引擎与展示并通知主场景恢复。</summary>
-    public override void _ExitTree() {
-        if (IsActive) {
-            _unitManager?.Unbind();
-            _stateChangeInfo?.Unbind();
-            _engine = null;
-            HideReplay();
-            EmitSignal(SignalName.ReplayFinished);
-        }
-    }
+    public override void _ExitTree() => ExitReplay();
 
     /// <summary>切换到回放表现：显示回放控制条（单位复用共享世界，由 UnitShowManager 生灭）。</summary>
     private void ShowReplay() {

@@ -52,8 +52,17 @@ public interface IPlayerStateStore {
     /// <summary>解析连接登记的登录名；未登录时返回 null。</summary>
     string? GetLoginPlayerName(string connectionId);
 
-    /// <summary>移除连接的登录会话，连接断开时清理。</summary>
+    /// <summary>移除连接的登录会话并撤销其会话凭证，连接断开时清理。</summary>
     void RemoveLoginSession(string connectionId);
+
+    /// <summary>
+    /// 为已登录连接签发会话凭证：随机不透明串，让身份可以走出 SignalR 连接，
+    /// 供服务端 HTTP 端点自证；签发新凭证即撤销该连接的旧凭证。未登记登录会话时返回 null。
+    /// </summary>
+    string? IssueSessionToken(string connectionId);
+
+    /// <summary>由会话凭证取登录玩家名；凭证无效、已被换发或所属连接已登出时返回 null。</summary>
+    string? GetSessionPlayerName(string sessionToken);
 
     /// <summary>按登入名字解析玩家记录主键；名字首次出现时自动登记并分配稳定主键，之后复用。记录主键仅进程生命周期内稳定。</summary>
     string ResolvePlayerRecordId(string playerName);

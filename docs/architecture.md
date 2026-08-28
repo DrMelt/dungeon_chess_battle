@@ -19,11 +19,13 @@ graph TD
         Client["Client<br>门面与连接状态机"]
         LobbyClient["Lobby.Client<br>SignalR 大厅客户端"]
         BattleClient["Client.Battle<br>LES 房间客户端"]
+        ReplayCli["Replay.Client<br>回放获取：HTTP 传输"]
     end
 
     subgraph ServerLayer["服务端库 Server"]
         LobbySrv["Server.Lobby<br>大厅服务器与协调"]
         BattleSrv["Server.Battle<br>战斗房间服务"]
+        ReplaySrv["Server.Replay<br>回放 HTTP 端点：列表 / 下载 / 凭证鉴权"]
         Store["Server.DataStore<br>数据存储实现"]
         StoreAbst["Server.DataStore.Shared<br>数据存储抽象"]
         ServerAbst["Server.Abstractions<br>服务端抽象契约"]
@@ -32,12 +34,13 @@ graph TD
     subgraph SharedLayer["共享库 Shared"]
         LobbyShared["Lobby.Shared<br>大厅共享值类型（房间状态）"]
         LobbyProtocol["Lobby.Protocol<br>大厅网络契约（Hub 方法名与 DTO）"]
+        ReplayProtocol["Replay.Protocol<br>回放 HTTP 契约（DTO / 路由 / 序列化）"]
         ClientShared["Client.Shared<br>客户端连接契约"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
         Replay["Replay<br>回放引擎"]
-        ReplayShared["Replay.Shared<br>回放格式契约"]
+        ReplayShared["Replay.Shared<br>回放记录格式与归档契约"]
     end
 
     subgraph ModelLayer["契约与数据结构"]
@@ -49,6 +52,7 @@ graph TD
     Godot --> LobbyClient
     Godot --> BattleClient
     Godot --> Replay
+    Godot --> ReplayCli
     Godot --> ReplayShared
     Godot --> LobbyProtocol
     Godot --> Logic
@@ -67,6 +71,8 @@ graph TD
     BattleClient --> Logic
     BattleClient --> Entities
     BattleClient --> GameConfig
+    ReplayCli --> ReplayProtocol
+    ReplayCli --> ReplayShared
     Replay --> Logic
     Replay --> Shared
     Replay --> GameConfig
@@ -74,6 +80,7 @@ graph TD
 
     Host --> LobbySrv
     Host --> BattleSrv
+    Host --> ReplaySrv
     Host --> Store
     Host --> StoreAbst
     Host --> ServerAbst
@@ -91,13 +98,17 @@ graph TD
     BattleSrv --> GameConfig
     BattleSrv --> Shared
     BattleSrv --> ReplayShared
+    ReplaySrv --> ServerAbst
+    ReplaySrv --> ReplayProtocol
 
     Store --> StoreAbst
+    Store --> ServerAbst
     Store --> Shared
     Store --> LobbyShared
     StoreAbst --> LobbyShared
 
     LobbyProtocol --> LobbyShared
+    ReplayProtocol --> ReplayShared
     LobbySrv --> LobbyShared
     Logic --> Shared
     Entities --> Shared
@@ -116,9 +127,12 @@ graph TD
 | `DungeonChessBattle.Lobby.Client` | SignalR 大厅客户端 `LobbyClient` | [03-client-lobby](functional_boundary/03-client-lobby.md) | [03-client-lobby](overview/03-client-lobby.md) |
 | `DungeonChessBattle.Client.Battle` | LES 房间客户端 `RoomBattleClient` | [04-client-battle](functional_boundary/04-client-battle.md) | [04-client-battle](overview/04-client-battle.md) |
 | `DungeonChessBattle.Replay` | 回放引擎 `ReplayEngine`，回放子系统重放端 | [16-client-replay](functional_boundary/16-client-replay.md) | [16-client-replay](overview/16-client-replay.md) |
+| `DungeonChessBattle.Replay.Server` | 回放服务侧：列表与下载的 HTTP 端点、会话凭证鉴权 | [21-replay-server](functional_boundary/21-replay-server.md) | [21-replay-server](overview/21-replay-server.md) |
+| `DungeonChessBattle.Replay.Client` | 回放获取侧：HTTP 传输，缓存/解码/门控/并集在 Game 层浏览服务 | [22-replay-client](functional_boundary/22-replay-client.md) | [22-replay-client](overview/22-replay-client.md) |
+| `DungeonChessBattle.Replay.Protocol` | 回放 HTTP 契约：DTO、路由与序列化约定 | [23-replay-protocol](functional_boundary/23-replay-protocol.md) | [23-replay-protocol](overview/23-replay-protocol.md) |
 | `DungeonChessBattle.Lobby.Shared` | 大厅共享值类型：房间状态枚举 | [17-lobby-shared](functional_boundary/17-lobby-shared.md) | [17-lobby-shared](overview/17-lobby-shared.md) |
 | `DungeonChessBattle.Lobby.Protocol` | 大厅网络契约：Hub 方法名与大厅 DTO | [19-lobby-protocol](functional_boundary/19-lobby-protocol.md) | [19-lobby-protocol](overview/19-lobby-protocol.md) |
-| `DungeonChessBattle.Replay.Shared` | 回放格式契约：记录模型与编解码 | [18-replay-shared](functional_boundary/18-replay-shared.md) | [18-replay-shared](overview/18-replay-shared.md) |
+| `DungeonChessBattle.Replay.Shared` | 回放记录格式契约：记录模型、编解码与归档存储抽象 | [18-replay-shared](functional_boundary/18-replay-shared.md) | [18-replay-shared](overview/18-replay-shared.md) |
 | `DungeonChessBattle.Client.Shared` | 客户端连接契约：`IClientConnection` 最小连接抽象 | [20-client-shared](functional_boundary/20-client-shared.md) | [20-client-shared](overview/20-client-shared.md) |
 | `DungeonChessBattle.Battle.Shared` | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md) | [06-battle-shared](overview/06-battle-shared.md) |
 | `DungeonChessBattle.Battle.Logic` | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑 | [07-battle-logic](functional_boundary/07-battle-logic.md) | [07-battle-logic](overview/07-battle-logic.md) |

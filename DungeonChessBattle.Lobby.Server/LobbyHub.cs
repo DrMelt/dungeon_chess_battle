@@ -7,11 +7,12 @@ namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
 /// 大厅 SignalR Hub，ASP.NET Core 网络端点。
-/// 每个 Hub 方法对应一个大厅请求，委托给 <see cref="GameServer"/> 业务协调器处理；
-/// 服务端 → 客户端的广播由 GameServer 经 <see cref="ILobbyBroadcaster"/> 端口推送，由 SignalR IHubContext Group 实现。
-/// Hub 方法名经 <see cref="HubMethodNameAttribute"/> 绑定 <see cref="HubMethods"/> 常量，与客户端调用名编译期对齐。
+/// 每个 Hub 方法对应一个请求，一律委托给 <see cref="ILobbyApplication"/>：
+/// Hub 只做端点与身份透传，不含业务；服务端 → 客户端的广播由业务层经 <see cref="ILobbyBroadcaster"/> 端口推送。
+/// 方法名经 <see cref="HubMethodNameAttribute"/> 绑定协议常量，与客户端调用名编译期对齐。
+/// 回放不在本 Hub：它自带 HTTP 端点，身份由登录时签发的会话凭证承载，与大厅连接无关。
 /// </summary>
-/// <param name="server">游戏服务端业务协调器，面向抽象契约。</param>
+/// <param name="server">大厅业务协调器，面向抽象契约。</param>
 public class LobbyHub(ILobbyApplication server) : Hub {
     private readonly ILobbyApplication _server = server;
 
@@ -64,16 +65,6 @@ public class LobbyHub(ILobbyApplication server) : Hub {
     [HubMethodName(HubMethods.Login)]
     public Task<LoginResult> Login(LoginRequest req)
         => _server.HandleLoginAsync(Context.ConnectionId, req);
-
-    /// <summary>查询当前登录玩家的回放列表请求，身份从登录会话反查。</summary>
-    [HubMethodName(HubMethods.GetReplays)]
-    public Task<ReplayListResult> GetReplays()
-        => _server.HandleGetReplaysAsync(Context.ConnectionId);
-
-    /// <summary>下载回放请求，仅参与者可下载。</summary>
-    [HubMethodName(HubMethods.DownloadReplay)]
-    public Task<ReplayDownloadResult> DownloadReplay(string roomId)
-        => _server.HandleDownloadReplayAsync(Context.ConnectionId, roomId);
 
     /// <summary>连接断开时清理玩家归属。</summary>
     public override async Task OnDisconnectedAsync(Exception? exception) {

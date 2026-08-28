@@ -157,6 +157,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
             replay.Header.DungeonKey,
             replay.Header.StartUnixTime,
             replay.Header.TickRate,
+            replay.Header.DataVersion,
             [.. replay.Header.Players.Select(p => new ReplayPlayer(
                 _stateStore.ResolvePlayerRecordId(p.PlayerName), p.PlayerName, p.UnitConfigKey))]);
         _replayStore.Add(replay.Header.RoomId, summary, ReplayRecordCoder.Encode(replay));

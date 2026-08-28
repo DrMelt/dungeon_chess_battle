@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Lobby.Protocol.Dtos;
+namespace DungeonChessBattle.Replay.Protocol.Dtos;
 
 /// <summary>玩家回放列表结果。</summary>
 /// <param name="Replays">回放摘要列表，最近在前。</param>
@@ -9,12 +9,14 @@ public sealed record ReplayListResult(IReadOnlyList<ReplaySummaryDto> Replays);
 /// <param name="DungeonKey">副本键。</param>
 /// <param name="StartUnixTime">战斗开始时间，Unix 秒，UTC。</param>
 /// <param name="TickRate">逻辑 tick 频率。</param>
+/// <param name="DataVersion">录制端内容数据修订号，与客户端不一致时回放不可播放。</param>
 /// <param name="Players">参与玩家。</param>
 public sealed record ReplaySummaryDto(
     string RoomId,
     string DungeonKey,
     long StartUnixTime,
     int TickRate,
+    string DataVersion,
     IReadOnlyList<ReplayPlayerDto> Players);
 
 /// <summary>回放参与玩家条目。</summary>
@@ -22,10 +24,3 @@ public sealed record ReplaySummaryDto(
 /// <param name="PlayerName">玩家名。</param>
 /// <param name="UnitConfigKey">使用的单位配置键。</param>
 public sealed record ReplayPlayerDto(string PlayerRecordId, string PlayerName, string UnitConfigKey);
-
-/// <summary>回放下载结果。</summary>
-/// <param name="RoomId">房间 ID。</param>
-/// <param name="Success">是否成功。</param>
-/// <param name="DownloadTicket">一次性下载凭证，成功时返回；经 HTTP 下载端点换取回放字节流。</param>
-/// <param name="Error">失败原因；成功时为空。</param>
-public sealed record ReplayDownloadResult(string RoomId, bool Success, string? DownloadTicket = null, string? Error = null);

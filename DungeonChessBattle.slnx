@@ -9,13 +9,12 @@
     <Project Path="DungeonChessBattle.Game\DungeonChessBattle.Game.csproj" />
   </Folder>
 
-  <Folder Name="/Client/">
-    <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
-    <Project Path="DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />
 
-    <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
-  </Folder>
+  <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
+  <Project Path="DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />
+  <Project Path="DungeonChessBattle.Replay.Client\DungeonChessBattle.Replay.Client.csproj" />
 
+  <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
   <Project Path="DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   <Project Path="DungeonChessBattle.Client.Shared\DungeonChessBattle.Client.Shared.csproj" />
@@ -24,15 +23,13 @@
   <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />
   <Project Path="DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
-
-
-  <Folder Name="/Server/">
-    <Project Path="DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
-    <Project Path="DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
-    <Project Path="DungeonChessBattle.Server.DataStore\DungeonChessBattle.Server.DataStore.csproj" />
-    <Project Path="DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
-    <Project Path="DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
-    <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
-  </Folder>
+  <Project Path="DungeonChessBattle.Replay.Protocol\DungeonChessBattle.Replay.Protocol.csproj" />
+  <Project Path="DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
+  <Project Path="DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
+  <Project Path="DungeonChessBattle.Server.DataStore\DungeonChessBattle.Server.DataStore.csproj" />
+  <Project Path="DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
+  <Project Path="DungeonChessBattle.Replay.Server\DungeonChessBattle.Replay.Server.csproj" />
+  <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
 
 </Solution>

@@ -31,4 +31,7 @@ public sealed record RoomRedirect(string RoomId, int Port);
 /// <param name="Success">是否成功。</param>
 /// <param name="PlayerName">已登记的登录名；失败时为空。</param>
 /// <param name="Error">失败原因；成功时为空。</param>
-public sealed record LoginResult(bool Success, string? PlayerName = null, string? Error = null);
+/// <param name="SessionToken">会话凭证，成功时签发，随登录会话作废；供服务端 HTTP 端点自证身份，
+/// 是连接级概念，不属任何业务分组。</param>
+public sealed record LoginResult(bool Success, string? PlayerName = null, string? Error = null,
+    string? SessionToken = null);

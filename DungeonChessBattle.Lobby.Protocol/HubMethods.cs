@@ -36,12 +36,6 @@ public static class HubMethods {
     /// <summary>登入大厅：登记玩家名，服务端权威身份，后续业务身份一律取登录会话。</summary>
     public const string Login = "Login";
 
-    /// <summary>查询当前登录玩家的回放列表。</summary>
-    public const string GetReplays = "GetReplays";
-
-    /// <summary>按房间 ID 下载回放字节流，仅参与者可下载。</summary>
-    public const string DownloadReplay = "DownloadReplay";
-
     // ─── 服务端到客户端广播回调 ───
 
     /// <summary>准备阶段战斗启动重定向。</summary>

@@ -2,11 +2,27 @@
 
 回放的本质是：一份自包含字节流 + 一段可复现的确定性重算，在无网络、无实时输入、无权威服务器参与下，原样复现一场已结束战斗的完整表现。观看者不提供输入。
 
-本文跨 `Replay.Shared`、`Replay`、`Battle.Server`、`Game` 多模块，描述回放的确定性与两链收敛约定。模块职责见 `functional_boundary/16`、`18`，在线并行的同步链路见 `battle-state-sync.md`。
+本文跨 `Replay.Shared`、`Replay.Protocol`、`Replay.Server`、`Replay.Client`、`Replay`、`Battle.Server`、`Game` 多模块，描述回放的确定性契约与获取链路。模块职责见 `functional_boundary/16`、`18`、`21`、`22`、`23`，在线并行的同步链路见 `battle-state-sync.md`。
+
+## 获取链路
+
+录制→归档→获取→重放四段各自归位，跨界只在契约：
+
+```
+Battle.Server 旁路录制 → IReplayStore 归档（摘要含 DataVersion）
+  → 大厅 Login 成功签发会话凭证 → 客户端持有，随连接作废
+  → GET /replay/list、GET /replay/{roomId}（请求头带凭证）
+  → Replay.Server 端点：凭证 → 玩家记录主键 → 参与者校验 → 摘要 / 字节流
+  → Replay.Client 取字节流 → Game.ReplayService 解码 + 版本门控 + 并集/缓存 → Replay 引擎重跑 → UI
+```
+
+- 回放不借大厅连接：请求全走 HTTP，身份由服务端签发的会话凭证自证；大厅只签发凭证、不认识回放，回放只解析凭证、不认识登录，两侧只剩报文。
+- 归档与本地缓存：归档、会话凭证与玩家记录主键都只在服务端进程内存活，客户端缓存是跨进程唯一副本；故列表取"服务端 ∪ 本地"，服务端重启后已下过的回放仍可列可播。
+- 身份以端口隔离：`Replay.Server` 只经 `IPlayerIdentityResolver` 把凭证换成玩家记录主键，归档方与查询方同用一解析，口径不错位。
 
 ## 单一真相源复用
 
-- 权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，服务端与回放共用，不依赖网络载体。
+- 权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，战斗房间服务与回放引擎共用，不依赖网络载体。
 - 回放 `ReplayEngine` 构建 `BattleScene` 时**不注入投影器与移动桥**，移动由引擎本地按 `BattleMovementResolver` + `PhysicsMovementScene` 结算（等价服务端 `UnitPawn.Update`）。
 - 领域层与展示契约一致：在线经"领域→`SyncVarProjector`→LES→载体→领域回填→`BattleUnit`→UI"，回放"领域→`BattleUnit`→UI"，都收敛到 `IUnitUiView`/`IBuffUiView`，UI 不感知来源。仅在线多一层投影/回填。
 
@@ -15,10 +31,16 @@
 输入重放的成立依赖确定性与数据一致，二者都必须是契约而非假设：
 
 - 逻辑确定性：AI/伤害/移动均为纯函数无随机（`Battle.Logic/Shared/Server` 无 `Random`），固定逻辑步长，可以重算断言。
-- 内容一致性：`ReplayRecordHeader.DataVersion` 为录制端 `GameConfigDB.DataRevision`；客户端构建 `ReplayEngine` 时校验，不匹配拒绝重放。任何影响战斗结果的配置变化都必须递增 `DataRevision`，把数据演化导致的旧回放静默漂移变成声响失败。
+- 内容一致性：`ReplayRecordHeader.DataVersion` 为录制端 `GameConfigDB.DataRevision`。门控两处：`Game.ReplayService` 下载解码后即判不可播放且不落缓存，`ReplayEngine` 构造再校验一次，引擎不信任输入。归档摘要与本地缓存条目都从记录头部携带 `DataVersion`，列表侧可在下载前标注。任何影响战斗结果的配置变化都必须递增 `DataRevision`，把数据演化导致的旧回放静默漂移变成声响失败。
 - 格式版本：`ReplayFormatVersion.Current` 门控记录模型，模型或编码变化时递增，`ReplayRecordCoder` 解码校验。
 
 播放控制：`ReplayCoordinator` 以固定步长累积器驱动引擎，`SeekTo` 重置到首帧快进。
+
+## UI 归属
+
+`Game/Replay/` 一场景一目录、一所有者：`ReplayPanel` 取数与呈现，不碰屏幕态；`ReplayItem` 暴露下载与播放两按钮、上报房间 ID；`ReplayHud` 只管播放控制；`ReplayCoordinator` 管引擎生命周期与表现绑定。启动回放仅由 `ReplayPanel` 对播放按钮触发，后台获取完成不自动进入。
+
+入口面板是前厅页面之一，由 GameLobby 经 `BaseGamePanel` 导航链打开，启动播放后自行返回，故退出回放落回大厅——落点归导航链，FrontUI 与在线战斗 UI 的显隐归 `ScreenStateMachine`，它不认识任何具体面板。
 
 ## 预留改进
 

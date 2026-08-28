@@ -12,9 +12,10 @@
 `GameServerHost.Start` 构建 `WebApplication`：
 
 - `ServerConfig.FromEnvironment` 产出装配配置，映射为模块配置切片：`LobbyServerConfig`（密码）、`BattleServerConfig`（连接密钥 + 房间端口池起点）。
-- 注册 `InMemoryGameStateStore`、`InMemoryReplayStore`、`AddLobbyServer`、`AddBattleServer`、`AddSignalR`；绑定 `IBattleRoomManager` 到 `BattleRoomManager`。
-- `MapHub<LobbyHub>("/lobby")` 承载大厅端点。
-- `MapGet("/replay/{roomId}")` 回放下载端点：验证一次性凭证（`IReplayDownloadTicketStore.TryConsume`，绑定房间匹配）后经 `IReplayStore` 流式输出回放字节，不经 SignalR 通道。
+- 注册 `InMemoryGameStateStore`、`InMemoryReplayStore`、`IPlayerIdentityResolver`（适配器包 `IGameStateStore`）、`AddLobbyServer`、`AddBattleServer`、`AddReplayServer`、`AddSignalR`；绑定 `IBattleRoomManager` 到 `BattleRoomManager`。
+- `MapHub<LobbyHub>("/lobby")` 只承载大厅端点；回放有自己的 HTTP 端点，与 SignalR 无关。
+- `MapReplayEndpoints()`：回放两条路由、会话凭证鉴权与字节输出全在 Replay.Server，本层只调用映射扩展；端点所需服务在映射期先解析一次，装配缺件留在启动日志里。
+- 构建完成后立刻解析 `GameServer`，让大厅 DI 图缺件在启动时炸出，而非等到首个请求。
 
 ## 后台循环
 

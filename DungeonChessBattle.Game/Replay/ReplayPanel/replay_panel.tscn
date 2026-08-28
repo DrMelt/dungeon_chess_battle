@@ -1,9 +1,11 @@
 [gd_scene format=3 uid="uid://ck5ahdfwjheaw"]
 
-[ext_resource type="Script" uid="uid://cbdke876uutgr" path="res://Replay/ReplayPanel.cs" id="1_panel"]
+[ext_resource type="Script" uid="uid://cbdke876uutgr" path="res://Replay/ReplayPanel/ReplayPanel.cs" id="1_panel"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="3_theme"]
+[ext_resource type="Script" uid="uid://c0vlhmwypfq04" path="res://Replay/ReplayPanel/ReplayPanelInterRefs.cs" id="4_irfs"]
+[ext_resource type="PackedScene" uid="uid://bhu61t1py1ces" path="res://Replay/ReplayItem/replay_item.tscn" id="5_item"]
 
-[node name="ReplayPanel" type="Control" unique_id=75307350 node_paths=PackedStringArray("_replayList", "_downloadRequest")]
+[node name="ReplayPanel" type="Control" unique_id=75307350]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,8 +14,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("3_theme")
 script = ExtResource("1_panel")
-_replayList = NodePath("MarginContainer/VBoxContainer/ScrollContainer/ReplayList")
-_downloadRequest = NodePath("")
+
+[node name="ReplayPanelInterRefs" type="Node" parent="." unique_id=979472335 node_paths=PackedStringArray("ReplayListContainer", "RefreshButton", "CloseButton")]
+script = ExtResource("4_irfs")
+ReplayListContainer = NodePath("../MarginContainer/VBoxContainer/ScrollContainer/ReplayListContainer")
+ReplayItemScene = ExtResource("5_item")
+RefreshButton = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/RefreshButton")
+CloseButton = NodePath("../MarginContainer/VBoxContainer/HBoxContainer/CloseButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=1383736503]
 layout_mode = 1
@@ -22,7 +29,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=730606695]
 layout_mode = 1
@@ -46,10 +52,11 @@ vertical_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ReplayList" type="ItemList" parent="MarginContainer/VBoxContainer/ScrollContainer" unique_id=24878510]
+[node name="ReplayListContainer" type="BoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer" unique_id=24878510]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+vertical = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1694532253]
 layout_mode = 2
@@ -63,6 +70,3 @@ text = "刷新"
 layout_mode = 2
 size_flags_horizontal = 3
 text = "关闭"
-
-[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/RefreshButton" to="." method="OnRefreshPressed"]
-[connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/CloseButton" to="." method="OnClosePressed"]

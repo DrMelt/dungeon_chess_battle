@@ -88,10 +88,22 @@ public sealed partial class GameClientService {
     /// <summary>服务器主机地址。</summary>
     public string Host { get; private set; } = "";
 
-    /// <summary>当前监听端口。</summary>
+    /// <summary>当前监听端口；进房重定向后为房间端口。</summary>
     public int Port {
         get; private set;
     }
+
+    /// <summary>大厅端口，连接大厅时固定；<see cref="Port"/> 会随房间重定向改变，
+    /// 与大厅同宿主同端口的 HTTP 端点（如回放）须以此为准。</summary>
+    public int LobbyPort {
+        get; private set;
+    }
+
+    /// <summary>
+    /// 当前登录会话的凭证，由服务端登录流程签发，断开即失效。
+    /// 本门面只透传 <see cref="LobbyClient"/> 的连接级事实，不解释它被谁消费。
+    /// </summary>
+    public string? SessionToken => LobbyClient.SessionToken;
 
     /// <summary>客户端持久玩家 ID。</summary>
     public string PlayerId { get; } = Guid.NewGuid().ToString("N");
@@ -129,12 +141,6 @@ public sealed partial class GameClientService {
     /// <summary>房间列表接收事件，主线程派发。参数：房间列表。</summary>
     public event Action<IReadOnlyList<RoomListing>>? OnRoomListReceived;
 
-    /// <summary>回放摘要列表接收事件，主线程派发。参数：回放摘要列表。</summary>
-    public event Action<IReadOnlyList<ReplaySummaryDto>>? OnReplayListReceived;
-
-    /// <summary>回放下载凭证签发结果事件，主线程派发。</summary>
-    public event Action<ReplayDownloadResult>? OnReplayDownloadResult;
-
     /// <summary>获取指定房间最近一次快照，显示层进房初始化用；不存在时返回 null。</summary>
     public RoomSnapshot? GetRoomSnapshot(string roomId) => LobbyClient.TryGetRoomSnapshot(roomId);
 
@@ -164,6 +170,7 @@ public sealed partial class GameClientService {
         try {
             Host = host;
             Port = port;
+            LobbyPort = port;
 
             WirePersistentEvents();
 
@@ -195,20 +202,6 @@ public sealed partial class GameClientService {
     public void RequestListRooms() {
         LobbyClient.RequestListRooms();
     }
-
-    /// <summary>请求当前登录玩家的回放摘要列表，主线程事件 <see cref="OnReplayListReceived"/> 派发。</summary>
-    public void RequestGetReplays() {
-        LobbyClient.RequestGetReplays();
-    }
-
-    /// <summary>请求回放下载一次性凭证，主线程事件 <see cref="OnReplayDownloadResult"/> 派发。</summary>
-    public void RequestDownloadReplay(string roomId) {
-        LobbyClient.RequestDownloadReplay(roomId);
-    }
-
-    /// <summary>组装回放下载 URL，凭一次性凭证换取回放字节流。</summary>
-    public string GetReplayDownloadUrl(string roomId, string ticket)
-        => LobbyClient.BuildReplayDownloadUrl(roomId, ticket);
 
     /// <summary>
     /// 请求加入房间，通过大厅 SignalR 协议。
@@ -376,8 +369,6 @@ public sealed partial class GameClientService {
             OnRoomCreated?.Invoke(roomId);
         });
         LobbyClient.OnRoomListReceived += (rooms) => EnqueueMainThread(() => OnRoomListReceived?.Invoke(rooms));
-        LobbyClient.OnReplayListReceived += (replays) => EnqueueMainThread(() => OnReplayListReceived?.Invoke(replays));
-        LobbyClient.OnReplayDownloadResult += (result) => EnqueueMainThread(() => OnReplayDownloadResult?.Invoke(result));
 
         // 房间客户端，LiteNetLib 回调在主线程 PollEvents 内触发
         RoomClient.OnFullyConnected += () => {

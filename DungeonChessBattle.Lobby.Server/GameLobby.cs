@@ -54,13 +54,14 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     }
 
     /// <summary>
-    /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份。
-    /// 名字非法时拒绝；成功后房间业务与回放业务均从登录会话反查身份。
+    /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份，并为其签发会话凭证。
+    /// 名字非法时拒绝；会话内业务从登录会话反查身份，会话凭证让身份延伸到服务端 HTTP 端点。
     /// </summary>
     public Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req) {
-        if (_stateStore.TryRegisterLoginSession(connectionId, req.PlayerName))
-            return Task.FromResult(new LoginResult(true, req.PlayerName));
-        return Task.FromResult(new LoginResult(false, Error: "Invalid player name."));
+        if (!_stateStore.TryRegisterLoginSession(connectionId, req.PlayerName))
+            return Task.FromResult(new LoginResult(false, Error: "Invalid player name."));
+        return Task.FromResult(new LoginResult(true, req.PlayerName,
+            SessionToken: _stateStore.IssueSessionToken(connectionId)));
     }
 
     /// <summary>

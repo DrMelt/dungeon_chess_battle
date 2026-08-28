@@ -7,6 +7,7 @@ using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Game.ReplayUI;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -24,6 +25,10 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>房间准备界面引用。</summary>
     [Export]
     private RoomPreparation? _roomPreparation;
+
+    /// <summary>回放入口面板引用，跨场景节点，由 MainScene 注入。</summary>
+    [Export]
+    private ReplayPanel? _replayPanel;
 
     /// <summary>副本资源表引用，解析副本显示名与描述。</summary>
     [Export]
@@ -65,6 +70,8 @@ public partial class GameLobby : BaseGamePanel {
 
         if (_roomPreparation == null)
             _logger.LogError("RoomPreparation reference is not assigned. Room preparation will be unavailable.");
+        if (_replayPanel == null)
+            _logger.LogError("ReplayPanel reference is not assigned. Replay list will be unavailable.");
         if (_dungeonResourceTable == null)
             _logger.LogError("_dungeonResourceTable is not assigned!");
 
@@ -72,6 +79,7 @@ public partial class GameLobby : BaseGamePanel {
         InterRefs?.CreateButton?.Pressed += OnCreateRoom;
         InterRefs?.RefreshButton?.Pressed += OnRefreshRooms;
         InterRefs?.BackButton?.Pressed += GoBack;
+        InterRefs?.PlaybackListButton?.Pressed += OnOpenReplayList;
         var joinBtn = InterRefs?.JoinButton;
         if (joinBtn is not null) {
             joinBtn.Pressed += OnJoinRoom;
@@ -157,6 +165,14 @@ public partial class GameLobby : BaseGamePanel {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("请求加入房间(网络): {RoomId}", _selectedRoomId);
         ServiceLocator.ClientService.RequestJoinRoom(_selectedRoomId);
+    }
+
+    /// <summary>
+    /// 点击回放列表按钮：切到回放入口面板，列表由面板打开时自行刷新。
+    /// </summary>
+    private void OnOpenReplayList() {
+        if (_replayPanel != null)
+            NavigateTo(_replayPanel);
     }
 
     /// <summary>

@@ -51,6 +51,11 @@ public partial class GameLobbyInterRefs : Node {
     public Button? BackButton {
         get; private set;
     }
+    /// <summary>回放列表面板入口按钮。</summary>
+    [Export]
+    public Button? PlaybackListButton {
+        get; private set;
+    }
 
     /// <summary>
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
@@ -72,5 +77,7 @@ public partial class GameLobbyInterRefs : Node {
             _logger.LogError("RoomInfoScene is not assigned!");
         if (BackButton == null)
             _logger.LogError("BackButton is not assigned!");
+        if (PlaybackListButton == null)
+            _logger.LogError("PlaybackListButton is not assigned!");
     }
 }

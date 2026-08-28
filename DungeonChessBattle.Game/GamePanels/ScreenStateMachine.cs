@@ -55,12 +55,13 @@ public sealed class ScreenStateMachine(Control? frontUI, Control? onlineBattleUI
     }
 
     /// <summary>
-    /// 退出回放：恢复 FrontUI、隐藏在线战斗 UI 并回到主菜单（当前回放仅从主菜单进入）。
+    /// 退出回放：恢复 FrontUI、隐藏在线战斗 UI 并回到大厅。
+    /// 回放仅从大厅进入，入口面板在启动播放时已自行返回，恢复后大厅即在原位。
     /// </summary>
     public void ExitReplay() {
         _frontUI.Visible = true;
         SetOnlineBattleUI(false);
-        TransitionTo(GameScreenState.MainMenu);
+        TransitionTo(GameScreenState.Lobby);
     }
 
     /// <summary>设置在线战斗 UI 显隐。</summary>

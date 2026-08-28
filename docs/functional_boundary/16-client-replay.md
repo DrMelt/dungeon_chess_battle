@@ -1,6 +1,6 @@
 # DungeonChessBattle.Replay
 
-回放引擎：纯本地确定性重跑录制输入，零网络依赖。与 Server.Battle.Replay 录制端构成回放子系统。
+回放引擎：纯本地确定性重跑录制输入，零网络依赖。与 Server.Battle.Replay 录制端、Replay.Server 服务侧、Replay.Client 获取端共同构成回放子系统。
 
 ## 职责
 
@@ -11,8 +11,9 @@
 
 ## 边界外
 
-- 不依赖网络与 LES，不含回放下载与本地存储。
+- 不依赖网络与 LES，不含回放下载与本地存储：获取链路归 Replay.Client。
 - 不实现 UI 场景与入口，展示与控制在 Godot 主工程。
+- 不做字节流解码与内容版本门控，交进来的快照已解码。
 
 ## 依赖
 
