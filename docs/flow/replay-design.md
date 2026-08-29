@@ -23,8 +23,8 @@ Battle.Server 旁路录制 → IReplayStore 归档（摘要含 DataVersion）
 ## 单一真相源复用
 
 - 权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，战斗房间服务与回放引擎共用，不依赖网络载体。
-- 回放 `ReplayEngine` 构建 `BattleScene` 时**不注入投影器与移动桥**，移动由引擎本地按 `BattleMovementResolver` + `PhysicsMovementScene` 结算（等价服务端 `UnitPawn.Update`）。
-- 领域层与展示契约一致：在线经"领域→`SyncVarProjector`→LES→载体→领域回填→`BattleUnit`→UI"，回放"领域→`BattleUnit`→UI"，都收敛到 `IUnitUiView`/`IBuffUiView`，UI 不感知来源。仅在线多一层投影/回填。
+- 回放 `ReplayEngine` 构建 `BattleScene`（不投影）；移动在 `BattleScene.Tick` 内统一结算，与在线同源。
+- 领域层与展示契约一致：在线经"领域→`BattleStateSynchronizer`→LES→载体→领域回填→`BattleUnit`→UI"，回放"领域→`BattleUnit`→UI"，都收敛到 `IUnitUiView`/`IBuffUiView`，UI 不感知来源。仅在线多一层同步/回填。
 
 ## 确定性契约
 

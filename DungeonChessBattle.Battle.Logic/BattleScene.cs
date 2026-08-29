@@ -11,6 +11,7 @@ using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Events;
 using DungeonChessBattle.Battle.Logic.Hates;
+using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -19,25 +20,20 @@ namespace DungeonChessBattle.Battle.Logic;
 /// <summary>
 /// 战斗世界实现：自持单位权威状态并统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
 /// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
-/// 单位位置经 <see cref="IBattleMovementBridge"/> 与外部移动执行器衔接，
-/// 状态变化经 <see cref="IBattleProjector"/> 投影给外部载体或展示层。
-/// <see cref="ApplyDecisions"/> 在移动结算前调用以触发 AI 决策，移动输入本帧生效；
-/// <see cref="Tick"/> 在移动结算后调用推进战斗并返回领域事件。
+/// 移动结算在 <see cref="Tick"/> 内统一执行；<see cref="ApplyDecisions"/> 先触发 AI 决策，
+/// 移动输入本帧生效；状态同步由外部同步器订阅，本类不依赖网络载体。
+/// <see cref="Tick"/> 在移动结算后推进战斗并返回领域事件。
 /// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建注入，与战斗世界同生命周期。</param>
 /// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
 /// <param name="logger">AI 决策日志，可选注入。</param>
-/// <param name="movementBridge">移动衔接：位置回读与移动输入输出；回放离线模式可为空。</param>
-/// <param name="projector">状态投影器：单位与阶段投影到外部载体或展示层；回放离线模式可为空。</param>
 public sealed partial class BattleScene(
     CampRelationResolver relations,
     IMovementScene movementScene,
     HateSettings? hateSettings = null,
-    ILogger<BattleScene>? logger = null,
-    IBattleMovementBridge? movementBridge = null,
-    IBattleProjector? projector = null) : IBattleSceneView {
+    ILogger<BattleScene>? logger = null) : IBattleSceneView {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
@@ -49,24 +45,6 @@ public sealed partial class BattleScene(
 
     /// <summary>竞技场移动场景：静态障碍与单位互斥的空间载体，构造后只读，与战斗世界同生命周期。</summary>
     private readonly IMovementScene _movementScene = movementScene;
-
-    /// <summary>移动衔接器；回放离线模式为空，位置由回放驱动直接结算。</summary>
-    private IBattleMovementBridge? _movementBridge = movementBridge;
-
-    /// <summary>状态投影器；回放离线模式为空。</summary>
-    private IBattleProjector? _projector = projector;
-
-    /// <summary>
-    /// 后置装配移动衔接器与投影器。服务端在完成单位创建后调用；
-    /// 回放端在构造时经参数注入，无需调用。
-    /// </summary>
-    public void Configure(IBattleMovementBridge? movementBridge, IBattleProjector? projector) {
-        _movementBridge = movementBridge;
-        _projector = projector;
-    }
-
-    /// <inheritdoc />
-    public IMovementScene MovementScene => _movementScene;
 
     /// <summary>每帧战斗事件日志：处理开始清空，处理中只增追加，帧末经只读视图消费与外送。</summary>
     private readonly BattleEventLog _eventLog = new();
@@ -150,14 +128,14 @@ public sealed partial class BattleScene(
     /// <summary>登记本帧死者并产出 UnitDied；依赖 _dead 去重，在仇恨推衍前调用。</summary>
     private void RegisterDeaths() {
         foreach (var unit in _units.ToArray())
-            if (unit.Health <= 0f && _dead.Add(unit))
+            if (unit.IsDead && _dead.Add(unit))
                 _eventLog.Append(new UnitDied(unit.UnitNetId));
     }
 
     /// <summary>清理本帧死者仇恨账本，在仇恨推衍后调用，避免死者因自身伤害事件被重写。</summary>
     private void CleanupDeaths() {
         foreach (var unit in _units.ToArray())
-            if (unit.Health <= 0f)
+            if (unit.IsDead)
                 ClearHateEntries(unit);
     }
 
@@ -170,7 +148,6 @@ public sealed partial class BattleScene(
         BattleStartUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         ElapsedTime = 0f;
         _buffTickRemaining = BuffTickInterval;
-        ProjectAll();
     }
 
     /// <summary>手动结束战斗，幂等兜底。</summary>
@@ -178,17 +155,6 @@ public sealed partial class BattleScene(
         if (_phase == BattlePhase.Finished)
             return;
         _phase = BattlePhase.Finished;
-        ProjectAll();
-    }
-
-    /// <summary>
-    /// 从移动衔接器回读各单位位置，供本帧结算使用；离线模式跳过，位置已由回放驱动结算。
-    /// </summary>
-    public void SyncUnitPositions() {
-        if (_movementBridge == null)
-            return;
-        foreach (var unit in _units)
-            unit.Position = _movementBridge.GetPosition(unit.UnitNetId);
     }
 
     /// <summary>
@@ -248,10 +214,8 @@ public sealed partial class BattleScene(
         if (_phase != BattlePhase.Running)
             return;
 
-        SyncUnitPositions();
-
         foreach (var unit in _units) {
-            if (unit.Health <= 0f || unit.Intelligence is not { } intelligence)
+            if (unit.IsDead || unit.Intelligence is not { } intelligence)
                 continue;
 
             // 正在读条：原地等待读条完成，避免移动打断自身读条
@@ -286,7 +250,6 @@ public sealed partial class BattleScene(
     /// <summary>写入移动输入并处理"移动即打断读条"；零向量表示静止，不打断读条。</summary>
     private void SetMoveInput(BattleUnit unit, Vector2 moveDirection) {
         unit.MoveInput = moveDirection;
-        _movementBridge?.SetMoveInput(unit.UnitNetId, moveDirection);
         if (moveDirection.LengthSquared() > 0.0001f)
             CancelCast(unit);
     }
@@ -340,6 +303,10 @@ public sealed partial class BattleScene(
         _eventLog.Clear();
         _eventLog.AppendRange(_pendingEvents);
         _pendingEvents.Clear();
+
+        // 移动结算统一在领域层：本帧输入本帧生效，服务端与回放同源同序。
+        BattleMovementResolver.ResolveTurn(_units, (float)deltaTime, _movementScene);
+
         foreach (var unit in _units.ToArray()) {
             TickCasting(unit, (float)deltaTime, _eventLog);
         }
@@ -352,7 +319,7 @@ public sealed partial class BattleScene(
             TickBuffs(unit, deltaTime, _eventLog, buffJumps);
         }
 
-        // 全量死亡扫描：本帧内所有 Health<=0 的单位统一产出 UnitDied。
+        // 全量死亡扫描：本帧内所有 IsDead 的单位统一产出 UnitDied。
         // 若在单位迭代内判定，同帧互杀时后死者可能因战斗已切 Finished 而丢失死亡事件。
         // 仇恨账本清理延迟到增量推衍之后，避免本帧死者因自身伤害事件重写进账本。
         RegisterDeaths();
@@ -368,8 +335,6 @@ public sealed partial class BattleScene(
         // 死亡清理：本帧死者清空自身表并从其他单位表移除其条目，保证死者不残留
         CleanupDeaths();
 
-        ProjectAll();
-
         return _eventLog;
     }
 
@@ -384,7 +349,7 @@ public sealed partial class BattleScene(
         if (allCamps.Count < 2)
             return;
 
-        var aliveCamps = _units.Where(u => u.Health > 0f).SelectMany(u => u.Camps).Distinct().ToHashSet();
+        var aliveCamps = _units.Where(u => !u.IsDead).SelectMany(u => u.Camps).Distinct().ToHashSet();
         if (aliveCamps.Count >= allCamps.Count)
             return;
 
@@ -410,7 +375,7 @@ public sealed partial class BattleScene(
         unit.RuntimeState.ClearCast();
     }
 
-    /// <summary>推进个体冷却：剩余秒数递减，到期移除条目。剩余由投影器按帧投影。</summary>
+    /// <summary>推进个体冷却：剩余秒数递减，到期移除条目。剩余由状态同步器按帧写 SyncVar。</summary>
     private static void TickCooldowns(BattleUnit unit, double deltaTime) {
         var entries = unit.RuntimeState.Cooldowns;
         if (entries.Count == 0)
@@ -519,9 +484,6 @@ public sealed partial class BattleScene(
     private static void ApplyHealthDelta(BattleUnit unit, float delta) {
         unit.Health = Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
     }
-
-    /// <summary>全量投影单位状态与阶段，阶段变化与 Tick 末尾调用。</summary>
-    private void ProjectAll() => _projector?.Project(_units, _phase);
 
     #region 日志
 

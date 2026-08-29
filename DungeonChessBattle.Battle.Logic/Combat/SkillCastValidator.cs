@@ -46,7 +46,7 @@ public static class SkillCastValidator {
     /// <summary>状态因素聚合：存活、非读条与技能总冷却（全局与个体取较大）均就绪。单值查询，无托管对象分配。</summary>
     private static bool CanCastState<T>(T caster, SkillKeyId skillKey)
         where T : ISkillCasterView {
-        if (caster.Health <= 0f || caster.SkillCasting != default)
+        if (caster.IsDead || caster.SkillCasting != default)
             return false;
         return caster.GetTotalCooldownRemaining(skillKey) <= 0f;
     }

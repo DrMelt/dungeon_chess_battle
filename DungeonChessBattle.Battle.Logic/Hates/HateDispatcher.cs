@@ -32,7 +32,7 @@ public static class HateDispatcher {
             if (!IsRelevant(evt))
                 continue;
             foreach (var unit in units) {
-                if (unit.Health <= 0f)
+                if (unit.IsDead)
                     continue;
                 effects.AddRange(unit.HateRule.Evaluate(unit, evt, ctx));
             }

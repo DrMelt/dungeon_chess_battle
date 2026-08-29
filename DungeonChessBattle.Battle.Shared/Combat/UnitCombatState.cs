@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
 /// 单位权威战斗状态，由 <see cref="BattleUnit.RuntimeState"/> 持有，BattleScene 读写推进。
-/// 读条目标、Buff、冷却、仇恨权威在此；网络同步经投影器，本状态不参与同步。
+/// 读条目标、Buff、冷却、仇恨权威在此；网络同步经状态同步器，本状态不参与同步。
 /// </summary>
 public sealed class UnitCombatState {
     /// <summary>读条目标单位，服务端私有，不参与网络同步；null 表示无。</summary>

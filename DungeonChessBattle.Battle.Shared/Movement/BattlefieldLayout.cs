@@ -2,7 +2,7 @@ namespace DungeonChessBattle.Battle.Shared.Movement;
 
 /// <summary>
 /// 世界坐标中的轴对齐静态障碍矩形，坐标与单位位置同为 XZ 平面。
-/// 客户端预测与服务端权威从同一布局构建物理场景，保证移动确定性一致。
+/// 在线与回放从同一布局构建物理场景，保证移动确定性一致。
 /// </summary>
 /// <param name="MinX">矩形左边界 X。</param>
 /// <param name="MinY">矩形下边界 Y。</param>

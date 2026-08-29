@@ -38,7 +38,7 @@ public sealed class DefaultHateRule : IHateRule {
 
     /// <summary>治疗扩散：仅当自身是存活且与被治疗者敌对的单位时，对治疗者记仇。仇恨量以治疗来源倍率缩放。</summary>
     private static IReadOnlyList<HateEffect> HealSpread(IBattleUnitView self, HealOccurred heal, HateContext ctx) {
-        if (heal.SourceNetId == 0 || self.UnitNetId == heal.SourceNetId || self.Health <= 0f)
+        if (heal.SourceNetId == 0 || self.UnitNetId == heal.SourceNetId || self.IsDead)
             return [];
         if (ctx.UnitOf(heal.TargetNetId) is not { } healTarget)
             return [];

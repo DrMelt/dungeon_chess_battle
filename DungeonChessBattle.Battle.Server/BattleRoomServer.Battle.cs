@@ -5,6 +5,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Movement;
+using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
@@ -21,11 +22,11 @@ namespace DungeonChessBattle.Battle.Server;
 /// <summary>
 /// BattleRoomServer 的初始化：从 Store 自取数据、单位实体与领域单位对称创建、战斗管理与 RPC 处理。
 /// 本 partial 的所有方法仅在房间线程执行。
-/// 领域权威在 BattleUnit，UnitPawn 为同步载体；移动经移动桥衔接，状态经投影器写 SyncVar。
+/// 领域权威在 BattleUnit，UnitPawn 为同步载体；移动由 BattleScene 结算，状态经状态同步器写 SyncVar。
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
-    /// 房间线程首帧初始化：创建根实体、装配移动桥与投影器、
+    /// 房间线程首帧初始化：创建根实体、装配状态同步器、
     /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不再被其他线程触碰。
     /// </summary>
     private void InitializeFromStore() {
@@ -36,9 +37,8 @@ public partial class BattleRoomServer {
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
         _roomEntity = roomEntity;
 
-        // 移动桥与投影器在单位创建后装配，读取已建实体映射
-        _battleScene.Configure(new EntityMovementBridge(this),
-            new SyncVarProjector(this, EntityManager));
+        // 状态同步器在单位创建后装配，读取已建实体映射；由 BattleLoop 每帧显式驱动
+        _stateSynchronizer = new BattleStateSynchronizer(this, EntityManager);
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -71,8 +71,9 @@ public partial class BattleRoomServer {
         _replayRecorder?.SetNextNetId(nextNetId);
 
         // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions 先于位移，
-        // LateUpdate=Tick 在实体更新后、状态包发送前。
-        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, HandleBattleFrameEvents));
+        // LateUpdate=Tick → 状态同步 → 整帧事件外送。
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene,
+            scene => _stateSynchronizer.Sync(scene), HandleBattleFrameEvents));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.",
@@ -115,7 +116,7 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 在本房间的 SEM 中创建 UnitPawn 实体，并按同一 NetId 创建领域单位 BattleUnit 注册进战斗世界。
-    /// 战斗系数与技能装配在 BattleUnit，投影器写 SyncVar 供客户端展示。仅房间线程调用。
+    /// 战斗系数与技能装配在 BattleUnit，状态同步器写 SyncVar 供客户端展示。仅房间线程调用。
     /// </summary>
     public UnitPawn CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<string> camps, Vector2 spawnPos) {
         if (!CampConstants.IsValidCamps(camps))
@@ -135,7 +136,7 @@ public partial class BattleRoomServer {
         _roomPawns.Add(entity);
         _pawnByNetId[entity.Id] = entity;
 
-        // 领域单位（权威）：战斗世界结算读写，投影器写 SyncVar
+        // 领域单位（权威）：战斗世界结算读写，状态同步器写 SyncVar
         var config = _unitRegistry.GetByKey(unitName)
             ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
         var unit = new BattleUnit {
@@ -163,23 +164,13 @@ public partial class BattleRoomServer {
         // 技能定义供客户端 UnitGameShow 装配展示资源，本地字段不参与网络同步
         entity.Skills = config.Skills;
 
-        // 注入移动管线，Logic 层 MovementResolver，含场景交互。
-        // 场景两端口径一致，从同一副本布局构建 Aether 世界，保证预测与权威确定性一致。
-        entity.MoveResolver = (pos, dir, speed, dt) =>
-            MovementResolver.Move(pos, dir, speed, dt, entity.BodyRadius.Value, _battleScene.MovementScene, entity.Id);
-
         return entity;
-    }
-
-    /// <summary>按网络 ID 查找本房间的 UnitPawn。</summary>
-    public UnitPawn? FindPawnById(ushort netId) {
-        return _roomPawns.Find(p => p.Id == netId);
     }
 
     /// <summary>按网络 ID 查找战斗世界领域单位。</summary>
     private BattleUnit? FindBattleUnit(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
 
-    /// <summary>在本房间启动战斗：委托战斗世界阶段机；阶段投影由投影器写载体，战斗开始帧写入回放记录。</summary>
+    /// <summary>在本房间启动战斗：委托战斗世界阶段机；阶段由状态同步器写载体，战斗开始帧写入回放记录。</summary>
     public void StartBattle() {
         _battleScene.StartBattle();
         _replayRecorder?.SetStartTick(EntityManager.Tick);
@@ -189,7 +180,7 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 处理通过 UnitPawn 实例事件到达的玩家输入：提交战斗世界并按"移动即打断读条"规则消费。
-    /// 移动位移仍由 UnitPawn.Update 确定性结算，客户端预测加服务端权威。
+    /// 移动位移由领域 BattleScene.Tick 统一结算，在线与回放同源同序。
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
         _battleScene.SubmitMove(pawn.Id, input.MoveDirection);
@@ -255,7 +246,7 @@ public partial class BattleRoomServer {
     private bool HandleSetFocusTargetRequest(UnitPawn pawn, ushort targetNetId) {
         if (targetNetId != 0) {
             var targetUnit = FindBattleUnit(targetNetId);
-            if (targetUnit == null || targetUnit.Health <= 0f) {
+            if (targetUnit == null || targetUnit.IsDead) {
                 if (_logger.IsEnabled(LogLevel.Warning))
                     _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
                         RoomId, pawn.UnitName.Value, targetNetId);
@@ -280,17 +271,14 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 整帧领域事件处理：死亡单位清空移动输入与清理他人聚焦，再把本帧事件日志整帧编码可靠外送。
-    /// 生命、读条、冷却与 Buff 已由投影器在 Tick 内写 SyncVar，房间级阶段已由投影器写载体。
+    /// 整帧领域事件处理：死亡单位清理他人聚焦，再把本帧事件日志整帧编码可靠外送。
+    /// 状态已由 BattleStateSynchronizer 在 Tick 后写 SyncVar，房间级阶段由同步器写载体。
     /// </summary>
     private void HandleBattleFrameEvents(IReadOnlyList<IBattleEvent> events) {
-        // 权威状态写回：死亡单位清空移动输入并清理他人聚焦
+        // 权威状态写回：目标死亡时清理他人对其聚焦；移动输入由领域层结算跳过死者
         foreach (var battleEvent in events) {
-            if (battleEvent is UnitDied died) {
-                var deadPawn = FindPawnById(died.UnitNetId);
-                deadPawn?.SetMovementInput(Vector2.Zero);
+            if (battleEvent is UnitDied died)
                 ClearFocusTargetsTo(died.UnitNetId);
-            }
         }
 
         // 整帧事件日志编码经可靠通道外送，空帧不发
@@ -319,12 +307,17 @@ public partial class BattleRoomServer {
 
 
     /// <summary>
-    /// 战斗世界状态投影器：把领域单位权威状态写回 UnitPawn SyncVar，房间阶段写回 BattleRoomEntity。
+    /// 战斗状态同步器：把领域单位权威状态写回 UnitPawn SyncVar，房间阶段写回 BattleRoomEntity。
     /// 标量字段直接写值（LES 仅在变化时发包）；冷却/Buff/仇恨列表内容比较节流，仅变化时重建 SyncList。
-    /// 仅房间线程调用（BattleScene.Tick 末尾）。
+    /// 仅房间线程调用，由 BattleLoop 每帧在 Tick 之后显式驱动。
     /// </summary>
-    private sealed class SyncVarProjector(BattleRoomServer room, ServerEntityManager entityManager) : IBattleProjector {
-        public void Project(IReadOnlyList<IProjectableBattleState> units, BattlePhase phase) {
+    private sealed class BattleStateSynchronizer(BattleRoomServer room, ServerEntityManager entityManager) {
+        /// <summary>同步战斗世界：读领域只读状态写 SyncVar。由 BattleLoop.LateUpdate 驱动。</summary>
+        public void Sync(BattleScene battleScene) {
+            Project(battleScene.BattleUnits, battleScene.CurrentPhase);
+        }
+
+        private void Project(IReadOnlyList<IProjectableBattleState> units, BattlePhase phase) {
             foreach (var unit in units)
                 if (room._pawnByNetId.TryGetValue(unit.UnitNetId, out var pawn))
                     ProjectUnit(unit, pawn);
@@ -338,9 +331,11 @@ public partial class BattleRoomServer {
         }
 
         private void ProjectUnit(IProjectableBattleState unit, UnitPawn pawn) {
+            pawn.Position.Value = unit.Position;
+            pawn.Direction.Value = unit.Direction;
             pawn.Health.Value = unit.Health;
             pawn.MaxHealth.Value = unit.MaxHealth;
-            pawn.UnitState.Value = unit.Health <= 0f ? (byte)1 : (byte)0;
+            pawn.UnitState.Value = unit.IsDead ? (byte)1 : (byte)0;
             pawn.SkillCasting.Value = unit.SkillCasting.Id;
             pawn.SkillCastRemaining.Value = unit.SkillCastRemaining;
             pawn.GcdEndServerTick.Value = SyncTickHelper.EndTick(entityManager, unit.GcdRemaining);
@@ -447,18 +442,6 @@ public partial class BattleRoomServer {
                 pawn.HatesList.Add(new SyncHateData { TargetUnitNetId = hate.TargetNetId, HateValue = hate.Value });
         }
     }
-    /// <summary>
-    /// 战斗世界移动衔接：位置读实体 SyncVar 回写领域单位，AI 移动输入写实体移动输入。
-    /// 仅房间线程调用。
-    /// </summary>
-    private sealed class EntityMovementBridge(BattleRoomServer room) : IBattleMovementBridge {
-        public Vector2 GetPosition(ushort netId) =>
-            room._pawnByNetId.TryGetValue(netId, out var pawn) ? pawn.Position.Value : Vector2.Zero;
-
-        public void SetMoveInput(ushort netId, Vector2 moveDirection) {
-            if (room._pawnByNetId.TryGetValue(netId, out var pawn))
-                pawn.SetMovementInput(moveDirection);
-        }
-    }
 }
+
 

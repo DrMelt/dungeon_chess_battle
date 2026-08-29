@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Entities;
 /// <summary>
 /// 战斗房间的网络同步 Entity。房间级战斗状态展示载体。
 /// 创建单位与开始战斗的请求已由大厅 SignalR 通道（AddPrepareUnit / StartBattle）承担，
-/// 本实体承载房间级战斗状态的投影目标，由服务端投影器写入。
+/// 本实体承载房间级战斗状态的同步目标，由服务端状态同步器写入。
 /// 同步字段全部以服务端写回为准，禁止在 OnConstructed 重置：
 /// LES 1.2.2 客户端先应用初始同步状态再执行 OnConstructed，重置会让一次性写入字段
 /// （BattleStartUnixTime、BattlePhase 等）在客户端丢失且不再回补。

@@ -13,18 +13,21 @@ namespace DungeonChessBattle.Battle.Server;
 /// </summary>
 internal sealed class BattleLoop(
     BattleScene battleScene,
+    Action<BattleScene> battleSyncer,
     Action<IReadOnlyList<IBattleEvent>> battleEventHandler) : ILocalSingletonWithUpdate {
     private readonly BattleScene _battleScene = battleScene;
-
+    private readonly Action<BattleScene> _battleSyncer = battleSyncer;
     private readonly Action<IReadOnlyList<IBattleEvent>> _battleEventHandler = battleEventHandler;
     /// <summary>每个逻辑 tick 在 OnLogicTick 之前执行：AI 前置推进，注入移动输入与施法请求。</summary>
     public void Update(float dt) {
         _battleScene.ApplyDecisions();
     }
 
-    /// <summary>每个逻辑 tick 在实体更新后、发送前执行：战斗推进并把整帧领域事件一次外送。</summary>
+    /// <summary>每个逻辑 tick 在实体更新后、发送前执行：战斗推进 → 状态同步 → 整帧事件一次外送。</summary>
     public void LateUpdate(float dt) {
-        _battleEventHandler(_battleScene.Tick(dt));
+        var events = _battleScene.Tick(dt);
+        _battleSyncer(_battleScene);
+        _battleEventHandler(events);
     }
 
     /// <summary>渲染帧回调，服务器端无渲染，留空。</summary>

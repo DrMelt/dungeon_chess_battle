@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Battle.Logic.Movement;
 /// <summary>
 /// 基于 Aether.Physics2D 的确定性移动场景：以战场布局构建静态障碍物理世界，
 /// 提供竞技场边界约束、静态障碍推挤与单位互斥。
-/// 客户端预测与服务端权威从同一布局构建，结算结果一致。
+/// 在线与回放从同一布局构建，结算结果一致。
 /// 移动本体由 <see cref="MovementResolver"/> 纯函数驱动，Aether 仅承担静态几何
 /// 宽相查询，不运行动态模拟，天然适配 LES 回滚重放。
 /// </summary>

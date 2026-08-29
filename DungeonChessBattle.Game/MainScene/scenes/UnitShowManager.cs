@@ -61,7 +61,7 @@ public partial class UnitShowManager : Node {
                 continue;
             }
             show.Unit = unit;
-            show.Visible = unit.Health > 0f;
+            show.Visible = !unit.IsDead;
         }
 
         foreach (var unit in source.Units) {

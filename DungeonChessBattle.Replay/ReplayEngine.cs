@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Replay;
 
 /// <summary>
 /// 回放引擎：解码后的回放快照在本地用战斗世界确定性重跑。
-/// 与在线端共用同一 BattleScene，移动经本地位移结算（等价服务端 UnitPawn.Update），
+/// 与在线端共用同一 BattleScene，移动由 BattleScene.Tick 统一结算，与在线同源，
 /// 玩家输入按记录帧注入，事件流逐帧返回，单位状态经 BattleScene 直读。
 /// 纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// </summary>
@@ -164,7 +164,6 @@ public sealed class ReplayEngine : IBattleViewSource {
             return [];
 
         _battleScene.ApplyDecisions();
-        ResolveMovement();
         InjectInputs();
         var events = _battleScene.Tick(_dt);
         _frame++;
@@ -184,11 +183,6 @@ public sealed class ReplayEngine : IBattleViewSource {
             return Math.Max(0, lastFrame - _startTick + 1);
         }
     }
-
-    /// <summary>本地位移结算，等价服务端 UnitPawn.Update：MoveResolver + 物理场景。</summary>
-    /// <summary>整场本地位移结算，复用 <see cref="BattleMovementResolver"/> 与服务端 UnitPawn 同源。</summary>
-    private void ResolveMovement() =>
-        BattleMovementResolver.ResolveTurn(_battleScene.BattleUnits, _dt, _battleScene.MovementScene);
 
     /// <summary>按帧注入玩家输入：移动、施法（仅接受）与聚焦，三类共享同一帧轴。</summary>
     private void InjectInputs() {

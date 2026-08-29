@@ -11,7 +11,7 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 ## 载体适配
 
 - `IBattleUnitView` 只读适配：`UnitPawn` 投影 SyncVar 组装结算快照与冷却推算，供客户端技能预拦与展示；领域权威结算由战斗世界持 `BattleUnit` 完成，本适配不参与。
-- 同步写回仅经 `IBattleProjector` 投影器，服务端调用。
+- 同步写回经服务端 `BattleStateSynchronizer`，`BattleLoop.LateUpdate` 调用。
 
 ## 类型注册表
 
@@ -19,7 +19,7 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 
 ## 移动与输入
 
-- `UnitPawn.Update` 执行确定性位移：调用注入的 `MoveResolver`（Logic 层纯函数），客户端预测与服务端权威同一实现，LES 回滚重放自动纠偏。
+- `UnitPawn.Update` 仅 `base.Update()`：纯投影载体，位移由领域 `BattleScene` 统一结算，位置/朝向由同步器写 SyncVar。
 - 输入包 `UnitInputPacket` 为扁平顺序布局结构，只承载移动状态；技能/聚焦等一次性事件走可靠请求。
 
 ## 协议载荷

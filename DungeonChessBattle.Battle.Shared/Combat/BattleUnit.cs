@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
 /// 战斗单位领域实体：战斗世界自持的全部权威状态。
-/// 属性与技能装配期写入，战斗状态由 BattleScene 推进，移动输入由外部移动执行器消费。
+/// 属性与技能装配期写入，战斗状态由 BattleScene 推进，移动输入由 BattleScene 结算。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端与回放共用。
 /// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffUiView"/> 供展示层读取。
 /// </summary>
@@ -59,6 +59,9 @@ public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState, IUnit
     public float Health {
         get; set;
     }
+
+    /// <summary>单位是否已死亡：当前生命值 ≤ 0。领域权威死亡判定，仅服务端与回放结算使用。</summary>
+    public bool IsDead => Health <= 0f;
 
     /// <summary>物理攻击基础系数即伤害倍率。</summary>
     public float PhysicalAttackBase {
@@ -123,7 +126,7 @@ public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState, IUnit
         get; set;
     }
 
-    /// <summary>本帧移动输入，由 AI 决策或玩家输入写入，外部移动执行器消费。</summary>
+    /// <summary>本帧移动输入，由 AI 决策或玩家输入写入，领域 BattleScene 结算。</summary>
     public Vector2 MoveInput {
         get; set;
     }

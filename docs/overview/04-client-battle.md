@@ -21,13 +21,13 @@
 
 单一真相源为 `BattleScene`（Battle.Logic）→ `BattleUnit` 领域实体，服务端与在线/回放共用，不依赖网络载体。
 
-- **投影契约**：`IProjectableBattleState` 供投影器读取领域只读状态；`IBattleProjector` 把状态写往外部载体，服务端实现为 `SyncVarProjector`（写 LES SyncVar + 房间阶段），回放不注入（`null`）。在线端反向把载体 SyncVar 回填领域（`RoomBattleClient`）。
+- **状态同步**：`IProjectableBattleState` 供状态同步器读取领域只读状态；服务端 `BattleStateSynchronizer` 写 `UnitPawn` SyncVar 与房间阶段，由 `BattleLoop.LateUpdate` 驱动；回放不投影。在线端反向把载体 SyncVar 回填领域（`RoomBattleClient`）。
 - **展示契约**：`IUnitUiView` / `IBuffUiView`（Battle.Shared.Combat）是 UI 唯一取数口径，在线与回放都以 `BattleUnit` 作为其实现。
 - **契约分层**：`IWorldPoseView`（权威位置）→ `ISkillCasterView`（施法判定子集）；`IUnitUiView`（展示位置）与 `ISkillCasterView` 共享公共面（身份/数值/技能源），位置语义一致（服务端权威）。客户端施法预判与 UI 取同源位置，不再分离插值/权威。
 
-在线链：`BattleScene.Tick` 末尾 `ProjectAll()` → `SyncVarProjector` 写 `UnitPawn` SyncVars → LES 下发 → 客户端 `SyncUnit` 回填 `BattleUnit` → `RoomBattleClient.Units` → `BattleSessionContext.Units` → UI。计数型字段直接写（LES diff），冷却/Buff/仇恨内容比对节流重建 SyncList，倒计时写 `EndServerTick`。
+在线链：`BattleLoop.LateUpdate` 的 `Tick` → `BattleStateSynchronizer` 写 `UnitPawn` SyncVars → LES 下发 → 客户端 `SyncUnit` 回填 `BattleUnit` → `RoomBattleClient.Units` → `BattleSessionContext.Units` → UI。计数型字段直接写（LES diff），冷却/Buff/仇恨内容比对节流重建 SyncList，倒计时写 `EndServerTick`。
 
-回放链：`ReplayEngine` 构建 `BattleScene`（无投影器）每帧确定性重跑，直接读 `BattleUnit`（实现 `IUnitUiView`）供同一套展示契约消费，无需镜像。
+回放链：`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑，移动在 `BattleScene.Tick` 内结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供同一套展示契约消费。
 
 两链都收敛到 `IUnitUiView`：在线经"领域→UnitPawn→网络→镜像→UI"，回放"领域→BattleUnit→UI"，领域层与展示契约一致，仅在线多一层投影/反投影。
 

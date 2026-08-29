@@ -39,7 +39,7 @@ public partial class RoomBattleClient {
         pawn.FocusTargetChanged += (u, target) =>
             UnitFocusTargetChanged?.Invoke(u.Id, target);
 
-        // 在线端不做本地移动预测：不注入 MoveResolver，位移以服务端 SyncVar 为准。
+        // 在线端不推进领域逻辑：位移由服务端 SyncVar 同步，本地构建领域单位并回填展示状态。
         // 构建领域单位并注册；其余状态由 UpdateAfterPollEvents 每帧回填。
         AddPawnUnit(pawn);
 

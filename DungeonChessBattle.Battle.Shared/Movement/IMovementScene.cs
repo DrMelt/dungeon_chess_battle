@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Battle.Shared.Movement;
 
 /// <summary>
 /// 移动结算契约：从当前位置施加位移，返回经场景推挤后的最终位置。
-/// 客户端预测与服务端权威共用同一接口，从同一关卡配置构建以保证确定性一致。
+/// 在线与回放共用同一接口，从同一关卡配置构建以保证确定性一致。
 /// 仅描述结算行为，参与者生命周期由 <see cref="IActorRegistration"/> 承载。
 /// </summary>
 public interface IMovementScene {

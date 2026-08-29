@@ -4,12 +4,12 @@
 
 ## 战斗世界
 
-- `BattleScene` 实现 `IBattleSceneView`：`AddUnit` 注册领域单位 `BattleUnit`，`Configure` 装配移动桥与投影器；阶段与单位权威状态自持，经 `IBattleProjector` 投影到外部载体，场景只做推进、投影与结算。
+- `BattleScene` 实现 `IBattleSceneView`：`AddUnit` 注册领域单位 `BattleUnit`；阶段与单位权威状态自持，移动在 `Tick` 内统一结算，状态同步由外部 `BattleStateSynchronizer` 完成，场景只做推进与结算。
 - 瞬发技能（SpellTime=0）校验通过即立即结算，不进入读条状态机，不受移动打断影响。
 
 ## 帧节拍
 
-- 战斗循环经 LES `BattleLoop`（LocalSingleton）收编：`Update` = `ApplyDecisions`（AI 决策前置，输入本帧生效）；`LateUpdate` = `Tick`（推进 + 整帧事件外送）。与实体同步严格 1:1，时间由 LES accumulator 管理。
+- 战斗循环经 LES `BattleLoop`（LocalSingleton）收编：`Update` = `ApplyDecisions`（AI 决策前置，输入本帧生效）；`LateUpdate` = `Tick`（推进）→ 状态同步 → 整帧事件外送。与实体同步严格 1:1，时间由 LES accumulator 管理。
 - `ApplyDecisions` 仅 Running 阶段逐单位触发 `IUnitIntelligence.Decide`，决策动作在战斗世界内统一执行（移动输入、施法请求）。
 
 ## Tick 推进管线
@@ -30,11 +30,11 @@
 ## 同步策略
 
 - 冷却与 Buff 以截止 tick（EndServerTick）投影：服务端在起始与结构变化时写入，剩余由两端按本端 tick 本地推算（`SyncTickHelper`），避免每 tick 全量推送。读条剩余（SkillCastRemaining）逐帧写回。
-- 仇恨表全量内容比较节流：投影器逐帧比对仇恨列表，仅变化时重建 SyncList，避免每帧全量重建。
+- 仇恨表全量内容比较节流：状态同步器逐帧比对仇恨列表，仅变化时重建 SyncList，避免每帧全量重建。
 
 ## 确定性移动
 
-- `MovementResolver.Move` 纯函数：归一化方向 → 步进 → 场景交互（边界、静态障碍推挤、单位互斥）。客户端预测与服务端权威注入同一实现。
+- `MovementResolver.Move` 纯函数：归一化方向 → 步进 → 场景交互（边界、静态障碍推挤、单位互斥）。在线与回放经 `BattleScene.Tick` 共用同一结算路径。
 - `PhysicsMovementScene` 基于 Aether.Physics2D 只做静态几何宽相查询，不运行动态模拟，天然适配 LES 回滚重放；固定子步长防快速单位隧穿细薄障碍。
 
 ## 结算纯函数

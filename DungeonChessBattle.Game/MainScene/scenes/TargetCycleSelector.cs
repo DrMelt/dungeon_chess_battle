@@ -48,7 +48,7 @@ public sealed class TargetCycleSelector {
         Func<IReadOnlyList<string>, CampRelation> resolveRelation) {
         List<IUnitUiView> enemies = [];
         foreach (var candidate in units) {
-            if (candidate.UnitNetId == localNetId || candidate.Health <= 0f)
+            if (candidate.UnitNetId == localNetId || candidate.IsDead)
                 continue;
             if (resolveRelation(candidate.Camps) != CampRelation.Enemy)
                 continue;

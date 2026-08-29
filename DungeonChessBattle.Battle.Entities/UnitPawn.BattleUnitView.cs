@@ -37,6 +37,9 @@ public partial class UnitPawn : IBattleUnitView {
     float ICombatValuesView.Health => Health.Value;
 
     /// <inheritdoc />
+    bool ICombatValuesView.IsDead => Health.Value <= 0f;
+
+    /// <inheritdoc />
     SkillKeyId ICombatValuesView.SkillCasting => new(SkillCasting.Value);
 
     /// <inheritdoc />

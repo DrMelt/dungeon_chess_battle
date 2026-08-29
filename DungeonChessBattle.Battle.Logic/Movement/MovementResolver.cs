@@ -5,8 +5,8 @@ namespace DungeonChessBattle.Battle.Logic.Movement;
 
 /// <summary>
 /// 确定性移动管线：位置 + 方向 + 速度 + 时间 + 场景交互 → 最终位置。
-/// 纯函数、确定性，客户端预测与服务端权威共用同一实现。
-/// 移动规则，含归一化、推挤与边界，统一在此层，Pawn 只做状态落点。
+/// 纯函数、确定性，在线与回放经 BattleScene.Tick 共用同一实现。
+/// 移动规则，含归一化、推挤与边界，统一在此层。
 /// </summary>
 public static class MovementResolver {
     /// <summary>

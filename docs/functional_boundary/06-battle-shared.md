@@ -5,7 +5,7 @@
 ## 职责
 
 - 契约与数据结构：`SkillDefinition`/`BuffDefinition`/`RangeShape`/`UnitSnapshot`/`BattleUnit`/领域事件族与端口接口。
-- 端口契约：`IBuffEffect`/`ISkillEffect`、`IBattleUnitView`、`IBattleSceneView`、`IBattleProjector`、`IUnitIntelligence`、`IHateRule`、`IMovementScene`/`IBattleMovementBridge` 等。
+- 端口契约：`IBuffEffect`/`ISkillEffect`、`IBattleUnitView`、`IBattleSceneView`、`IUnitIntelligence`、`IHateRule`、`IMovementScene` 等。
 - 纯数据固有计算保留：`RangeShape` 几何判定、`VectorMath`、`CampRelationResolver` 阵营映射。
 
 ## 边界外

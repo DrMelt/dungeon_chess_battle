@@ -53,7 +53,7 @@ public sealed class EnemyIntelligence(
         float nearestDistanceSq = float.MaxValue;
 
         foreach (var candidate in candidates) {
-            if (candidate == self || candidate.Health <= 0f)
+            if (candidate == self || candidate.IsDead)
                 continue;
             if (relations.Invoke(self.Camps, candidate.Camps) != CampRelation.Enemy)
                 continue;

@@ -10,6 +10,11 @@ public interface ICombatValuesView {
         get;
     }
 
+    /// <summary>单位是否已死亡：当前生命值 ≤ 0。所有消费点统一用本谓词判定，勿再零散比较 Health。</summary>
+    bool IsDead {
+        get;
+    }
+
     /// <summary>当前施法技能，default 表示无施法。</summary>
     SkillKeyId SkillCasting {
         get;

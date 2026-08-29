@@ -95,13 +95,9 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
         if (ControlledEntity == null)
             return;
 
-        // 全端执行：把当前输入传给受控 Pawn，驱动其 Update() 做确定性位移。
-        // LES 在客户端预测阶段也会调用本方法，实现本地即时反馈，消除 RTT 卡顿；
-        // 服务端同款执行即为权威结算，回滚重放自动纠偏。
+        // 输入经 ServerApplyInput 转发到领域层消费：移动打断读条等在 Logic 层。
+        // 实体层不再持有移动输入，位移由领域 BattleScene 统一结算。
         var input = CurrentInput;
-        ControlledEntity.SetMovementInput(input.MoveDirection);
-
-        // 服务端扩展钩子：转发输入到 Logic 层衔接，如移动打断读条。
         if (EntityManager.IsServer)
             ControlledEntity.ServerApplyInput(input, EntityManager.DeltaTimeF);
     }

@@ -12,15 +12,15 @@
 
 房间线程启动后 `InitializeFromStore` 依次：
 
-1. 创建 `BattleRoomEntity` 注入权威副本键，`BattleScene.Configure` 装配移动桥与投影器。
-2. 从 Store 迁移准备期单位：按副本配置解析玩家阵营、同阵营错开出出生点、建 Pawn、注入战斗系数与移动管线。
+1. 创建 `BattleRoomEntity` 注入权威副本键，装配 `BattleStateSynchronizer`。
+2. 从 Store 迁移准备期单位：按副本配置解析玩家阵营、同阵营错开出出生点、建 Pawn、注入战斗系数与技能。
 3. 按副本配置生成敌人（配置键经注册表反查，注入智能决策器）。
 4. 创建回放录制器，注册 `BattleLoop` LocalSingleton。
 5. `StartBattle` 立即进入 Running（阶段先于客户端连入写定，技能请求不会被阶段校验拒绝）。
 
 ## 战斗循环
 
-- `BattleLoop.Update` = `ApplyDecisions`（AI 前置，输入本帧生效）；`LateUpdate` = `Tick`（推进 + 整帧事件外送）。LocalSingleton 不参与预测回滚。
+- `BattleLoop.Update` = `ApplyDecisions`（AI 前置，输入本帧生效）；`LateUpdate` = `Tick`（推进）→ 状态同步 → 整帧事件外送。LocalSingleton 不参与预测回滚。
 - 事件外送：Tick 返回的领域事件经 `BattleEventCoder` 编码 → `ReliableMessageFrame` 打包 → `SendReliableOrdered` 逐在线会话广播。空帧不发，断线期间不补发。
 
 ## 玩家会话与断线重连

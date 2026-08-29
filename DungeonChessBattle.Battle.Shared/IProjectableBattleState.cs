@@ -3,7 +3,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 
 namespace DungeonChessBattle.Battle.Shared;
 
-/// <summary>战斗世界投影所需的只读状态契约。投影器据此写外部载体，不触碰具体实体；回放端与服务端共用。</summary>
+/// <summary>战斗世界同步所需的只读状态契约。状态同步器据此写网络载体，不触碰具体实体；回放端与服务端共用。</summary>
 public interface IProjectableBattleState {
     /// <summary>单位网络实体 ID。</summary>
     ushort UnitNetId {
@@ -12,6 +12,11 @@ public interface IProjectableBattleState {
 
     /// <summary>当前生命值。</summary>
     float Health {
+        get;
+    }
+
+    /// <summary>单位是否已死亡：当前生命值 ≤ 0。同步器据此写 UnitState。</summary>
+    bool IsDead {
         get;
     }
 
@@ -67,6 +72,16 @@ public interface IProjectableBattleState {
 
     /// <summary>碰撞半径。</summary>
     float BodyRadius {
+        get;
+    }
+
+    /// <summary>当前世界位置，XZ 平面。</summary>
+    System.Numerics.Vector2 Position {
+        get;
+    }
+
+    /// <summary>当前朝向方向向量，XZ 平面。</summary>
+    System.Numerics.Vector2 Direction {
         get;
     }
 

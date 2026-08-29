@@ -69,8 +69,11 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>网络实体 ID 到战斗世界领域单位的映射，与 UnitPawn 同 ID 互绑。</summary>
     private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
 
-    /// <summary>网络实体 ID 到 UnitPawn 的映射，移动桥与投影器定位载体用。</summary>
+    /// <summary>网络实体 ID 到 UnitPawn 的映射，状态同步器定位载体用。</summary>
     private readonly Dictionary<ushort, UnitPawn> _pawnByNetId = [];
+
+    /// <summary>战斗状态同步器：领域只读状态 → UnitPawn SyncVar，由 BattleLoop 每帧驱动。</summary>
+    private BattleStateSynchronizer? _stateSynchronizer;
 
     /// <summary>房间网络实体，房间级战斗状态载体；整帧事件日志经传输层可靠通道外送，不经本实体承载。房间线程首帧初始化时填充。</summary>
     private BattleRoomEntity? _roomEntity;
