@@ -42,7 +42,7 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>阵营列表只读投影，服务端与客户端同源直读；装配期一次写入后不变，每次读取新建数组。</summary>
     public IReadOnlyList<string> CampTags => CampsData.Value.ToArray();
 
-    /// <summary>全局冷却截止的服务器逻辑 tick，客户端据此本地推算剩余时间。</summary>
+    /// <summary>全局冷却截止的服务器逻辑 tick，客户端据此本地推算剩余时间；0 表示无全局冷却。</summary>
     public SyncVar<ushort> GcdEndServerTick;
 
     /// <summary>技能个体冷却整包快照，服务端权威回写。</summary>

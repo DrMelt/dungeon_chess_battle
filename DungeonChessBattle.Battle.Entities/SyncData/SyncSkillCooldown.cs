@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 技能个体冷却列表的整包同步数据，经 SyncNetSerializable 以 LiteNetLib 变长序列化传输。
-/// 条目数动态，技能键以字符串序列化；服务端整帧覆盖，客户端按当前服务器 tick 本地推算剩余秒数。
+/// 条目数动态，技能键以字符串序列化；服务端仅在条目内容变化时整包重建，客户端按当前服务器 tick 本地推算剩余秒数。
 /// </summary>
 public sealed class SyncSkillCooldownSnapshot : INetSerializable {
     /// <summary>单条冷却项：技能键与截止服务器逻辑 tick。</summary>

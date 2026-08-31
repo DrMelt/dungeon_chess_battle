@@ -13,15 +13,16 @@
 - `SyncFrom(BattleUnit)`：服务端权威投影（领域 → 载体）。`BattleStateSynchronizer` 由 `BattleLoop.LateUpdate` 在 `Tick` 之后逐单位调用，另写房间阶段；回放不投影（领域直读）。
 - `SyncInto(BattleUnit)`：在线端回填（载体 → 领域）。`ClientBattleLoop.VisualUpdate` 每渲染帧按网络 ID 配对后调用。
 
-调用方只做配对与调度，不出现字段清单；通道不设端别守卫，选向由调用点负责。倒计时字段在通道内双向闭合：领域侧恒为剩余秒，线上恒为截止 tick。字段清单曾分散在服务端投影器与客户端镜像两处，下行有值而领域无读数的缺口即由此产生。
+调用方只做配对与调度，不出现字段清单；通道不设端别守卫，选向由调用点负责。倒计时字段在通道内双向闭合：领域侧恒为剩余秒，线上恒为截止 tick。字段清单曾分散在服务端投影器与客户端镜像两处，下行有值而领域无读数的缺口即由此产生；通道收拢后同类缺口换了形态——字段搬进了领域，推进者没跟着搬，见搬运规则末条。
 
 ## 搬运规则
 
 - 计数型字段（生命、位置、半径、读条剩余等）直接写 SyncVar，靠 LES 做增量 diff。
 - 冷却 / Buff / 仇恨 `SyncList`：服务端逐字段比对内容、一致则跳过重建，避免每帧全量发送；在线端按下行列表的内容指纹比对，指纹未变只跳过领域列表重建，条目剩余秒仍逐帧原地刷新。指纹归属回填的领域单位，换绑即失效，无需调用方重置。
-- 倒计时字段写**截止 tick**（`EndServerTick`），不逐 tick 推当前值；回填侧按本端插值 `ServerTick` 反算剩余秒，换算只出现在通道内。
+- 倒计时字段写**截止 tick**（`EndServerTick`），不逐 tick 推当前值；回填侧按本端插值 `ServerTick` 反算剩余秒，换算只出现在通道内。剩余秒非正一律落哨兵 0，反算见 0 短路归零，不参与 tick 差值——写成当前 tick 等于每 tick 重定基，两端 tick 同步前进，反算出的差永不收敛。
 - `MaxStacks`、`StackCount`、`DamageType` 等 Buff 字段随 Buff 条目一起写；在线端还原为 `ActiveBuff` 展示壳（`NetworkBuffDefinition`），不推进效果。
 - 仇恨表与聚焦 ID 只下行不回填：在线端不跑仇恨结算与 AI，聚焦另有轮询。
+- 每个剩余秒字段都要有推进者，且只在 `BattleScene.Tick` 内推进：读条 `SkillCastRemaining`、全局冷却 `GcdRemaining`、个体冷却 `CooldownEntry.Remaining`、`BuffInstance.Remaining` 各一处。截止 tick 是源剩余秒的派生量，源不推进则派生量逐 tick 重定基，本端读到一个恒定正数：显示上时间永不动，判定上冷却永不到期。
 
 ## 网络下发与客户端接收
 
@@ -51,6 +52,8 @@
 ### 截止 tick 换算
 
 `SyncTickHelper.RemainingSeconds` 用客户端插值 `ServerTick` 与截止 tick 做 `SequenceDiff`（处理 16 位回绕）推算剩余秒数；服务端用自身 `Tick`。倒计时同步统一为截止 tick，避免逐帧推送当前值。
+
+本端落后量（下行单程 + 插值水位 + 播放欠账 + 回填时点，即 client-prediction 的 D10）无法在本端消除：反算出的剩余秒恒比权威多 `落后 tick / Tickrate`，128 Hz 下约 0.1–0.2 秒。这是「传绝对时刻、本端推当前值」的固有代价，施法判定由服务端权威兜底，当前决定不补偿。
 
 Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显示（`ButtonSkillBase`）与施法预拦（`SkillCastValidator`）据此取数，剩余秒每渲染帧按截止 tick 反算；冷却/Buff 列表由回填通道独占，在线端不得本地改写。仇恨表无在线消费者，仅随投影下行。
 

@@ -354,12 +354,18 @@ public sealed partial class BattleScene(
         unit.RuntimeState.ClearCast();
     }
 
-    /// <summary>推进个体冷却：剩余秒数递减，到期移除条目。剩余由状态同步器按帧写 SyncVar。</summary>
+    /// <summary>
+    /// 推进个体冷却与全局冷却：剩余秒数递减，个体冷却到期移除条目，全局冷却到期归零。
+    /// 二者一律只存剩余秒，截止 tick 由同步通道折算。
+    /// </summary>
     private static void TickCooldowns(BattleUnit unit, double deltaTime) {
+        float dt = (float)deltaTime;
+        if (unit.GcdRemaining > 0f)
+            unit.GcdRemaining = MathF.Max(0f, unit.GcdRemaining - dt);
+
         var entries = unit.RuntimeState.Cooldowns;
         if (entries.Count == 0)
             return;
-        float dt = (float)deltaTime;
         for (int i = entries.Count - 1; i >= 0; i--) {
             CooldownEntry entry = entries[i];
             float remaining = entry.Remaining - dt;
