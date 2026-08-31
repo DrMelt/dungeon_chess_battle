@@ -1,4 +1,4 @@
-# DungeonChessBattle.Client.Battle
+# DungeonChessBattle.Battle.Client
 
 房间战斗客户端，LiteNetLib + LiteEntitySystem 传输，所属分组 Client。管理 LES 实体，把服务端实体事件映射为 UI 可消费的接口事件。职责边界见 `functional_boundary/04`。
 

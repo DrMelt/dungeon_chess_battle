@@ -10,7 +10,7 @@
 
 ## 边界外
 
-- 不含录制逻辑，录制在 Server.Battle.Replay。
+- 不含录制逻辑，录制在 Battle.Server.Replay。
 - 不含回放重跑逻辑，重跑在 Replay 引擎。
 - 不含归档的查询、凭证与下载，归 Replay.Server 与 Replay.Client。
 - 不含回放归档存储契约与摘要模型，归 Server.Abstractions。

@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// RoomBattleClient 的战斗事件日志仓库：保存当前房间会话收到的全部战斗事件，

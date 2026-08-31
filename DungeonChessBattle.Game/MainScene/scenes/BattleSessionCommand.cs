@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Game.GamePlayUI.skill_list;
 
 namespace DungeonChessBattle.Game.MainScene.scenes;

@@ -5,7 +5,7 @@ using DungeonChessBattle.Client.Shared;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 客户端网络基础设施抽象基类。

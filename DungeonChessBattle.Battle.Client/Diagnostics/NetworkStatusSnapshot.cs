@@ -1,6 +1,6 @@
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Client.Battle.Diagnostics;
+namespace DungeonChessBattle.Battle.Client.Diagnostics;
 
 /// <summary>
 /// 传输层通用指标，房间链路，往返与单向延迟、每秒收发、丢包与出站可靠队列积压。

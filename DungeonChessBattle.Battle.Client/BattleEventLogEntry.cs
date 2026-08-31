@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Events;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 战斗事件日志条目：领域事件与其客户端接收时刻（UTC Unix 毫秒）。

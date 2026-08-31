@@ -1,6 +1,6 @@
 using LiteEntitySystem.Transport;
 
-namespace DungeonChessBattle.Client.Battle.Diagnostics;
+namespace DungeonChessBattle.Battle.Client.Diagnostics;
 
 /// <summary>
 /// 网络状态采集用的计数装饰器：包装 LES 传输 peer，在发送时累计出站字节与包数，

@@ -1,4 +1,4 @@
-using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI;
 using DungeonChessBattle.Game.MainScene.scenes;

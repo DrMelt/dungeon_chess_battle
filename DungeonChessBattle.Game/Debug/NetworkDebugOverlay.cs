@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using DungeonChessBattle.Client.Battle.Diagnostics;
+using DungeonChessBattle.Battle.Client.Diagnostics;
 using DungeonChessBattle.Game.Services;
 using Godot;
 

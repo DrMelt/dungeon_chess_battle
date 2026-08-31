@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Events;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 当前房间会话的战斗事件日志仓库。只保存事件与接收时刻，不做格式化与显示。

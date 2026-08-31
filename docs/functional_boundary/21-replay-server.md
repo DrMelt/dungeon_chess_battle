@@ -12,7 +12,7 @@
 
 - 不承载 SignalR，也不签发凭证：凭证由大厅登录流程签发与撤销，本库只解析它，不认识连接与登录动作。
 - 不拥有身份体系：玩家记录主键由 `IPlayerIdentityResolver` 端口给出。
-- 不实现录制与归档写入：录制与归档在 Server.Battle；存储实现在 Server.DataStore。
+- 不实现录制与归档写入：录制与归档在 Battle.Server；存储实现在 Server.DataStore。
 - 不解释回放内容：解码、重放与展示在 Replay 引擎与客户端。
 
 ## 依赖

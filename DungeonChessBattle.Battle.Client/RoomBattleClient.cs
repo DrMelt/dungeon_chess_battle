@@ -2,6 +2,7 @@ using LiteNetLib;
 using LiteNetLib.Utils;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
+using DungeonChessBattle.Battle.Client.Diagnostics;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
@@ -11,9 +12,8 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.GameConfig;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Client.Battle.Diagnostics;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。

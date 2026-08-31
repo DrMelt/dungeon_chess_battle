@@ -2,7 +2,7 @@ using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Logic;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 在线客户端本地战斗世界与网络载体之间的状态搬运。

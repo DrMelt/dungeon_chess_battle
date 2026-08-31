@@ -2,7 +2,7 @@ using DungeonChessBattle.Battle.Entities;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// RoomBattleClient 的 LES 实体创建回调。

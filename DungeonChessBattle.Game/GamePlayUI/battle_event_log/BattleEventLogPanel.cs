@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI.battle_event_log;
 using DungeonChessBattle.MainScene;

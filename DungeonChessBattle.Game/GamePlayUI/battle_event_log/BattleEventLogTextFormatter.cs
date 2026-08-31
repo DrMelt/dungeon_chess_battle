@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Client;
 
 namespace DungeonChessBattle.Game.GamePlayUI.battle_event_log;
 

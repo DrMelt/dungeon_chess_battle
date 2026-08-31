@@ -1,7 +1,7 @@
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 using DungeonChessBattle.Battle.Shared.Events;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 客户端战斗服务接口，仅包含客户端需要的查询与操作。

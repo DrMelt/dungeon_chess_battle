@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
-using DungeonChessBattle.Client.Battle;
+using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Game.MainScene.scenes;
 using Godot;
 

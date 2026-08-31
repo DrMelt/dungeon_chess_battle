@@ -1,6 +1,6 @@
 # DungeonChessBattle.Replay
 
-回放引擎：纯本地确定性重跑录制输入，零网络依赖。与 Server.Battle.Replay 录制端、Replay.Server 服务侧、Replay.Client 获取端共同构成回放子系统。
+回放引擎：纯本地确定性重跑录制输入，零网络依赖。与 Battle.Server.Replay 录制端、Replay.Server 服务侧、Replay.Client 获取端共同构成回放子系统。
 
 ## 职责
 

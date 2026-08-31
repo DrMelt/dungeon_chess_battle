@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using LiteEntitySystem;
 
-namespace DungeonChessBattle.Client.Battle;
+namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 客户端本地战斗循环（LES LocalSingleton）当前只承担展示取数：`Update`/`LateUpdate` 为空实现，

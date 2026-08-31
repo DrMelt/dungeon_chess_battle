@@ -12,10 +12,12 @@
 
   <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
   <Project Path="DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Client\DungeonChessBattle.Battle.Client.csproj" />
   <Project Path="DungeonChessBattle.Replay.Client\DungeonChessBattle.Replay.Client.csproj" />
 
-  <Project Path="DungeonChessBattle.Client.Battle\DungeonChessBattle.Client.Battle.csproj" />
   <Project Path="DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
+  <Project Path="DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
+
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   <Project Path="DungeonChessBattle.Client.Shared\DungeonChessBattle.Client.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />

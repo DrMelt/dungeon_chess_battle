@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Client.Battle;
+﻿using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Lobby.Client;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Entities;
