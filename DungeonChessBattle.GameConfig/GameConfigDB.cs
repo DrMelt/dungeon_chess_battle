@@ -27,7 +27,7 @@ public class GameConfigDB : IGameConfigDB {
     /// 都必须递增本值：回放端据此校验录制端与重放端内容一致，不匹配直接拒绝重放，
     /// 把"数据演化导致旧回放静默漂移"变成声响失败。
     /// </summary>
-    public const string DataRevision = "1";
+    public const string DataRevision = "2";
 
     /// <summary>魔法持续伤害 Buff 定义。</summary>
     public static DamageOverTimeBuff BuffDotMagic {
@@ -71,7 +71,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_magic_damage"),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
-        GcdTime = 3.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -88,7 +88,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_cure"),
         SpellTime = 0.5f,
         CooldownTime = 0.5f,
-        GcdTime = 2.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
@@ -104,7 +104,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_add_dot_magic"),
         SpellTime = 0.0f,
         CooldownTime = 3.0f,
-        GcdTime = 3.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -120,7 +120,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_add_hot"),
         SpellTime = 0.0f,
         CooldownTime = 1.5f,
-        GcdTime = 2.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
@@ -136,7 +136,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_rect_range_damage"),
         SpellTime = 2.0f,
         CooldownTime = 3.0f,
-        GcdTime = 3.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = false,
         NeedPosTarget = true,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -156,7 +156,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_taunt"),
         SpellTime = 0.5f,
         CooldownTime = 8.0f,
-        GcdTime = 3.0f,
+        GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
