@@ -4,7 +4,8 @@
 
 ## 数据结构
 
-- 战斗单位 `BattleUnit`（含 `UnitCombatState`：读条目标、Buff 权威列表、冷却、仇恨表）为领域数据实体；外部载体 `UnitPawn` SyncVar 由服务端 `BattleStateSynchronizer` 单向投影，状态本身不参与网络。
+- 战斗单位 `BattleUnit`（含 `UnitCombatState`：读条目标、Buff 权威列表、冷却、仇恨表）为领域数据实体；与外部载体 `UnitPawn` 的字段搬运在 `Battle.Entities` 的同步通道内完成，本层不依赖网络与框架类型。
+- 网络回填占位 `NetworkBuffDefinition`/`NoOpBuffEffect`：在线端把下行 Buff 还原为 `ActiveBuff` 展示壳所用的占位定义，效果永不触发，客户端不推进 Buff。
 - 只读消费入口 `IBattleUnitView`：AI、施法/目标校验与仇恨规则只读消费。结算输入为只读快照 `UnitSnapshot`。
 
 ## 端口契约

@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
 /// 单位权威战斗状态，由 <see cref="BattleUnit.RuntimeState"/> 持有，BattleScene 读写推进。
-/// 读条目标、Buff、冷却、仇恨权威在此；网络同步经状态同步器，本状态不参与同步。
+/// 读条目标、Buff、冷却、仇恨权威在此；Buff 与冷却经 <c>UnitPawn</c> 同步通道搬运，仇恨只下行不回填。
 /// </summary>
 public sealed class UnitCombatState {
     /// <summary>读条目标单位，服务端私有，不参与网络同步；null 表示无。</summary>
@@ -19,13 +19,13 @@ public sealed class UnitCombatState {
         get; set;
     }
 
-    /// <summary>当前生效 Buff 权威列表，服务端推进；结构变化经投影通道同步。</summary>
+    /// <summary>当前生效 Buff 权威列表，服务端推进；在线端为同步通道回填的展示壳。</summary>
     public List<ActiveBuff> Buffs { get; } = [];
 
-    /// <summary>个体冷却权威列表，服务端推进；起始与到期经投影通道同步。</summary>
+    /// <summary>个体冷却权威列表，服务端推进；在线端为同步通道回填的展示壳。</summary>
     public List<CooldownEntry> Cooldowns { get; } = [];
 
-    /// <summary>服务端权威仇恨表，本单位对各目标的仇恨；dirty 经投影节流同步，客户端空表不推进。</summary>
+    /// <summary>服务端权威仇恨表，本单位对各目标的仇恨；随投影下行，在线端不消费。</summary>
     public HateTable Hates { get; } = new();
 
     /// <summary>清空读条目标。</summary>

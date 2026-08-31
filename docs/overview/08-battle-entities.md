@@ -5,13 +5,14 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 ## 实体族
 
 - `BattleRoomEntity`：房间级战斗状态投影载体。承载阶段、开始时刻与副本键（结束由阶段推导）；禁止在 OnConstructed 重置同步字段（客户端先应用初始同步再执行 OnConstructed，重置会丢字段）。
-- `UnitPawn`：单位 SyncVar 载体，实现只读视图 `IBattleUnitView`。生命、读条、冷却截止 tick、Buff/仇恨列表、阵营等均为网络同步字段；死亡状态由生命值推导。技能定义、智能决策器、移动管线为装配期本地写入不参与同步。
+- `UnitPawn`：单位 SyncVar 载体。生命、读条、冷却截止 tick、Buff/仇恨列表、阵营等均为网络同步字段；死亡状态由生命值推导。技能定义、智能决策器、移动管线为装配期本地写入不参与同步。
 - `UnitController`：`HumanControllerLogic` 输入控制器，`SubmitInput` 写入待发缓冲、`SendCastSkillRequest` 走可靠请求通道；服务端 `BeforeControlledUpdate` 每 tick 把当前输入转发给受控 Pawn。
 
 ## 载体适配
 
-- `IBattleUnitView` 只读适配：`UnitPawn` 投影 SyncVar 组装结算快照与冷却推算，供客户端技能预拦与展示；领域权威结算由战斗世界持 `BattleUnit` 完成，本适配不参与。
-- 同步写回经服务端 `BattleStateSynchronizer`，`BattleLoop.LateUpdate` 调用。
+- 同步通道 `UnitPawn.StateSync.cs`：`BattleUnit` ↔ `UnitPawn` 字段清单唯一声明处。`SyncFrom` 为服务端投影（领域 → 载体）、`SyncInto` 为在线回填（载体 → 领域），两方向逐字段成对，不设端别守卫，选向由调用点负责。
+- 倒计时在此双向换算（领域剩余秒 / 线上截止 tick）：截止 tick 在条目存续期内恒定，剩余秒是每帧派生值，故列表内容指纹只跳过重建、不跳过剩余秒原地刷新；指纹归属回填的领域单位，换绑（含 LES 实体池复用）即失效。仇恨只下行不回填。
+- 调用点只做配对与调度，不出现字段清单：服务端 `BattleStateSynchronizer` 由 `BattleLoop.LateUpdate` 驱动，在线端 `ClientBattleLoop.VisualUpdate` 每渲染帧驱动。
 
 ## 类型注册表
 

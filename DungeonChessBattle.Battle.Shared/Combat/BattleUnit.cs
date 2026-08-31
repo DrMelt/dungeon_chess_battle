@@ -10,8 +10,9 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// 属性与技能装配期写入，战斗状态由 BattleScene 推进，移动输入由 BattleScene 结算。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端、在线与回放共用。
 /// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffUiView"/> 供展示层读取。
+/// 在线端本实体是下行回填容器：字段与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，不参与结算。
 /// </summary>
-public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState, IUnitUiView {
+public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     /// <inheritdoc />
     public required UnitId UnitId {
         get; init;
@@ -113,7 +114,7 @@ public sealed class BattleUnit : IBattleUnitView, IProjectableBattleState, IUnit
         get; set;
     }
 
-    /// <summary>服务端权威战斗状态：读条目标、Buff、冷却、仇恨权威在此。</summary>
+    /// <summary>服务端权威战斗状态：读条目标、Buff、冷却、仇恨权威在此；在线端 Buff 与冷却为下行回填的展示壳。</summary>
     public UnitCombatState RuntimeState { get; } = new();
 
     /// <summary>当前世界位置，XZ 平面。</summary>

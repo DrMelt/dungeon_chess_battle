@@ -29,11 +29,6 @@
 
 - `BattleEventLog` 每帧 Clear → Append → 帧末经只读视图外送，日志仅当帧有效，调用方不得跨帧持有。非 Running 阶段缓冲一并清空不外送。
 
-## 同步策略
-
-- 冷却与 Buff 以截止 tick（`EndServerTick`）投影，服务端在起始与结构变化时写入；读条剩余（`SkillCastRemaining`）逐帧写回。在线端由本地模拟推进这些状态，当前投影值无消费方。
-- 仇恨表全量内容比较节流：状态同步器逐帧比对仇恨列表，仅变化时重建 SyncList，避免每帧全量重建。
-
 ## 确定性移动
 
 - `MovementMath` 纯函数层：位移增量、两两互斥让位、圆↔矩形推挤、边界钳制。`IMovementScene.Resolve` 收整帧全部意图一次批量解算，服务端、在线与回放经 `BattleScene.Tick` 共用同一路径。

@@ -8,8 +8,8 @@ namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 网络投影载体。继承 PawnLogic，承载单位战斗状态的网络同步（SyncVar）。
-/// 自身不做位移与结算：服务端由状态同步器写入权威值，在线端本地模拟会回写覆盖，
-/// 远端读数经 LES 插值呈现。死亡状态不设字段，由 Health 派生。
+/// 自身不做位移与结算：服务端经 <c>SyncFrom</c> 写入权威值，在线端经 <c>SyncInto</c> 回填领域单位。
+/// 载体读数一律取 <c>Value</c>，本实体未标注插值同步标志。死亡状态不设字段，由 Health 派生。
 /// </summary>
 public partial class UnitPawn : PawnLogic {
     /// <summary>
@@ -90,27 +90,6 @@ public partial class UnitPawn : PawnLogic {
     public Action<UnitPawn, UnitInputPacket, float>? InputHandler {
         get;
         set;
-    }
-
-    /// <summary>
-    /// 读取单个技能的总冷却剩余秒数（全局冷却与个体冷却取较大者），客户端展示用。
-    /// 服务端权威截止 tick 按本端插值 ServerTick 推算。
-    /// </summary>
-    public float GetTotalCooldownRemaining(SkillKeyId skillKey) {
-        var em = EntityManager;
-        float remaining = SyncTickHelper.RemainingSeconds(em, GcdEndServerTick.Value);
-        var snapshot = SkillCooldowns.Value;
-        if (snapshot == null)
-            return remaining;
-        foreach (var cd in snapshot.Entries) {
-            if (cd.SkillId == skillKey.Id) {
-                float cdRemaining = SyncTickHelper.RemainingSeconds(em, cd.EndServerTick);
-                if (cdRemaining > remaining)
-                    remaining = cdRemaining;
-                break;
-            }
-        }
-        return remaining;
     }
 
     /// <summary>

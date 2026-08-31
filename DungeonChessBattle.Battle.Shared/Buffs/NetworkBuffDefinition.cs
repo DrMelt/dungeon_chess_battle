@@ -1,11 +1,10 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 
-namespace DungeonChessBattle.Battle.Logic.Buffs;
+namespace DungeonChessBattle.Battle.Shared.Buffs;
 
 /// <summary>
-/// 仅用于客户端网络回填占位的 Buff 定义：承载展示字段，效果策略为空，客户端不推进 Buff。
+/// 仅用于网络回填占位的 Buff 定义：承载展示字段，效果策略为空，客户端不推进 Buff。
 /// 在线端把 UnitPawn 同步的 Buff 还原为 <see cref="ActiveBuff"/> 壳，供 UI 经 <see cref="IBuffUiView"/> 只读取数。
 /// </summary>
 public sealed class NetworkBuffDefinition : BuffDefinition {

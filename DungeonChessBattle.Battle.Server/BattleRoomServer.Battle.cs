@@ -1,5 +1,4 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
@@ -19,7 +18,7 @@ namespace DungeonChessBattle.Battle.Server;
 /// <summary>
 /// BattleRoomServer 的初始化：从 Store 自取数据、单位实体与领域单位对称创建、战斗管理与 RPC 处理。
 /// 本 partial 的所有方法仅在房间线程执行。
-/// 领域权威在 BattleUnit，UnitPawn 为同步载体；移动由 BattleScene 结算，状态经状态同步器写 SyncVar。
+/// 领域权威在 BattleUnit，UnitPawn 为同步载体；移动由 BattleScene 结算，状态经 UnitPawn.SyncFrom 投影。
 /// </summary>
 public partial class BattleRoomServer {
     /// <summary>
@@ -34,8 +33,8 @@ public partial class BattleRoomServer {
         }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
         _roomEntity = roomEntity;
 
-        // 状态同步器在单位创建后装配，读取已建实体映射；由 BattleLoop 每帧显式驱动
-        _stateSynchronizer = new BattleStateSynchronizer(this, EntityManager);
+        // 状态同步器在单位创建后装配，读取已建实体映射；由 BattleLoop 每帧在 Tick 之后显式驱动
+        _stateSynchronizer = new BattleStateSynchronizer(this);
 
         // 从 Store 迁移准备期单位；同阵营按序错开出生点，避免重名/同阵营单位重叠
         var units = _stateStore.GetPrepareUnits(RoomId);
@@ -304,140 +303,25 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 战斗状态同步器：把领域单位权威状态写回 UnitPawn SyncVar，房间阶段写回 BattleRoomEntity。
-    /// 标量字段直接写值（LES 仅在变化时发包）；冷却/Buff/仇恨列表内容比较节流，仅变化时重建 SyncList。
+    /// 战斗状态同步器：逐单位经 <c>UnitPawn.SyncFrom</c> 把领域权威状态投影到网络载体，
+    /// 房间阶段写回 BattleRoomEntity。字段清单与 tick 换算不在本类出现，收敛于同步通道。
     /// 仅房间线程调用，由 BattleLoop 每帧在 Tick 之后显式驱动。
     /// </summary>
-    private sealed class BattleStateSynchronizer(BattleRoomServer room, ServerEntityManager entityManager) {
-        /// <summary>同步战斗世界：读领域只读状态写 SyncVar。由 BattleLoop.LateUpdate 驱动。</summary>
+    private sealed class BattleStateSynchronizer(BattleRoomServer room) {
+        /// <summary>同步战斗世界：单位投影 → 聚焦清活 → 房间阶段。由 BattleLoop.LateUpdate 驱动。</summary>
         public void Sync(BattleScene battleScene) {
-            Project(battleScene.BattleUnits, battleScene.CurrentPhase);
-        }
-
-        private void Project(IReadOnlyList<IProjectableBattleState> units, BattlePhase phase) {
-            foreach (var unit in units)
+            foreach (var unit in battleScene.BattleUnits)
                 if (room._pawnByNetId.TryGetValue(unit.UnitId, out var pawn))
-                    ProjectUnit(unit, pawn);
+                    pawn.SyncFrom(unit);
 
             // 死亡无事件通道，聚焦清活随投影按生命值收敛
             room.ClearDeadFocusTargets();
 
             if (room._roomEntity is not { } entity)
                 return;
-            entity.BattlePhase.Value = (byte)phase;
-            if (phase == BattlePhase.Running)
+            entity.BattlePhase.Value = (byte)battleScene.CurrentPhase;
+            if (battleScene.CurrentPhase == BattlePhase.Running)
                 entity.BattleStartUnixTime.Value = room._battleScene.BattleStartUnixTime;
-        }
-
-        private void ProjectUnit(IProjectableBattleState unit, UnitPawn pawn) {
-            pawn.Position.Value = unit.Position;
-            pawn.Direction.Value = unit.Direction;
-            pawn.Health.Value = unit.Health;
-            pawn.MaxHealth.Value = unit.MaxHealth;
-            pawn.SkillCasting.Value = unit.SkillCasting.Id;
-            pawn.SkillCastRemaining.Value = unit.SkillCastRemaining;
-            pawn.GcdEndServerTick.Value = SyncTickHelper.EndTick(entityManager, unit.GcdRemaining);
-            pawn.PhysicalAttackBase.Value = unit.PhysicalAttackBase;
-            pawn.PhysicalTakePercent.Value = unit.PhysicalTakePercent;
-            pawn.MagicAttackBase.Value = unit.MagicAttackBase;
-            pawn.MagicTakePercent.Value = unit.MagicTakePercent;
-            pawn.CureIntensity.Value = unit.CureIntensity;
-            pawn.BaseSpeed.Value = unit.BaseSpeed;
-            pawn.BodyRadius.Value = unit.BodyRadius;
-            ProjectCooldowns(unit, pawn);
-            ProjectBuffs(unit, pawn);
-            ProjectHates(unit, pawn);
-        }
-
-        /// <summary>个体冷却整包投影，内容一致时跳过，避免每帧重建产生网络流量。</summary>
-        private void ProjectCooldowns(IProjectableBattleState unit, UnitPawn pawn) {
-            var cds = unit.Cooldowns;
-            var entries = new SyncSkillCooldownSnapshot.Entry[cds.Count];
-            for (int i = 0; i < cds.Count; i++)
-                entries[i] = new SyncSkillCooldownSnapshot.Entry(
-                    cds[i].SkillKey.Id,
-                    SyncTickHelper.EndTick(entityManager, cds[i].Remaining));
-
-            var current = pawn.SkillCooldowns.Value;
-            bool changed;
-            if (current == null) {
-                changed = true;
-            }
-            else {
-                changed = current.Entries.Count != entries.Length;
-                if (!changed) {
-                    for (int i = 0; i < entries.Length; i++) {
-                        if (current.Entries[i].SkillId != entries[i].SkillId
-                            || current.Entries[i].EndServerTick != entries[i].EndServerTick) {
-                            changed = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (!changed)
-                return;
-
-            var snapshot = new SyncSkillCooldownSnapshot();
-            snapshot.Set(entries);
-            pawn.SkillCooldowns.Value = snapshot;
-        }
-
-        /// <summary>Buff 全量投影，内容一致时跳过。</summary>
-        private void ProjectBuffs(IProjectableBattleState unit, UnitPawn pawn) {
-            var buffs = unit.Buffs;
-            bool changed = pawn.BuffsList.Count != buffs.Count;
-            if (!changed) {
-                for (int i = 0; i < buffs.Count; i++) {
-                    var existing = pawn.BuffsList[i];
-                    var b = buffs[i].Instance;
-                    if (existing.BuffTypeId != b.BuffTypeId
-                        || existing.EndServerTick != SyncTickHelper.EndTick(entityManager, (float)b.Remaining)
-                        || existing.StackCount != b.Stacks
-                        || existing.MaxStackCount != b.MaxStacks) {
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-            if (!changed)
-                return;
-
-            while (pawn.BuffsList.Count > 0)
-                pawn.BuffsList.RemoveAt(pawn.BuffsList.Count - 1);
-            foreach (var buff in buffs)
-                pawn.BuffsList.Add(new SyncBuffData {
-                    BuffTypeId = buff.Instance.BuffTypeId,
-                    EndServerTick = SyncTickHelper.EndTick(entityManager, (float)buff.Instance.Remaining),
-                    StackCount = (ushort)buff.Instance.Stacks,
-                    MaxStackCount = (ushort)Math.Max(1, buff.Instance.MaxStacks),
-                    SourceUnitNetId = buff.Instance.FromNetId,
-                    DamageType = (byte)buff.Instance.DamageType,
-                });
-        }
-
-
-        /// <summary>仇恨全量投影，内容一致时跳过。</summary>
-        private static void ProjectHates(IProjectableBattleState unit, UnitPawn pawn) {
-            var hates = unit.Hates;
-            bool changed = pawn.HatesList.Count != hates.Count;
-            if (!changed) {
-                for (int i = 0; i < hates.Count; i++) {
-                    var existing = pawn.HatesList[i];
-                    if (existing.TargetUnitNetId != hates[i].TargetNetId
-                        || existing.HateValue != hates[i].Value) {
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-            if (!changed)
-                return;
-
-            while (pawn.HatesList.Count > 0)
-                pawn.HatesList.RemoveAt(pawn.HatesList.Count - 1);
-            foreach (var hate in hates)
-                pawn.HatesList.Add(new SyncHateData { TargetUnitNetId = hate.TargetNetId, HateValue = hate.Value });
         }
     }
 }

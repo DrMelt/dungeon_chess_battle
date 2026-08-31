@@ -21,16 +21,16 @@
 
 单一真相源为 `BattleScene`（Battle.Logic）→ `BattleUnit` 领域实体，服务端与在线/回放共用，不依赖网络载体。
 
-- **下行回填**：在线端不跑本地结算。`ClientBattleLoop.VisualUpdate` 每渲染帧 `BattleSceneMirror.Pull` 一次，把 `UnitPawn` 的 `Value` 覆写进领域 `BattleUnit` 作展示源；`Update`/`LateUpdate` 空实现，`Flush` 无调用点。移动、读条、Buff、伤害与敌方 AI 只在服务端结算。
+- **下行回填**：在线端不跑本地结算。`ClientBattleLoop.VisualUpdate` 每渲染帧按网络 ID 配对单位，经 `UnitPawn.SyncInto` 把 `Value` 覆写进领域 `BattleUnit` 作展示源，倒计时字段在通道内反算为剩余秒；`Update`/`LateUpdate` 空实现。移动、读条、Buff、伤害与敌方 AI 只在服务端结算。
 - **展示契约**：`IUnitUiView` / `IBuffUiView`（Battle.Shared.Combat）是 UI 唯一取数口径，在线与回放都以 `BattleUnit` 作为其实现。
 - **对外契约**：`IClientBattleSession : IClientBattleService, IBattleViewSource` 是房间链路对上层唯一可见面，在两个既有契约之上补本地玩家语义（`LocalUnit`/`LocalFocus`/`LocalCaster`/`FindCaster`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。本地玩家成员不进 `IBattleViewSource`：回放无本地控制器。连接生命周期成员一律不入该契约。
 - **契约分层**：`IWorldPoseView`（逻辑位置）→ `ISkillCasterView`（施法判定子集）；`IUnitUiView`（展示位置）与 `ISkillCasterView` 共享公共面（身份/数值/技能源），位置语义一致（在线为下行回填值，回放为本地结算值）。客户端施法预判与 UI 取同源位置，不再分离插值/权威。
 
-在线链：`ClientBattleLoop.VisualUpdate`（`Mirror.Pull` 回填 SyncVar 读数）→ `RoomBattleClient.Units`（本地 `BattleScene.BattleUnits`）→ 经 `IClientBattleSession` 供 UI。
+在线链：`ClientBattleLoop.VisualUpdate`（`UnitPawn.SyncInto` 回填 SyncVar 读数）→ `RoomBattleClient.Units`（本地 `BattleScene.BattleUnits`）→ 经 `IClientBattleSession` 供 UI。
 
 回放链：`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑，移动在 `BattleScene.Tick` 内结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供同一套展示契约消费。
 
-两链都收敛到 `IUnitUiView`：回放"领域→`BattleUnit`→UI"每帧本地结算；在线"服务端结算→`UnitPawn`→`Mirror.Pull` 回填→UI"，显示读数即下行读数。
+两链都收敛到 `IUnitUiView`：回放"领域→`BattleUnit`→UI"每帧本地结算；在线"服务端结算→`UnitPawn`→`SyncInto` 回填→UI"，显示读数即下行读数。
 
 ## 收包分流
 
