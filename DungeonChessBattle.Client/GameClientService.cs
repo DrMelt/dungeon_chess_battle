@@ -1,4 +1,5 @@
 ﻿using DungeonChessBattle.Battle.Client;
+using DungeonChessBattle.Battle.Client.Diagnostics;
 using DungeonChessBattle.Lobby.Client;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Entities;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// 网络客户端门面，持有大厅客户端和房间客户端两个持久实例。
+/// 网络客户端门面，持有大厅客户端和房间客户端两个持久实例，对外只暴露契约与只读快照。
 /// 两个实例互斥连接：大厅连接时通过 _lobbyClient，加入房间后切换到 _roomClient。
 /// 帧更新由 Godot 主线程 GameClientDriver 节点每帧驱动，Update 方法，
 /// 不依赖后台线程，对齐 LiteEntitySystemUnityExample 的主线程驱动模式。
@@ -19,17 +20,22 @@ namespace DungeonChessBattle.Client;
 public sealed partial class GameClientService {
     private readonly ILogger<GameClientService> _logger;
 
+    // 传输实现实例，只活在本类内部：连接发起、重定向重连与帧驱动由门面独占，
+    // 对外只经 RoomSession 契约与 RoomNetworkStatus 快照透出，连接权力不下放。
+    private readonly LobbyClient _lobbyClient;
+    private readonly RoomBattleClient _roomClient;
+
     /// <summary>
     /// 创建客户端门面。连接客户端经 <see cref="IClientConnectionFactory"/> 创建，
-    /// 不直接依赖具体传输实现，默认工厂创建 SignalR 与 LES 客户端。
+    /// 具体传输类型只出现在门面内部，默认工厂创建 SignalR 与 LES 客户端。
     /// </summary>
     /// <param name="loggerFactory">日志工厂。</param>
     /// <param name="connectionFactory">连接客户端工厂；为空时使用默认实现。</param>
     public GameClientService(ILoggerFactory loggerFactory, IClientConnectionFactory? connectionFactory = null) {
         _logger = loggerFactory.CreateLogger<GameClientService>();
         var factory = connectionFactory ?? new DefaultClientConnectionFactory();
-        LobbyClient = factory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
-        RoomClient = factory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
+        _lobbyClient = factory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
+        _roomClient = factory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
     }
 
     // 连接状态机，单一事实源，见 ClientConnectionState。
@@ -41,7 +47,7 @@ public sealed partial class GameClientService {
     private IClientConnection? _activeClient;
 
     // SignalR 后台线程投递、需在主线程 Update 消费的动作队列。
-    // LiteNetLib NetManager 非线程安全，所有对 RoomClient 的操作必须收敛到主线程，
+    // LiteNetLib NetManager 非线程安全，所有对房间客户端的操作必须收敛到主线程，
     // 因此大厅回调只入队、不直接操作；由主线程每帧 Update 统一消费。
     private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _mainThreadActions = new();
 
@@ -72,18 +78,13 @@ public sealed partial class GameClientService {
     public bool IsConnected => _state is ClientConnectionState.InLobby or ClientConnectionState.InRoom;
 
     /// <summary>
-    /// 大厅客户端，持久实例，用于发送大厅请求和订阅事件。
+    /// 在线战斗会话，房间链路的业务唯一入口：单位读数、事件流与玩家命令都经此消费。
+    /// 不含连接生命周期——房间传输实例不外泄，连接一律由本门面状态机发起。
     /// </summary>
-    public LobbyClient LobbyClient {
-        get;
-    }
+    public IClientBattleSession RoomSession => _roomClient;
 
-    /// <summary>
-    /// 房间客户端，持久实例，用于 LES Entity 同步。
-    /// </summary>
-    public RoomBattleClient RoomClient {
-        get;
-    }
+    /// <summary>房间链路诊断快照，只给读数不给对象；未连接时为断开态快照。</summary>
+    public NetworkStatusSnapshot RoomNetworkStatus => _roomClient.NetworkStatus;
 
     /// <summary>服务器主机地址。</summary>
     public string Host { get; private set; } = "";
@@ -101,9 +102,9 @@ public sealed partial class GameClientService {
 
     /// <summary>
     /// 当前登录会话的凭证，由服务端登录流程签发，断开即失效。
-    /// 本门面只透传 <see cref="LobbyClient"/> 的连接级事实，不解释它被谁消费。
+    /// 本门面只透传大厅客户端的连接级事实，不解释它被谁消费。
     /// </summary>
-    public string? SessionToken => LobbyClient.SessionToken;
+    public string? SessionToken => _lobbyClient.SessionToken;
 
     /// <summary>客户端持久玩家 ID。</summary>
     public string PlayerId { get; } = Guid.NewGuid().ToString("N");
@@ -142,7 +143,7 @@ public sealed partial class GameClientService {
     public event Action<IReadOnlyList<RoomListing>>? OnRoomListReceived;
 
     /// <summary>获取指定房间最近一次快照，显示层进房初始化用；不存在时返回 null。</summary>
-    public RoomSnapshot? GetRoomSnapshot(string roomId) => LobbyClient.TryGetRoomSnapshot(roomId);
+    public RoomSnapshot? GetRoomSnapshot(string roomId) => _lobbyClient.TryGetRoomSnapshot(roomId);
 
     // 配置方法，在 Connect 前调用
 
@@ -174,10 +175,10 @@ public sealed partial class GameClientService {
 
             WirePersistentEvents();
 
-            LobbyClient.Connect(host, port);
+            _lobbyClient.Connect(host, port);
 
             SetState(ClientConnectionState.ConnectingLobby);
-            _activeClient = LobbyClient;
+            _activeClient = _lobbyClient;
         }
         catch (Exception ex) {
             _activeClient = null;
@@ -193,14 +194,14 @@ public sealed partial class GameClientService {
     public void RequestCreateRoom(string? roomPassword = null, RoomConfigDto? config = null) {
         _cachedRoomPassword = roomPassword;
 
-        LobbyClient.RequestCreateRoom(PlayerId, roomPassword, config, _serverPassword);
+        _lobbyClient.RequestCreateRoom(PlayerId, roomPassword, config, _serverPassword);
     }
 
     /// <summary>
     /// 请求房间列表，招募板。
     /// </summary>
     public void RequestListRooms() {
-        LobbyClient.RequestListRooms();
+        _lobbyClient.RequestListRooms();
     }
 
     /// <summary>
@@ -210,22 +211,37 @@ public sealed partial class GameClientService {
         _cachedRoomId = roomId;
         _cachedRoomPassword = roomPassword;
 
-        LobbyClient.RequestJoinRoom(roomId, PlayerId, roomPassword, _serverPassword);
+        _lobbyClient.RequestJoinRoom(roomId, PlayerId, roomPassword, _serverPassword);
     }
 
     /// <summary>请求在大厅准备阶段添加单位，房间由服务端从连接归属反查，阵营由副本配置按选项键解析。</summary>
     public void RequestPrepareAddUnit(string unitConfigKey, string campOptionKey) {
-        LobbyClient.RequestPrepareAddUnit(unitConfigKey, campOptionKey);
+        _lobbyClient.RequestPrepareAddUnit(unitConfigKey, campOptionKey);
     }
 
     /// <summary>请求在大厅准备阶段移除单位，房间由服务端从连接归属反查。</summary>
     public void RequestPrepareRemoveUnit(string unitConfigKey) {
-        LobbyClient.RequestPrepareRemoveUnit(unitConfigKey);
+        _lobbyClient.RequestPrepareRemoveUnit(unitConfigKey);
+    }
+
+    /// <summary>请求标记本人已准备，仅非房主；准备态以服务端广播的快照为准。</summary>
+    public void RequestPrepareReady() {
+        _lobbyClient.RequestPrepareReady();
+    }
+
+    /// <summary>请求取消本人准备态，仅非房主。</summary>
+    public void RequestPrepareUnready() {
+        _lobbyClient.RequestPrepareUnready();
+    }
+
+    /// <summary>请求开始战斗，仅房主，且需其他玩家全部准备；成功后服务端重定向到房间端口。</summary>
+    public void RequestPrepareStartBattle() {
+        _lobbyClient.RequestPrepareStartBattle();
     }
 
     /// <summary>请求离开房间，准备阶段主动退出，通知服务端移除成员并清理房间状态。</summary>
     public void RequestLeaveRoom() {
-        LobbyClient.RequestLeaveRoom();
+        _lobbyClient.RequestLeaveRoom();
     }
 
     /// <summary>
@@ -233,20 +249,20 @@ public sealed partial class GameClientService {
     /// </summary>
     public void Disconnect() {
         try {
-            LobbyClient.Disconnect();
+            _lobbyClient.Disconnect();
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "大厅客户端断开异常");
         }
         try {
-            RoomClient.Disconnect();
+            _roomClient.Disconnect();
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "房间客户端断开异常");
         }
 
         _activeClient = null;
-        ClearRoomSessionCache();
+        ClearRoomReconnectCache();
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;
         SetState(ClientConnectionState.Idle);
@@ -261,20 +277,20 @@ public sealed partial class GameClientService {
     /// 战斗退出由 MainScene.ExitBattle 调用。
     /// </summary>
     public void LeaveRoom() {
-        // 离开前读取当前房间 id，ClearRoomSessionCache 会清空缓存
+        // 离开前读取当前房间 id，ClearRoomReconnectCache 会清空缓存
         var roomId = _cachedRoomId;
         try {
-            RoomClient.Disconnect();
+            _roomClient.Disconnect();
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "房间客户端断开异常");
         }
 
         _activeClient = null;
-        ClearRoomSessionCache();
+        ClearRoomReconnectCache();
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;
-        SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+        SetState(_lobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
 
         _logger.LogInformation("已离开房间");
 
@@ -282,8 +298,8 @@ public sealed partial class GameClientService {
             OnRoomLeft?.Invoke(roomId!);
     }
 
-    /// <summary>清空断线重连所需的本房间会话缓存。</summary>
-    private void ClearRoomSessionCache() {
+    /// <summary>清空断线重连所需的本房间缓存：房间 ID、端口与密码。</summary>
+    private void ClearRoomReconnectCache() {
         _cachedRoomId = null;
         _cachedRoomPort = 0;
         _cachedRoomPassword = null;
@@ -309,13 +325,13 @@ public sealed partial class GameClientService {
         _eventsWired = true;
 
         // 大厅客户端，SignalR 回调在后台线程触发，仅入队，不直接操作网络状态
-        LobbyClient.OnFullyConnected += () => EnqueueMainThread(() => {
+        _lobbyClient.OnFullyConnected += () => EnqueueMainThread(() => {
             SetState(ClientConnectionState.InLobby);
             OnConnectionEstablished();
             // 连接建立后登记服务端权威身份；重连路径等待登录结果后再发重连请求
-            LobbyClient.RequestLogin(PlayerName);
+            _lobbyClient.RequestLogin(PlayerName);
         });
-        LobbyClient.OnLoginResult += (success, error) => EnqueueMainThread(() => {
+        _lobbyClient.OnLoginResult += (success, error) => EnqueueMainThread(() => {
             if (!success) {
                 // 清除重连等待，登录失败时重连无法进行，交由超时兜底复位状态
                 _reconnectPendingLogin = false;
@@ -329,24 +345,24 @@ public sealed partial class GameClientService {
                 SendReconnectRequest();
             }
         });
-        LobbyClient.OnFullyDisconnected += () => EnqueueMainThread(() => {
+        _lobbyClient.OnFullyDisconnected += () => EnqueueMainThread(() => {
             // 大厅断开：若房间仍连，战斗中则保持；否则视为完全断开
             if (_state is ClientConnectionState.InRoom or ClientConnectionState.ConnectingRoom)
                 return;
             OnConnectionLost();
         });
-        LobbyClient.OnRedirectToRoom += (roomId, roomPort) => EnqueueMainThread(() => {
+        _lobbyClient.OnRedirectToRoom += (roomId, roomPort) => EnqueueMainThread(() => {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("收到战斗重连重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
             // OnRedirectToRoom 仅由 reconnect_room 成功触发，服务端已确认房间在战斗中
             ReconnectToRoom(Host, roomPort, roomId, isBattleStart: true);
         });
-        LobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => EnqueueMainThread(() => {
+        _lobbyClient.OnPrepareBattleRedirect += (roomId, roomPort) => EnqueueMainThread(() => {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, Host, roomPort);
             ReconnectToRoom(Host, roomPort, roomId, isBattleStart: true);
         });
-        LobbyClient.OnReconnectFailed += (error) => EnqueueMainThread(() => {
+        _lobbyClient.OnReconnectFailed += (error) => EnqueueMainThread(() => {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("重连失败: {Error}", error);
             // 仅在重连状态中处理，失败后清缓存并复位，避免卡死在 Reconnecting
@@ -356,22 +372,22 @@ public sealed partial class GameClientService {
             }
         });
         // 房间快照及大厅中继事件：SignalR 后台回调转到主线程派发，显示层无需自行 CallDeferred
-        LobbyClient.OnRoomSnapshotUpdated += (roomId, snapshot) => EnqueueMainThread(() => {
+        _lobbyClient.OnRoomSnapshotUpdated += (roomId, snapshot) => EnqueueMainThread(() => {
             // 只转发当前房间的快照，旧房间在途/竞态快照在此丢弃，显示层无需自行比对房间
             if (roomId != _cachedRoomId)
                 return;
             OnRoomSnapshotUpdated?.Invoke(roomId, snapshot);
         });
-        LobbyClient.OnRoomJoined += (roomId) => EnqueueMainThread(() => OnRoomJoined?.Invoke(roomId));
-        LobbyClient.OnRoomCreated += (roomId) => EnqueueMainThread(() => {
+        _lobbyClient.OnRoomJoined += (roomId) => EnqueueMainThread(() => OnRoomJoined?.Invoke(roomId));
+        _lobbyClient.OnRoomCreated += (roomId) => EnqueueMainThread(() => {
             // 房间 ID 服务端生成，创建成功后才可缓存用于断线重连
             _cachedRoomId = roomId;
             OnRoomCreated?.Invoke(roomId);
         });
-        LobbyClient.OnRoomListReceived += (rooms) => EnqueueMainThread(() => OnRoomListReceived?.Invoke(rooms));
+        _lobbyClient.OnRoomListReceived += (rooms) => EnqueueMainThread(() => OnRoomListReceived?.Invoke(rooms));
 
         // 房间客户端，LiteNetLib 回调在主线程 PollEvents 内触发
-        RoomClient.OnFullyConnected += () => {
+        _roomClient.OnFullyConnected += () => {
             SetState(ClientConnectionState.InRoom);
             OnConnectionEstablished();
 
@@ -390,7 +406,7 @@ public sealed partial class GameClientService {
                 OnRoomJoined?.Invoke(roomId);
             }
         };
-        RoomClient.OnFullyDisconnected += () => {
+        _roomClient.OnFullyDisconnected += () => {
             // 主动离开，LeaveRoom 或 Disconnect 用 _netClient.Stop 不触发此事件，此处为意外断开
             if (_state is not (ClientConnectionState.InRoom or ClientConnectionState.ConnectingRoom))
                 return;

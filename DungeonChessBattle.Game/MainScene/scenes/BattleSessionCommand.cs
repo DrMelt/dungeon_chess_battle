@@ -24,42 +24,42 @@ public interface IBattleSessionCommand : ISkillCaster {
 /// 施法者由服务端从请求来源控制器推导，客户端不指定；本地单位或服务未就绪时不发起。
 /// </summary>
 public sealed class BattleSessionCommand : IBattleSessionCommand {
-    /// <summary>房间客户端（Bind 时注入，承担命令转发与本地单位 ID 读取）。</summary>
-    private RoomBattleClient? _client;
+    /// <summary>在线战斗会话（Bind 时注入，承担命令转发与本地单位 ID 读取）。</summary>
+    private IClientBattleSession? _session;
 
     /// <summary>当前房间 ID（供 RPC 上下文标识）。</summary>
     private string _roomId = "";
 
     /// <inheritdoc />
-    public bool IsInBattle => _client != null;
+    public bool IsInBattle => _session != null;
 
-    /// <summary>进入战斗：注入房间客户端与房间 ID。</summary>
-    public void Bind(RoomBattleClient client, string roomId) {
-        _client = client;
+    /// <summary>进入战斗：注入在线战斗会话与房间 ID。</summary>
+    public void Bind(IClientBattleSession session, string roomId) {
+        _session = session;
         _roomId = roomId;
     }
 
-    /// <summary>退出战斗：释放房间客户端与房间 ID 引用。</summary>
+    /// <summary>退出战斗：释放会话引用与房间 ID。</summary>
     public void Unbind() {
-        _client = null;
+        _session = null;
         _roomId = "";
     }
 
     /// <inheritdoc />
     public void SetLocalFocusTarget(ushort targetNetId) {
-        var client = _client;
-        var localUnitNetId = client?.LocalUnit?.UnitId ?? 0;
-        if (client == null || localUnitNetId == 0)
+        var session = _session;
+        var localUnitNetId = session?.LocalUnit?.UnitId ?? 0;
+        if (session == null || localUnitNetId == 0)
             return;
-        client.SetFocusTarget(_roomId, localUnitNetId, targetNetId);
+        session.SetFocusTarget(_roomId, localUnitNetId, targetNetId);
     }
 
     /// <inheritdoc />
     public void Cast(SkillKeyId skillKey, ushort targetNetId, float posX, float posZ) {
-        var client = _client;
-        var localUnitNetId = client?.LocalUnit?.UnitId ?? 0;
-        if (client == null || localUnitNetId == 0)
+        var session = _session;
+        var localUnitNetId = session?.LocalUnit?.UnitId ?? 0;
+        if (session == null || localUnitNetId == 0)
             return;
-        client.CastSkill(_roomId, localUnitNetId, targetNetId, skillKey.Id, posX, posZ);
+        session.CastSkill(_roomId, localUnitNetId, targetNetId, skillKey.Id, posX, posZ);
     }
 }

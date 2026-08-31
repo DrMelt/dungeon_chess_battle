@@ -62,7 +62,7 @@ theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
 _dungeonResourceTable = ExtResource("7_dungeonTable")
 
-[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("HostLabel", "DungeonNameLabel", "PlayersLabel", "StatusLabel", "InfoLabel", "SelectUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
+[node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("HostLabel", "DungeonNameLabel", "PlayersLabel", "StatusLabel", "InfoLabel", "SelectUnitButton", "RemoveUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
 script = ExtResource("4_irfs")
 HostLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/RoomInfoVBox/RoomInfoHBox/HostLabel")
 DungeonNameLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/RoomInfoVBox/RoomInfoHBox/DungeonNameLabel")
@@ -70,6 +70,7 @@ PlayersLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContai
 StatusLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer/StatusLabel")
 InfoLabel = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/RoomInfoVBox/Panel/MarginContainer/ScrollContainer/InfoLabel")
 SelectUnitButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer/SelectUnitButton")
+RemoveUnitButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer/RemoveUnitButton")
 StartBattleButton = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/StartBattleButton")
 BackButton = NodePath("../Panel/Panel/MarginContainer/BackButton")
 UnitCardGrid = NodePath("../Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/UnitGrid")
@@ -184,6 +185,10 @@ layout_mode = 2
 [node name="SelectUnitButton" type="Button" parent="Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer" unique_id=541081573]
 layout_mode = 2
 text = "选择角色"
+
+[node name="RemoveUnitButton" type="Button" parent="Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer" unique_id=1864520294]
+layout_mode = 2
+text = "取消角色"
 
 [node name="StatusLabel" type="Label" parent="Panel/Panel/MarginContainer/VBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer" unique_id=593841209]
 layout_mode = 2

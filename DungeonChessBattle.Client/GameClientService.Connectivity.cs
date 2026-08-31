@@ -81,10 +81,10 @@ public sealed partial class GameClientService {
         }
 
         SetState(ClientConnectionState.ConnectingRoom);
-        _activeClient = RoomClient;
+        _activeClient = _roomClient;
         try {
             // 使用客户端持久 _playerId 作为连接密钥，服务端白名单验证
-            RoomClient.Reconnect(host, roomPort, PlayerId);
+            _roomClient.Reconnect(host, roomPort, PlayerId);
         }
         catch (Exception ex) {
             _activeClient = null;
@@ -113,12 +113,12 @@ public sealed partial class GameClientService {
             _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, PlayerId);
 
         SetState(ClientConnectionState.Reconnecting);
-        _activeClient = LobbyClient;
+        _activeClient = _lobbyClient;
 
-        if (!LobbyClient.IsConnected) {
+        if (!_lobbyClient.IsConnected) {
             // 事件驱动：大厅连接建立后自动登录，登录结果回调再发送重连请求，避免竞态
             _reconnectPendingLogin = true;
-            LobbyClient.Connect(Host, DefaultPort);
+            _lobbyClient.Connect(Host, DefaultPort);
         }
         else {
             SendReconnectRequest(); // 大厅已连接且登录会话有效，直接发送
@@ -131,7 +131,7 @@ public sealed partial class GameClientService {
     private void SendReconnectRequest() {
         var cachedRoomId = _cachedRoomId ??
             throw new InvalidOperationException("cachedRoomId is not set before reconnect request.");
-        LobbyClient.RequestReconnectRoom(cachedRoomId, PlayerId, _cachedRoomPassword, _serverPassword);
+        _lobbyClient.RequestReconnectRoom(cachedRoomId, PlayerId, _cachedRoomPassword, _serverPassword);
     }
 
     // 内部连接回调
@@ -154,11 +154,11 @@ public sealed partial class GameClientService {
         bool wasInRoom = _state is ClientConnectionState.ConnectingRoom
             or ClientConnectionState.InRoom
             or ClientConnectionState.Reconnecting;
-        ClearRoomSessionCache();
+        ClearRoomReconnectCache();
         _reconnectPendingLogin = false;
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;
-        SetState(LobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
+        SetState(_lobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
         if (wasInRoom)
             OnBattleSessionLost?.Invoke();
     }
@@ -168,7 +168,7 @@ public sealed partial class GameClientService {
     /// 更新循环由 Godot 主线程 GameClientDriver 驱动，断开时无需停止后台线程。
     /// </summary>
     private void OnConnectionLost() {
-        if (LobbyClient.IsConnected || RoomClient.IsConnected)
+        if (_lobbyClient.IsConnected || _roomClient.IsConnected)
             return;
 
         ResetToNonRoomState();
@@ -212,7 +212,7 @@ public sealed partial class GameClientService {
     /// <param name="delta">距上一帧的秒数。</param>
     public void Update(float delta) {
         // 先消费 SignalR 后台线程投递的动作，再驱动网络轮询。
-        // 保证所有对 RoomClient 的操作都在主线程执行。
+        // 保证所有对房间客户端的操作都在主线程执行。
         while (_mainThreadActions.TryDequeue(out var action)) {
             try {
                 action();
@@ -223,14 +223,14 @@ public sealed partial class GameClientService {
         }
 
         try {
-            LobbyClient.Update(delta);
+            _lobbyClient.Update(delta);
         }
         catch (Exception ex) {
             _logger.LogWarning(ex, "大厅客户端更新异常");
         }
 
         try {
-            RoomClient.Update(delta);
+            _roomClient.Update(delta);
         }
         catch (Exception ex) {
             _logger.LogWarning(ex, "房间客户端更新异常");

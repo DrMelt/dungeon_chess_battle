@@ -22,7 +22,7 @@
 
 ## 数据流
 
-- UI 不直接持有网络对象：事件经 `IClientBattleService` C# 事件到达，数据查询统一经 `BattleSessionContext` 投影（本地 Pawn、全部单位、副本键、战斗计时、阵营关系函数）。
+- UI 不直接持有网络对象：会话入口是门面的 `RoomSession`（`IClientBattleSession`），事件经其 C# 事件到达，数据查询统一经 `BattleSessionContext` 投影（本地 Pawn、全部单位、副本键、战斗计时、阵营关系函数）。诊断面板读门面的 `RoomNetworkStatus` 快照。
 - `UnitShowManager` 是单位视图唯一所有者：每帧从 `IBattleViewSource` 增量生成视图、重取单位引用并按 `IsDead` 收敛可见性；技能展示资源由 UI 侧按技能 ID 直查 `SkillResourceTable`，不在此装配；不对外提供查询。
 - 阵营判定依赖 `DungeonRegistry.GetRelations(dungeonKey)` 装配的关系函数，副本键同步后延迟收敛，未知键抛异常不静默回退。
 

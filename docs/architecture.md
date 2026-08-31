@@ -51,7 +51,6 @@ graph TD
 
     Godot --> LobbyShared
     Godot --> Client
-    Godot --> LobbyClient
     Godot --> BattleClient
     Godot --> Replay
     Godot --> ReplayCli

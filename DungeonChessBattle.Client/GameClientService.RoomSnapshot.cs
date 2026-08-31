@@ -3,9 +3,10 @@ using DungeonChessBattle.Lobby.Protocol.Dtos;
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// GameClientService 的房间会话只读视图，作为客户端房间领域的单一事实源。
+/// GameClientService 的大厅房间快照只读视图，作为客户端房间领域的单一事实源。
 /// 创建/加入/重连路径都会写 _cachedRoomId，LeaveRoom/Disconnect 会清空；
 /// 房间权威快照由 LobbyClient 缓存并经 OnRoomSnapshotUpdated 更新。
+/// 与门面的 RoomSession 属性无关：后者是房间 LES 战斗链路契约。
 /// </summary>
 public sealed partial class GameClientService {
     /// <summary>当前所在房间 ID；未进房间时为 null。</summary>

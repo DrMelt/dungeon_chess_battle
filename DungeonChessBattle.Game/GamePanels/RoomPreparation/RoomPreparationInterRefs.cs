@@ -43,6 +43,11 @@ public partial class RoomPreparationInterRefs : Node {
     public Button? SelectUnitButton {
         get; private set;
     }
+    /// <summary>取消当前已选单位按钮。</summary>
+    [Export]
+    public Button? RemoveUnitButton {
+        get; private set;
+    }
     /// <summary>开始战斗按钮。</summary>
     [Export]
     public Button? StartBattleButton {
@@ -88,6 +93,8 @@ public partial class RoomPreparationInterRefs : Node {
             _logger.LogError("InfoLabel is not assigned!");
         if (SelectUnitButton == null)
             _logger.LogError("SelectUnitButton is not assigned!");
+        if (RemoveUnitButton == null)
+            _logger.LogError("RemoveUnitButton is not assigned!");
         if (StartBattleButton == null)
             _logger.LogError("StartBattleButton is not assigned!");
         if (BackButton == null)

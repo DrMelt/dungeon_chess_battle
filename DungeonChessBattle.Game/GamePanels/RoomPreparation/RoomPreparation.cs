@@ -14,8 +14,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// <summary>
 /// 房间准备界面。玩家进入房间后选择阵营单位并准备，房主在全员准备后开始战斗。
 /// 房主显示"开始战斗"（等待其他玩家全部准备），非房主显示"准备"/"取消准备"切换。
-/// 准备阶段通过大厅 LobbyClient 的 JSON 协议进行单位增删、准备切换和战斗启动，
-/// 战斗启动后服务端返回端口重定向，客户端切换到 RoomBattleClient 的 LES 连接。
+/// 准备阶段经客户端门面发大厅请求：单位增删、准备切换与战斗启动。
+/// 战斗启动后服务端返回端口重定向，连接由门面切到房间 LES 链路。
 /// </summary>
 public partial class RoomPreparation : BaseGamePanel {
     /// <summary>日志记录器。</summary>
@@ -61,6 +61,11 @@ public partial class RoomPreparation : BaseGamePanel {
             startBtn.Pressed += OnStartBattleClicked;
             startBtn.Disabled = true;
         }
+        var removeBtn = InterRefs?.RemoveUnitButton;
+        if (removeBtn is not null) {
+            removeBtn.Pressed += OnRemoveUnitClicked;
+            removeBtn.Disabled = true;
+        }
 
         // 订阅 UnitSelectPanel 的选择信号
         if (InterRefs?.UnitSelectPanel is not null)
@@ -86,7 +91,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 由 GameLobby 调用，进入准备阶段。房间会话由客户端门面承担，
+    /// 由 GameLobby 调用，进入准备阶段。房间状态由客户端门面承担，
     /// 本方法仅做首屏渲染引导：乐观配置先行，权威快照未命中时保持占位。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
@@ -99,7 +104,7 @@ public partial class RoomPreparation : BaseGamePanel {
         RenderRoomState(config);
         InterRefs?.StatusLabel?.Text = "请选择单位...";
         RefreshUnitGrid();
-        RefreshStartButton();
+        RefreshActionButtons();
     }
 
     /// <summary>
@@ -120,7 +125,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 添加当前选中单位：通过 LobbyClient JSON 协议发送。
+    /// 添加当前选中单位：经门面发大厅准备阶段请求。
     /// </summary>
     private void AddUnit() {
         if (string.IsNullOrEmpty(_selectedUnitKey))
@@ -148,7 +153,23 @@ public partial class RoomPreparation : BaseGamePanel {
         }
 
         InterRefs?.StatusLabel?.Text = $"请求创建 {configKey}...";
-        RefreshStartButton();
+        RefreshActionButtons();
+    }
+
+    /// <summary>
+    /// 取消当前已选单位：从权威快照取本人单位，经门面发大厅移除请求，等服务端广播回流刷新。
+    /// </summary>
+    private void OnRemoveUnitClicked() {
+        var unit = Client.CurrentRoomSnapshot?.Units
+            .FirstOrDefault(u => u.PlayerName == Client.PlayerName);
+        if (unit is null) {
+            InterRefs?.StatusLabel?.Text = "当前没有已选角色";
+            return;
+        }
+
+        _selectedUnitKey = null;
+        Client.RequestPrepareRemoveUnit(unit.UnitConfigKey);
+        InterRefs?.StatusLabel?.Text = $"请求取消 {unit.UnitConfigKey}...";
     }
 
     /// <summary>
@@ -158,7 +179,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
         RenderRoomState(null);
         RefreshUnitGrid();
-        RefreshStartButton();
+        RefreshActionButtons();
         if (Client.CurrentRoomSnapshot is { } s)
             InterRefs?.StatusLabel?.Text = $"单位列表已更新 ({s.Units.Count})";
     }
@@ -281,31 +302,33 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 刷新底部主按钮的状态机：
-    /// 房主显示"开始战斗"，可用条件为单位非空且除房主外其他玩家全部准备；
-    /// 非房主显示"准备"/"取消准备"，点击后切换准备状态。
+    /// 刷新操作按钮状态机：房主主按钮为"开始战斗"（本人已选单位且其他玩家全部准备才可用），
+    /// 非房主为"准备"/"取消准备"；"取消角色"仅在本人已选单位且未准备时可用，与"选择角色"同锁。
     /// </summary>
-    private void RefreshStartButton() {
-        var startBtn = InterRefs?.StartBattleButton;
-        if (startBtn == null)
+    private void RefreshActionButtons() {
+        if (InterRefs is null)
             return;
 
         bool isHost = Client.IsCurrentUserHost;
         bool isReady = Client.IsCurrentUserReady;
         bool hasSelectedUnit = Client.HasCurrentUserUnit;
 
-        if (isHost) {
-            startBtn.Text = "开始战斗";
-            startBtn.Disabled = !hasSelectedUnit || !Client.OthersReady;
-        }
-        else {
-            startBtn.Text = isReady ? "取消准备" : "准备";
-            startBtn.Disabled = !hasSelectedUnit;
+        if (InterRefs.StartBattleButton is { } startBtn) {
+            if (isHost) {
+                startBtn.Text = "开始战斗";
+                startBtn.Disabled = !hasSelectedUnit || !Client.OthersReady;
+            }
+            else {
+                startBtn.Text = isReady ? "取消准备" : "准备";
+                startBtn.Disabled = !hasSelectedUnit;
+            }
         }
 
-        // 已准备时锁定角色选择，禁止准备后更改角色
-        if (InterRefs?.SelectUnitButton != null)
-            InterRefs.SelectUnitButton.Disabled = isReady;
+        // 已准备锁定角色增删：服务端权威兜底，UI 同步禁用入口
+        if (InterRefs.SelectUnitButton is { } selectBtn)
+            selectBtn.Disabled = isReady;
+        if (InterRefs.RemoveUnitButton is { } removeBtn)
+            removeBtn.Disabled = !hasSelectedUnit || isReady;
     }
 
     /// <summary>
@@ -319,7 +342,7 @@ public partial class RoomPreparation : BaseGamePanel {
     }
 
     /// <summary>
-    /// 房主点击开始战斗：校验单位与全员准备后，通过 LobbyClient 发送请求。
+    /// 房主点击开始战斗：校验单位与全员准备后，经门面发送大厅请求。
     /// </summary>
     private void OnStartBattleAsHost() {
         if (!Client.HasCurrentUserUnit) {
@@ -336,8 +359,8 @@ public partial class RoomPreparation : BaseGamePanel {
             _logger.LogInformation("请求开始战斗: {RoomId}, units={UnitCount}",
                 Client.CurrentRoomId, Client.CurrentRoomSnapshot?.Units.Count ?? 0);
 
-        // 通过大厅 LobbyClient JSON 协议发送 prepare_start_battle，房间由服务端从连接归属反查。
-        Client.LobbyClient.RequestPrepareStartBattle();
+        // prepare_start_battle 走大厅链路，房间由服务端从连接归属反查。
+        Client.RequestPrepareStartBattle();
     }
 
     /// <summary>
@@ -348,7 +371,7 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
 
         if (Client.IsCurrentUserReady) {
-            Client.LobbyClient.RequestPrepareUnready();
+            Client.RequestPrepareUnready();
             InterRefs?.StatusLabel?.Text = "已取消准备";
         }
         else {
@@ -356,7 +379,7 @@ public partial class RoomPreparation : BaseGamePanel {
                 InterRefs?.StatusLabel?.Text = "请先选择角色！";
                 return;
             }
-            Client.LobbyClient.RequestPrepareReady();
+            Client.RequestPrepareReady();
             InterRefs?.StatusLabel?.Text = "已请求准备...";
         }
     }

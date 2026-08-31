@@ -53,14 +53,14 @@ Buff / 冷却 / 仇恨三个 `SyncList` 与 `GcdEndServerTick` 现仅由服务�
 
 ## 领域单位 → UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `BattleSessionContext.Units` 暴露；另提供 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 判定角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 判定角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
 
 ## 契约分层
 
 - `IWorldPoseView`：碰撞半径 + 逻辑位置，供判定。
 - `ISkillCasterView : IUnitCombatView, IWorldPoseView`：施法判定最小子集，`SkillCastValidator` 依赖。
 - `IUnitCombatView : IUnitIdentityView, ICombatValuesView, ISkillSource`：公共面，`ISkillCasterView` 与 `IUnitUiView` 共享。
-- `IUnitUiView : IUnitCombatView`：展示契约，`Position` 与判定共用同一份本地结算位置，不再分离插值与权威两份读数。
+- `IUnitUiView : IUnitCombatView`：展示契约，`Position` 与判定共用同一份位置读数（在线为下行回填值，回放为本地结算值），不再分离插值与权威两份。
 - `IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView`：领域只读（服务端/AI/仇恨）。
 - `IBuffUiView`：Buff 展示，`ActiveBuff` 实现它。
 

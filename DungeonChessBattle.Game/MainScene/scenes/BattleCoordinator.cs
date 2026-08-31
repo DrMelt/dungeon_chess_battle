@@ -65,14 +65,14 @@ public partial class BattleCoordinator : Node {
             ExitBattle();
 
         _roomId = roomId;
-        var roomClient = ServiceLocator.ClientService.RoomClient;
-        _battleService = roomClient;
+        var session = ServiceLocator.ClientService.RoomSession;
+        _battleService = session;
 
-        roomClient.BattlePhaseChanged += OnBattlePhase;
-        _unitManager?.Bind(roomClient);
-        _stateChangeInfo?.Bind(roomClient);
+        session.BattlePhaseChanged += OnBattlePhase;
+        _unitManager?.Bind(session);
+        _stateChangeInfo?.Bind(session);
         _battleService.BattleEventsReceived += OnBattleEvents;
-        _sessionContext?.Bind(roomClient, _roomId);
+        _sessionContext?.Bind(session, _roomId);
         _inputController?.Reset();
 
         // 按房间选中副本应用环境主题（地面/天空/光照差异化）

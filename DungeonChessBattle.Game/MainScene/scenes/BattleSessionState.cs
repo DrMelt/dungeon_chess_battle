@@ -18,56 +18,56 @@ public sealed class BattleSessionState : IBattleViewSource {
     /// <summary>日志记录器。</summary>
     private readonly ILogger<BattleSessionState> _logger = ServiceLocator.GetLogger<BattleSessionState>();
 
-    /// <summary>房间客户端（Bind 时注入，用于 Pawn 查询与权威数据投影）。</summary>
-    private RoomBattleClient? _client;
+    /// <summary>在线战斗会话（Bind 时注入），提供展示取数、本地语义与权威元信息。</summary>
+    private IClientBattleSession? _session;
 
     /// <summary>阵营关系函数，按权威副本键装配并随房间实体同步收敛；null 表示未就绪。</summary>
     private CampRelationResolver? _relations;
 
     /// <summary>是否已绑定会话（Bind 后 true）。</summary>
-    public bool IsInBattle => _client != null;
+    public bool IsInBattle => _session != null;
 
-    /// <summary>进入战斗：注入房间客户端并尝试装配阵营关系函数。</summary>
-    public void Bind(RoomBattleClient roomClient) {
-        _client = roomClient;
-        _relations = TryAssembleRelations(roomClient.DungeonKey);
+    /// <summary>进入战斗：注入在线战斗会话并尝试装配阵营关系函数。</summary>
+    public void Bind(IClientBattleSession session) {
+        _session = session;
+        _relations = TryAssembleRelations(session.DungeonKey);
     }
 
     /// <summary>退出战斗：释放会话引用与缓存的阵营关系。</summary>
     public void Unbind() {
-        _client = null;
+        _session = null;
         _relations = null;
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<IUnitUiView> Units => _client?.Units ?? [];
+    public IReadOnlyList<IUnitUiView> Units => _session?.Units ?? [];
 
     /// <inheritdoc />
-    public IUnitUiView? FindUnit(ushort netId) => _client?.FindUnit(netId);
+    public IUnitUiView? FindUnit(ushort netId) => _session?.FindUnit(netId);
 
     /// <summary>本地玩家的展示视图，控制器未就绪时返回 null。</summary>
-    public IUnitUiView? LocalUnit => _client?.LocalUnit;
+    public IUnitUiView? LocalUnit => _session?.LocalUnit;
 
     /// <summary>本地玩家的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
-    public IUnitUiView? LocalFocus => _client?.LocalFocus;
+    public IUnitUiView? LocalFocus => _session?.LocalFocus;
 
-    /// <summary>本地玩家的施法判定视图（权威位置），控制器未就绪时返回 null。</summary>
-    public ISkillCasterView? LocalCaster => _client?.LocalCaster;
+    /// <summary>本地玩家的施法判定视图（下行回填位置），控制器未就绪时返回 null。</summary>
+    public ISkillCasterView? LocalCaster => _session?.LocalCaster;
 
-    /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _client?.FindCaster(netId);
+    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
+    public ISkillCasterView? FindCaster(ushort netId) => _session?.FindCaster(netId);
 
-    /// <summary>当前房间副本键，来自服务端权威 BattleRoomEntity 同步；实体未同步时为 null。</summary>
-    public string? DungeonKey => _client?.DungeonKey;
+    /// <summary>当前房间副本键，来自服务端权威房间实体同步；实体未同步时为 null。</summary>
+    public string? DungeonKey => _session?.DungeonKey;
 
     /// <summary>战斗开始时刻（服务端权威 Unix 秒），未进战斗或实体未同步时为 null。</summary>
-    public long? BattleStartUnixTime => _client?.BattleStartUnixTime;
+    public long? BattleStartUnixTime => _session?.BattleStartUnixTime;
 
     /// <summary>当前房间会话事件日志的只读视图（规避 UI 直取服务）。</summary>
-    public IReadOnlyList<BattleEventLogEntry> EventLog => _client?.GetEventLog() ?? [];
+    public IReadOnlyList<BattleEventLogEntry> EventLog => _session?.GetEventLog() ?? [];
 
     /// <summary>当前房间会话事件日志版本号，会话重置时自增。</summary>
-    public long EventLogVersion => _client?.GetEventLogVersion() ?? 0;
+    public long EventLogVersion => _session?.GetEventLogVersion() ?? 0;
 
     /// <summary>
     /// 获取阵营关系函数用于领域判定（技能预拦等）；未就绪返回 false。
@@ -82,7 +82,7 @@ public sealed class BattleSessionState : IBattleViewSource {
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
     public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps) {
         var relations = RelationsOrResolve();
-        var localUnit = _client?.LocalUnit;
+        var localUnit = _session?.LocalUnit;
         if (relations == null || localUnit == null)
             return CampRelation.Unknown;
         return relations.Invoke(localUnit.Camps, targetCamps);
@@ -109,8 +109,8 @@ public sealed class BattleSessionState : IBattleViewSource {
     /// </summary>
     private CampRelationResolver? RelationsOrResolve() {
         var relations = _relations;
-        if (relations == null && _client != null) {
-            string? dungeonKey = _client.DungeonKey;
+        if (relations == null && _session != null) {
+            string? dungeonKey = _session.DungeonKey;
             if (!string.IsNullOrWhiteSpace(dungeonKey))
                 relations = _relations = DungeonRegistry.Instance.GetRelations(dungeonKey);
         }

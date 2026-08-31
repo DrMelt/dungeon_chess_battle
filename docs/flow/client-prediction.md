@@ -95,7 +95,7 @@ D8（输入顺序）。`main_scene.tscn` 给 `BattleCoordinator` 设 `process_pr
 
 ## 观测与读数
 
-读数含义与边界来自框架实现，与是否实施预测无关。观测入口用 `RoomBattleClient.NetworkStatus` 与 `NetworkDebugOverlay`：`LerpBufferCount` 稳态为 1，长期 0 才是插值饥饿；`Spread` 跳到 2 以上说明水位压过头导致缺号，缺号不可逆，必须回退一档；`StoredCommands` 持续增长说明服务端消化不动或未发送输入。
+读数含义与边界来自框架实现，与是否实施预测无关。观测入口用门面透出的 `GameClientService.RoomNetworkStatus`（源为 `RoomBattleClient.NetworkStatus`）与 `NetworkDebugOverlay`：`LerpBufferCount` 稳态为 1，长期 0 才是插值饥饿；`Spread` 跳到 2 以上说明水位压过头导致缺号，缺号不可逆，必须回退一档；`StoredCommands` 持续增长说明服务端消化不动或未发送输入。
 
 `BattleEntityMetrics` 只装 `ClientEntityManager` 的直读原始值，三段分解与单位换算由该类型自带的只读属性给出：生产侧不加工，消费侧不计算，新消费方拿原始值可自行复算。`AckLagTicks` 即 `LocalTick` 减 `SrvAckTick`，拆为 `UplinkTicks`（上行在途）与 `ServerQueueTicks`（服务端已收未消化）；`TickMs` 给出单 tick 宽度，本房间 7.8 ms。`AckLag` 与 `RTT` 的差额即服务端排队与缓冲代价，由 `RoomBattleClient` 的缓冲水位与房间线程的发包相位共同决定。`Loss` 是自连接起的累计丢包率，`OutRelQ` 是本端等待服务端确认的出站可靠包数；可靠事件日志那条独立延迟发生在服务端出站队列，客户端读不到。
 

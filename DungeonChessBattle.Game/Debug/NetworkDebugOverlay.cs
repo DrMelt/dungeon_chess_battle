@@ -16,7 +16,7 @@ public partial class NetworkDebugOverlay : Label {
 
     /// <summary>每帧刷新网络状态文本。</summary>
     public override void _Process(double delta) {
-        Text = FormatStatus(ServiceLocator.ClientService.RoomClient.NetworkStatus);
+        Text = FormatStatus(ServiceLocator.ClientService.RoomNetworkStatus);
     }
 
     /// <summary>处理显隐切换快捷键。</summary>

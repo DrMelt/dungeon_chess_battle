@@ -17,13 +17,14 @@ namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
-/// 实现 IClientBattleService 与 IBattleViewSource，管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
+/// 实现 <see cref="IClientBattleSession"/>（组合 IClientBattleService 与 IBattleViewSource），
+/// 管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
 /// 在线端构建 BattleScene（领域单位 BattleUnit 实现展示契约），由 <see cref="ClientBattleLoop"/> 每渲染帧
 /// 把网络 SyncVar 读数回填进领域单位；当前在线端不跑本地结算，移动与伤害一律服务端权威；
 /// 房间同步状态经 <see cref="BattleRoomState"/> 投影统一读取，作为 IBattleViewSource 供 UI 取数。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
-public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService, IBattleViewSource {
+public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleSession {
     /// <summary>
     /// LES 两级缓冲目标水位下界，秒。<c>PreloadNextState</c> 按 <c>NetworkJitter × 1.5</c> 加本值
     /// 同时约束下行插值缓冲与服务端输入队列，水位除以 tick 宽度即 <c>TickLag</c> 的 debt 与 queue 两段。
@@ -245,13 +246,13 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <inheritdoc />
     public IUnitUiView? FindUnit(ushort netId) => _battleScene?.FindUnit(netId) as IUnitUiView;
 
-    /// <summary>按网络 ID 查询施法判定视图（本地结算位置），不存在返回 null。</summary>
+    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
     public ISkillCasterView? FindCaster(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
 
     /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
     public IUnitUiView? LocalUnit => FindUnit(_localNetId);
 
-    /// <summary>本地玩家单位施法判定视图（本地结算位置），控制器未就绪返回 null。</summary>
+    /// <summary>本地玩家单位施法判定视图（下行回填位置），控制器未就绪返回 null。</summary>
     public ISkillCasterView? LocalCaster => FindCaster(_localNetId);
 
     /// <summary>本地玩家聚焦目标单位展示视图，无聚焦目标或目标已被服务端清 0 返回 null。</summary>

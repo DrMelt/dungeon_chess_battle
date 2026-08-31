@@ -39,10 +39,10 @@ public partial class BattleSessionContext : Node {
     /// <summary>本地玩家单位的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
     public IUnitUiView? LocalFocus => _state.LocalFocus;
 
-    /// <summary>本地玩家单位的施法判定视图（权威位置），控制器未就绪时返回 null。</summary>
+    /// <summary>本地玩家单位的施法判定视图（下行回填位置），控制器未就绪时返回 null。</summary>
     public ISkillCasterView? LocalCaster => _state.LocalCaster;
 
-    /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
+    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
     public ISkillCasterView? FindCaster(ushort netId) => _state.FindCaster(netId);
 
     /// <summary>当前房间副本键，来自服务端权威 BattleRoomEntity 同步；实体未同步时为 null。</summary>
@@ -77,10 +77,10 @@ public partial class BattleSessionContext : Node {
     // 生命周期
     // =============================================================
 
-    /// <summary>进入战斗：注入房间客户端并装配只读投影与命令。</summary>
-    public void Bind(RoomBattleClient roomClient, string roomId) {
-        _state.Bind(roomClient);
-        _command.Bind(roomClient, roomId);
+    /// <summary>进入战斗：注入在线战斗会话并装配只读投影与命令。</summary>
+    public void Bind(IClientBattleSession session, string roomId) {
+        _state.Bind(session);
+        _command.Bind(session, roomId);
     }
 
     /// <summary>退出战斗：释放全部会话引用。</summary>
