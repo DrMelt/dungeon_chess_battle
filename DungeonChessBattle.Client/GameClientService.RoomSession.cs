@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Client;

@@ -10,7 +10,7 @@ public interface IUnitIdentityView {
     }
 
     /// <summary>单位网络实体 ID，房间内唯一，领域事件标识用。</summary>
-    ushort UnitNetId {
+    UnitId UnitId {
         get;
     }
 

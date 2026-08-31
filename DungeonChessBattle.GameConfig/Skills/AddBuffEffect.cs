@@ -9,6 +9,6 @@ public sealed class AddBuffEffect : ISkillEffect {
         if (ctx.Target is not { } target)
             return SkillResolution.Empty;
         var skill = (AddBuffSkillDefinition)ctx.Skill;
-        return new SkillResolution([], [new BuffToApply(skill.Buff, target.UnitNetId, ctx.Caster.Snapshot, ctx.Caster.UnitNetId)]);
+        return new SkillResolution([], [new BuffToApply(skill.Buff, target.UnitId, ctx.Caster.Snapshot, ctx.Caster.UnitId)]);
     }
 }

@@ -11,12 +11,12 @@ public sealed class BuffInstance {
     }
 
     /// <summary>目标单位网络实体 ID，事件上报用。</summary>
-    public required ushort TargetNetId {
+    public required UnitId TargetNetId {
         get; init;
     }
 
-    /// <summary>施加该 Buff 的来源单位网络 ID，0 表示无来源；仇恨归属用。</summary>
-    public required ushort FromNetId {
+    /// <summary>施加该 Buff 的来源单位网络 ID，None 表示无来源；仇恨归属用。</summary>
+    public required UnitId FromNetId {
         get; init;
     }
 

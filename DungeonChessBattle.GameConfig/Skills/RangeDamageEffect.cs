@@ -16,14 +16,14 @@ public sealed class RangeDamageEffect : ISkillEffect {
         var aim = (ctx.TargetPos ?? Vector2.Zero) - ctx.Caster.Snapshot.Position;
         var events = new List<IBattleEvent>();
         foreach (var unit in ctx.Candidates) {
-            if (unit.UnitNetId == ctx.Caster.UnitNetId)
+            if (unit.UnitId == ctx.Caster.UnitId)
                 continue;
             if (!SkillTargetValidator.CanAffect(ctx.Caster, unit, skill.TargetPolicy, ctx.Relations))
                 continue;
             if (!area.Contains(unit.Snapshot.Position, ctx.Caster.Snapshot.Position, aim, unit.Snapshot.BodyRadius))
                 continue;
             var result = DamageProcessor.Process(ctx.Caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);
-            events.Add(new DamageOccurred(ctx.Caster.UnitNetId, unit.UnitNetId, result.AppliedDamage, skill.DamageType));
+            events.Add(new DamageOccurred(ctx.Caster.UnitId, unit.UnitId, result.AppliedDamage, skill.DamageType));
         }
         return new SkillResolution(events, []);
     }

@@ -8,37 +8,32 @@ namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// 网络投影载体。继承 PawnLogic，承载单位战斗状态的网络同步（SyncVar）。
-/// 不参与位移与战斗结算；位置/朝向等由服务端状态同步器写入，经 LES 插值呈现。
+/// 自身不做位移与结算：服务端由状态同步器写入权威值，在线端本地模拟会回写覆盖，
+/// 远端读数经 LES 插值呈现。死亡状态不设字段，由 Health 派生。
 /// </summary>
 public partial class UnitPawn : PawnLogic {
-
     /// <summary>
     /// 初始化单位 Pawn 实体。
     /// </summary>
     /// <param name="entityParams">实体框架参数。</param>
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
-    /// <summary>单位名称。</summary>
-    public readonly SyncString UnitName = new();
+    /// <summary>单位配置键，两端据此读取装配配置；不是显示名。</summary>
+    public readonly SyncString UnitKeyName = new();
 
     /// <summary>单位位置，XZ 平面。</summary>
-    [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Position;
 
     /// <summary>单位朝向方向向量，XZ 平面单位向量。</summary>
-    [SyncVarFlags(SyncFlags.Interpolated)]
     public SyncVar<Vector2> Direction;
 
     /// <summary>单位碰撞半径，供技能范围判定使用。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> BodyRadius;
 
     /// <summary>当前生命值。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> Health;
 
     /// <summary>最大生命值。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MaxHealth;
 
     /// <summary>单位所属阵营列表，装配期一次写入的权威同步数据。</summary>
@@ -47,12 +42,7 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>阵营列表只读投影，服务端与客户端同源直读；装配期一次写入后不变，每次读取新建数组。</summary>
     public IReadOnlyList<string> CampTags => CampsData.Value.ToArray();
 
-    /// <summary>单位状态，0 表示存活，1 表示死亡。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
-    public SyncVar<byte> UnitState;
-
     /// <summary>全局冷却截止的服务器逻辑 tick，客户端据此本地推算剩余时间。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<ushort> GcdEndServerTick;
 
     /// <summary>技能个体冷却整包快照，服务端权威回写。</summary>
@@ -62,31 +52,24 @@ public partial class UnitPawn : PawnLogic {
     public readonly SyncString SkillCasting = new();
 
     /// <summary>当前施法剩余读条时间，秒。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> SkillCastRemaining;
 
     /// <summary>物理攻击基础系数即伤害倍率。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> PhysicalAttackBase;
 
     /// <summary>魔法攻击基础系数即伤害倍率。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MagicAttackBase;
 
     /// <summary>物理伤害承受系数即减免倍率。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> PhysicalTakePercent;
 
     /// <summary>魔法伤害承受系数即减免倍率。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> MagicTakePercent;
 
     /// <summary>治疗强度系数即治疗倍率。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> CureIntensity;
 
     /// <summary>基础移动速度。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<float> BaseSpeed;
 
     /// <summary>单位当前持有的 Buff 列表。</summary>
@@ -101,26 +84,13 @@ public partial class UnitPawn : PawnLogic {
     public readonly SyncList<SyncHateData> HatesList = [];
 
     /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标。</summary>
-    [SyncVarFlags(SyncFlags.NeverRollBack)]
     public SyncVar<ushort> FocusTargetNetId;
-
-    /// <summary>生命值变化事件。参数：实体、新生命值、旧生命值。</summary>
-    public event Action<UnitPawn, float, float>? HealthChanged;
-
-    /// <summary>单位死亡事件。</summary>
-    public event Action<UnitPawn>? UnitDied;
-
-    /// <summary>聚焦目标变化事件，客户端同步阶段触发。参数：实体、目标单位网络 ID。</summary>
-    public event Action<UnitPawn, ushort>? FocusTargetChanged;
 
     /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>
     public Action<UnitPawn, UnitInputPacket, float>? InputHandler {
         get;
         set;
     }
-
-    /// <summary>客户端同步阶段缓存的上一次生命值，用于 HealthChanged 的 oldHealth。</summary>
-    private float _lastHealth;
 
     /// <summary>
     /// 读取单个技能的总冷却剩余秒数（全局冷却与个体冷却取较大者），客户端展示用。
@@ -144,38 +114,6 @@ public partial class UnitPawn : PawnLogic {
     }
 
     /// <summary>
-    /// 注册同步字段变化回调。
-    /// </summary>
-    /// <param name="r">RPC 注册器。</param>
-    protected override void RegisterRPC(ref RPCRegistrator r) {
-        base.RegisterRPC(ref r);
-        // 客户端在同步阶段检测聚焦目标变化
-        r.BindOnChange<UnitPawn, ushort>(ref FocusTargetNetId, (e, t) => e.OnFocusTargetChangedBySync(t), BindOnChangeFlags.ExecuteOnSync);
-
-        // 客户端在同步阶段检测血量与死亡状态变化
-        r.BindOnChange<UnitPawn, float>(ref Health, (e, h) => e.OnHealthChangedBySync(h), BindOnChangeFlags.ExecuteOnSync);
-        r.BindOnChange<UnitPawn, byte>(ref UnitState, (e, s) => e.OnUnitStateChangedBySync(s), BindOnChangeFlags.ExecuteOnSync);
-    }
-
-    /// <summary>客户端同步阶段：生命值变化，缓存旧值以提供 oldHealth。</summary>
-    private void OnHealthChangedBySync(float newHealth) {
-        var oldHealth = _lastHealth;
-        _lastHealth = newHealth;
-        HealthChanged?.Invoke(this, newHealth, oldHealth);
-    }
-
-    /// <summary>客户端同步阶段：单位状态变化，0 存活到 1 死亡。</summary>
-    private void OnUnitStateChangedBySync(byte newState) {
-        if (newState == 1)
-            UnitDied?.Invoke(this);
-    }
-
-    /// <summary>客户端同步阶段：聚焦目标变化，0 表示无聚焦目标。</summary>
-    private void OnFocusTargetChangedBySync(ushort targetNetId) {
-        FocusTargetChanged?.Invoke(this, targetNetId);
-    }
-
-    /// <summary>
     /// 服务端调用：接收控制器转发的玩家输入。仅调用 <see cref="InputHandler"/> 委托，
     /// 移动打断读条等消费在 Logic 层。
     /// </summary>
@@ -184,7 +122,6 @@ public partial class UnitPawn : PawnLogic {
     public void ServerApplyInput(UnitInputPacket input, float deltaTime) {
         if (!IsServer)
             return;
-
         InputHandler?.Invoke(this, input, deltaTime);
     }
 }

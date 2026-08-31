@@ -110,7 +110,7 @@ public partial class SkillsList : Control {
         _preInput?.Refresh();
 
         var showUnit = _sessionRef?.LocalUnit;
-        ushort? shownId = showUnit?.UnitNetId;
+        ushort? shownId = showUnit?.UnitId;
         if (shownId == _shownUnitId)
             return;
         _shownUnitId = shownId;
@@ -196,13 +196,13 @@ public partial class SkillsList : Control {
             if (focusUnit != null
                 && session.TryGetCampRelations(out var relations)
                 && SkillTargetValidator.CanAffect(button.BindUnit, focusUnit, skill.TargetPolicy, relations)) {
-                SubmitCast(skill, focusUnit.UnitNetId, 0f, 0f, button);
+                SubmitCast(skill, focusUnit.UnitId, 0f, 0f, button);
                 return;
             }
 
             // 无焦点目标或焦点目标不合法：允许对友方释放的技能回退为对自身施放
             if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfUnit != null) {
-                SubmitCast(skill, selfUnit.UnitNetId, 0f, 0f, button);
+                SubmitCast(skill, selfUnit.UnitId, 0f, 0f, button);
                 return;
             }
 

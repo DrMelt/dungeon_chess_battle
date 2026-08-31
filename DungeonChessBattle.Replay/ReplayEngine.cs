@@ -84,7 +84,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(snapshot.Header.DungeonKey));
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
         BuildUnits();
-        _battleScene.StartBattle();
+        _battleScene.CurrentPhase = BattlePhase.Running;
     }
 
     /// <summary>按副本配置与头部信息构建全部单位：玩家按 PlayerIndex 还原，敌人按副本生成顺序从 NextNetId 对齐。</summary>
@@ -95,7 +95,7 @@ public sealed class ReplayEngine : IBattleViewSource {
             var camps = _dungeon.PlayerCampOptions.FirstOrDefault(o => o.Key == player.CampOptionKey)?.Camps
                 ?? throw new InvalidDataException($"Replay camp option '{player.CampOptionKey}' not found in dungeon '{_dungeon.DungeonKey}'.");
             AddUnit(new BattleUnit {
-                UnitNetId = player.NetId,
+                UnitId = player.NetId,
                 UnitName = config.ConfigKey,
                 Camps = camps,
                 Skills = config.Skills,
@@ -121,7 +121,7 @@ public sealed class ReplayEngine : IBattleViewSource {
             for (int i = 0; i < spawn.Count; i++) {
                 var pos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
                 AddUnit(new BattleUnit {
-                    UnitNetId = nextNetId++,
+                    UnitId = nextNetId++,
                     UnitName = config.ConfigKey,
                     Camps = _dungeon.EnemyCamps,
                     Skills = config.Skills,
@@ -246,7 +246,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         foreach (var unit in _battleScene.BattleUnits.ToArray())
             _battleScene.RemoveUnit(unit);
         BuildUnits();
-        _battleScene.StartBattle();
+        _battleScene.CurrentPhase = BattlePhase.Running;
     }
 }
 

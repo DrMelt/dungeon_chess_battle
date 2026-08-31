@@ -6,9 +6,7 @@ using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Movement;
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.GameConfig;
@@ -20,30 +18,31 @@ namespace DungeonChessBattle.Client.Battle;
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
 /// 实现 IClientBattleService 与 IBattleViewSource，管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
-/// 在线端构建 BattleScene（领域单位 BattleUnit 直接实现展示契约），每帧把 UnitPawn SyncVar 回填到领域，
-/// 客户端不做领域推导与移动预测；作为 IBattleViewSource 供 UI 取数。
+/// 在线端构建 BattleScene（领域单位 BattleUnit 实现展示契约），由 <see cref="ClientBattleLoop"/> 每渲染帧
+/// 把网络 SyncVar 读数回填进领域单位；当前在线端不跑本地结算，移动与伤害一律服务端权威；
+/// 房间同步状态经 <see cref="BattleRoomState"/> 投影统一读取，作为 IBattleViewSource 供 UI 取数。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleService, IBattleViewSource {
-    private ClientEntityManager? _entityManager;
+    /// <summary>
+    /// LES 两级缓冲目标水位下界，秒。<c>PreloadNextState</c> 按 <c>NetworkJitter × 1.5</c> 加本值
+    /// 同时约束下行插值缓冲与服务端输入队列，水位除以 tick 宽度即 <c>TickLag</c> 的 debt 与 queue 两段。
+    /// 框架默认 0.025 在 128 Hz 下折成 3.2 tick。
+    /// </summary>
+    private const float BufferLowestSeconds = 0.002f;
 
-    /// <summary>把服务器截止 tick 换算为剩余秒数；实体管理器未就绪时返回 0。</summary>
-    private float EndTickToRemaining(ushort tick) =>
-        _entityManager is { } em ? SyncTickHelper.RemainingSeconds(em, tick) : 0f;
+    /// <summary>
+    /// LES 两级缓冲目标水位上界，秒。与下界的张开幅度须大于 <c>TimeSpeedChangeCoef</c> 的 ±10% 调节量，
+    /// 否则客户端 tick 节拍在区间两端反复摆动。框架默认 0.05。
+    /// </summary>
+    private const float BufferHighestSeconds = 0.006f;
+
+    private ClientEntityManager? _entityManager;
 
     private BattleRoomEntity? _roomEntity;
     private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
     private readonly Lock _lock = new();
-
-    /// <summary>单位生命值变化事件。参数：单位网络实体 ID、新生命值、旧生命值。</summary>
-    public event Action<ushort, float, float>? UnitHealthChanged;
-
-    /// <summary>单位死亡事件。参数：单位网络实体 ID。</summary>
-    public event Action<ushort>? UnitDied;
-
-    /// <summary>单位聚焦目标变化事件。参数：单位网络实体 ID、目标单位网络实体 ID，0 表示无聚焦目标。</summary>
-    public event Action<ushort, ushort>? UnitFocusTargetChanged;
 
     /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
     public event Action<string, ushort, string, IReadOnlyList<string>>? OnUnitCreated;
@@ -73,11 +72,39 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private long _bytesOutPerSecond;
     private CountingNetPeer? _countingPeer;
 
-    /// <summary>在线端战斗世界：领域单位 BattleUnit 作为展示源，仅作容器与回填落点，不推进领域逻辑。</summary>
+    // 下行状态流健康：A/B tick 差每帧采样、每秒结算，用于抓状态跳号
+    private int _spreadSamples;
+    private int _spreadSum;
+    private int _spreadMax;
+    private float _stateSpreadAvgPerSecond;
+    private int _stateSpreadMaxPerSecond;
+
+    /// <summary>在线端战斗世界：领域单位 BattleUnit 作为展示源，状态由 SyncVar 回填。</summary>
     private BattleScene? _battleScene;
 
-    /// <summary>网络实体 ID 到领域单位映射，定位回填目标。</summary>
+    /// <summary>网络实体 ID 到领域单位映射，展示回填与取数定位。</summary>
     private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
+
+    /// <summary>网络实体 ID 到 UnitPawn 映射，SyncVar 读数回填的定位载体。</summary>
+    private readonly Dictionary<ushort, UnitPawn> _pawnByNetId = [];
+
+    /// <summary>在线客户端战斗世界，展示契约的领域单位容器；构建前为 null。</summary>
+    internal BattleScene? BattleScene => _battleScene;
+
+    /// <summary>网络实体 ID 到 UnitPawn 的映射，供展示回填定位载体。</summary>
+    internal IReadOnlyDictionary<ushort, UnitPawn> PawnByNetId => _pawnByNetId;
+
+    /// <summary>本地玩家控制器，用于注入移动输入；未就绪为 null。</summary>
+    internal UnitController? LocalController => _localController;
+
+    /// <summary>当前房间同步状态投影，来自服务端权威 BattleRoomEntity；未同步时为默认。</summary>
+    internal BattleRoomState RoomState => _roomEntity is { } room
+        ? new BattleRoomState(room.RoomId.Value, room.DungeonKey.Value,
+            (BattlePhase)room.BattlePhase.Value, room.BattleStartUnixTime.Value)
+        : default;
+
+    /// <summary>房间当前阶段（来自服务端同步 BattleRoomEntity），未同步时为 Waiting。</summary>
+    internal BattlePhase RoomPhase => RoomState.Phase;
 
     /// <summary>单位网络 ID → 聚焦目标网络 ID，0 表示无聚焦目标。</summary>
     private readonly Dictionary<ushort, ushort> _focusByNetId = [];
@@ -91,6 +118,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _localController = null;
         _battleScene = null;
         _battleUnitByNetId.Clear();
+        _pawnByNetId.Clear();
         _focusByNetId.Clear();
         _localNetId = 0;
         _eventLog.Clear();
@@ -115,14 +143,15 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         ClearRoomSessionState();
     }
 
-    /// <summary>轮询网络事件后更新实体、回填领域单位、结算每秒流量并检测战斗阶段变化。</summary>
+    /// <summary>轮询网络事件后驱动实体同步与展示回填，结算每秒流量并检测战斗阶段变化。</summary>
     protected override void UpdateAfterPollEvents(float delta) {
         // 副本键同步后构建战斗世界；未同步时为空操作，随下一帧重试
         EnsureBattleScene();
         _entityManager?.Update();
+        SampleStateSpread();
 
-        // 实体更新后把 UnitPawn SyncVar 回填到领域单位 BattleUnit，供 UI 经 IBattleViewSource 只读取数
-        SyncBattleUnits();
+        // 展示取数由 ClientBattleLoop（LocalSingleton）在 LES 主循环内驱动：
+        // VisualUpdate 每渲染帧回填 SyncVar 读数进本地 BattleScene，展示再经 IBattleViewSource 直读。
 
         // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;
@@ -134,18 +163,24 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _packetsOutPerSecond = _countingPeer?.PacketsOut ?? 0;
             _bytesIn = 0;
             _packetsIn = 0;
+            _stateSpreadAvgPerSecond = _spreadSamples > 0 ? (float)_spreadSum / _spreadSamples : 0f;
+            _stateSpreadMaxPerSecond = _spreadMax;
+            _spreadSamples = 0;
+            _spreadSum = 0;
+            _spreadMax = 0;
             _countingPeer?.ResetTraffic();
         }
 
+        // 聚焦目标展示以服务端权威 SyncVar 为准，本地不参与推算。
+        SyncFocusTargets();
+
         // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
-        if (_roomEntity is { } room) {
-            var phase = (BattlePhase)room.BattlePhase.Value;
-            if (phase != _lastKnownPhase) {
-                _lastKnownPhase = phase;
-                var roomId = _currentRoomId;
-                if (roomId != null)
-                    BattlePhaseChanged?.Invoke(roomId, phase);
-            }
+        var phase = RoomState.Phase;
+        if (phase != _lastKnownPhase) {
+            _lastKnownPhase = phase;
+            var roomId = _currentRoomId;
+            if (roomId != null)
+                BattlePhaseChanged?.Invoke(roomId, phase);
         }
     }
 
@@ -167,72 +202,41 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _battleScene.AddUnit(unit);
     }
 
-    /// <summary>Pawn 创建时构建领域单位并注册；战斗世界未就绪时先存映射，构建时统一补注册。</summary>
+    /// <summary>Pawn 创建时构建领域单位并注册；战斗世界未就绪时先存映射，构建时统一补注册。
+    /// 装配完整单位配置（数值、AI、仇恨），使本地 BattleScene 能确定性重跑。</summary>
     private void AddPawnUnit(UnitPawn pawn) {
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;
 
+        var config = UnitRegistry.Instance.GetByKey(pawn.UnitKeyName.Value);
         var unit = new BattleUnit {
-            UnitNetId = pawn.Id,
-            UnitName = pawn.UnitName.Value,
+            UnitId = pawn.Id,
+            UnitName = pawn.UnitKeyName.Value,
             Camps = pawn.CampTags,
-            Skills = pawn.Skills,
+            Skills = config?.Skills ?? pawn.Skills,
+            Intelligence = config?.Intelligence,
+            HateRule = config?.HateRule,
+            HateFactor = config?.HateFactor ?? 1f,
+            MaxHealth = config?.MaxHealth ?? 0f,
+            Health = config?.MaxHealth ?? 0f,
+            PhysicalAttackBase = config?.PhysicalAttackBase ?? 1f,
+            PhysicalTakePercent = config?.PhysicalTakePercent ?? 1f,
+            MagicAttackBase = config?.MagicAttackBase ?? 1f,
+            MagicTakePercent = config?.MagicTakePercent ?? 1f,
+            CureIntensity = config?.CureIntensity ?? 1f,
+            BaseSpeed = config?.BaseSpeed ?? pawn.BaseSpeed.Value,
+            BodyRadius = config?.BodyRadius ?? pawn.BodyRadius.Value,
+            Position = pawn.Position.Value,
         };
         _battleUnitByNetId[pawn.Id] = unit;
+        _pawnByNetId[pawn.Id] = pawn;
         _battleScene?.AddUnit(unit);
     }
 
-    /// <summary>逐 UnitPawn 回填对应领域单位：展示状态以服务端 SyncVar 为准。</summary>
-    private void SyncBattleUnits() {
+    /// <summary>轮询聚焦目标 SyncVar：本地模拟不写聚焦，聚焦一律取服务端权威值；服务端保证目标存活。</summary>
+    private void SyncFocusTargets() {
         foreach (var pawn in _roomPawns)
-            SyncUnit(pawn);
-    }
-
-    /// <summary>把单个 UnitPawn 的状态回填到领域 BattleUnit；缺失单位说明尚未创建，跳过。</summary>
-    private void SyncUnit(UnitPawn pawn) {
-        if (!_battleUnitByNetId.TryGetValue(pawn.Id, out var unit))
-            return;
-
-        unit.Position = pawn.Position.Value;
-        unit.Direction = pawn.Direction.Value;
-        unit.Health = pawn.Health.Value;
-        unit.MaxHealth = pawn.MaxHealth.Value;
-        unit.BodyRadius = pawn.BodyRadius.Value;
-        string casting = pawn.SkillCasting.Value;
-        unit.SkillCasting = string.IsNullOrEmpty(casting) ? default : new SkillKeyId(casting);
-        unit.SkillCastRemaining = pawn.SkillCastRemaining.Value;
-        unit.GcdRemaining = EndTickToRemaining(pawn.GcdEndServerTick.Value);
-        SyncBuffs(unit, pawn);
-        SyncCooldowns(unit, pawn.SkillCooldowns.Value);
-        _focusByNetId[pawn.Id] = pawn.FocusTargetNetId.Value;
-    }
-
-    /// <summary>回填 Buff 展示：从网络数据重建运行时 Buff 壳，在线端不推进效果，仅承载展示字段。</summary>
-    private void SyncBuffs(BattleUnit unit, UnitPawn pawn) {
-        var list = unit.RuntimeState.Buffs;
-        list.Clear();
-        foreach (var b in pawn.BuffsList) {
-            var instance = new BuffInstance {
-                BuffTypeId = b.BuffTypeId,
-                TargetNetId = unit.UnitNetId,
-                FromNetId = b.SourceUnitNetId,
-                MaxStacks = Math.Max(1, (int)b.MaxStackCount),
-                Remaining = EndTickToRemaining(b.EndServerTick),
-                Stacks = b.StackCount,
-                DamageType = (DamageType)b.DamageType,
-            };
-            list.Add(new ActiveBuff(instance, NetworkBuffDefinition.Instance, NoOpBuffEffect.Instance));
-        }
-    }
-
-    /// <summary>回填技能冷却展示：从网络整包还原个体冷却条目。</summary>
-    private void SyncCooldowns(BattleUnit unit, SyncSkillCooldownSnapshot? snapshot) {
-        var list = unit.RuntimeState.Cooldowns;
-        list.Clear();
-        if (snapshot == null)
-            return;
-        foreach (var entry in snapshot.Entries)
-            list.Add(new CooldownEntry(new SkillKeyId(entry.SkillId), EndTickToRemaining(entry.EndServerTick)));
+            _focusByNetId[pawn.Id] = pawn.FocusTargetNetId.Value;
     }
 
     /// <inheritdoc />
@@ -241,16 +245,16 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <inheritdoc />
     public IUnitUiView? FindUnit(ushort netId) => _battleScene?.FindUnit(netId) as IUnitUiView;
 
-    /// <summary>按网络 ID 查询施法判定视图（权威位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId) as ISkillCasterView;
+    /// <summary>按网络 ID 查询施法判定视图（本地结算位置），不存在返回 null。</summary>
+    public ISkillCasterView? FindCaster(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
 
     /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
     public IUnitUiView? LocalUnit => FindUnit(_localNetId);
 
-    /// <summary>本地玩家单位施法判定视图（权威位置），控制器未就绪返回 null。</summary>
+    /// <summary>本地玩家单位施法判定视图（本地结算位置），控制器未就绪返回 null。</summary>
     public ISkillCasterView? LocalCaster => FindCaster(_localNetId);
 
-    /// <summary>本地玩家聚焦目标单位展示视图，焦点为 0 或无目标返回 null。</summary>
+    /// <summary>本地玩家聚焦目标单位展示视图，无聚焦目标或目标已被服务端清 0 返回 null。</summary>
     public IUnitUiView? LocalFocus {
         get {
             ushort target = _focusByNetId.GetValueOrDefault(_localNetId);
@@ -309,7 +313,12 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         var countingPeer = new CountingNetPeer(lesPeer);
         _countingPeer = countingPeer;
         var typesMap = EntityTypesRegistry.EntityTypesMap;
-        _entityManager = new ClientEntityManager(typesMap, countingPeer, NetworkDefaults.PacketHeader);
+        _entityManager = new ClientEntityManager(typesMap, countingPeer, NetworkDefaults.PacketHeader) {
+            // 重设两级缓冲水位：默认值在 128 Hz 下折成 3.2/6.4 tick，本地回环的 TickLag 几乎全由此撑起。
+            // 该水位只够本地链路，公网部署需按 RTT 与抖动分档，否则插值饥饿。
+            PreferredBufferTimeLowest = BufferLowestSeconds,
+            PreferredBufferTimeHighest = BufferHighestSeconds
+        };
 
         // 订阅所有同步 Entity 类型的创建事件
         _entityManager.GetEntities<BattleRoomEntity>()
@@ -318,6 +327,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             .SubscribeToConstructed(OnPawnEntityCreated, callOnExisting: true);
         _entityManager.GetEntities<UnitController>()
             .SubscribeToConstructed(OnUnitControllerCreated, callOnExisting: true);
+
+        // 展示取数：ClientBattleLoop 的 VisualUpdate 每渲染帧把 SyncVar 读数回填进本地 BattleScene。
+        _entityManager.AddLocalSingleton(new ClientBattleLoop(this));
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("LES EntityManager created for peer {PeerId}", peer.Id);
@@ -332,10 +344,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 战斗开始时间（服务端权威，UTC Unix 秒），直接读取 BattleRoomEntity 同步值。
-    /// 房间实体尚未同步时返回 0；Running 阶段调用时实体必然已同步。
+    /// 战斗开始时间（服务端权威，UTC Unix 秒），经房间同步状态投影读取。
+    /// 房间实体尚未同步时返回 null；Running 阶段调用时实体必然已同步。
     /// </summary>
-    public long? BattleStartUnixTime => _roomEntity?.BattleStartUnixTime.Value;
+    public long? BattleStartUnixTime => RoomState.BattleStartUnixTime;
 
     /// <summary>
     /// 经可靠请求通道向服务端发起施法读条，服务端权威校验与结算。
@@ -368,7 +380,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>判断当前房间战斗是否已结束。</summary>
     public bool CheckBattleEnded(string roomId) {
-        return _roomEntity?.IsFinished.Value ?? false;
+        return RoomState.IsFinished;
     }
 
     /// <summary>
@@ -412,15 +424,21 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     #region 网络状态统计
 
-    /// <summary>当前实时延迟，毫秒，未连接时为 0。</summary>
-    private int GetLatencyMs() => _serverPeer?.Ping ?? 0;
-
-    /// <summary>获取传输层指标快照，延迟与每秒收发统计。</summary>
-    public TransportMetrics TransportMetrics =>
-        new(GetLatencyMs(), _packetsInPerSecond, _bytesInPerSecond, _packetsOutPerSecond, _bytesOutPerSecond);
+    /// <summary>获取传输层指标快照：往返与单向延迟、每秒收发、累计丢包率、本端出站可靠队列积压。</summary>
+    public TransportMetrics TransportMetrics {
+        get {
+            var peer = _serverPeer;
+            return new TransportMetrics(
+                peer?.RoundTripTime ?? 0, peer?.Ping ?? 0,
+                _packetsInPerSecond, _bytesInPerSecond, _packetsOutPerSecond, _bytesOutPerSecond,
+                peer?.Statistics.PacketLossPercent ?? 0,
+                peer?.GetPacketsCountInReliableQueue(true) ?? 0);
+        }
+    }
 
     /// <summary>
-    /// 获取 LES 实体同步指标；未连接或未进入战斗时返回 null。
+    /// 获取 LES 实体同步的原始读数；未连接或未进入战斗时返回 null。
+    /// 只搬运 <c>ClientEntityManager</c> 直读值，换算与可信判据在 <see cref="BattleEntityMetrics"/>。
     /// </summary>
     public BattleEntityMetrics? BattleEntityMetrics {
         get {
@@ -428,10 +446,30 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             if (em == null)
                 return null;
             return new BattleEntityMetrics(
-                em.ServerTick, em.Tick, em.LastProcessedTick, em.StoredCommands,
-                em.EntitiesCount, em.ServerInputBuffer, em.LerpBufferCount,
-                em.LerpBufferTimeLength, em.NetworkJitter, em.PendingToRemoveEntites);
+                em.Tickrate, (int)em.ServerSendRate,
+                em.Tick, em.LastProcessedTick, em.LastReceivedTick,
+                em.ServerTick, em.RawServerTick, em.RawTargetServerTick,
+                em.StoredCommands, em.EntitiesCount, em.ServerInputBuffer,
+                em.LerpBufferCount, em.LerpBufferTimeLength,
+                em.NetworkJitter, em.AverageJitter, em.StateSize, em.PendingToRemoveEntites,
+                _stateSpreadAvgPerSecond, _stateSpreadMaxPerSecond);
         }
+    }
+
+    /// <summary>
+    /// 每帧采样正在播的 A 与目标 B 之间的服务端 tick 差。该差是 LES 插值节拍的乘数：
+    /// 恒为 1 说明状态连续，跳到 2 以上即下行状态缺号，消费速率跌到 tickrate/倍。
+    /// </summary>
+    private void SampleStateSpread() {
+        if (_entityManager is not { } em)
+            return;
+        int spread = Utils.SequenceDiff(em.RawTargetServerTick, em.RawServerTick);
+        if (spread < 0)
+            return;
+        _spreadSamples++;
+        _spreadSum += spread;
+        if (spread > _spreadMax)
+            _spreadMax = spread;
     }
 
     /// <summary>
@@ -446,7 +484,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         }
     }
 
-    /// <summary>清零传输统计，每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零。</summary>
+    /// <summary>清零传输与状态流统计，每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零。</summary>
     private void ResetTrafficCounters() {
         _bytesIn = 0;
         _packetsIn = 0;
@@ -455,6 +493,11 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _bytesInPerSecond = 0;
         _packetsOutPerSecond = 0;
         _bytesOutPerSecond = 0;
+        _spreadSamples = 0;
+        _spreadSum = 0;
+        _spreadMax = 0;
+        _stateSpreadAvgPerSecond = 0;
+        _stateSpreadMaxPerSecond = 0;
         _countingPeer = null;
     }
 

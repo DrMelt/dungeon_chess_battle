@@ -11,8 +11,6 @@ namespace DungeonChessBattle.Battle.Entities;
 /// BindServer*Handler 订阅客户端事件请求并注入房间权威校验。
 /// </summary>
 public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
-    private UnitInputPacket _latestInput;
-
     /// <summary>服务端：施放技能请求处理委托，由房间编排注入权威校验。</summary>
     private Func<CastSkillRequest, bool>? _castHandler;
 
@@ -81,10 +79,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// </summary>
     /// <param name="moveDir">移动方向向量。</param>
     public void SubmitInput(Vector2 moveDir) {
-        _latestInput = UnitInputPacket.Create(moveDir);
-
-        ref var pending = ref ModifyPendingInput();
-        pending = _latestInput;
+        ref UnitInputPacket pending = ref ModifyPendingInput();
+        pending = UnitInputPacket.Create(moveDir);
     }
 
     /// <summary>
@@ -97,16 +93,10 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
 
         // 输入经 ServerApplyInput 转发到领域层消费：移动打断读条等在 Logic 层。
         // 实体层不再持有移动输入，位移由领域 BattleScene 统一结算。
+        // 本类不覆写 GetDefaultInput：无新输入包的 tick 回落 default 即静止，持续移动依赖每 tick 都有新包。
         var input = CurrentInput;
         if (EntityManager.IsServer)
             ControlledEntity.ServerApplyInput(input, EntityManager.DeltaTimeF);
     }
 
-    /// <summary>
-    /// 返回默认输入包：当前最新一帧的输入。
-    /// </summary>
-    /// <returns>最新提交的输入包。</returns>
-    protected override UnitInputPacket GetDefaultInput() {
-        return _latestInput;
-    }
 }

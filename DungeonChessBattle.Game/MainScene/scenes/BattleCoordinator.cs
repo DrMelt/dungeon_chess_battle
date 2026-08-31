@@ -101,12 +101,11 @@ public partial class BattleCoordinator : Node {
         IsInBattle = false;
     }
 
-    /// <summary>每帧推进战斗输入采集，未在战斗中为空操作。</summary>
-    public void Tick() {
+    /// <summary>每帧推进战斗输入采集，未在战斗中为空操作；单位视图对齐由 UnitShowManager 自身帧循环负责。</summary>
+    public override void _Process(double delta) {
         if (!IsInBattle || _battleService == null)
             return;
         _inputController?.Tick(_battleService);
-        _unitManager?.Tick();
     }
 
     /// <summary>节点退出场景树：兜底退出战斗（防止中途释放导致事件悬挂）。</summary>

@@ -44,7 +44,7 @@ public partial class StateBarList : Control {
     }
 
     /// <summary>提取单位网络实体 ID 作为条键。</summary>
-    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitId;
 
     /// <summary>创建可点击状态条并挂载到列表容器。</summary>
     private ClickableStateBar CreateBar() {

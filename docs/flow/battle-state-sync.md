@@ -1,10 +1,10 @@
 # 战斗状态同步
 
-战斗权威状态的端到端同步链路：领域 → 投影 → 网络 → 客户端镜像 → UI，以及回放同契约消费。本文跨 `Battle.Logic`、`Battle.Entities`、`Client.Battle`、`Battle.Server`、`Replay` 多模块，描述整体工作方式。第三方库 LES 自身时序见 `libraries/lite-entity-system-update`，单模块职责见 `overview/04-client-battle`。
+战斗权威状态的端到端同步链路：领域 → 投影 → 网络 → 客户端镜像 → UI，以及回放同契约消费。本文跨 `Battle.Logic`、`Battle.Entities`、`Client.Battle`、`Battle.Server`、`Replay` 多模块，描述整体工作方式。第三方库 LES 自身时序见 `libraries/lite-entity-system-update`，单模块职责见 `overview/04-client-battle`。在线端本地预测的框架调查与已知缺陷见 [client-prediction](client-prediction.md)。
 
 ## 单一真相源
 
-权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，服务端与回放共用，不依赖网络载体。客户端不从网络侧推导逻辑，只做状态落点与展示。
+权威状态由 `BattleScene`（`Battle.Logic`）持有的领域实体 `BattleUnit` 决定，服务端、在线与回放共用同一实现，不依赖网络载体。结算权威在服务端；在线端持本地 `BattleScene` 承载领域单位，下行值直接回填，当前不在在线端跑模拟。
 
 ## 投影契约
 
@@ -28,38 +28,39 @@
   - 其余 `0xDC` 帧 → `ClientEntityManager.Deserialize`。
 - `EntityManager.Update()` 驱动 LES 实体同步与状态回放。
 
-## 客户端战斗世界（领域回填）
+## 客户端战斗世界（下行回填领域）
 
-客户端不经网络推导逻辑，在线端构建 `BattleScene`，把 `UnitPawn` SyncVar 回填为领域 `BattleUnit`（实现 `IUnitUiView`/`ISkillCasterView`），UI 统一从领域取数。
+在线端构建 `BattleScene` 承载领域单位，`UnitPawn` SyncVar 的 `Value` 每渲染帧回填 `BattleUnit`；UI 统一从领域 `BattleUnit`（实现 `IUnitUiView`/`ISkillCasterView`）取数。预测的框架调查与已知缺陷见 [client-prediction](client-prediction.md)。
 
-### 实体创建回调 `OnPawnEntityCreated`
+### 状态搬运 `BattleSceneMirror`
 
-1. 登记到 `_roomPawns`，订阅 `HealthChanged`/`UnitDied`/`FocusTargetChanged` 并转发为接口事件。
-2. **先** `AddPawnUnit` 构建 `BattleUnit` 并注册，**再**触发 `OnUnitCreated` 事件，保证事件时刻领域单位已可查询。
-3. 不做本地移动预测，位移以服务端 SyncVar 为准。
+`Pull` 与 `Flush` 共用同一字段集：位置/朝向、生命、最大生命、半径、速度与攻防系数、治疗强度、施法技能与读条剩余一律读写 `Value`。`UnitPawn` 未标 `SyncFlags.Interpolated`，LES 的 A/B 插值通道未启用（见 client-prediction 的 D9）。当前只有 `Pull` 有调用点，`Flush` 未被调用。
 
-### 每帧回填 `UpdateAfterPollEvents`
+### 每帧 `UpdateAfterPollEvents`
 
-副本键同步后就绪时 `EnsureBattleScene` 构建 `BattleScene`（本地 `PhysicsMovementScene`，仅结构同构）；`EntityManager.Update()` 后，对每个 Pawn 调 `SyncUnit(pawn)` 回填领域 `BattleUnit`：
+1. 副本键同步后 `EnsureBattleScene` 构建 `BattleScene`（本地 `PhysicsMovementScene`）；未同步随下一帧重试。
+2. `EntityManager.Update()` 驱动 LES 同步，其间 `ClientBattleLoop.VisualUpdate` 每渲染帧 `Pull` 一次 SyncVar 读数回填领域单位；其 `Update`/`LateUpdate` 为空实现，在线端不跑本地结算。
+3. 轮询 `FocusTargetNetId` 刷新本地聚焦映射。服务端维持"聚焦目标必存活"不变式，死亡不经事件通报，随生命值下行自愈。
+4. 每秒流量结算；轮询房间阶段变化触发 `BattlePhaseChanged`。
 
-- 位置/朝向/生命/最大生命/半径/施法技能/读条剩余/全局冷却 ← SyncVar `Value`（服务端权威），不做插值；
-- Buff/冷却从网络数据重建运行时壳（`ActiveBuff`/`CooldownEntry`），剩余秒数经 `EndTickToRemaining` 换算；
-- 聚焦映射 `FocusByNetId` 每帧刷新。
+实体创建回调 `OnPawnEntityCreated` 只登记 Pawn 并 `AddPawnUnit` 注册领域单位，**注册在前、`OnUnitCreated` 在后**，保证事件时刻领域单位已可查询。
 
 ### 截止 tick 换算
 
 `SyncTickHelper.RemainingSeconds` 用客户端插值 `ServerTick` 与截止 tick 做 `SequenceDiff`（处理 16 位回绕）推算剩余秒数；服务端用自身 `Tick`。倒计时同步统一为截止 tick，避免逐帧推送当前值。
 
+Buff / 冷却 / 仇恨三个 `SyncList` 与 `GcdEndServerTick` 现仅由服务端投影，在线端不消费，是待清理的下行冗余。
+
 ## 领域单位 → UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `BattleSessionContext.Units` 暴露；另提供 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 权威角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `BattleSessionContext.Units` 暴露；另提供 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 判定角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
 
 ## 契约分层
 
-- `IWorldPoseView`：碰撞半径 + 权威逻辑位置，供判定。
+- `IWorldPoseView`：碰撞半径 + 逻辑位置，供判定。
 - `ISkillCasterView : IUnitCombatView, IWorldPoseView`：施法判定最小子集，`SkillCastValidator` 依赖。
 - `IUnitCombatView : IUnitIdentityView, ICombatValuesView, ISkillSource`：公共面，`ISkillCasterView` 与 `IUnitUiView` 共享。
-- `IUnitUiView : IUnitCombatView`：展示契约，`Position` 定义为展示/渲染位置，与判定权威位置语义分离。
+- `IUnitUiView : IUnitCombatView`：展示契约，`Position` 与判定共用同一份本地结算位置，不再分离插值与权威两份读数。
 - `IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView`：领域只读（服务端/AI/仇恨）。
 - `IBuffUiView`：Buff 展示，`ActiveBuff` 实现它。
 
@@ -71,7 +72,7 @@
 
 ## 两链收敛
 
-在线经「领域 → `BattleUnit` → `BattleStateSynchronizer` → `UnitPawn` SyncVar → 网络 → 客户端 `RoomBattleClient` 回填为领域 → UI」，回放「领域 → `BattleUnit` → UI」，最终都收敛到 `IUnitUiView`/`IBuffUiView`。在线多一层"投影 + 客户端回填"。
+在线经「服务端领域 → `BattleUnit` → `BattleStateSynchronizer` → `UnitPawn` SyncVar → 网络 → 客户端 `BattleSceneMirror.Pull` 回填本地 `BattleScene` → UI」，回放「服务端领域 → `BattleUnit` → 输入重放 → 本地结算 → UI」，最终都收敛到 `IUnitUiView`/`IBuffUiView`。差别在于回放每帧本地结算，在线直接显示下行读数。
 
 ```mermaid
 sequenceDiagram
@@ -86,7 +87,7 @@ sequenceDiagram
         Sync->>Sync: 读 BattleUnit 只读状态
         Sync->>Net: 写 UnitPawn SyncVar / Position / EndServerTick
         Client->>Client: 收到事件与 SyncVar 增量
-        Client->>UI: 回填领域后经 IBattleViewSource 供 UI 取数
+        Client->>UI: Mirror.Pull 回填领域单位，经 IBattleViewSource 供 UI 取数
     end
 ```
 

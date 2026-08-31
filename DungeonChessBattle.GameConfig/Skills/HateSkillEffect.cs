@@ -10,6 +10,6 @@ public sealed class HateSkillEffect : ISkillEffect {
         if (ctx.Target is not { } target)
             return SkillResolution.Empty;
         var skill = (HateSkillDefinition)ctx.Skill;
-        return new SkillResolution([new HateRequested(target.UnitNetId, ctx.Caster.UnitNetId, skill.Op, skill.Value)], []);
+        return new SkillResolution([new HateRequested(target.UnitId, ctx.Caster.UnitId, skill.Op, skill.Value)], []);
     }
 }

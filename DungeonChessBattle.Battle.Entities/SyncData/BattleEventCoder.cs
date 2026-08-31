@@ -7,6 +7,7 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// 领域战斗事件与 SyncBattleEvent 的双向映射，事件类型 tag 与槽位语义唯一权威来源。
 /// 服务端编码整帧事件日志，客户端解码回领域事件；新增领域事件类型只需补充本类 tag 与映射。
 /// 解码遇未知 tag 返回 null，由调用方跳过，网络协议向前兼容。
+/// tag 只增不改不复用：7 随单位死亡事件一并退役，死亡由生命值派生。
 /// </summary>
 public static class BattleEventCoder {
     /// <summary>单位受到伤害。</summary>
@@ -26,9 +27,6 @@ public static class BattleEventCoder {
 
     /// <summary>技能读条完成并结算。</summary>
     public const byte TypeCastCompleted = 6;
-
-    /// <summary>单位死亡。</summary>
-    public const byte TypeUnitDied = 7;
 
     /// <summary>技能开始读条施法。</summary>
     public const byte TypeCastStarted = 8;
@@ -55,15 +53,14 @@ public static class BattleEventCoder {
             },
             BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetNetId, B = be.BuffTypeId },
             CastCompleted cc => new SyncBattleEvent {
-                Type = TypeCastCompleted, A = cc.CasterNetId, C = cc.TargetNetId ?? 0, SkillKey = cc.SkillId.Id,
+                Type = TypeCastCompleted, A = cc.CasterNetId, C = cc.TargetNetId?.Value ?? 0, SkillKey = cc.SkillId.Id,
             },
             CastStarted cs => new SyncBattleEvent {
-                Type = TypeCastStarted, A = cs.CasterNetId, C = cs.TargetNetId ?? 0, SkillKey = cs.SkillId.Id,
+                Type = TypeCastStarted, A = cs.CasterNetId, C = cs.TargetNetId?.Value ?? 0, SkillKey = cs.SkillId.Id,
             },
             CastCanceled ccl => new SyncBattleEvent {
                 Type = TypeCastCanceled, A = ccl.CasterNetId, SkillKey = ccl.SkillId.Id,
             },
-            UnitDied ud => new SyncBattleEvent { Type = TypeUnitDied, A = ud.UnitNetId },
             _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
         };
     }
@@ -79,10 +76,9 @@ public static class BattleEventCoder {
             TypeHateRequested => new HateRequested(e.A, e.B, (HateEffectOp)e.C, e.Value),
             TypeBuffApplied => new BuffApplied(e.A, e.B, e.C),
             TypeBuffExpired => new BuffExpired(e.A, e.B),
-            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : e.C),
-            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : e.C),
+            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : new UnitId(e.C)),
+            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : new UnitId(e.C)),
             TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.SkillKey)),
-            TypeUnitDied => new UnitDied(e.A),
             _ => null,
         };
     }

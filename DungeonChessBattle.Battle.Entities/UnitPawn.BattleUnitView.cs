@@ -11,10 +11,10 @@ namespace DungeonChessBattle.Battle.Entities;
 /// </summary>
 public partial class UnitPawn : IBattleUnitView {
     /// <inheritdoc />
-    string IUnitIdentityView.UnitName => UnitName.Value;
+    string IUnitIdentityView.UnitName => UnitKeyName.Value;
 
     /// <inheritdoc />
-    ushort IUnitIdentityView.UnitNetId => Id;
+    UnitId IUnitIdentityView.UnitId => new(Id);
 
     /// <inheritdoc />
     IReadOnlyList<string> IUnitIdentityView.Camps => CampTags;

@@ -58,7 +58,7 @@ public partial class UnitTargetMarks : Node {
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
-    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitId;
 
     /// <summary>创建目标标记并挂载到本节点。</summary>
     private Node3dTargetMark CreateMark() {
@@ -84,7 +84,7 @@ public partial class UnitTargetMarks : Node {
         bool isFocus = unit == focusUnit;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
-                unit.UnitNetId, isFocus, unit.BodyRadius);
+                unit.UnitId, isFocus, unit.BodyRadius);
 
         mark.Visible = isFocus;
         mark.SetRadius(unit.BodyRadius);

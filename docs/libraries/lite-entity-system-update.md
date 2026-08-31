@@ -90,6 +90,8 @@ sequenceDiagram
 
 **作用**：让本地猜测始终追着服务器权威跑，偏差被自动纠正，同时不打断显示。
 
+**重放范围**：三步筛选决定谁被重演——实体须在待回滚队列中、`IsLocalControlled` 为真、且在 `AliveEntities` 内。进队列的唯一途径是它本轮有 predicted 字段被写过，字段由 `EntityFieldChanged` 登记，因此**写值本身就是登记动作**；未写过的实体不会被重演。远端实体虽入队做字段倒回，但不参与重演，重放期间他人值保持不动、不随 `_tick` 演进。`LocalSingleton` 的 `Update`/`LateUpdate` 不在重放路径内，跨 tick 的可复现模拟必须落在 `entity.Update()` 里。重放中 `EntityManager.Tick` 被改写为该步的历史 tick，结束后还原，`InRollBackState` 为真，一切非确定性副作用须据此门控。
+
 ### 两个进度因子
 
 - `_remoteLerpFactor`：**远端实体**在“服务器状态A → 状态B”两个权威快照间的补间进度（0 到 1）。
@@ -115,6 +117,20 @@ sequenceDiagram
 - **判定**：在滞后补偿窗口内读，即 `EnableLagCompensation(player)` ↔ `DisableLagCompensation()` 之间。此时 `GetInterpolatedValue` 命中 `IsLagCompensationEnabled && IsEntityLagCompensated` 分支，直接返回写回历史、按玩家回溯的 `Value`，让命中检测与玩家视觉一致。
 
 其余场合（逻辑 tick 内、非补偿态）读，两个进度因子仍是上一次 `Update()` 的残留值，得到错位/迟到的补间值，不应作为显示或判定依据。服务端 `InterpolatedValue` 恒等于 `Value`，但要回溯到玩家可见位置，仍需先启用滞后补偿。
+
+滞后补偿的读数形状：带 `LagCompensated` 的字段每应用一个状态写一格滚动历史，槽位按该状态 tick 取模，缓冲多出一格用于暂存原值。`Enable` 把字段覆盖为按发起者的 A、B 两格与其记录进度混合的历史值，`Disable` 从暂存格还原。因此窗口是一次性的：开、问一次、关。不能整段模拟都开着，也不能指定任意 tick 回溯——两格之外的历史已被环形覆盖，且索引参数不对外可读；请求时刻超出状态区间时只记 `LagCompensationMiss` 日志并放弃补偿。窗口内 `InterpolatedValue` 直返 `Value`，展示逻辑不得落进这个作用域。它是判定层机制，不提供连续模拟所需的历史时间轴。
+
+### 客户端实体钩子可达性
+
+`entity.Update()` 与 `entity.VisualUpdate()` 都只遍历 `AliveEntities`。成员资格在构造时由 `IsEntityAlive` 判定：需要 `Updateable` 标记，且服务端全量收集，客户端只收本地生成的预测实体或带 `UpdateOnClient` 的实体。本地控制关系晚于构造建立，归属变化时由 `AddOwned`/`RemoveOwned` 动态进出队列。
+
+| 类标记 | 服务端 | 客户端 |
+|---|---|---|
+| 无标记 | 不进队列，两个钩子都不跑 | 同左 |
+| `Updateable` | 进 | 仅本地生成或本地控制的实体进 |
+| `UpdateOnClient` | 进 | 全部进 |
+
+推论：客户端要给非本地控制的实体挂渲染钩子，必须显式加 `UpdateOnClient`；加了之后又要在 `Update` 首行早退远端实体，否则同一份逻辑在两端重复执行。只依赖 `LocalSingleton` 的 `VisualUpdate` 不受此表约束，但它拿不到回滚重放。
 
 ## 服务端时序
 

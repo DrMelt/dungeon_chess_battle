@@ -34,7 +34,7 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly IUnitRegistry _unitRegistry;
     private readonly IDungeonRegistry _dungeonRegistry;
 
-    private const int FramesPerSecond = 50;
+    private const int FramesPerSecond = 128;
 
     /// <summary>连续逻辑 tick 失败达到该次数后停止房间，避免错误状态无限运行。</summary>
     private const int MaxConsecutiveTickFailures = 10;
@@ -196,7 +196,6 @@ public partial class BattleRoomServer : INetEventListener {
     /// </summary>
     public void Stop() {
         _running = false;
-
         // 先等待房间线程退出，再清理共享状态，避免大厅线程与房间线程并发访问
         _loopThread?.Join(TimeSpan.FromSeconds(3));
         _netManager.Stop();
@@ -256,6 +255,7 @@ public partial class BattleRoomServer : INetEventListener {
                 // 网络事件收包入队；输入应用、实体更新、战斗推进与状态发送
                 // 全部由 EntityManager.Update() 在逻辑 tick 内驱动。
                 // Sleep 仅控制轮询节奏，不参与逻辑计时；tick 频率由 LES accumulator 保证。
+
                 _netManager.PollEvents();
                 EntityManager.Update();
                 consecutiveFailures = 0;
@@ -269,7 +269,7 @@ public partial class BattleRoomServer : INetEventListener {
                     break;
                 }
             }
-            Thread.Sleep(1);
+            Thread.Yield();
         }
 
         // 连续失败退出：投递空房事件由大厅清理循环销毁，避免带病房间残留。

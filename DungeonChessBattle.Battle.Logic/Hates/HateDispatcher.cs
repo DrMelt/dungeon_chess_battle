@@ -19,7 +19,7 @@ public static class HateDispatcher {
     public static IReadOnlyList<HateEffect> Dispatch(
         IReadOnlyList<IBattleEvent> events,
         IReadOnlyList<IBattleUnitView> units,
-        Func<ushort, IBattleUnitView?> unitOf,
+        Func<UnitId, IBattleUnitView?> unitOf,
         HateSettings settings,
         CampRelationResolver relations) {
         if (events.Count == 0 || units.Count == 0)

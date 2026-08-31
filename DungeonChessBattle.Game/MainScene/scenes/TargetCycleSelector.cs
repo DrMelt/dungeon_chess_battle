@@ -33,10 +33,10 @@ public sealed class TargetCycleSelector {
         if (enemies.Count == 0)
             return 0;
 
-        int index = enemies.FindIndex(e => e.UnitNetId == _cursor);
+        int index = enemies.FindIndex(e => e.UnitId == _cursor);
         if (index < 0)
-            index = enemies.FindIndex(e => e.UnitNetId == focusId);
-        ushort next = enemies[(index + 1) % enemies.Count].UnitNetId;
+            index = enemies.FindIndex(e => e.UnitId == focusId);
+        ushort next = enemies[(index + 1) % enemies.Count].UnitId;
         _cursor = next;
         return next;
     }
@@ -48,7 +48,7 @@ public sealed class TargetCycleSelector {
         Func<IReadOnlyList<string>, CampRelation> resolveRelation) {
         List<IUnitUiView> enemies = [];
         foreach (var candidate in units) {
-            if (candidate.UnitNetId == localNetId || candidate.IsDead)
+            if (candidate.UnitId == localNetId || candidate.IsDead)
                 continue;
             if (resolveRelation(candidate.Camps) != CampRelation.Enemy)
                 continue;

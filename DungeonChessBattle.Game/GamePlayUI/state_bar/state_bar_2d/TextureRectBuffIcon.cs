@@ -75,7 +75,7 @@ public partial class TextureRectBuffIcon : TextureRect {
         superpositionsLabelRef.Text = buff.Stacks.ToString();
 
         durationLabelRef.LabelSettings.FontColor =
-            buff.FromNetId == focusUnit.UnitNetId ? fromFocusUnit : fromOther;
+            buff.FromNetId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
         // 图标按 BuffTypeId 从资源表匹配；未注册时留空
         Texture = buffResourceTable?.GetResourceByBuffTypeId(buff.BuffTypeId)?.Icon;

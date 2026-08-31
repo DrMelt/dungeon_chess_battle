@@ -17,7 +17,7 @@ public sealed record ActiveBuff(BuffInstance Instance, BuffDefinition Definition
     public double Remaining => Instance.Remaining;
 
     /// <inheritdoc />
-    public ushort FromNetId => Instance.FromNetId;
+    public UnitId FromNetId => Instance.FromNetId;
 
     /// <inheritdoc />
     public DamageType DamageType => Instance.DamageType;

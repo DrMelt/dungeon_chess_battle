@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat.Hates;
 /// <param name="Relations">阵营关系函数。</param>
 public readonly record struct HateContext(
     HateSettings Settings,
-    Func<ushort, IBattleUnitView?> UnitOf,
+    Func<UnitId, IBattleUnitView?> UnitOf,
     CampRelationResolver Relations);
 
 /// <summary>

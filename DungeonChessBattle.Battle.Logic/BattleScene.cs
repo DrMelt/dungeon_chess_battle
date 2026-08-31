@@ -11,19 +11,16 @@ using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Events;
 using DungeonChessBattle.Battle.Logic.Hates;
-using DungeonChessBattle.Battle.Logic.Movement;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
-/// 战斗世界实现：自持单位权威状态并统一驱动读条、冷却、Buff、仇恨、技能结算与 AI 决策。
+/// 战斗世界实现：自持单位权威状态，统一驱动移动、读条、冷却、Buff、仇恨与技能结算。
 /// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
-/// 移动结算在 <see cref="Tick"/> 内统一执行；<see cref="ApplyDecisions"/> 先触发 AI 决策，
-/// 移动输入本帧生效；状态同步由外部同步器订阅，本类不依赖网络载体。
-/// <see cref="Tick"/> 在移动结算后推进战斗并返回领域事件。
-/// 领域事件是唯一真相源：本类把事件流交给各单位仇恨规则分发推衍。
+/// <see cref="ApplyDecisions"/> 先触发 AI 决策，<see cref="Tick"/> 结算移动并推进战斗、返回帧事件流；
+/// 事件流是仇恨推衍的唯一真相源。阶段由宿主写 <c>CurrentPhase</c>，死亡不产出事件而由生命值派生。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建注入，与战斗世界同生命周期。</param>
@@ -52,8 +49,8 @@ public sealed partial class BattleScene(
     /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
     private readonly List<IBattleEvent> _pendingEvents = [];
 
-    /// <summary> ID 到单位的索引。</summary>
-    private readonly Dictionary<ushort, BattleUnit> _unitById = [];
+    /// <summary>单位 ID → 领域单位索引。</summary>
+    private readonly Dictionary<UnitId, BattleUnit> _unitById = [];
 
     /// <summary>全部战斗单位，按注册顺序。</summary>
     private readonly List<BattleUnit> _units = [];
@@ -68,30 +65,21 @@ public sealed partial class BattleScene(
     public IBattleUnitView? FindUnit(ushort netId) =>
         _unitById.TryGetValue(netId, out var unit) ? unit : null;
 
-    /// <summary>已判定死亡的单位，避免重复触发 UnitDied。</summary>
-    private readonly HashSet<BattleUnit> _dead = [];
-
-    /// <summary>当前战斗阶段，战斗世界自持权威。</summary>
-    private BattlePhase _phase = BattlePhase.Waiting;
-
-    /// <summary>已判定结束，避免重复执行结束判定。</summary>
-    private bool _ended;
-
-    /// <summary>战斗开始 Unix 秒，StartBattle 时写入。</summary>
+    /// <summary>战斗开始 Unix 秒，取战斗世界构造时刻；无开战重置点，准备期耗时计入其中。</summary>
     public long BattleStartUnixTime {
         get; private set;
-    }
-
-    /// <inheritdoc />
-    public BattlePhase CurrentPhase => _phase;
-
-    /// <summary>战斗是否已结束。</summary>
-    public bool IsFinished => _phase == BattlePhase.Finished;
+    } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
     /// <summary>战斗已运行的秒数，Running 期间累加。</summary>
     public float ElapsedTime {
         get; private set;
     }
+
+    /// <summary>战斗阶段：宿主可写——服务端开战、回放重跑、在线端跟随房间权威。</summary>
+    public BattlePhase CurrentPhase { get; set; } = BattlePhase.Waiting;
+
+    /// <summary>战斗是否已结束，由阶段推导。</summary>
+    public bool IsFinished => CurrentPhase == BattlePhase.Finished;
 
     /// <summary>Buff 全局结算间隔，秒；所有存活 Buff 在同一节拍点同时结算。</summary>
     private const double BuffTickInterval = 3.0;
@@ -104,15 +92,14 @@ public sealed partial class BattleScene(
         ArgumentNullException.ThrowIfNull(unit);
         if (!_units.Contains(unit)) {
             _units.Add(unit);
-            _unitById[unit.UnitNetId] = unit;
+            _unitById[unit.UnitId] = unit;
         }
     }
 
     /// <summary>移除已注册的战斗单位，并清空其仇恨条目。</summary>
     public void RemoveUnit(BattleUnit unit) {
         _units.Remove(unit);
-        _unitById.Remove(unit.UnitNetId);
-        _dead.Remove(unit);
+        _unitById.Remove(unit.UnitId);
         ClearHateEntries(unit);
     }
 
@@ -121,40 +108,18 @@ public sealed partial class BattleScene(
         deadUnit.RuntimeState.Hates.Clear();
         foreach (var unit in _units) {
             if (unit != deadUnit)
-                unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitNetId);
+                unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitId);
         }
     }
 
-    /// <summary>登记本帧死者并产出 UnitDied；依赖 _dead 去重，在仇恨推衍前调用。</summary>
-    private void RegisterDeaths() {
-        foreach (var unit in _units.ToArray())
-            if (unit.IsDead && _dead.Add(unit))
-                _eventLog.Append(new UnitDied(unit.UnitNetId));
-    }
-
-    /// <summary>清理本帧死者仇恨账本，在仇恨推衍后调用，避免死者因自身伤害事件被重写。</summary>
+    /// <summary>
+    /// 死者仇恨账本清理：每帧对全部死者执行，故置于仇恨推衍之后，避免死者因自身伤害事件被重写。
+    /// 死亡不产出事件，一切死亡后续处理依 IsDead 派生。
+    /// </summary>
     private void CleanupDeaths() {
         foreach (var unit in _units.ToArray())
             if (unit.IsDead)
                 ClearHateEntries(unit);
-    }
-
-    /// <summary>开始战斗：Waiting 到 Running，清零计时并记录开始时刻。</summary>
-    public void StartBattle() {
-        if (_phase != BattlePhase.Waiting)
-            return;
-
-        _phase = BattlePhase.Running;
-        BattleStartUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        ElapsedTime = 0f;
-        _buffTickRemaining = BuffTickInterval;
-    }
-
-    /// <summary>手动结束战斗，幂等兜底。</summary>
-    public void EndBattle() {
-        if (_phase == BattlePhase.Finished)
-            return;
-        _phase = BattlePhase.Finished;
     }
 
     /// <summary>
@@ -165,7 +130,6 @@ public sealed partial class BattleScene(
             return;
         SetMoveInput(unit, moveDirection);
     }
-
 
     /// <summary>
     /// 发起读条施法：技能存在、归属、状态与目标/位置校验通过后写入读条状态并暂存目标。
@@ -190,7 +154,7 @@ public sealed partial class BattleScene(
         caster.SkillCastRemaining = skill.SpellTime;
         caster.RuntimeState.CastTarget = target;
         caster.RuntimeState.CastTargetPos = targetPos;
-        _pendingEvents.Add(new CastStarted(caster.UnitNetId, skillKey, target?.UnitNetId));
+        _pendingEvents.Add(new CastStarted(caster.UnitId, skillKey, target?.UnitId));
         return true;
     }
 
@@ -200,7 +164,7 @@ public sealed partial class BattleScene(
     public void CancelCast(BattleUnit unit) {
         if (unit.SkillCasting == default)
             return;
-        _pendingEvents.Add(new CastCanceled(unit.UnitNetId, unit.SkillCasting));
+        _pendingEvents.Add(new CastCanceled(unit.UnitId, unit.SkillCasting));
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         unit.RuntimeState.ClearCast();
@@ -211,7 +175,7 @@ public sealed partial class BattleScene(
     /// 必须在移动结算之前调用，移动输入本帧生效。
     /// </summary>
     public void ApplyDecisions() {
-        if (_phase != BattlePhase.Running)
+        if (CurrentPhase != BattlePhase.Running)
             return;
 
         foreach (var unit in _units) {
@@ -255,7 +219,7 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
-    private void RequestCast(BattleUnit caster, SkillKeyId skillKey, ushort targetNetId, Vector2 targetPosition) {
+    private void RequestCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetNetId, Vector2 targetPosition) {
         var skill = caster.GetSkill(skillKey);
         if (skill == null) {
             LogSkillNotFound(caster.UnitName, skillKey.Id);
@@ -278,19 +242,18 @@ public sealed partial class BattleScene(
         LogCastStarted(caster.UnitName, skillKey.Id, targetName);
     }
 
-
     /// <summary>
-    /// 按帧推进全部单位的读条、冷却与 Buff，返回本帧领域事件。
+    /// 按帧推进移动结算、读条、冷却与 Buff，返回本帧领域事件。
     /// 仅在 Running 阶段推进；战斗结束条件满足时切换 Finished。
     /// </summary>
-    public IReadOnlyList<IBattleEvent> Tick(double deltaTime) {
-        if (_phase != BattlePhase.Running) {
+    public IReadOnlyList<IBattleEvent> Tick(float deltaTime) {
+        if (CurrentPhase != BattlePhase.Running) {
             // 非 Running 不推进不外送事件；跨帧缓冲一并清空，避免战斗结束后滞留。
             _pendingEvents.Clear();
             return [];
         }
 
-        ElapsedTime += (float)deltaTime;
+        ElapsedTime += deltaTime;
 
         // 全局 Buff 节拍：每满一个间隔所有 Buff 同时结算一跳
         _buffTickRemaining -= deltaTime;
@@ -305,10 +268,10 @@ public sealed partial class BattleScene(
         _pendingEvents.Clear();
 
         // 移动结算统一在领域层：本帧输入本帧生效，服务端与回放同源同序。
-        BattleMovementResolver.ResolveTurn(_units, (float)deltaTime, _movementScene);
+        ResolveMovement(deltaTime);
 
         foreach (var unit in _units.ToArray()) {
-            TickCasting(unit, (float)deltaTime, _eventLog);
+            TickCasting(unit, deltaTime, _eventLog);
         }
 
         foreach (var unit in _units.ToArray()) {
@@ -319,11 +282,6 @@ public sealed partial class BattleScene(
             TickBuffs(unit, deltaTime, _eventLog, buffJumps);
         }
 
-        // 全量死亡扫描：本帧内所有 IsDead 的单位统一产出 UnitDied。
-        // 若在单位迭代内判定，同帧互杀时后死者可能因战斗已切 Finished 而丢失死亡事件。
-        // 仇恨账本清理延迟到增量推衍之后，避免本帧死者因自身伤害事件重写进账本。
-        RegisterDeaths();
-
         TryEndBattle();
 
         // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
@@ -332,17 +290,39 @@ public sealed partial class BattleScene(
                 holder.RuntimeState.Hates.ApplyEffect(effect);
         }
 
-        // 死亡清理：本帧死者清空自身表并从其他单位表移除其条目，保证死者不残留
         CleanupDeaths();
 
         return _eventLog;
     }
 
     /// <summary>
+    /// 移动结算统一在领域层：本帧输入本帧生效，服务端、在线与回放同源同序。
+    /// 意图集合只含存活且有位移输入的单位；静止与死亡单位不参与互斥，不作为他人的障碍。
+    /// </summary>
+    private void ResolveMovement(float dt) {
+        var intents = new List<MoveIntent>(_units.Count);
+        foreach (var unit in _units) {
+            if (unit.IsDead || unit.MoveInput.LengthSquared() <= 0.0001f || unit.BaseSpeed <= 0f)
+                continue;
+            intents.Add(new MoveIntent(unit.UnitId, unit.Position,
+                Vector2.Normalize(unit.MoveInput), unit.BaseSpeed, unit.BodyRadius));
+        }
+
+        var results = _movementScene.Resolve(intents, dt);
+        for (var i = 0; i < intents.Count; i++) {
+            if (!_unitById.TryGetValue(intents[i].ActorId, out var unit))
+                continue;
+            unit.Position = results[i];
+            if (unit.Direction != intents[i].Direction)
+                unit.Direction = intents[i].Direction;
+        }
+    }
+
+    /// <summary>
     /// 判定战斗是否结束：任一阵营无存活单位则结束；满足条件时切换 Finished，每场仅执行一次。
     /// </summary>
     private void TryEndBattle() {
-        if (_phase != BattlePhase.Running || _ended)
+        if (CurrentPhase == BattlePhase.Finished)
             return;
 
         var allCamps = _units.SelectMany(u => u.Camps).Distinct().ToHashSet();
@@ -353,8 +333,7 @@ public sealed partial class BattleScene(
         if (aliveCamps.Count >= allCamps.Count)
             return;
 
-        _ended = true;
-        _phase = BattlePhase.Finished;
+        CurrentPhase = BattlePhase.Finished;
     }
 
     /// <summary>推进单位读条；读条完成时结算技能并清理读条状态。</summary>
@@ -429,7 +408,7 @@ public sealed partial class BattleScene(
         foreach (var buff in resolution.Buffs)
             ApplyBuffToTarget(buff, log);
 
-        log.Append(new CastCompleted(caster.UnitNetId, skill.SkillId, target?.UnitNetId));
+        log.Append(new CastCompleted(caster.UnitId, skill.SkillId, target?.UnitId));
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值。</summary>
@@ -472,12 +451,12 @@ public sealed partial class BattleScene(
             stacks = existing.Instance.Stacks;
         }
         else {
-            list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitNetId, buff.From, buff.FromNetId),
+            list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitId, buff.From, buff.FromNetId),
                 buff.Definition, buff.Definition.Effect));
             stacks = 1;
         }
 
-        log.Append(new BuffApplied(target.UnitNetId, buff.Definition.BuffTypeId, stacks));
+        log.Append(new BuffApplied(target.UnitId, buff.Definition.BuffTypeId, stacks));
     }
 
     /// <summary>生命值增量修正，钳制到 [0, MaxHealth]。</summary>

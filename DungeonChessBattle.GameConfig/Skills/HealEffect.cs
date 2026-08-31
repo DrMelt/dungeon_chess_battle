@@ -12,6 +12,6 @@ public sealed class HealEffect : ISkillEffect {
             return SkillResolution.Empty;
         var skill = (HealSkillDefinition)ctx.Skill;
         var result = HealProcessor.Process(ctx.Caster.Snapshot, target.Snapshot, skill.CurePotency);
-        return new SkillResolution([new HealOccurred(ctx.Caster.UnitNetId, target.UnitNetId, result.ActualHeal)], []);
+        return new SkillResolution([new HealOccurred(ctx.Caster.UnitId, target.UnitId, result.ActualHeal)], []);
     }
 }

@@ -135,18 +135,6 @@ public partial class MainScene : Node {
         _screenMachine?.ExitReplay();
     }
 
-    // =============================================================
-    // 帧循环：委托战斗编排器
-    // =============================================================
-
-    /// <summary>
-    /// 每帧推进战斗输入收集并提交到战斗服务。
-    /// </summary>
-    /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
-        _coordinator?.Tick();
-    }
-
     /// <summary>
     /// 节点退出场景树：取消战斗服务事件订阅。
     /// </summary>

@@ -4,8 +4,8 @@ LES 网络实体层，所属分组 Shared。服务端与客户端共用的实体
 
 ## 实体族
 
-- `BattleRoomEntity`：房间级战斗状态投影载体。承载阶段、是否结束、开始时刻与副本键；禁止在 OnConstructed 重置同步字段（客户端先应用初始同步再执行 OnConstructed，重置会丢字段）。
-- `UnitPawn`：单位 SyncVar 载体，实现只读视图 `IBattleUnitView`。生命、读条、冷却截止 tick、Buff/仇恨列表、阵营、死亡状态等均为网络同步字段；技能定义、智能决策器、移动管线为装配期本地写入不参与同步。
+- `BattleRoomEntity`：房间级战斗状态投影载体。承载阶段、开始时刻与副本键（结束由阶段推导）；禁止在 OnConstructed 重置同步字段（客户端先应用初始同步再执行 OnConstructed，重置会丢字段）。
+- `UnitPawn`：单位 SyncVar 载体，实现只读视图 `IBattleUnitView`。生命、读条、冷却截止 tick、Buff/仇恨列表、阵营等均为网络同步字段；死亡状态由生命值推导。技能定义、智能决策器、移动管线为装配期本地写入不参与同步。
 - `UnitController`：`HumanControllerLogic` 输入控制器，`SubmitInput` 写入待发缓冲、`SendCastSkillRequest` 走可靠请求通道；服务端 `BeforeControlledUpdate` 每 tick 把当前输入转发给受控 Pawn。
 
 ## 载体适配

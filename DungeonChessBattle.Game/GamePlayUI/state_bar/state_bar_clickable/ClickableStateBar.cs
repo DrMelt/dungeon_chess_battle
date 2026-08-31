@@ -61,7 +61,7 @@ public partial class ClickableStateBar : Control {
             if (SessionRef == null)
                 _logger.LogWarning("SessionRef is not assigned!");
             else
-                SessionRef.SetLocalFocusTarget(bindingUnit.UnitNetId);
+                SessionRef.SetLocalFocusTarget(bindingUnit.UnitId);
             AcceptEvent();
         }
     }

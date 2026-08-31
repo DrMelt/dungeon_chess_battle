@@ -139,7 +139,7 @@ public partial class BattleEventLogPanel : Control {
         var session = _sessionRef;
         if (session != null) {
             foreach (var unit in session.Units) {
-                if (unit.UnitNetId == netId)
+                if (unit.UnitId == netId)
                     return unit.UnitName;
             }
         }

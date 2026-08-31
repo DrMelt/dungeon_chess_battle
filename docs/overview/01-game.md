@@ -10,8 +10,8 @@
 
 ## 帧驱动顺序
 
-1. `GameClientDriver._Process` 最先执行：`ClientService.Update` 消费主线程动作队列、驱动大厅与房间客户端网络轮询并监测连接超时。网络状态先于输入采集。
-2. `MainScene._Process` 随后推进 `BattleCoordinator.Tick`，由 `BattleInputController` 采集 WASD 移动与 3D 拾取，每帧提交到 `IClientBattleService`。
+1. `BattleCoordinator._Process` 最先执行（`main_scene.tscn` 设 `process_priority = -1`）：由 `BattleInputController` 采集 WASD 移动与 3D 拾取，每帧提交到 `IClientBattleService`。输入先于网络驱动，本帧 pending 在紧随的逻辑 tick 内即被采纳。
+2. `GameClientDriver._Process` 随后：`ClientService.Update` 消费主线程动作队列、驱动大厅与房间客户端网络轮询并监测连接超时。
 
 ## 战斗进出路由
 
@@ -23,6 +23,6 @@
 ## 数据流
 
 - UI 不直接持有网络对象：事件经 `IClientBattleService` C# 事件到达，数据查询统一经 `BattleSessionContext` 投影（本地 Pawn、全部单位、副本键、战斗计时、阵营关系函数）。
-- `UnitShowManager` 是单位视图唯一所有者：订阅单位创建/死亡事件驱动视图生成与隐藏，从配置装配技能资源；不对外提供查询。
+- `UnitShowManager` 是单位视图唯一所有者：每帧从 `IBattleViewSource` 增量生成视图、重取单位引用并按 `IsDead` 收敛可见性；技能展示资源由 UI 侧按技能 ID 直查 `SkillResourceTable`，不在此装配；不对外提供查询。
 - 阵营判定依赖 `DungeonRegistry.GetRelations(dungeonKey)` 装配的关系函数，副本键同步后延迟收敛，未知键抛异常不静默回退。
 

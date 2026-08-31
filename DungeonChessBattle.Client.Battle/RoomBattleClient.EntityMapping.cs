@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Client.Battle;
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
-    public string? DungeonKey => _roomEntity?.DungeonKey.Value;
+    public string? DungeonKey => RoomState.DungeonKey;
 
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID，日志读取投影状态。</summary>
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
@@ -24,23 +24,14 @@ public partial class RoomBattleClient {
                 entity.BattleStartUnixTime.Value, entity.DungeonKey.Value);
     }
 
-    /// <summary>单位实体创建回调：缓存 Pawn 并订阅其事件。</summary>
+    /// <summary>单位实体创建回调：缓存 Pawn，并构建本地领域单位注册。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
-        var unitName = pawn.UnitName.Value;
+        var unitName = pawn.UnitKeyName.Value;
         lock (_lock) {
             _roomPawns.Add(pawn);
         }
 
-        // 订阅 UnitPawn 事件
-        pawn.HealthChanged += (u, newHealth, oldHealth) =>
-            UnitHealthChanged?.Invoke(u.Id, newHealth, oldHealth);
-        pawn.UnitDied += (u) =>
-            UnitDied?.Invoke(u.Id);
-        pawn.FocusTargetChanged += (u, target) =>
-            UnitFocusTargetChanged?.Invoke(u.Id, target);
-
-        // 在线端不推进领域逻辑：位移由服务端 SyncVar 同步，本地构建领域单位并回填展示状态。
-        // 构建领域单位并注册；其余状态由 UpdateAfterPollEvents 每帧回填。
+        // 只构建领域单位并注册；位移、生命等状态由 ClientBattleLoop 每渲染帧从 SyncVar 回填。
         AddPawnUnit(pawn);
 
         // 触发 OnUnitCreated 事件，通知 UI 层
@@ -60,7 +51,7 @@ public partial class RoomBattleClient {
     /// 误判会导致 _localController 恒为 null、输入被静默丢弃，Position 恒为 0。
     /// </summary>
     private void OnUnitControllerCreated(UnitController controller) {
-        var pawnName = controller.ControlledEntity?.UnitName.Value ?? "(null)";
+        var pawnName = controller.ControlledEntity?.UnitKeyName.Value ?? "(null)";
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(
                 "UnitController constructed: PawnName={PawnName}, IsLocalControlled={IsLocalControlled}, AlreadyBound={AlreadyBound}",

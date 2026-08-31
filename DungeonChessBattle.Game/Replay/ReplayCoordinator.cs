@@ -93,7 +93,6 @@ public partial class ReplayCoordinator : Node {
             _stateChangeInfo?.Consume(events);
             _accumulator -= engine.FixedDelta;
         }
-        _unitManager?.Tick();
     }
 
     /// <summary>切换播放/暂停。</summary>

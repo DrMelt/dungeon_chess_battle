@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -46,10 +45,10 @@ public partial class UnitShowManager : Node {
     }
 
     /// <summary>
-    /// 每帧对齐展示数据源：按 netId 重取单位视图引用并同步存活，对新增单位生成视图。
-    /// 在线单位晚到与回放 Seek 重建均在此收敛。
+    /// 每帧对齐展示数据源：按 netId 重取单位视图引用、按死亡状态收敛可见性，对新增单位生成视图。
+    /// 在线单位晚到与回放 Seek 重建均在此收敛；死亡不经事件通报，视图只隐藏不销毁。
     /// </summary>
-    public void Tick() {
+    public override void _Process(double delta) {
         var source = _source;
         if (source == null)
             return;
@@ -65,16 +64,14 @@ public partial class UnitShowManager : Node {
         }
 
         foreach (var unit in source.Units) {
-            if (!_unitShows.ContainsKey(unit.UnitNetId))
+            if (!_unitShows.ContainsKey(unit.UnitId))
                 SpawnUnit(unit);
         }
     }
 
+    /// <summary>实例化单位视图并登记；可见性不在此决定，由首帧对齐按死亡状态收敛。</summary>
     private void SpawnUnit(IUnitUiView unit) {
-        var unitName = unit.UnitName;
-
-        // 按配置键取配置（技能资源构建来源）
-        var config = UnitCatalog.GetByKey(unitName);
+        string unitName = unit.UnitName;
 
         if (_unitShowScene == null)
             return;
@@ -85,15 +82,8 @@ public partial class UnitShowManager : Node {
         // 注入本地展示视图（setter 先于挂载，_Ready 校验不会误报）
         unitShow.Unit = unit;
 
-        // 从配置构建 Godot 技能资源列表（展示资源不参与网络同步，两端各自从共享配置读取）
-        if (config != null) {
-            foreach (var skillDefinition in config.Skills) {
-                unitShow.SkillsList.Add(SkillResourceTable.LoadResource(skillDefinition));
-            }
-        }
-
         AddChild(unitShow);
-        _unitShows[unit.UnitNetId] = unitShow;
+        _unitShows[unit.UnitId] = unitShow;
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, unit.Position);

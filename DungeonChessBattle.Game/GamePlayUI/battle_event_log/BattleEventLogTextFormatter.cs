@@ -42,8 +42,6 @@ public static class BattleEventLogTextFormatter {
                     : $"{unitName(started.CasterNetId)} 开始施放 {skillName(started.SkillId)}",
             CastCanceled canceled =>
                 $"{unitName(canceled.CasterNetId)} 取消施放 {skillName(canceled.SkillId)}",
-            UnitDied died =>
-                $"{unitName(died.UnitNetId)} 死亡",
             _ => entry.Event.ToString() ?? "",
         };
     }

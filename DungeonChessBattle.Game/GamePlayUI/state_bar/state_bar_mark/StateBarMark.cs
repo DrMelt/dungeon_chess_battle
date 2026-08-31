@@ -52,7 +52,7 @@ public partial class StateBarMark : Control {
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
-    private static ushort GetKey(IUnitUiView unit) => unit.UnitNetId;
+    private static ushort GetKey(IUnitUiView unit) => unit.UnitId;
 
     /// <summary>创建状态标记并挂载到本节点。</summary>
     private StateBarMark2d CreateMark() {

@@ -20,25 +20,25 @@ public sealed class DefaultHateRule : IHateRule {
     /// <inheritdoc />
     public IReadOnlyList<HateEffect> Evaluate(IBattleUnitView self, IBattleEvent e, HateContext ctx) {
         return e switch {
-            DamageOccurred dmg when dmg.TargetNetId == self.UnitNetId && dmg.SourceNetId != 0 => Accrue(self, dmg.SourceNetId, dmg.AppliedDamage, ctx.Settings.DamageHateFactor, ctx),
+            DamageOccurred dmg when dmg.TargetNetId == self.UnitId && !dmg.SourceNetId.IsDefault => Accrue(self, dmg.SourceNetId, dmg.AppliedDamage, ctx.Settings.DamageHateFactor, ctx),
             HealOccurred heal => HealSpread(self, heal, ctx),
-            HateRequested req when req.HolderNetId == self.UnitNetId => [new HateEffect(self.UnitNetId, req.SourceNetId, req.Op, req.Value)],
+            HateRequested req when req.HolderNetId == self.UnitId => [new HateEffect(self.UnitId, req.SourceNetId, req.Op, req.Value)],
             _ => [],
         };
     }
 
     /// <summary>按伤害量、治疗量乘来源单位仇恨倍率落账，来源缺失或死亡不落账，零负不落账。</summary>
-    private static IReadOnlyList<HateEffect> Accrue(IBattleUnitView self, ushort sourceNetId, float amount,
+    private static IReadOnlyList<HateEffect> Accrue(IBattleUnitView self, UnitId sourceNetId, float amount,
         float factor, HateContext ctx) {
         if (ctx.UnitOf(sourceNetId) is not { Health: > 0f } source)
             return [];
         float hate = amount * factor * source.HateFactor;
-        return hate <= 0f ? [] : [new HateEffect(self.UnitNetId, sourceNetId, HateEffectOp.Add, hate)];
+        return hate <= 0f ? [] : [new HateEffect(self.UnitId, sourceNetId, HateEffectOp.Add, hate)];
     }
 
     /// <summary>治疗扩散：仅当自身是存活且与被治疗者敌对的单位时，对治疗者记仇。仇恨量以治疗来源倍率缩放。</summary>
     private static IReadOnlyList<HateEffect> HealSpread(IBattleUnitView self, HealOccurred heal, HateContext ctx) {
-        if (heal.SourceNetId == 0 || self.UnitNetId == heal.SourceNetId || self.IsDead)
+        if (heal.SourceNetId.IsDefault || self.UnitId == heal.SourceNetId || self.IsDead)
             return [];
         if (ctx.UnitOf(heal.TargetNetId) is not { } healTarget)
             return [];

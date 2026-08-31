@@ -91,7 +91,7 @@ public partial class BattleInputController : Node {
         }
 
         var hit = RaycastUnitFromCamera();
-        var targetNetId = hit?.UnitShowRef.Unit.UnitNetId ?? 0;
+        var targetNetId = hit?.UnitShowRef.Unit.UnitId ?? 0;
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
         sessionRef.SetLocalFocusTarget(targetNetId);
@@ -118,9 +118,9 @@ public partial class BattleInputController : Node {
 
         ushort next = _targetCycle.NextTarget(
             session.Units,
-            localUnit.UnitNetId,
-            session.LocalFocus?.UnitNetId ?? 0,
-            camps => session.ResolveLocalCampRelation(camps));
+            localUnit.UnitId,
+            session.LocalFocus?.UnitId ?? 0,
+            session.ResolveLocalCampRelation);
         if (next == 0) {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("SwitchToNextEnemy: no living enemy targets.");

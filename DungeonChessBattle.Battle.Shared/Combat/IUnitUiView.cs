@@ -26,8 +26,8 @@ public interface IBuffUiView {
         get;
     }
 
-    /// <summary>来源施法单位网络 ID，0 表示无来源。</summary>
-    ushort FromNetId {
+    /// <summary>来源施法单位网络 ID，None 表示无来源。</summary>
+    UnitId FromNetId {
         get;
     }
 
@@ -40,10 +40,10 @@ public interface IBuffUiView {
 /// <summary>
 /// 单位展示层统一只读视图：在线战斗世界与回放重放共用，UI 一律按本契约取数。
 /// 在公共面（身份、数值、技能源）之上追加展示所需字段。
-/// 位置语义与 <see cref="ISkillCasterView"/> 一致：Position 即领域权威位置（在线为服务端同步，回放为本地结算）。
+/// 位置语义与 <see cref="ISkillCasterView"/> 一致：Position 即本地 BattleScene 的结算位置，在线随服务端下行校正，回放纯本地重跑。
 /// </summary>
 public interface IUnitUiView : IUnitIdentityView, ICombatValuesView, ISkillSource {
-    /// <summary>当前世界位置，XZ 平面，即领域权威位置。</summary>
+    /// <summary>当前世界位置，XZ 平面，本地战斗世界的结算位置。</summary>
     Vector2 Position {
         get;
     }

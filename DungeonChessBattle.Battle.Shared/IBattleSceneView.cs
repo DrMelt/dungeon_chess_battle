@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Shared;
 /// 单位权威状态经 <see cref="IBattleUnitView"/> 只读成员读取；实现方为 BattleScene。
 /// </summary>
 public interface IBattleSceneView {
-    /// <summary>战斗阶段，战斗世界自持权威。</summary>
+    /// <summary>战斗阶段只读视图；推进经实现类的阶段写通道，视图本身不提供写。</summary>
     BattlePhase CurrentPhase {
         get;
     }

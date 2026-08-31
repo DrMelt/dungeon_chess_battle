@@ -4,13 +4,10 @@ using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
-using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
@@ -124,7 +121,7 @@ public partial class BattleRoomServer {
                 $"Invalid camps '{(camps == null ? string.Empty : string.Join(",", camps))}' for unit '{unitName}' in room '{RoomId}'.");
 
         var entity = EntityManager.AddEntity<UnitPawn>(e => {
-            e.UnitName.Value = unitName;
+            e.UnitKeyName.Value = unitName;
             var campsData = new SyncCampsData();
             campsData.Set(camps);
             e.CampsData.Value = campsData;
@@ -140,7 +137,7 @@ public partial class BattleRoomServer {
         var config = _unitRegistry.GetByKey(unitName)
             ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
         var unit = new BattleUnit {
-            UnitNetId = entity.Id,
+            UnitId = entity.Id,
             UnitName = unitName,
             Camps = camps,
             Skills = config.Skills,
@@ -170,9 +167,9 @@ public partial class BattleRoomServer {
     /// <summary>按网络 ID 查找战斗世界领域单位。</summary>
     private BattleUnit? FindBattleUnit(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
 
-    /// <summary>在本房间启动战斗：委托战斗世界阶段机；阶段由状态同步器写载体，战斗开始帧写入回放记录。</summary>
+    /// <summary>在本房间启动战斗：把战斗世界阶段置为 Running，阶段经状态同步器投影到房间载体，起始 tick 写入回放记录。</summary>
     public void StartBattle() {
-        _battleScene.StartBattle();
+        _battleScene.CurrentPhase = BattlePhase.Running;
         _replayRecorder?.SetStartTick(EntityManager.Tick);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Battle started, phase={Phase}", RoomId, _battleScene.CurrentPhase);
@@ -188,9 +185,8 @@ public partial class BattleRoomServer {
 
         if (_logger.IsEnabled(LogLevel.Trace))
             _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
-                RoomId, pawn.UnitName.Value, input.MoveDirection, deltaTime);
+                RoomId, pawn.UnitKeyName.Value, input.MoveDirection, deltaTime);
     }
-
 
     /// <summary>
     /// 处理经 UnitController 可靠请求到达的技能施放请求：面向领域单位发起读条。
@@ -229,19 +225,20 @@ public partial class BattleRoomServer {
         if (!began) {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
-                    RoomId, casterPawn.UnitName.Value, req.SkillTypeId);
+                    RoomId, casterPawn.UnitKeyName.Value, req.SkillTypeId);
             return false;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
-                RoomId, casterPawn.UnitName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
+                RoomId, casterPawn.UnitKeyName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
         return true;
     }
 
     /// <summary>
     /// 处理经 UnitController 可靠请求到达的聚焦目标设置：服务端校验目标合法性后写回权威状态。
     /// 0 表示清除聚焦目标；目标必须存在且存活；允许目标为自己。仅影响展示，不经战斗世界。
+    /// 设置后目标死亡由投影期的 <see cref="ClearDeadFocusTargets"/> 清 0，不依赖死亡事件。
     /// </summary>
     private bool HandleSetFocusTargetRequest(UnitPawn pawn, ushort targetNetId) {
         if (targetNetId != 0) {
@@ -249,7 +246,7 @@ public partial class BattleRoomServer {
             if (targetUnit == null || targetUnit.IsDead) {
                 if (_logger.IsEnabled(LogLevel.Warning))
                     _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
-                        RoomId, pawn.UnitName.Value, targetNetId);
+                        RoomId, pawn.UnitKeyName.Value, targetNetId);
                 return false;
             }
         }
@@ -258,30 +255,31 @@ public partial class BattleRoomServer {
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomId: {RoomId}] Focus target set: {Unit} -> {TargetId}",
-                RoomId, pawn.UnitName.Value, targetNetId);
+                RoomId, pawn.UnitKeyName.Value, targetNetId);
         return true;
     }
 
-    /// <summary>清空所有 Pawn 中对指定单位 ID 的聚焦目标，目标死亡时调用。</summary>
-    private void ClearFocusTargetsTo(ushort unitNetId) {
+    /// <summary>
+    /// 维持"聚焦目标必存活"不变式：聚焦指向不存在或已死亡单位时清 0。
+    /// 与 HandleSetFocusTargetRequest 的设置期校验同源，随状态投影每帧收敛，不依赖死亡事件。
+    /// </summary>
+    private void ClearDeadFocusTargets() {
         foreach (var pawn in _roomPawns) {
-            if (pawn.FocusTargetNetId.Value == unitNetId)
-                pawn.FocusTargetNetId.Value = 0;
+            var targetNetId = pawn.FocusTargetNetId.Value;
+            if (targetNetId == 0)
+                continue;
+            if (FindBattleUnit(targetNetId) is { IsDead: false })
+                continue;
+            pawn.FocusTargetNetId.Value = 0;
         }
     }
 
     /// <summary>
-    /// 整帧领域事件处理：死亡单位清理他人聚焦，再把本帧事件日志整帧编码可靠外送。
-    /// 状态已由 BattleStateSynchronizer 在 Tick 后写 SyncVar，房间级阶段由同步器写载体。
+    /// 整帧领域事件日志整帧编码经可靠通道外送，空帧不发。
+    /// 单位与房间级状态已由 BattleStateSynchronizer 在 Tick 后写 SyncVar；死亡不走事件，
+    /// 由生命值下行派生，断线重连后随状态自愈。仅房间线程调用。
     /// </summary>
     private void HandleBattleFrameEvents(IReadOnlyList<IBattleEvent> events) {
-        // 权威状态写回：目标死亡时清理他人对其聚焦；移动输入由领域层结算跳过死者
-        foreach (var battleEvent in events) {
-            if (battleEvent is UnitDied died)
-                ClearFocusTargetsTo(died.UnitNetId);
-        }
-
-        // 整帧事件日志编码经可靠通道外送，空帧不发
         if (events.Count == 0)
             return;
         var data = new SyncBattleEvent[events.Count];
@@ -305,7 +303,6 @@ public partial class BattleRoomServer {
                 netPlayer.Peer.SendReliableOrdered(payload);
     }
 
-
     /// <summary>
     /// 战斗状态同步器：把领域单位权威状态写回 UnitPawn SyncVar，房间阶段写回 BattleRoomEntity。
     /// 标量字段直接写值（LES 仅在变化时发包）；冷却/Buff/仇恨列表内容比较节流，仅变化时重建 SyncList。
@@ -319,13 +316,15 @@ public partial class BattleRoomServer {
 
         private void Project(IReadOnlyList<IProjectableBattleState> units, BattlePhase phase) {
             foreach (var unit in units)
-                if (room._pawnByNetId.TryGetValue(unit.UnitNetId, out var pawn))
+                if (room._pawnByNetId.TryGetValue(unit.UnitId, out var pawn))
                     ProjectUnit(unit, pawn);
+
+            // 死亡无事件通道，聚焦清活随投影按生命值收敛
+            room.ClearDeadFocusTargets();
 
             if (room._roomEntity is not { } entity)
                 return;
             entity.BattlePhase.Value = (byte)phase;
-            entity.IsFinished.Value = phase == BattlePhase.Finished;
             if (phase == BattlePhase.Running)
                 entity.BattleStartUnixTime.Value = room._battleScene.BattleStartUnixTime;
         }
@@ -335,7 +334,6 @@ public partial class BattleRoomServer {
             pawn.Direction.Value = unit.Direction;
             pawn.Health.Value = unit.Health;
             pawn.MaxHealth.Value = unit.MaxHealth;
-            pawn.UnitState.Value = unit.IsDead ? (byte)1 : (byte)0;
             pawn.SkillCasting.Value = unit.SkillCasting.Id;
             pawn.SkillCastRemaining.Value = unit.SkillCastRemaining;
             pawn.GcdEndServerTick.Value = SyncTickHelper.EndTick(entityManager, unit.GcdRemaining);

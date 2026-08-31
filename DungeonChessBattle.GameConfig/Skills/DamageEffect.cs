@@ -12,6 +12,6 @@ public sealed class DamageEffect : ISkillEffect {
             return SkillResolution.Empty;
         var skill = (DamageSkillDefinition)ctx.Skill;
         var result = DamageProcessor.Process(ctx.Caster.Snapshot, target.Snapshot, skill.Damage, skill.DamageType);
-        return new SkillResolution([new DamageOccurred(ctx.Caster.UnitNetId, target.UnitNetId, result.AppliedDamage, skill.DamageType)], []);
+        return new SkillResolution([new DamageOccurred(ctx.Caster.UnitId, target.UnitId, result.AppliedDamage, skill.DamageType)], []);
     }
 }

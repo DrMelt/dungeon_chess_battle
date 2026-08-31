@@ -106,6 +106,7 @@ _stateChangeInfo = NodePath("../BattleInterface/GamePlayEffects/UnitStateChange_
 [node name="BattleInterface" type="Node" parent="." unique_id=1240739248]
 
 [node name="BattleCoordinator" type="Node" parent="BattleInterface" unique_id=1868664182 node_paths=PackedStringArray("_unitManager", "_sessionContext", "_inputController", "_dungeonEnv", "_stateChangeInfo")]
+process_priority = -1
 script = ExtResource("39_coordinator")
 _unitManager = NodePath("../UnitShowManager")
 _sessionContext = NodePath("../BattleSessionContext")
@@ -310,16 +311,6 @@ offset_top = -145.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="NetworkDebugOverlay" type="Label" parent="BattleInterface/GamePlayUI" unique_id=2106499745]
-layout_mode = 0
-offset_left = 15.0
-offset_top = 92.0
-offset_right = 376.0
-offset_bottom = 284.0
-theme_override_font_sizes/font_size = 12
-text = "Disconnected"
-script = ExtResource("33_ovly")
-
 [node name="BattleEventLogPanel" parent="BattleInterface/GamePlayUI" unique_id=2106499746 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("41_evtlog")]
 layout_mode = 1
 anchors_preset = 2
@@ -339,6 +330,15 @@ offset_top = 549.0
 offset_right = 122.0
 offset_bottom = 549.0
 _coordinator = NodePath("../../ReplayCoordinator")
+
+[node name="NetworkDebugOverlay" type="Label" parent="BattleInterface" unique_id=2106499745]
+offset_left = 15.0
+offset_top = 92.0
+offset_right = 376.0
+offset_bottom = 284.0
+theme_override_font_sizes/font_size = 12
+text = "Disconnected"
+script = ExtResource("33_ovly")
 
 [node name="FrontUI" type="Control" parent="." unique_id=437760611]
 layout_mode = 3

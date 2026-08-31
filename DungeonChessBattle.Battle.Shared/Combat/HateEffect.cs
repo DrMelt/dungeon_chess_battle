@@ -14,7 +14,7 @@ public enum HateEffectOp : byte {
 /// 仇恨修改效果：HolderNetId 的仇恨表中对 SourceNetId 的仇恨执行 Op 操作。
 /// 由仇恨技能结算产出，直接作用于单位仇恨表。
 /// </summary>
-public readonly record struct HateEffect(ushort HolderNetId, ushort SourceNetId, HateEffectOp Op, float Value);
+public readonly record struct HateEffect(UnitId HolderNetId, UnitId SourceNetId, HateEffectOp Op, float Value);
 
 /// <summary>仇恨快照投影单元，同步用。</summary>
-public readonly record struct HateSnapshot(ushort TargetNetId, float Value);
+public readonly record struct HateSnapshot(UnitId TargetNetId, float Value);

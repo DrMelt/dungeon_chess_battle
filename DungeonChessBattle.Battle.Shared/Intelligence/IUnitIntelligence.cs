@@ -20,7 +20,7 @@ public enum EnemyDecisionKind {
 /// </summary>
 public readonly record struct EnemyDecision(
     EnemyDecisionKind Kind,
-    ushort TargetNetId = 0,
+    UnitId TargetNetId = default,
     SkillKeyId SkillId = default,
     Vector2 TargetPosition = default,
     Vector2 MoveDirection = default) {
@@ -31,7 +31,7 @@ public readonly record struct EnemyDecision(
     public static EnemyDecision MoveTo(Vector2 moveDirection) => new(EnemyDecisionKind.MoveTo, MoveDirection: moveDirection);
 
     /// <summary>对指定目标施放技能决策，targetPosition 为施法锚点。</summary>
-    public static EnemyDecision Cast(SkillKeyId skillId, ushort targetNetId, Vector2 targetPosition)
+    public static EnemyDecision Cast(SkillKeyId skillId, UnitId targetNetId, Vector2 targetPosition)
         => new(EnemyDecisionKind.CastSkill, targetNetId, skillId, targetPosition);
 }
 

@@ -48,7 +48,7 @@ public sealed class BattleSessionCommand : IBattleSessionCommand {
     /// <inheritdoc />
     public void SetLocalFocusTarget(ushort targetNetId) {
         var client = _client;
-        var localUnitNetId = client?.LocalUnit?.UnitNetId ?? 0;
+        var localUnitNetId = client?.LocalUnit?.UnitId ?? 0;
         if (client == null || localUnitNetId == 0)
             return;
         client.SetFocusTarget(_roomId, localUnitNetId, targetNetId);
@@ -57,7 +57,7 @@ public sealed class BattleSessionCommand : IBattleSessionCommand {
     /// <inheritdoc />
     public void Cast(SkillKeyId skillKey, ushort targetNetId, float posX, float posZ) {
         var client = _client;
-        var localUnitNetId = client?.LocalUnit?.UnitNetId ?? 0;
+        var localUnitNetId = client?.LocalUnit?.UnitId ?? 0;
         if (client == null || localUnitNetId == 0)
             return;
         client.CastSkill(_roomId, localUnitNetId, targetNetId, skillKey.Id, posX, posZ);

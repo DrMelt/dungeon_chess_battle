@@ -36,7 +36,7 @@ public sealed class EnemyIntelligence(
             Vector2 anchor = target.Snapshot.Position;
             if (!SkillCastValidator.CanCast(self, skill, target, anchor, relations))
                 continue;
-            return EnemyDecision.Cast(skill.SkillId, target.UnitNetId, anchor);
+            return EnemyDecision.Cast(skill.SkillId, target.UnitId, anchor);
         }
 
         return EnemyDecision.Idle();
@@ -58,7 +58,7 @@ public sealed class EnemyIntelligence(
             if (relations.Invoke(self.Camps, candidate.Camps) != CampRelation.Enemy)
                 continue;
 
-            float hate = hates.GetValueOrDefault(candidate.UnitNetId);
+            float hate = hates.GetValueOrDefault(candidate.UnitId);
             if (hate > topHate) {
                 topHate = hate;
                 topTarget = candidate;
@@ -75,8 +75,8 @@ public sealed class EnemyIntelligence(
     }
 
     /// <summary>把单位自身仇恨投影整理为按目标网络 ID 查询的字典，目标选择读取用。</summary>
-    private static Dictionary<ushort, float> BuildHateLookup(IBattleUnitView self) {
-        var hates = new Dictionary<ushort, float>(self.Hates.Count);
+    private static Dictionary<UnitId, float> BuildHateLookup(IBattleUnitView self) {
+        var hates = new Dictionary<UnitId, float>(self.Hates.Count);
         foreach (var snapshot in self.Hates)
             hates[snapshot.TargetNetId] = snapshot.Value;
         return hates;

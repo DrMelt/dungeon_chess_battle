@@ -31,6 +31,6 @@ public sealed record SkillResolution(
 /// <summary>待施加的 Buff 描述，由编排层落账为运行时 Buff 实例。</summary>
 public readonly record struct BuffToApply(
     BuffDefinition Definition,
-    ushort TargetNetId,
+    UnitId TargetNetId,
     UnitSnapshot? From,
-    ushort FromNetId);
+    UnitId FromNetId);
