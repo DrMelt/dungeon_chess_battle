@@ -46,7 +46,6 @@ public sealed class EnemyIntelligence(
     private static IBattleUnitView? SelectTarget(IBattleUnitView self, IReadOnlyList<IBattleUnitView> candidates,
         CampRelationResolver relations) {
         var selfPos = self.Snapshot.Position;
-        var hates = BuildHateLookup(self);
         IBattleUnitView? topTarget = null;
         float topHate = 0f;
         IBattleUnitView? nearest = null;
@@ -58,7 +57,7 @@ public sealed class EnemyIntelligence(
             if (relations.Invoke(self.Camps, candidate.Camps) != CampRelation.Enemy)
                 continue;
 
-            float hate = hates.GetValueOrDefault(candidate.UnitId);
+            float hate = self.HateOf(candidate.UnitId);
             if (hate > topHate) {
                 topHate = hate;
                 topTarget = candidate;
@@ -72,14 +71,6 @@ public sealed class EnemyIntelligence(
         }
 
         return topTarget ?? nearest;
-    }
-
-    /// <summary>把单位自身仇恨投影整理为按目标网络 ID 查询的字典，目标选择读取用。</summary>
-    private static Dictionary<UnitId, float> BuildHateLookup(IBattleUnitView self) {
-        var hates = new Dictionary<UnitId, float>(self.Hates.Count);
-        foreach (var snapshot in self.Hates)
-            hates[snapshot.TargetNetId] = snapshot.Value;
-        return hates;
     }
 
     /// <summary>

@@ -20,7 +20,7 @@ public struct SyncBuffData : ISpanSerializable {
     public ushort MaxStackCount;
 
     /// <summary>来源施法单位的网络 ID。</summary>
-    public ushort SourceUnitNetId;
+    public ushort SourceNetId;
 
     /// <summary>伤害类型，仅 DOT 有效，HOT 和纯 Buff 忽略。</summary>
     public byte DamageType;
@@ -37,7 +37,7 @@ public struct SyncBuffData : ISpanSerializable {
         writer.Put(EndServerTick);
         writer.Put(StackCount);
         writer.Put(MaxStackCount);
-        writer.Put(SourceUnitNetId);
+        writer.Put(SourceNetId);
         writer.Put(DamageType);
     }
 
@@ -50,7 +50,7 @@ public struct SyncBuffData : ISpanSerializable {
         EndServerTick = reader.GetUShort();
         StackCount = reader.GetUShort();
         MaxStackCount = reader.GetUShort();
-        SourceUnitNetId = reader.GetUShort();
+        SourceNetId = reader.GetUShort();
         DamageType = reader.GetByte();
     }
 

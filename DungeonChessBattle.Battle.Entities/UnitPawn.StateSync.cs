@@ -125,7 +125,7 @@ public partial class UnitPawn {
                     || existing.EndServerTick != SyncTickHelper.EndTick(EntityManager, (float)b.Remaining)
                     || existing.StackCount != b.Stacks
                     || existing.MaxStackCount != b.MaxStacks
-                    || existing.SourceUnitNetId != b.FromNetId
+                    || existing.SourceNetId != b.SourceUnitId
                     || existing.DamageType != (byte)b.DamageType) {
                     changed = true;
                     break;
@@ -143,7 +143,7 @@ public partial class UnitPawn {
                 EndServerTick = SyncTickHelper.EndTick(EntityManager, (float)buff.Instance.Remaining),
                 StackCount = (ushort)buff.Instance.Stacks,
                 MaxStackCount = (ushort)Math.Max(1, buff.Instance.MaxStacks),
-                SourceUnitNetId = buff.Instance.FromNetId,
+                SourceNetId = buff.Instance.SourceUnitId,
                 DamageType = (byte)buff.Instance.DamageType,
             });
     }
@@ -155,7 +155,7 @@ public partial class UnitPawn {
         if (!changed) {
             for (int i = 0; i < hates.Count; i++) {
                 var existing = HatesList[i];
-                if (existing.TargetUnitNetId != hates[i].TargetNetId
+                if (existing.TargetNetId != hates[i].TargetUnitId
                     || existing.HateValue != hates[i].Value) {
                     changed = true;
                     break;
@@ -168,7 +168,7 @@ public partial class UnitPawn {
         while (HatesList.Count > 0)
             HatesList.RemoveAt(HatesList.Count - 1);
         foreach (var hate in hates)
-            HatesList.Add(new SyncHateData { TargetUnitNetId = hate.TargetNetId, HateValue = hate.Value });
+            HatesList.Add(new SyncHateData { TargetNetId = hate.TargetUnitId, HateValue = hate.Value });
     }
 
     /// <summary>
@@ -217,8 +217,8 @@ public partial class UnitPawn {
             buffs.Add(new ActiveBuff(
                 new BuffInstance {
                     BuffTypeId = data.BuffTypeId,
-                    TargetNetId = unit.UnitId,
-                    FromNetId = data.SourceUnitNetId,
+                    TargetUnitId = unit.UnitId,
+                    SourceUnitId = data.SourceNetId,
                     Stacks = data.StackCount,
                     MaxStacks = data.MaxStackCount,
                     DamageType = (DamageType)data.DamageType,
@@ -237,7 +237,7 @@ public partial class UnitPawn {
             hash.Add(b.EndServerTick);
             hash.Add(b.StackCount);
             hash.Add(b.MaxStackCount);
-            hash.Add(b.SourceUnitNetId);
+            hash.Add(b.SourceNetId);
             hash.Add(b.DamageType);
         }
         return hash.ToHashCode();

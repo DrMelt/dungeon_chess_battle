@@ -73,30 +73,30 @@ public partial class UnitStateChangeInfo : Node {
         foreach (var battleEvent in events) {
             switch (battleEvent) {
                 case DamageOccurred dmg:
-                    if (FindUnit(dmg.TargetNetId) is { } dmgPawn)
+                    if (FindUnit(dmg.TargetUnitId) is { } dmgPawn)
                         ShowDamagePopup(dmgPawn, dmg.AppliedDamage, dmg.DamageType);
                     break;
 
                 case HealOccurred heal:
-                    if (FindUnit(heal.TargetNetId) is { } healPawn)
+                    if (FindUnit(heal.TargetUnitId) is { } healPawn)
                         ShowHealPopup(healPawn, heal.ActualHeal);
                     break;
 
                 case BuffApplied buff:
-                    if (FindUnit(buff.TargetNetId) is { } buffPawn)
+                    if (FindUnit(buff.TargetUnitId) is { } buffPawn)
                         ShowBuffPopup(buffPawn, buff.BuffTypeId, added: true);
                     break;
 
                 case BuffExpired expired:
-                    if (FindUnit(expired.TargetNetId) is { } expPawn)
+                    if (FindUnit(expired.TargetUnitId) is { } expPawn)
                         ShowBuffPopup(expPawn, expired.BuffTypeId, added: false);
                     break;
             }
         }
     }
 
-    /// <summary>按网络实体 ID 查找展示单位，来源为注入的展示数据源。</summary>
-    private IUnitUiView? FindUnit(ushort netId) => _viewSource?.FindUnit(netId);
+    /// <summary>按单位 ID 查找展示单位，来源为注入的展示数据源。</summary>
+    private IUnitUiView? FindUnit(UnitId unitId) => _viewSource?.FindUnit(unitId);
 
     /// <summary>
     /// 将世界坐标投影为屏幕坐标。

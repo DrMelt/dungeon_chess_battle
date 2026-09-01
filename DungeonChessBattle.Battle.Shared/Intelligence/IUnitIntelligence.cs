@@ -16,11 +16,11 @@ public enum EnemyDecisionKind {
 
 /// <summary>
 /// 敌人 AI 决策结果，纯数据不持引用。
-/// 单位目标经 TargetNetId 表达，位置锚点经 TargetPosition 表达，方向经 MoveDirection 表达。
+/// 单位目标经 TargetUnitId 表达，位置锚点经 TargetPosition 表达，方向经 MoveDirection 表达。
 /// </summary>
 public readonly record struct EnemyDecision(
     EnemyDecisionKind Kind,
-    UnitId TargetNetId = default,
+    UnitId TargetUnitId = default,
     SkillKeyId SkillId = default,
     Vector2 TargetPosition = default,
     Vector2 MoveDirection = default) {
@@ -31,8 +31,8 @@ public readonly record struct EnemyDecision(
     public static EnemyDecision MoveTo(Vector2 moveDirection) => new(EnemyDecisionKind.MoveTo, MoveDirection: moveDirection);
 
     /// <summary>对指定目标施放技能决策，targetPosition 为施法锚点。</summary>
-    public static EnemyDecision Cast(SkillKeyId skillId, UnitId targetNetId, Vector2 targetPosition)
-        => new(EnemyDecisionKind.CastSkill, targetNetId, skillId, targetPosition);
+    public static EnemyDecision Cast(SkillKeyId skillId, UnitId targetUnitId, Vector2 targetPosition)
+        => new(EnemyDecisionKind.CastSkill, targetUnitId, skillId, targetPosition);
 }
 
 /// <summary>敌人智能默认参数常量，实现与配置构造共用。</summary>

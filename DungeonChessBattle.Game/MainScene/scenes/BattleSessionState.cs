@@ -43,7 +43,7 @@ public sealed class BattleSessionState : IBattleViewSource {
     public IReadOnlyList<IUnitUiView> Units => _session?.Units ?? [];
 
     /// <inheritdoc />
-    public IUnitUiView? FindUnit(ushort netId) => _session?.FindUnit(netId);
+    public IUnitUiView? FindUnit(UnitId unitId) => _session?.FindUnit(unitId);
 
     /// <summary>本地玩家的展示视图，控制器未就绪时返回 null。</summary>
     public IUnitUiView? LocalUnit => _session?.LocalUnit;

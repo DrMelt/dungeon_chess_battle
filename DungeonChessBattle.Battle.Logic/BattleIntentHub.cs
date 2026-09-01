@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
 /// 权威输入门面：宿主提交玩家命令、推进在架意图的唯一入口，服务端与回放共用。
-/// 键一律为网络 ID，载荷合法性只在此判一次，施法者与目标在门内解析为领域单位，解析不到即不接管。
+/// 键一律为 <see cref="UnitId"/>，载荷合法性只在此判一次，施法者与目标在门内解析为领域单位，解析不到即不接管。
 /// 战斗推进不经本门面：<see cref="BattleScene.Tick"/>、单位增删与阶段写由宿主直接驱动 <see cref="BattleScene"/>。
 /// </summary>
 /// <param name="scene">战斗世界，意图的落地方。</param>
@@ -36,7 +36,7 @@ public sealed partial class BattleIntentHub(BattleScene scene, ILoggerFactory? l
     /// <returns>已接管返回 true，施法不含可施放性结论——裁定在 <see cref="BattleScene.Tick"/> 的读条推进段；
     /// false 只源于施法阶段非 Running、技能键非法、单位或目标解析不到/已死亡、<c>Kind</c> 非法。</returns>
     public bool Submit(in PlayerCommand cmd) => cmd.Kind switch {
-        PlayerCommandKind.Move => scene.SubmitMove(cmd.NetId, cmd.MoveDir),
+        PlayerCommandKind.Move => scene.SubmitMove(cmd.SourceUnitId, cmd.MoveDir),
         PlayerCommandKind.Cast => SubmitCast(cmd),
         PlayerCommandKind.Focus => SubmitFocus(cmd),
         _ => false,
@@ -57,14 +57,14 @@ public sealed partial class BattleIntentHub(BattleScene scene, ILoggerFactory? l
             return false;
         }
 
-        if (scene.FindBattleUnit(cmd.NetId) is not { } caster) {
+        if (scene.FindBattleUnit(cmd.SourceUnitId) is not { } caster) {
             LogRejected(cmd, "caster not found");
             return false;
         }
 
         BattleUnit? target = null;
-        if (cmd.TargetNetId != 0) {
-            if (scene.FindBattleUnit(cmd.TargetNetId) is not { } targetUnit) {
+        if (!cmd.TargetUnitId.IsDefault) {
+            if (scene.FindBattleUnit(cmd.TargetUnitId) is not { } targetUnit) {
                 LogRejected(cmd, "target not found");
                 return false;
             }
@@ -77,7 +77,7 @@ public sealed partial class BattleIntentHub(BattleScene scene, ILoggerFactory? l
 
     /// <summary>聚焦命令落地：存活校验交战斗世界，与 <c>Tick</c> 内的清活同源。</summary>
     private bool SubmitFocus(in PlayerCommand cmd) {
-        if (scene.SubmitFocus(cmd.NetId, cmd.TargetNetId))
+        if (scene.SubmitFocus(cmd.SourceUnitId, cmd.TargetUnitId))
             return true;
         LogRejected(cmd, "focus unit missing or target dead");
         return false;

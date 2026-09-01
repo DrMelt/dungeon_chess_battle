@@ -48,9 +48,9 @@ public interface ISkillSource {
     float GetTotalCooldownRemaining(SkillKeyId skillKey);
 }
 
-/// <summary>仇恨消费只读视图：仇恨快照、生成倍率与规则。</summary>
+/// <summary>仇恨消费只读视图：仇恨快照与单点查询、生成倍率与规则。</summary>
 public interface IHateActorView {
-    /// <summary>当前仇恨快照，AI 目标选择只读输入。</summary>
+    /// <summary>当前仇恨快照，按仇恨值降序；状态同步器比对与下发用。按目标取值走 <see cref="HateOf"/>。</summary>
     IReadOnlyList<HateSnapshot> Hates {
         get;
     }
@@ -59,6 +59,9 @@ public interface IHateActorView {
     float HateFactor {
         get;
     }
+
+    /// <summary>对指定目标的仇恨值，无条目返回 0。目标选择按本查询取数，不必复制整张账本。</summary>
+    float HateOf(UnitId targetUnitId);
 
     /// <summary>仇恨规则，以自身为中心评估事件产生仇恨。</summary>
     IHateRule HateRule {

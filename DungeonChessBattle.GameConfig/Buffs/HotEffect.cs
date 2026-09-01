@@ -15,6 +15,6 @@ public sealed class HotEffect : IBuffEffect {
         var hot = (HealOverTimeBuff)definition;
         float baseHps = hot.HealthPerSec * (float)accumulatedSeconds;
         var result = HealProcessor.Process(from, target, baseHps);
-        yield return new HealOccurred(instance.FromNetId, instance.TargetNetId, result.ActualHeal);
+        yield return new HealOccurred(instance.SourceUnitId, instance.TargetUnitId, result.ActualHeal);
     }
 }

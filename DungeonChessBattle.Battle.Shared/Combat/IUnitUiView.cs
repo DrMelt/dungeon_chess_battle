@@ -26,8 +26,8 @@ public interface IBuffUiView {
         get;
     }
 
-    /// <summary>来源施法单位网络 ID，None 表示无来源。</summary>
-    UnitId FromNetId {
+    /// <summary>来源施法单位，None 表示无来源。</summary>
+    UnitId SourceUnitId {
         get;
     }
 

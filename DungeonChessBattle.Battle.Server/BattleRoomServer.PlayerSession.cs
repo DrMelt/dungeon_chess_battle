@@ -124,9 +124,9 @@ public partial class BattleRoomServer {
         //    权威判定与回放录制共用同一提交结论，框架自动按该控制器所属玩家回发回执。
         EntityManager.AddController<UnitController>(netPlayer, pawn, c => {
             c.BindServerCastHandler(req => SubmitAndRecord(PlayerCommand.Cast(
-                pawn.Id, req.SkillTypeId, req.TargetNetId, req.TargetPosX, req.TargetPosZ)));
+                pawn.Id, req.SkillKey, req.TargetNetId, req.TargetPosX, req.TargetPosZ)));
             c.BindServerFocusHandler(req => SubmitAndRecord(
-                PlayerCommand.Focus(pawn.Id, req.TargetUnitNetId)));
+                PlayerCommand.Focus(pawn.Id, req.TargetNetId)));
             session.Controller = c;
         });
 

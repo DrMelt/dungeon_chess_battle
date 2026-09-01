@@ -53,8 +53,8 @@ public partial class SkillsList : Control {
     /// <summary>当前面板创建的全部技能按钮列表。</summary>
     private readonly List<ButtonSkillBase> _skillButtonList = [];
 
-    /// <summary>当前展示的技能所属单位 NetId，用于变化检测。</summary>
-    private ushort? _shownUnitId;
+    /// <summary>当前展示的技能所属单位网络 ID，用于变化检测。</summary>
+    private ushort? _shownNetId;
 
     /// <summary>
     /// 节点就绪：获取引用集合节点并校验导出引用。
@@ -79,10 +79,10 @@ public partial class SkillsList : Control {
         HandleWaitPosTargetInput();
 
         var showUnit = _sessionRef?.LocalUnit;
-        ushort? shownId = showUnit?.UnitId;
-        if (shownId == _shownUnitId)
+        ushort? shownNetId = showUnit?.UnitId;
+        if (shownNetId == _shownNetId)
             return;
-        _shownUnitId = shownId;
+        _shownNetId = shownNetId;
         UpdateSkillsList(showUnit);
     }
 

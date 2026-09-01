@@ -56,12 +56,15 @@ public partial class BattleRoomServer {
         // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
         SpawnDungeonEnemies();
 
-        // 战斗输入回放记录：全部单位创建完成后装配，NextNetId 供回放端从玩家之后对齐敌人 ID
+        // 战斗输入回放记录：全部单位创建完成后装配，FirstEnemyNetId 是回放端重建敌人 ID 的起点
+        // 前提：LES 同步实体 ID 从 1 起连续分配，房间根实体占 1，准备期玩家单位在首帧一次性建完，
+        // 故玩家表末位即最大 ID，无玩家表时敌人从 2 起；前提被破坏（战斗中补建玩家单位、
+        // ID 回收复用打乱单调性）不会报错，只会让重放端的敌人与条目里的目标 ID 静默错位。
         CreateReplayRecorder(playerInfos);
-        ushort nextNetId = playerInfos.Count > 0
+        ushort firstEnemyNetId = playerInfos.Count > 0
             ? (ushort)(playerInfos[^1].NetId + 1)
             : (ushort)(1 + 1);
-        _replayRecorder?.SetNextNetId(nextNetId);
+        _replayRecorder?.SetFirstEnemyNetId(firstEnemyNetId);
 
         // 战斗循环收编进 LES tick 生命周期：Update=输入预备（AI 决策 → 在架施法重试）先于位移，
         // LateUpdate=Tick → 状态同步 → 整帧事件外送。

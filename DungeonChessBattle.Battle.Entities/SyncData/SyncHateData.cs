@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// </summary>
 public struct SyncHateData : ISpanSerializable {
     /// <summary>目标单位的网络 ID。</summary>
-    public ushort TargetUnitNetId;
+    public ushort TargetNetId;
 
     /// <summary>仇恨值。</summary>
     public float HateValue;
@@ -20,7 +20,7 @@ public struct SyncHateData : ISpanSerializable {
     /// </summary>
     /// <param name="writer">序列化写入器。</param>
     public readonly void Serialize(ref SpanWriter writer) {
-        writer.Put(TargetUnitNetId);
+        writer.Put(TargetNetId);
         writer.Put(HateValue);
     }
 
@@ -29,7 +29,7 @@ public struct SyncHateData : ISpanSerializable {
     /// </summary>
     /// <param name="reader">序列化读取器。</param>
     public void Deserialize(ref SpanReader reader) {
-        TargetUnitNetId = reader.GetUShort();
+        TargetNetId = reader.GetUShort();
         HateValue = reader.GetFloat();
     }
 }

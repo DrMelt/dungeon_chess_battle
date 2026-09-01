@@ -30,8 +30,8 @@ public partial class BattleSessionContext : Node {
     /// <summary>场景全部单位展示视图集合，由在线战斗世界提供（UI 展示数据源）。</summary>
     public IReadOnlyList<IUnitUiView> Units => _state.Units;
 
-    /// <summary>按网络 ID 查询单位展示视图，不存在返回 null。</summary>
-    public IUnitUiView? FindUnit(ushort netId) => _state.FindUnit(netId);
+    /// <summary>按单位 ID 查询单位展示视图，不存在返回 null。</summary>
+    public IUnitUiView? FindUnit(UnitId unitId) => _state.FindUnit(unitId);
 
     /// <summary>本地玩家单位的展示视图，控制器未就绪时返回 null。</summary>
     public IUnitUiView? LocalUnit => _state.LocalUnit;

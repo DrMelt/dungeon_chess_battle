@@ -202,6 +202,9 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     public IReadOnlyList<HateSnapshot> Hates => RuntimeState.Hates.Snapshot();
 
     /// <inheritdoc />
+    public float HateOf(UnitId targetUnitId) => RuntimeState.Hates.ValueOf(targetUnitId);
+
+    /// <inheritdoc />
     public IReadOnlyList<CooldownEntry> Cooldowns => RuntimeState.Cooldowns;
 
     /// <inheritdoc />

@@ -12,7 +12,7 @@ public static class ReplayFormatVersion {
 
 /// <summary>
 /// 回放记录头部元数据：房间与玩家初始状态，回放端据此重建战斗世界。
-/// StartTick 为战斗开始逻辑帧，NextNetId 为服务端最后一个玩家单位 ID + 1，回放端据此连续分配敌人 ID；
+/// StartTick 为战斗开始逻辑帧，FirstEnemyNetId 为回放端重建敌方单位 ID 的起点，
 /// DataVersion 为录制端内容数据修订号，重放端据此校验内容一致。
 /// </summary>
 [MessagePackObject]
@@ -24,11 +24,11 @@ public sealed record ReplayRecordHeader(
     [property: Key(4)] int TickRate,
     [property: Key(5)] IReadOnlyList<ReplayPlayerInfo> Players,
     [property: Key(6)] int StartTick,
-    [property: Key(7)] ushort NextNetId,
+    [property: Key(7)] ushort FirstEnemyNetId,
     [property: Key(8)] string DataVersion);
 
 /// <summary>
-/// 玩家初始状态，回放端按 PlayerIndex 还原玩家单位。
+/// 玩家初始状态：回放端按 NetId 还原玩家单位，条目里的玩家序号即本表下标。
 /// SpawnX/SpawnY 为出生点坐标，Y 对应场景 XZ 平面的 Z 轴；NetId 为服务端分配的单位网络 ID。
 /// </summary>
 [MessagePackObject]
@@ -59,7 +59,7 @@ public readonly record struct MoveInputRecord(
 public readonly record struct CastSkillRecord(
     [property: Key(0)] int Frame,
     [property: Key(1)] byte PlayerIndex,
-    [property: Key(2)] string SkillTypeId,
+    [property: Key(2)] string SkillKey,
     [property: Key(3)] ushort TargetNetId,
     [property: Key(4)] float TargetPosX,
     [property: Key(5)] float TargetPosZ,

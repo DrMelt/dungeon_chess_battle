@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
@@ -21,8 +22,8 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     private readonly List<CastSkillRecord> _castSkills = [];
     private readonly List<FocusTargetRecord> _focusTargets = [];
 
-    /// <summary>网络 ID → 玩家序号；不在表中即非玩家单位，其命令不入记录。</summary>
-    private readonly Dictionary<ushort, byte> _playerIndexByNetId = ToIndexByNetId(players);
+    /// <summary>单位 ID → 玩家序号；不在表中即非玩家单位，其命令不入记录。</summary>
+    private readonly Dictionary<UnitId, byte> _playerIndexByUnitId = ToIndexByUnitId(players);
 
     // 头部基础元数据，构造时固定
     private readonly string _roomId = roomId;
@@ -34,8 +35,8 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// <summary>战斗开始逻辑帧，StartBattle 时写入。</summary>
     private int _startTick;
 
-    /// <summary>服务端最后一个玩家单位 ID + 1，全部单位创建完成后写入，回放端据此分配敌人 ID。</summary>
-    private ushort _nextNetId;
+    /// <summary>回放端重建敌方单位 ID 的起点，全部单位创建完成后写入。</summary>
+    private ushort _firstEnemyNetId;
 
     /// <summary>绝对逻辑帧，以首条记录的 tick 锚定，后续按 tick 差分递增，规避 LES ushort tick 回绕。</summary>
     private int _absoluteFrame;
@@ -52,10 +53,10 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
         }
     }
 
-    /// <summary>记录服务端最后一个玩家单位 ID + 1，全部单位创建完成后由房间线程写入。</summary>
-    public void SetNextNetId(ushort nextNetId) {
+    /// <summary>记录回放端重建敌方单位 ID 的起点，全部单位创建完成后由房间线程写入。</summary>
+    public void SetFirstEnemyNetId(ushort firstEnemyNetId) {
         lock (_lock) {
-            _nextNetId = nextNetId;
+            _firstEnemyNetId = firstEnemyNetId;
         }
     }
 
@@ -65,7 +66,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// </summary>
     public void Record(ushort tick, in PlayerCommand cmd, bool accepted) {
         lock (_lock) {
-            if (!_playerIndexByNetId.TryGetValue(cmd.NetId, out byte index))
+            if (!_playerIndexByUnitId.TryGetValue(cmd.SourceUnitId, out byte index))
                 return;
 
             int frame = AdvanceFrame(tick);
@@ -87,7 +88,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     public ReplayRecordSnapshot GetSnapshot() {
         lock (_lock) {
             var header = new ReplayRecordHeader(ReplayFormatVersion.Current, _roomId, _dungeonKey,
-                _startUnixTime, _tickRate, _players, _startTick, _nextNetId, GameConfigDB.DataRevision);
+                _startUnixTime, _tickRate, _players, _startTick, _firstEnemyNetId, GameConfigDB.DataRevision);
             return new ReplayRecordSnapshot(header,
                 [.. _moveInputs],
                 [.. _castSkills],
@@ -112,15 +113,15 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     }
 
     /// <summary>
-    /// 玩家表下标即玩家序号，反查表用于把命令里的网络 ID 换成序号。
+    /// 玩家表下标即玩家序号，反查表用于把命令里的来源单位换成序号。
     /// 玩家数超出 byte 序号容量属装配错误，构造期响亮失败。
     /// </summary>
-    private static Dictionary<ushort, byte> ToIndexByNetId(IReadOnlyList<ReplayPlayerInfo> players) {
+    private static Dictionary<UnitId, byte> ToIndexByUnitId(IReadOnlyList<ReplayPlayerInfo> players) {
         if (players.Count > byte.MaxValue)
             throw new ArgumentOutOfRangeException(nameof(players), players.Count, "Player count exceeds byte index.");
-        var indexByNetId = new Dictionary<ushort, byte>(players.Count);
+        var indexByUnitId = new Dictionary<UnitId, byte>(players.Count);
         for (byte i = 0; i < players.Count; i++)
-            indexByNetId[players[i].NetId] = i;
-        return indexByNetId;
+            indexByUnitId[players[i].NetId] = i;
+        return indexByUnitId;
     }
 }

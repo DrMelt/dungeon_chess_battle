@@ -10,13 +10,13 @@ public sealed class BuffInstance {
         get; init;
     }
 
-    /// <summary>目标单位网络实体 ID，事件上报用。</summary>
-    public required UnitId TargetNetId {
+    /// <summary>目标单位，事件上报用。</summary>
+    public required UnitId TargetUnitId {
         get; init;
     }
 
-    /// <summary>施加该 Buff 的来源单位网络 ID，None 表示无来源；仇恨归属用。</summary>
-    public required UnitId FromNetId {
+    /// <summary>施加该 Buff 的来源单位，None 表示无来源；仇恨归属用。</summary>
+    public required UnitId SourceUnitId {
         get; init;
     }
 

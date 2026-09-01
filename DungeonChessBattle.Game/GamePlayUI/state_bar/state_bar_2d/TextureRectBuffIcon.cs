@@ -75,7 +75,7 @@ public partial class TextureRectBuffIcon : TextureRect {
         superpositionsLabelRef.Text = buff.Stacks.ToString();
 
         durationLabelRef.LabelSettings.FontColor =
-            buff.FromNetId == focusUnit.UnitId ? fromFocusUnit : fromOther;
+            buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
         // 图标按 BuffTypeId 从资源表匹配；未注册时留空
         Texture = buffResourceTable?.GetResourceByBuffTypeId(buff.BuffTypeId)?.Icon;
@@ -86,7 +86,7 @@ public partial class TextureRectBuffIcon : TextureRect {
         BindingBuffData != null
         && BindingBuffData.BuffTypeId == other.BuffTypeId
         && BindingBuffData.Stacks == other.Stacks
-        && BindingBuffData.FromNetId == other.FromNetId
+        && BindingBuffData.SourceUnitId == other.SourceUnitId
         && BindingBuffData.DamageType == other.DamageType;
 
     /// <summary>每帧按本地剩余时间刷新剩余秒数标签，平滑倒数。</summary>

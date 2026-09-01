@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Client;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI;
 using DungeonChessBattle.Game.MainScene.scenes;
@@ -91,10 +92,10 @@ public partial class BattleInputController : Node {
         }
 
         var hit = RaycastUnitFromCamera();
-        var targetNetId = hit?.UnitShowRef.Unit.UnitId ?? 0;
+        var targetUnitId = hit?.UnitShowRef.Unit.UnitId ?? UnitId.None;
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetNetId, hit != null);
-        sessionRef.SetLocalFocusTarget(targetNetId);
+            _logger.LogDebug("Clicked: target={TargetId}, raycastHit={Hit}", targetUnitId, hit != null);
+        sessionRef.SetLocalFocusTarget(targetUnitId);
     }
 
     /// <summary>

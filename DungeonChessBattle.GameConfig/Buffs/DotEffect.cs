@@ -15,6 +15,6 @@ public sealed class DotEffect : IBuffEffect {
         var dot = (DamageOverTimeBuff)definition;
         float baseDps = dot.DamagePerSec * (float)accumulatedSeconds;
         var result = DamageProcessor.Process(from, target, baseDps, dot.DamageType);
-        yield return new DamageOccurred(instance.FromNetId, instance.TargetNetId, result.AppliedDamage, dot.DamageType);
+        yield return new DamageOccurred(instance.SourceUnitId, instance.TargetUnitId, result.AppliedDamage, dot.DamageType);
     }
 }

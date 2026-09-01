@@ -21,7 +21,7 @@ public static class BuffTickProcessor {
         instance.Remaining -= deltaTime;
         if (instance.Remaining <= 0) {
             instance.IsAlive = false;
-            events.Add(new BuffExpired(instance.TargetNetId, instance.BuffTypeId));
+            events.Add(new BuffExpired(instance.TargetUnitId, instance.BuffTypeId));
         }
 
         return events;

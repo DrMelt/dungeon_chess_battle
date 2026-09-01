@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Battle.Entities.Requests;
 /// </summary>
 public struct CastSkillRequest : INetSerializable {
     /// <summary>技能配置键。</summary>
-    public string SkillTypeId;
+    public string SkillKey;
 
     /// <summary>目标单位网络 ID，位置型技能为 0。</summary>
     public ushort TargetNetId;
@@ -22,7 +22,7 @@ public struct CastSkillRequest : INetSerializable {
 
     /// <inheritdoc />
     public readonly void Serialize(NetDataWriter writer) {
-        writer.Put(SkillTypeId);
+        writer.Put(SkillKey);
         writer.Put(TargetNetId);
         writer.Put(TargetPosX);
         writer.Put(TargetPosZ);
@@ -30,7 +30,7 @@ public struct CastSkillRequest : INetSerializable {
 
     /// <inheritdoc />
     public void Deserialize(NetDataReader reader) {
-        SkillTypeId = reader.GetString();
+        SkillKey = reader.GetString();
         TargetNetId = reader.GetUShort();
         TargetPosX = reader.GetFloat();
         TargetPosZ = reader.GetFloat();

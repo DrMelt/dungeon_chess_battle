@@ -15,7 +15,7 @@
 
 - 对外三个动作：`PrepareTick`（AI 决策 → 在架施法重试）、`Submit(PlayerCommand)`、`ClearQueuedCasts`。三类玩家输入只有命令这一种形状，载荷合法性（阶段、技能键、ID 解析、聚焦目标存活）只在此判一次，服务端与回放同判。排队器 `CastPreInputBuffer` 由门面私有持有（类型亦 `internal`），宿主取不到它。
 - 生命周期两类：移动与施法是本帧意图，随 `Tick` 末作废、由输入源逐 tick 重投；聚焦是持续状态，设定后保持，只随目标死亡清零。命令统一的是提交路径，不是生命周期。
-- 键一律为网络 ID，施法者与目标在门内经 `BattleScene.FindBattleUnit` 解析，解析不到即不接管，服务端与回放同判。
+- 键一律为 `UnitId`（`cmd.SourceUnitId` 为命令来源单位、`cmd.TargetUnitId` 为目标），施法者与目标在门内经 `BattleScene.FindBattleUnit` 解析，解析不到即不接管，服务端与回放同判；「无目标」的门内判据是 `UnitId.IsDefault`，与边界侧的裸 0 同义。施法者与聚焦持有者一律由服务端从请求来源控制器推导，客户端不得指定。
 - 战斗推进不经门面：`AddUnit`/`RemoveUnit`/`CurrentPhase`/`Tick` 由宿主直接驱动 `BattleScene`。该写面的授权构成见 `overview/06`。
 
 ## 帧节拍

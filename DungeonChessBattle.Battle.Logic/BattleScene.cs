@@ -60,12 +60,12 @@ public sealed partial class BattleScene(
     public IReadOnlyList<BattleUnit> BattleUnits => _units;
 
     /// <inheritdoc />
-    public IBattleUnitView? FindUnit(ushort netId) =>
-        _unitById.TryGetValue(netId, out var unit) ? unit : null;
+    public IBattleUnitView? FindUnit(UnitId unitId) =>
+        _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
-    /// <summary>按网络 ID 查领域单位写面，供输入门面解析意图与宿主增删实体用；只读消费走 <see cref="FindUnit"/>。</summary>
-    public BattleUnit? FindBattleUnit(ushort netId) =>
-        _unitById.TryGetValue(netId, out var unit) ? unit : null;
+    /// <summary>按单位 ID 查领域单位写面，供输入门面解析意图与宿主增删实体用；只读消费走 <see cref="FindUnit"/>。</summary>
+    public BattleUnit? FindBattleUnit(UnitId unitId) =>
+        _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
     /// <summary>战斗开始 Unix 秒，取战斗世界构造时刻；无开战重置点，准备期耗时计入其中。</summary>
     public long BattleStartUnixTime {
@@ -140,26 +140,26 @@ public sealed partial class BattleScene(
     /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。宿主与回放一律经 <see cref="BattleIntentHub.Submit"/> 转入。
     /// </summary>
     /// <returns>单位存在并已写入意图返回 true。</returns>
-    internal bool SubmitMove(ushort netId, Vector2 moveDirection) {
-        if (!_unitById.TryGetValue(netId, out var unit))
+    internal bool SubmitMove(UnitId sourceUnitId, Vector2 moveDirection) {
+        if (!_unitById.TryGetValue(sourceUnitId, out var unit))
             return false;
         unit.MoveInput = moveDirection;
         return true;
     }
 
     /// <summary>
-    /// 提交聚焦目标：写该单位的持续展示态，0 表示清除。目标必须存在且存活，允许目标为自己；
+    /// 提交聚焦目标：写该单位的持续展示态，<see cref="UnitId.None"/> 表示清除。目标必须存在且存活，允许目标为自己；
     /// 提交者或目标不合法即不接管。
     /// </summary>
     /// <returns>已写入返回 true。</returns>
-    internal bool SubmitFocus(ushort netId, ushort targetNetId) {
-        if (!_unitById.TryGetValue(netId, out var unit))
+    internal bool SubmitFocus(UnitId sourceUnitId, UnitId targetUnitId) {
+        if (!_unitById.TryGetValue(sourceUnitId, out var unit))
             return false;
-        if (targetNetId == 0) {
+        if (targetUnitId.IsDefault) {
             unit.FocusTarget = UnitId.None;
             return true;
         }
-        if (!_unitById.TryGetValue(targetNetId, out var target) || target.IsDead)
+        if (!_unitById.TryGetValue(targetUnitId, out var target) || target.IsDead)
             return false;
         unit.FocusTarget = target.UnitId;
         return true;
@@ -232,7 +232,7 @@ public sealed partial class BattleScene(
                     break;
 
                 case EnemyDecisionKind.CastSkill:
-                    SubmitAiCast(unit, decision.SkillId, decision.TargetNetId, decision.TargetPosition);
+                    SubmitAiCast(unit, decision.SkillId, decision.TargetUnitId, decision.TargetPosition);
                     break;
 
                     // Idle 与未知决策不投意图：静止是缺省结果
@@ -244,10 +244,10 @@ public sealed partial class BattleScene(
     /// AI 决策的施法意图投递：按技能目标类型解析单位目标后写入该单位的 <c>CastInput</c>，位置锚点恒随决策携带；
     /// 目标解不到即本帧不投，下一帧重新决策。
     /// </summary>
-    private void SubmitAiCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetNetId, Vector2 targetPosition) {
+    private void SubmitAiCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetUnitId, Vector2 targetPosition) {
         BattleUnit? target = null;
         if (caster.GetSkill(skillKey) is { NeedUnitTarget: true }) {
-            if (!_unitById.TryGetValue(targetNetId, out var targetUnit))
+            if (!_unitById.TryGetValue(targetUnitId, out var targetUnit))
                 return;
             target = targetUnit;
         }
@@ -292,7 +292,7 @@ public sealed partial class BattleScene(
 
             // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
             foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, _hateSettings, _relations)) {
-                if (_unitById.TryGetValue(effect.HolderNetId, out var holder))
+                if (_unitById.TryGetValue(effect.HolderUnitId, out var holder))
                     holder.RuntimeState.Hates.ApplyEffect(effect);
             }
 
@@ -459,18 +459,18 @@ public sealed partial class BattleScene(
     /// <summary>领域事件副作用统一应用：伤害/治疗落到目标生命值，单位已移除则忽略；新副作用在此扩展。</summary>
     private void ApplyEventEffect(IBattleEvent evt) {
         if (evt is DamageOccurred dmg) {
-            if (_unitById.TryGetValue(dmg.TargetNetId, out var unit))
+            if (_unitById.TryGetValue(dmg.TargetUnitId, out var unit))
                 ApplyHealthDelta(unit, -dmg.AppliedDamage);
         }
         else if (evt is HealOccurred heal) {
-            if (_unitById.TryGetValue(heal.TargetNetId, out var unit))
+            if (_unitById.TryGetValue(heal.TargetUnitId, out var unit))
                 ApplyHealthDelta(unit, heal.ActualHeal);
         }
     }
 
     /// <summary>施加 Buff 到目标：叠加或新建运行时实例，产出 BuffApplied 事件。</summary>
     private void ApplyBuffToTarget(BuffToApply buff, BattleEventLog log) {
-        if (!_unitById.TryGetValue(buff.TargetNetId, out var target))
+        if (!_unitById.TryGetValue(buff.TargetUnitId, out var target))
             return;
 
         var list = target.RuntimeState.Buffs;
@@ -482,7 +482,7 @@ public sealed partial class BattleScene(
             stacks = existing.Instance.Stacks;
         }
         else {
-            list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitId, buff.From, buff.FromNetId),
+            list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitId, buff.From, buff.SourceUnitId),
                 buff.Definition, buff.Definition.Effect));
             stacks = 1;
         }

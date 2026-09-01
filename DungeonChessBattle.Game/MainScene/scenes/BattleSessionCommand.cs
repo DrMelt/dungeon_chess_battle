@@ -48,18 +48,16 @@ public sealed class BattleSessionCommand : IBattleSessionCommand {
     /// <inheritdoc />
     public void SetLocalFocusTarget(ushort targetNetId) {
         var session = _session;
-        var localUnitNetId = session?.LocalUnit?.UnitId ?? 0;
-        if (session == null || localUnitNetId == 0)
+        if (session?.LocalUnit is null)
             return;
-        session.SetFocusTarget(_roomId, localUnitNetId, targetNetId);
+        session.SetFocusTarget(_roomId, targetNetId);
     }
 
     /// <inheritdoc />
     public void Cast(SkillKeyId skillKey, ushort targetNetId, float posX, float posZ) {
         var session = _session;
-        var localUnitNetId = session?.LocalUnit?.UnitId ?? 0;
-        if (session == null || localUnitNetId == 0)
+        if (session?.LocalUnit is null)
             return;
-        session.CastSkill(_roomId, localUnitNetId, targetNetId, skillKey.Id, posX, posZ);
+        session.CastSkill(_roomId, targetNetId, skillKey.Id, posX, posZ);
     }
 }

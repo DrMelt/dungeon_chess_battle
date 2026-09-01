@@ -10,6 +10,6 @@ public interface IBattleViewSource {
         get;
     }
 
-    /// <summary>按网络 ID 查展示单位，不存在返回 null。</summary>
-    IUnitUiView? FindUnit(ushort netId);
+    /// <summary>按单位 ID 查展示单位，不存在返回 null。</summary>
+    IUnitUiView? FindUnit(UnitId unitId);
 }

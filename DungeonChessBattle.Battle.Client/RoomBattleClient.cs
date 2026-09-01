@@ -229,7 +229,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public IReadOnlyList<IUnitUiView> Units => _battleScene?.BattleUnits ?? [];
 
     /// <inheritdoc />
-    public IUnitUiView? FindUnit(ushort netId) => _battleScene?.FindUnit(netId) as IUnitUiView;
+    public IUnitUiView? FindUnit(UnitId unitId) => _battleScene?.FindUnit(unitId) as IUnitUiView;
 
     /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
     public IUnitUiView? LocalUnit => FindUnit(_localNetId);
@@ -332,19 +332,18 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// 施法者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="casterNetId">施法单位网络实体 ID（仅作接口兼容，施法者以控制器为准）。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，范围伤害技能传 0。</param>
     /// <param name="skillId">技能配置键。</param>
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
-    public void CastSkill(string roomId, ushort casterNetId, ushort targetNetId, string skillId,
+    public void CastSkill(string roomId, ushort targetNetId, string skillId,
         float targetPosX = 0f, float targetPosZ = 0f) {
         var controller = _localController;
         if (controller == null)
             return;
 
         var req = new CastSkillRequest {
-            SkillTypeId = skillId,
+            SkillKey = skillId,
             TargetNetId = targetNetId,
             TargetPosX = targetPosX,
             TargetPosZ = targetPosZ,
@@ -362,23 +361,23 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>
-    /// 经可靠请求通道请求设置单位聚焦目标，服务端校验并写回权威状态。
+    /// 经可靠请求通道请求设置本地玩家单位的聚焦目标，服务端校验并写回权威状态。
+    /// 聚焦持有者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
-    /// <param name="unitNetId">设置聚焦目标的单位网络实体 ID（仅作接口兼容，目标以控制器为准）。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
-    public void SetFocusTarget(string roomId, ushort unitNetId, ushort targetNetId) {
+    public void SetFocusTarget(string roomId, ushort targetNetId) {
         var controller = _localController;
         if (controller == null)
             return;
 
-        controller.SendSetFocusTargetRequest(new SetFocusTargetRequest { TargetUnitNetId = targetNetId }, onResult => {
+        controller.SendSetFocusTargetRequest(new SetFocusTargetRequest { TargetNetId = targetNetId }, onResult => {
             if (!onResult && _logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("SetFocusTarget rejected by server: target={TargetId}", targetNetId);
         });
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("SetFocusTarget: unit={UnitId} -> target={TargetId}", unitNetId, targetNetId);
+            _logger.LogDebug("SetFocusTarget: unit={UnitId} -> target={TargetId}", _localNetId, targetNetId);
     }
 
     /// <summary>Godot UI 层调用，提交当前帧的移动输入到 LES 框架。

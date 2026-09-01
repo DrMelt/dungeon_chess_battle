@@ -23,25 +23,25 @@ public static class BattleEventLogTextFormatter {
         UnitNameResolver unitName, SkillNameResolver skillName, BuffNameResolver buffName) {
         return entry.Event switch {
             DamageOccurred d =>
-                $"{unitName(d.SourceNetId)} 对 {unitName(d.TargetNetId)} 造成 {d.AppliedDamage:0} 点{DamageTypeText(d.DamageType)}伤害",
+                $"{unitName(d.SourceUnitId)} 对 {unitName(d.TargetUnitId)} 造成 {d.AppliedDamage:0} 点{DamageTypeText(d.DamageType)}伤害",
             HealOccurred h =>
-                $"{unitName(h.SourceNetId)} 治疗 {unitName(h.TargetNetId)} {h.ActualHeal:0} 点生命",
+                $"{unitName(h.SourceUnitId)} 治疗 {unitName(h.TargetUnitId)} {h.ActualHeal:0} 点生命",
             HateRequested hate =>
-                $"{unitName(hate.SourceNetId)} 使 {unitName(hate.HolderNetId)} 仇恨{HateOpText(hate.Op)} {hate.Value:0}",
+                $"{unitName(hate.SourceUnitId)} 使 {unitName(hate.HolderUnitId)} 仇恨{HateOpText(hate.Op)} {hate.Value:0}",
             BuffApplied buff =>
-                $"{unitName(buff.TargetNetId)} 获得 {buffName(buff.BuffTypeId)}",
+                $"{unitName(buff.TargetUnitId)} 获得 {buffName(buff.BuffTypeId)}",
             BuffExpired buff =>
-                $"{unitName(buff.TargetNetId)} 失去 {buffName(buff.BuffTypeId)}",
+                $"{unitName(buff.TargetUnitId)} 失去 {buffName(buff.BuffTypeId)}",
             CastCompleted cast =>
-                cast.TargetNetId is { } target && target != 0
-                    ? $"{unitName(cast.CasterNetId)} 对 {unitName(target)} 施放 {skillName(cast.SkillId)}"
-                    : $"{unitName(cast.CasterNetId)} 施放 {skillName(cast.SkillId)}",
+                cast.TargetUnitId is { } target && !target.IsDefault
+                    ? $"{unitName(cast.CasterUnitId)} 对 {unitName(target)} 施放 {skillName(cast.SkillId)}"
+                    : $"{unitName(cast.CasterUnitId)} 施放 {skillName(cast.SkillId)}",
             CastStarted started =>
-                started.TargetNetId is { } target && target != 0
-                    ? $"{unitName(started.CasterNetId)} 对 {unitName(target)} 开始施放 {skillName(started.SkillId)}"
-                    : $"{unitName(started.CasterNetId)} 开始施放 {skillName(started.SkillId)}",
+                started.TargetUnitId is { } target && !target.IsDefault
+                    ? $"{unitName(started.CasterUnitId)} 对 {unitName(target)} 开始施放 {skillName(started.SkillId)}"
+                    : $"{unitName(started.CasterUnitId)} 开始施放 {skillName(started.SkillId)}",
             CastCanceled canceled =>
-                $"{unitName(canceled.CasterNetId)} 取消施放 {skillName(canceled.SkillId)}",
+                $"{unitName(canceled.CasterUnitId)} 取消施放 {skillName(canceled.SkillId)}",
             _ => entry.Event.ToString() ?? "",
         };
     }

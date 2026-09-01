@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat.Hates;
 /// 规则为纯函数，不得引用房间内部状态。
 /// </summary>
 /// <param name="Settings">仇恨系统参数。</param>
-/// <param name="UnitOf">按网络 ID 反查单位只读视图；已移除单位返回 null。</param>
+/// <param name="UnitOf">按单位 ID 反查单位只读视图；已移除单位返回 null。</param>
 /// <param name="Relations">阵营关系函数。</param>
 public readonly record struct HateContext(
     HateSettings Settings,
@@ -17,7 +17,7 @@ public readonly record struct HateContext(
 
 /// <summary>
 /// 单位仇恨规则：以自身为中心评估领域事件，返回要落账的仇恨效果。
-/// 不变量：效果持有者恒为本单位网络 ID，规则只允许写入自己的仇恨表。
+/// 不变量：效果持有者恒为本单位，规则只允许写入自己的仇恨表。
 /// Evaluate 必须为纯函数，只读仇恨数与上下文，不修改外部状态。
 /// </summary>
 public interface IHateRule {

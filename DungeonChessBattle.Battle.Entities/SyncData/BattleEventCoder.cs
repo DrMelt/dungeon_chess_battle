@@ -38,28 +38,28 @@ public static class BattleEventCoder {
     public static SyncBattleEvent Encode(IBattleEvent evt) {
         return evt switch {
             DamageOccurred d => new SyncBattleEvent {
-                Type = TypeDamage, A = d.SourceNetId, B = d.TargetNetId,
+                Type = TypeDamage, A = d.SourceUnitId, B = d.TargetUnitId,
                 C = (byte)d.DamageType, Value = d.AppliedDamage,
             },
             HealOccurred h => new SyncBattleEvent {
-                Type = TypeHeal, A = h.SourceNetId, B = h.TargetNetId, Value = h.ActualHeal,
+                Type = TypeHeal, A = h.SourceUnitId, B = h.TargetUnitId, Value = h.ActualHeal,
             },
             HateRequested hr => new SyncBattleEvent {
-                Type = TypeHateRequested, A = hr.HolderNetId, B = hr.SourceNetId,
+                Type = TypeHateRequested, A = hr.HolderUnitId, B = hr.SourceUnitId,
                 C = (byte)hr.Op, Value = hr.Value,
             },
             BuffApplied ba => new SyncBattleEvent {
-                Type = TypeBuffApplied, A = ba.TargetNetId, B = ba.BuffTypeId, C = (ushort)ba.StackCount,
+                Type = TypeBuffApplied, A = ba.TargetUnitId, B = ba.BuffTypeId, C = (ushort)ba.StackCount,
             },
-            BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetNetId, B = be.BuffTypeId },
+            BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetUnitId, B = be.BuffTypeId },
             CastCompleted cc => new SyncBattleEvent {
-                Type = TypeCastCompleted, A = cc.CasterNetId, C = cc.TargetNetId?.Value ?? 0, SkillKey = cc.SkillId.Id,
+                Type = TypeCastCompleted, A = cc.CasterUnitId, C = cc.TargetUnitId?.Value ?? 0, SkillKey = cc.SkillId.Id,
             },
             CastStarted cs => new SyncBattleEvent {
-                Type = TypeCastStarted, A = cs.CasterNetId, C = cs.TargetNetId?.Value ?? 0, SkillKey = cs.SkillId.Id,
+                Type = TypeCastStarted, A = cs.CasterUnitId, C = cs.TargetUnitId?.Value ?? 0, SkillKey = cs.SkillId.Id,
             },
             CastCanceled ccl => new SyncBattleEvent {
-                Type = TypeCastCanceled, A = ccl.CasterNetId, SkillKey = ccl.SkillId.Id,
+                Type = TypeCastCanceled, A = ccl.CasterUnitId, SkillKey = ccl.SkillId.Id,
             },
             _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
         };

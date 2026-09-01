@@ -22,6 +22,6 @@ public interface IBattleSceneView {
         get;
     }
 
-    /// <summary>按网络 ID 查单位只读视图，不存在返回 null。</summary>
-    IBattleUnitView? FindUnit(ushort netId);
+    /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
+    IBattleUnitView? FindUnit(UnitId unitId);
 }

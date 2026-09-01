@@ -23,7 +23,7 @@ public sealed class ReplayEngine : IBattleViewSource {
     private readonly List<MoveInputRecord> _moves;
     private readonly List<CastSkillRecord> _casts;
     private readonly List<FocusTargetRecord> _focuses;
-    private readonly ushort[] _playerNetIdByIndex;
+    private readonly UnitId[] _playerUnitIdByIndex;
     private readonly int _startTick;
     private readonly float _dt;
 
@@ -46,8 +46,8 @@ public sealed class ReplayEngine : IBattleViewSource {
     /// <summary>战斗世界全部单位，展示层直读状态。</summary>
     public IReadOnlyList<IUnitUiView> Units => _battleScene.BattleUnits;
 
-    /// <summary>按网络 ID 查战斗单位，不存在返回 null。</summary>
-    public IUnitUiView? FindUnit(ushort netId) => _battleScene.FindUnit(netId) as IUnitUiView;
+    /// <summary>按单位 ID 查战斗单位，不存在返回 null。</summary>
+    public IUnitUiView? FindUnit(UnitId unitId) => _battleScene.FindUnit(unitId) as IUnitUiView;
 
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
@@ -67,7 +67,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         _moves = [.. snapshot.MoveInputs.OrderBy(m => m.Frame)];
         _casts = [.. snapshot.CastSkills.OrderBy(c => c.Frame)];
         _focuses = [.. snapshot.FocusTargets.OrderBy(f => f.Frame)];
-        _playerNetIdByIndex = [.. snapshot.Header.Players.Select(p => p.NetId)];
+        _playerUnitIdByIndex = [.. snapshot.Header.Players.Select(p => p.NetId)];
 
         // 内容一致校验：录制端内容修订号与当前不一致即拒绝重放
         if (snapshot.Header.DataVersion != GameConfigDB.DataRevision)
@@ -84,7 +84,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         _battleScene.CurrentPhase = BattlePhase.Running;
     }
 
-    /// <summary>按副本配置与头部信息构建全部单位：玩家按 PlayerIndex 还原，敌人按副本生成顺序从 NextNetId 对齐。</summary>
+    /// <summary>按副本配置与头部信息构建全部单位：玩家按头部 NetId 还原，敌人按副本生成顺序自 FirstEnemyNetId 起对齐。</summary>
     private void BuildUnits() {
         foreach (var player in Snapshot.Header.Players) {
             var config = _unitRegistry.GetByKey(player.UnitConfigKey)
@@ -111,14 +111,14 @@ public sealed class ReplayEngine : IBattleViewSource {
             });
         }
 
-        ushort nextNetId = Snapshot.Header.NextNetId;
+        ushort enemyNetId = Snapshot.Header.FirstEnemyNetId;
         foreach (var spawn in _dungeon.Enemies) {
             var config = _unitRegistry.GetByConfig(spawn.Unit)
                 ?? throw new InvalidDataException($"Dungeon '{_dungeon.DungeonKey}' references unregistered unit config.");
             for (int i = 0; i < spawn.Count; i++) {
                 var pos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
                 AddUnit(new BattleUnit {
-                    UnitId = nextNetId++,
+                    UnitId = enemyNetId++,
                     UnitName = config.ConfigKey,
                     Camps = _dungeon.EnemyCamps,
                     Skills = config.Skills,
@@ -193,7 +193,7 @@ public sealed class ReplayEngine : IBattleViewSource {
             if (targetFrame > _frame)
                 break;
             if (targetFrame == _frame && c.Accepted)
-                _intentHub.Submit(c.ToCommand(NetIdOf(c.PlayerIndex)));
+                _intentHub.Submit(c.ToCommand(UnitIdOf(c.PlayerIndex)));
             _castCursor++;
         }
 
@@ -203,7 +203,7 @@ public sealed class ReplayEngine : IBattleViewSource {
             if (targetFrame > _frame)
                 break;
             if (targetFrame == _frame)
-                _intentHub.Submit(m.ToCommand(NetIdOf(m.PlayerIndex)));
+                _intentHub.Submit(m.ToCommand(UnitIdOf(m.PlayerIndex)));
             _moveCursor++;
         }
 
@@ -213,14 +213,14 @@ public sealed class ReplayEngine : IBattleViewSource {
             if (targetFrame > _frame)
                 break;
             if (targetFrame == _frame && f.Accepted)
-                _intentHub.Submit(f.ToCommand(NetIdOf(f.PlayerIndex)));
+                _intentHub.Submit(f.ToCommand(UnitIdOf(f.PlayerIndex)));
             _focusCursor++;
         }
     }
 
-    /// <summary>玩家序号 → 头部玩家表里的网络 ID；越界返回 0，门内解析不到即自然落空。</summary>
-    private ushort NetIdOf(byte playerIndex) =>
-        playerIndex < _playerNetIdByIndex.Length ? _playerNetIdByIndex[playerIndex] : (ushort)0;
+    /// <summary>玩家序号 → 头部玩家表里的单位 ID；越界返回 <see cref="UnitId.None"/>，门内解析不到即自然落空。</summary>
+    private UnitId UnitIdOf(byte playerIndex) =>
+        playerIndex < _playerUnitIdByIndex.Length ? _playerUnitIdByIndex[playerIndex] : UnitId.None;
 
     /// <summary>重置到战斗开始帧：先经门面丢弃持旧单位引用的在架意图，再重建战斗世界与单位。</summary>
     private void Reset() {
