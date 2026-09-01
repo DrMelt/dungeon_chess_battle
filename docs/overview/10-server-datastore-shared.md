@@ -27,6 +27,6 @@
 
 ## 相关契约去向
 
-- 回放归档存储契约 `IReplayStore` 与摘要模型在 Server.Abstractions，见 `functional_boundary/15`。
+- 回放归档存储契约在 Server.Abstractions，见 `functional_boundary/15`；归档字节流的内容与摘要不在此层。
 - 会话凭证 → 玩家记录主键的解析对外由 `IPlayerIdentityResolver`（Server.Abstractions）承担，实现包在本层门面之上，见 `overview/11`。
 

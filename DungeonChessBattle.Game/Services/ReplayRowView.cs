@@ -12,6 +12,7 @@ namespace DungeonChessBattle.Game.Services;
 /// <param name="DungeonKey">副本键。</param>
 /// <param name="StartUnixTime">战斗开始时间，Unix 秒，UTC。</param>
 /// <param name="TickRate">逻辑 tick 频率。</param>
+/// <param name="DurationTicks">回放覆盖的逻辑帧数，配合 <see cref="TickRate"/> 呈现时长。</param>
 /// <param name="PlayerNames">参与玩家名。</param>
 /// <param name="FromServer">服务端归档是否仍可重下；false 表示只剩本地副本。</param>
 /// <param name="Action">该行动作语义，视图层据此翻译文案与可用态。</param>
@@ -22,6 +23,7 @@ public sealed record ReplayRowView(
     string DungeonKey,
     long StartUnixTime,
     int TickRate,
+    int DurationTicks,
     IReadOnlyList<string> PlayerNames,
     bool FromServer,
     ReplayBrowseAction Action,

@@ -7,6 +7,7 @@
 - 契约与数据结构：`SkillDefinition`/`BuffDefinition`/`RangeShape`/`UnitSnapshot`/`BattleUnit`/`PlayerCommand`/领域事件族与端口接口。
 - 端口契约：`IBuffEffect`/`ISkillEffect`、`IBattleUnitView`、`IBattleSceneView`、`IUnitIntelligence`、`IHateRule`、`IMovementScene` 等。
 - 纯数据固有计算保留：`RangeShape` 几何判定、`VectorMath`、`CampRelationResolver` 阵营映射。
+- 回放结算逻辑修订号 `BattleLogicRevision`：Battle.Logic 结算时序与事件顺序的版本指纹，供录制端写入归档、重放端与客户端门控比对。它只是一个常量，规则本身与递增义务在 Battle.Logic，见 `functional_boundary/07`。
 - 写权限边界：internal 成员经 `InternalsVisibleTo` 只授 Battle.Logic，构成「战斗世界可写、其余程序集不可写」的输入写面。
 
 ## 边界外

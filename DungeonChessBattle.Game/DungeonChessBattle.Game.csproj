@@ -18,6 +18,7 @@
     <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Replay.Protocol\DungeonChessBattle.Replay.Protocol.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Replay.Client\DungeonChessBattle.Replay.Client.csproj" />
   </ItemGroup>
   <ItemGroup>

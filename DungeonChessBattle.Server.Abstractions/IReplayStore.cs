@@ -1,32 +1,18 @@
 namespace DungeonChessBattle.Server.Abstractions;
 
 /// <summary>
-/// 回放归档存储契约：战斗房间销毁时归档编码后的回放字节流与摘要，回放服务据此查询与下载。
-/// 主键为房间 ID，摘要中的玩家主键用于按参与者检索。
+/// 回放归档存储契约：战斗房间销毁时归档容器字节流与参与者记录主键，回放服务据此查询与下载。
+/// 主键为房间 ID；本层只存字节不解释内容——展示所需元数据由归档自身的元数据块携带，
+/// 摘要不再有第二份真相。参与者主键是回放归属的唯一口径，与归档字节同批写入。
 /// 只暴露原语类型，不依赖回放记录模型。
 /// </summary>
 public interface IReplayStore {
     /// <summary>归档一场战斗的回放；重复归档同房间幂等忽略。</summary>
-    void Add(string roomId, ReplaySummary summary, byte[] data);
+    void Add(string roomId, byte[] archive, IReadOnlyList<string> participantRecordIds);
 
-    /// <summary>查询玩家记录主键参与过的全部回放摘要，最近归档在前。</summary>
-    IReadOnlyList<ReplaySummary> GetReplaysByPlayerId(string recordId);
+    /// <summary>查询玩家记录主键参与过的房间 ID，最近归档在前。</summary>
+    IReadOnlyList<string> GetRoomIdsByPlayer(string recordId);
 
-    /// <summary>按房间 ID 取回放字节流，不存在时返回 false。</summary>
-    bool TryGetReplay(string roomId, out byte[] data);
+    /// <summary>按房间 ID 取回放归档字节流，不存在时返回 false。</summary>
+    bool TryGetArchive(string roomId, out byte[] archive);
 }
-
-/// <summary>
-/// 回放归档摘要：战斗元数据与参与玩家，供查询展示与下载前校验。
-/// DataVersion 为录制端内容数据修订号，取自回放记录头部，重放端据此判定可播放性。
-/// </summary>
-public sealed record ReplaySummary(
-    string RoomId,
-    string DungeonKey,
-    long StartUnixTime,
-    int TickRate,
-    string DataVersion,
-    IReadOnlyList<ReplayPlayer> Players);
-
-/// <summary>回放参与玩家条目。PlayerRecordId 为玩家记录主键，供按记录查询回放。</summary>
-public sealed record ReplayPlayer(string PlayerRecordId, string PlayerName, string UnitConfigKey);

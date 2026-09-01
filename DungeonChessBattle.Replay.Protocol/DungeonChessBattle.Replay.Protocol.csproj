@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
+    </ItemGroup>
+
 </Project>

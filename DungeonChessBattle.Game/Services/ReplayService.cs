@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Replay.Client;
 using DungeonChessBattle.Replay.Protocol.Dtos;
@@ -14,7 +15,7 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
 /// 回放浏览服务：组合 ReplayClient（服务端获取）与 ReplayCache（本地缓存）。
-/// 唯一的消费侧裁决点——列表并集、内容门控、下载进度与在途任务都在此归并，
+/// 唯一的消费侧裁决点——列表并集、版本与内容门控、下载进度与在途任务都在此归并，
 /// 对外只暴露「行视图结论」与「获取/启动动作」，文案由视图层按动作语义翻译。
 /// 会话失效时调用 <see cref="OnSessionInvalid"/>，由客户端连接状态机驱动。
 /// 是否启动回放由表现层显式决定，本类不触发播放。
@@ -33,9 +34,10 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     // 列表快照：后台刷新整引用替换、主线程整引用读取，volatile 保证可见性。
     private volatile IReadOnlyList<ReplayListEntry>? _entries;
 
-    /// <summary>录制内容版本与本地配置是否一致；不一致的回放重放会漂移。版本缺失一律判不一致。</summary>
-    private static bool IsContentCompatible(string? dataVersion)
-        => !string.IsNullOrEmpty(dataVersion) && dataVersion == GameConfigDB.DataRevision;
+    /// <summary>录制端两项修订号与本地是否一致：内容修订号管配置与布局，逻辑修订号管结算时序。任一缺失判不一致。</summary>
+    private static bool IsContentCompatible(string? dataVersion, string? logicVersion) =>
+        !string.IsNullOrEmpty(dataVersion) && dataVersion == GameConfigDB.DataRevision
+        && !string.IsNullOrEmpty(logicVersion) && logicVersion == BattleLogicRevision.Value;
 
     /// <summary>取合并后的行视图：基于静态列表快照现场构建动态可用态，进度实时；列表未刷新时返回空。</summary>
     public IReadOnlyList<ReplayRowView> GetRowViews() {
@@ -63,14 +65,12 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     /// <summary>合并本地条目与服务端条目，服务端覆盖同房间本地条目，按开始时间倒序。</summary>
     private async Task<IReadOnlyList<ReplayListEntry>> BuildMergedEntriesAsync(CancellationToken cancellationToken) {
         var merged = new Dictionary<string, ReplayListEntry>();
-        foreach (var header in await cache.ReadEntriesAsync(cancellationToken)) {
-            // 格式版本不符的本地旧副本列出来也播不了，不列入；能否重放仍由解码门控
-            if (header.FormatVersion != ReplayFormatVersion.Current)
-                continue;
-            merged[header.RoomId] = ToEntry(header);
-        }
+        // 本地枚举只交回格式版本可读的副本；能否重放仍由解码与内容门控裁决。
+        // 两条来源都先归成同一个 DTO，字段清单就不随来源分叉，差异只剩 FromServer 一项
+        foreach (var meta in await cache.ReadEntriesAsync(cancellationToken))
+            merged[meta.RoomId] = ToEntry(ReplaySummaryDto.From(meta), fromServer: false);
         foreach (var dto in await client.GetServerListAsync(cancellationToken))
-            merged[dto.RoomId] = ToEntry(dto);
+            merged[dto.RoomId] = ToEntry(dto, fromServer: true);
 
         var entries = new List<ReplayListEntry>(merged.Values);
         entries.Sort(static (a, b) => {
@@ -85,12 +85,12 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
         if (_pending.ContainsKey(roomId))
             return;
         ReplayListEntry? entry = _entries?.FirstOrDefault(e => e.RoomId == roomId);
-        if (entry is null || !IsContentCompatible(entry.DataVersion))
+        if (entry is null || !IsContentCompatible(entry.DataVersion, entry.LogicVersion))
             return;
         _ = FetchAsync(roomId);
     }
 
-    /// <summary>取本地可重放快照；副本损坏时移除文件以允许重新下载。内容不符返回 Incompatible。</summary>
+    /// <summary>取本地可重放记录；副本损坏时移除文件以允许重新下载。版本不符返回 Unsupported，修订号不符返回 Incompatible。</summary>
     public ReplayPlayableResult TryGetPlayable(string roomId) {
         if (!cache.TryRead(roomId, out var data))
             return new ReplayPlayableResult(ReplayGateStatus.NotCached);
@@ -117,11 +117,11 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     /// <summary>会话失效（登出/断线）：旧凭证已作废，取消全部在途并清空过程状态。</summary>
     public void OnSessionInvalid() => CancelAll();
 
-    /// <summary>按在途/内容兼容/本地缓存裁决一行的动作语义与可用态。</summary>
+    /// <summary>按在途/版本兼容/本地缓存裁决一行的动作语义与可用态。</summary>
     private ReplayRowView BuildRow(ReplayListEntry entry) {
         if (_pending.ContainsKey(entry.RoomId))
             return With(entry, ReplayBrowseAction.Downloading, playEnabled: false, DownloadPercent(entry.RoomId));
-        if (!IsContentCompatible(entry.DataVersion))
+        if (!IsContentCompatible(entry.DataVersion, entry.LogicVersion))
             return With(entry, ReplayBrowseAction.Blocked, playEnabled: false, downloadPercent: null);
         return cache.Contains(entry.RoomId)
             ? With(entry, ReplayBrowseAction.Play, playEnabled: true, downloadPercent: null)
@@ -129,7 +129,7 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     }
 
     private static ReplayRowView With(ReplayListEntry e, ReplayBrowseAction action, bool playEnabled, int? downloadPercent)
-        => new(e.RoomId, e.DungeonKey, e.StartUnixTime, e.TickRate, e.PlayerNames, e.FromServer,
+        => new(e.RoomId, e.DungeonKey, e.StartUnixTime, e.TickRate, e.DurationTicks, e.PlayerNames, e.FromServer,
             action, playEnabled, downloadPercent);
 
     private int? DownloadPercent(string roomId) {
@@ -171,7 +171,8 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
         var (found, cached) = await cache.TryReadAsync(roomId, cancellationToken);
         if (found) {
             var cachedResult = DecodeGate(roomId, cached);
-            if (cachedResult.Status != ReplayGateStatus.Corrupted)
+            // 副本损坏或格式版本落后于本机读取端：重下一次就可能拿到可用归档，不就此止步
+            if (cachedResult.Status is not (ReplayGateStatus.Corrupted or ReplayGateStatus.Unsupported))
                 return cachedResult;
             cache.Invalidate(roomId);
             if (logger.IsEnabled(LogLevel.Information))
@@ -191,22 +192,23 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
         return result;
     }
 
+    /// <summary>解码并门控：容器不合规范判损坏，格式版本不认判不支持，修订号不符判不兼容。</summary>
     private ReplayPlayableResult DecodeGate(string roomId, byte[] data) {
-        ReplayRecordSnapshot snapshot;
-        try {
-            snapshot = ReplayRecordCoder.Decode(data);
-        }
-        catch (Exception ex) {
+        var decoded = ReplayArchive.Decode(data);
+        if (decoded.Status == ReplayArchiveStatus.UnsupportedVersion)
+            return new ReplayPlayableResult(ReplayGateStatus.Unsupported, Reason: decoded.Reason);
+        if (decoded.Status != ReplayArchiveStatus.Ok || decoded.Recording is not { } recording) {
             if (logger.IsEnabled(LogLevel.Warning))
-                logger.LogWarning(ex, "回放数据解码失败: {RoomId}", roomId);
+                logger.LogWarning("回放数据解码失败: {RoomId}，{Reason}", roomId, decoded.Reason ?? "unknown");
             return new ReplayPlayableResult(ReplayGateStatus.Corrupted, Reason: "回放数据无法解码。");
         }
 
-        if (!IsContentCompatible(snapshot.Header.DataVersion))
+        if (!IsContentCompatible(recording.Meta.DataVersion, recording.Meta.LogicVersion))
             return new ReplayPlayableResult(ReplayGateStatus.Incompatible, Reason:
-                $"回放由内容版本 {snapshot.Header.DataVersion} 录制，本地为 {GameConfigDB.DataRevision}。");
+                $"回放由内容 {recording.Meta.DataVersion}/逻辑 {recording.Meta.LogicVersion} 录制，" +
+                $"本地为 {GameConfigDB.DataRevision}/{BattleLogicRevision.Value}。");
 
-        return new ReplayPlayableResult(ReplayGateStatus.Ready, snapshot);
+        return new ReplayPlayableResult(ReplayGateStatus.Ready, recording);
     }
 
     private void TrimCache() {
@@ -215,23 +217,17 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
             logger.LogInformation("本地回放缓存超出 {Max} 场，淘汰最旧副本 {Removed} 个", MaxCachedReplays, removed);
     }
 
-    private static ReplayListEntry ToEntry(ReplayRecordHeader header) => new(
-        header.RoomId,
-        header.DungeonKey,
-        header.StartUnixTime,
-        header.TickRate,
-        header.DataVersion ?? "",
-        [.. header.Players.Select(static player => player.PlayerName)],
-        FromServer: false);
-
-    private static ReplayListEntry ToEntry(ReplaySummaryDto dto) => new(
+    /// <summary>摘要条目 → 列表条目：唯一的来源无关出口，玩家名之外的字段一律直传。</summary>
+    private static ReplayListEntry ToEntry(ReplaySummaryDto dto, bool fromServer) => new(
         dto.RoomId,
         dto.DungeonKey,
         dto.StartUnixTime,
         dto.TickRate,
+        dto.DurationTicks,
         dto.DataVersion,
+        dto.LogicVersion,
         [.. dto.Players.Select(static player => player.PlayerName)],
-        FromServer: true);
+        fromServer);
 
     private static string FailureText(ReplayTransportStatus status, string roomId) => status switch {
         ReplayTransportStatus.Unauthorized => "未取得会话凭证或凭证已失效，需重新登录大厅。",

@@ -59,15 +59,15 @@ public partial class ReplayPanel : BaseGamePanel {
     /// <summary>下载按钮回调：可下载与否由服务层裁决，本面板只上报房间 ID。</summary>
     private void OnRowActionPressed(string roomId) => ServiceLocator.ReplayService.RequestFetch(roomId);
 
-    /// <summary>播放按钮回调：服务层取可重放快照，成功即显式启动回放并返回大厅。</summary>
+    /// <summary>播放按钮回调：服务层取可重放记录，成功即显式启动回放并返回大厅。</summary>
     private void OnPlayPressed(string roomId) {
         var result = ServiceLocator.ReplayService.TryGetPlayable(roomId);
-        if (!result.IsReady || result.Snapshot is null || _coordinator is null) {
+        if (!result.IsReady || result.Recording is null || _coordinator is null) {
             if (IsInstanceValid(this))
-                _logger.LogWarning("回放本地副本无法读取或内容不兼容，无法启动: {RoomId}（{Status}）", roomId, result.Status);
+                _logger.LogWarning("回放本地副本无法读取或版本不兼容，无法启动: {RoomId}（{Status}）", roomId, result.Status);
             return;
         }
-        _coordinator.LoadReplay(result.Snapshot);
+        _coordinator.LoadReplay(result.Recording);
         if (_coordinator.IsActive)
             GoBack();
     }

@@ -4,38 +4,33 @@ using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Replay;
 
 /// <summary>
-/// 回放引擎：解码后的回放快照在本地用战斗世界确定性重跑。
+/// 回放引擎：解码后的回放在本地用战斗世界确定性重跑。
 /// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故 ID 解析、排队与落点不会分叉。
 /// 每帧顺序与服务端 BattleLoop 钩子一致：门面预备 → 输入注入 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
+/// 世界重建照录制端的单位初始态表，实体 ID 与阵营取记录值，属性按配置键取当前配置。
 /// </summary>
 public sealed class ReplayEngine : IBattleViewSource {
     private readonly BattleScene _battleScene;
     private readonly BattleIntentHub _intentHub;
-    private readonly DungeonConfig _dungeon;
     private readonly IUnitRegistry _unitRegistry;
-    private readonly IDungeonRegistry _dungeonRegistry;
-    private readonly List<MoveInputRecord> _moves;
-    private readonly List<CastSkillRecord> _casts;
-    private readonly List<FocusTargetRecord> _focuses;
+    private readonly IReadOnlyList<ReplayUnitInit> _units;
+    private readonly ReplayMeta _meta;
+    private readonly ReplayMoveRun[][] _moveRunsByPlayer;
+    private readonly int[] _moveCursor;
+    private readonly List<ReplayCastEntry> _casts;
+    private readonly List<ReplayFocusEntry> _focuses;
     private readonly UnitId[] _playerUnitIdByIndex;
     private readonly int _startTick;
     private readonly float _dt;
 
-    private int _moveCursor;
     private int _castCursor;
     private int _focusCursor;
     private int _frame;
-
-    /// <summary>解码后的回放记录。</summary>
-    public ReplayRecordSnapshot Snapshot {
-        get;
-    }
 
     /// <summary>当前逻辑帧，战斗开始后第 N tick。</summary>
     public int Frame => _frame;
@@ -53,49 +48,55 @@ public sealed class ReplayEngine : IBattleViewSource {
     public float FixedDelta => _dt;
 
     /// <summary>构建回放：使用默认配置注册表；配置缺失属录制环境不一致，响亮失败。</summary>
-    public ReplayEngine(ReplayRecordSnapshot snapshot)
-        : this(snapshot, UnitRegistry.Instance, DungeonRegistry.Instance) {
+    public ReplayEngine(ReplayRecording recording)
+        : this(recording, UnitRegistry.Instance, DungeonRegistry.Instance) {
     }
 
-    /// <summary>构建回放：注入配置注册表解析头部、构建战斗世界与单位并立即开始战斗。</summary>
-    public ReplayEngine(ReplayRecordSnapshot snapshot, IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
-        Snapshot = snapshot;
+    /// <summary>构建回放：注入配置注册表做双重版本门控、按单位初始态构建战斗世界并立即开战。</summary>
+    public ReplayEngine(ReplayRecording recording, IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
+        _meta = recording.Meta;
         _unitRegistry = unitRegistry;
-        _dungeonRegistry = dungeonRegistry;
-        _startTick = snapshot.Header.StartTick;
-        _dt = 1f / snapshot.Header.TickRate;
-        _moves = [.. snapshot.MoveInputs.OrderBy(m => m.Frame)];
-        _casts = [.. snapshot.CastSkills.OrderBy(c => c.Frame)];
-        _focuses = [.. snapshot.FocusTargets.OrderBy(f => f.Frame)];
-        _playerUnitIdByIndex = [.. snapshot.Header.Players.Select(p => p.NetId)];
+        _startTick = _meta.StartTick;
+        if (_meta.TickRate <= 0)
+            throw new InvalidDataException($"Replay invalid tick rate: {_meta.TickRate}.");
+        _dt = 1f / _meta.TickRate;
+        _units = recording.Units;
+        _casts = [.. recording.Casts.OrderBy(c => c.Frame)];
+        _focuses = [.. recording.Focuses.OrderBy(f => f.Frame)];
+        _playerUnitIdByIndex = [.. _meta.Players.Select(p => p.NetId)];
+        (_moveRunsByPlayer, _moveCursor) = BuildMoveTracks(recording.MoveTracks, _meta.Players.Count);
 
-        // 内容一致校验：录制端内容修订号与当前不一致即拒绝重放
-        if (snapshot.Header.DataVersion != GameConfigDB.DataRevision)
+        // 双重门控：内容修订号管配置与布局，逻辑修订号管结算时序，任一不符重算都不可能对上
+        if (_meta.DataVersion != GameConfigDB.DataRevision)
             throw new InvalidDataException(
-                $"Replay content mismatch: record data={snapshot.Header.DataVersion}, current={GameConfigDB.DataRevision}.");
+                $"Replay content mismatch: record data={_meta.DataVersion}, current={GameConfigDB.DataRevision}.");
+        if (_meta.LogicVersion != BattleLogicRevision.Value)
+            throw new InvalidDataException(
+                $"Replay logic mismatch: record logic={_meta.LogicVersion}, current={BattleLogicRevision.Value}.");
 
-        var dungeon = _dungeonRegistry.GetByKey(snapshot.Header.DungeonKey)
-            ?? throw new InvalidDataException($"Replay references unknown dungeon key: {snapshot.Header.DungeonKey}");
-        _dungeon = dungeon;
-        var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(snapshot.Header.DungeonKey));
+        var dungeon = dungeonRegistry.GetByKey(_meta.DungeonKey)
+            ?? throw new InvalidDataException($"Replay references unknown dungeon key: {_meta.DungeonKey}");
+        var movementScene = new PhysicsMovementScene(dungeonRegistry.GetMovementLayout(_meta.DungeonKey));
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
         _intentHub = new BattleIntentHub(_battleScene);
         BuildUnits();
         _battleScene.CurrentPhase = BattlePhase.Running;
     }
 
-    /// <summary>按副本配置与头部信息构建全部单位：玩家按头部 NetId 还原，敌人按副本生成顺序自 FirstEnemyNetId 起对齐。</summary>
+    /// <summary>
+    /// 按录制的单位初始态重建全部单位：ID、阵营与出生点取记录值，战斗属性按配置键取当前配置。
+    /// 玩家与敌人同表同序，唯一区别是 AI 驱动——玩家单位的 Intelligence 恒为空，操作权在输入轨道。
+    /// </summary>
     private void BuildUnits() {
-        foreach (var player in Snapshot.Header.Players) {
-            var config = _unitRegistry.GetByKey(player.UnitConfigKey)
-                ?? throw new InvalidDataException($"Replay references unknown unit config: {player.UnitConfigKey}");
-            var camps = _dungeon.PlayerCampOptions.FirstOrDefault(o => o.Key == player.CampOptionKey)?.Camps
-                ?? throw new InvalidDataException($"Replay camp option '{player.CampOptionKey}' not found in dungeon '{_dungeon.DungeonKey}'.");
+        foreach (var unit in _units) {
+            var config = _unitRegistry.GetByKey(unit.UnitConfigKey)
+                ?? throw new InvalidDataException($"Replay references unknown unit config: {unit.UnitConfigKey}");
             AddUnit(new BattleUnit {
-                UnitId = player.NetId,
+                UnitId = unit.NetId,
                 UnitName = config.ConfigKey,
-                Camps = camps,
+                Camps = unit.Camps,
                 Skills = config.Skills,
+                Intelligence = IsPlayerUnit(unit.NetId) ? null : config.Intelligence,
                 HateRule = config.HateRule,
                 HateFactor = config.HateFactor,
                 MaxHealth = config.MaxHealth,
@@ -107,37 +108,39 @@ public sealed class ReplayEngine : IBattleViewSource {
                 CureIntensity = config.CureIntensity,
                 BaseSpeed = config.BaseSpeed,
                 BodyRadius = config.BodyRadius,
-                Position = new Vector2(player.SpawnX, player.SpawnY),
+                Position = new Vector2(unit.SpawnX, unit.SpawnY),
             });
         }
+    }
 
-        ushort enemyNetId = Snapshot.Header.FirstEnemyNetId;
-        foreach (var spawn in _dungeon.Enemies) {
-            var config = _unitRegistry.GetByConfig(spawn.Unit)
-                ?? throw new InvalidDataException($"Dungeon '{_dungeon.DungeonKey}' references unregistered unit config.");
-            for (int i = 0; i < spawn.Count; i++) {
-                var pos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                AddUnit(new BattleUnit {
-                    UnitId = enemyNetId++,
-                    UnitName = config.ConfigKey,
-                    Camps = _dungeon.EnemyCamps,
-                    Skills = config.Skills,
-                    Intelligence = config.Intelligence,
-                    HateRule = config.HateRule,
-                    HateFactor = config.HateFactor,
-                    MaxHealth = config.MaxHealth,
-                    Health = config.MaxHealth,
-                    PhysicalAttackBase = config.PhysicalAttackBase,
-                    PhysicalTakePercent = config.PhysicalTakePercent,
-                    MagicAttackBase = config.MagicAttackBase,
-                    MagicTakePercent = config.MagicTakePercent,
-                    CureIntensity = config.CureIntensity,
-                    BaseSpeed = config.BaseSpeed,
-                    BodyRadius = config.BodyRadius,
-                    Position = pos,
-                });
-            }
+    /// <summary>是否玩家单位：由元数据玩家表的 NetId 认定，不在单位初始态里留第二份。</summary>
+    private bool IsPlayerUnit(ushort netId) => Array.IndexOf(_playerUnitIdByIndex, (UnitId)netId) >= 0;
+
+    /// <summary>
+    /// 移动轨道按玩家序号归位，段序按帧重排以不信任录制端顺序。玩家表超轨道键容量、序号越界、
+    /// 同序号重复轨道都属归档不合规范，响亮失败：缺前一条守卫，按玩家遍历的注入循环永不收敛；
+    /// 缺后一条，重复轨道静默吃掉先到的整条轨道。
+    /// </summary>
+    private static (ReplayMoveRun[][], int[]) BuildMoveTracks(IReadOnlyList<ReplayMoveTrack> tracks, int playerCount) {
+        if (playerCount > ReplayMoveTrack.MaxPlayers)
+            throw new InvalidDataException(
+                $"Replay player table holds {playerCount} players, above move track capacity {ReplayMoveTrack.MaxPlayers}.");
+
+        var runsByPlayer = new ReplayMoveRun[playerCount][];
+        for (int i = 0; i < playerCount; i++)
+            runsByPlayer[i] = [];
+
+        var claimed = new bool[playerCount];
+        foreach (var track in tracks) {
+            if (track.PlayerIndex >= playerCount)
+                throw new InvalidDataException($"Move track for player index {track.PlayerIndex} exceeds player table.");
+            if (claimed[track.PlayerIndex])
+                throw new InvalidDataException($"Duplicate move track for player index {track.PlayerIndex}.");
+            claimed[track.PlayerIndex] = true;
+            runsByPlayer[track.PlayerIndex] = [.. track.Runs.OrderBy(r => r.Frame)];
         }
+
+        return (runsByPlayer, new int[playerCount]);
     }
 
     /// <summary>注册领域单位到战斗世界。</summary>
@@ -168,63 +171,54 @@ public sealed class ReplayEngine : IBattleViewSource {
         return events;
     }
 
-    /// <summary>回放记录覆盖的总逻辑帧数（从战斗开始到最后一条输入）。</summary>
-    public int TotalFrames {
-        get {
-            int lastFrame = _startTick;
-            if (_moves.Count > 0)
-                lastFrame = Math.Max(lastFrame, _moves[^1].Frame);
-            if (_casts.Count > 0)
-                lastFrame = Math.Max(lastFrame, _casts[^1].Frame);
-            if (_focuses.Count > 0)
-                lastFrame = Math.Max(lastFrame, _focuses[^1].Frame);
-            return Math.Max(0, lastFrame - _startTick + 1);
-        }
-    }
+    /// <summary>回放覆盖的总逻辑帧数，取自录制端记下的战斗结束帧。</summary>
+    public int TotalFrames => _meta.DurationTicks;
 
     /// <summary>
     /// 按帧注入玩家命令：施法 → 移动 → 聚焦，三类共享同一帧轴，经与在线同一个输入门面提交。
     /// 施法与移动都只登记意图，同序要求见 <see cref="BattleIntentHub.PrepareTick"/>；<c>Accepted=false</c> 的条目跳过。
+    /// 移动按方向意图段展开：段覆盖本帧即重投该段方向，逐 tick 提交语义与在线一致。
     /// </summary>
     private void InjectInputs() {
+        int absoluteFrame = _startTick + _frame;
+
         while (_castCursor < _casts.Count) {
             var c = _casts[_castCursor];
-            int targetFrame = c.Frame - _startTick;
-            if (targetFrame > _frame)
+            if (c.Frame > absoluteFrame)
                 break;
-            if (targetFrame == _frame && c.Accepted)
+            if (c.Frame == absoluteFrame && c.Accepted)
                 _intentHub.Submit(c.ToCommand(UnitIdOf(c.PlayerIndex)));
             _castCursor++;
         }
 
-        while (_moveCursor < _moves.Count) {
-            var m = _moves[_moveCursor];
-            int targetFrame = m.Frame - _startTick;
-            if (targetFrame > _frame)
-                break;
-            if (targetFrame == _frame)
-                _intentHub.Submit(m.ToCommand(UnitIdOf(m.PlayerIndex)));
-            _moveCursor++;
+        // 循环变量必须是 int：轨道数可达容量上限 256，byte 自增会在末位回绕，令本循环永不收敛
+        for (int player = 0; player < _moveRunsByPlayer.Length; player++) {
+            var runs = _moveRunsByPlayer[player];
+            int cursor = _moveCursor[player];
+            while (cursor < runs.Length && runs[cursor].EndFrame < absoluteFrame)
+                cursor++;
+            _moveCursor[player] = cursor;
+            if (cursor < runs.Length && runs[cursor].Frame <= absoluteFrame)
+                _intentHub.Submit(ReplayCommands.ToCommand(in runs[cursor], UnitIdOf(player)));
         }
 
         while (_focusCursor < _focuses.Count) {
             var f = _focuses[_focusCursor];
-            int targetFrame = f.Frame - _startTick;
-            if (targetFrame > _frame)
+            if (f.Frame > absoluteFrame)
                 break;
-            if (targetFrame == _frame && f.Accepted)
+            if (f.Frame == absoluteFrame && f.Accepted)
                 _intentHub.Submit(f.ToCommand(UnitIdOf(f.PlayerIndex)));
             _focusCursor++;
         }
     }
 
-    /// <summary>玩家序号 → 头部玩家表里的单位 ID；越界返回 <see cref="UnitId.None"/>，门内解析不到即自然落空。</summary>
-    private UnitId UnitIdOf(byte playerIndex) =>
+    /// <summary>玩家序号 → 元数据玩家表里的单位 ID；越界返回 <see cref="UnitId.None"/>，门内解析不到即自然落空。</summary>
+    private UnitId UnitIdOf(int playerIndex) =>
         playerIndex < _playerUnitIdByIndex.Length ? _playerUnitIdByIndex[playerIndex] : UnitId.None;
 
     /// <summary>重置到战斗开始帧：先经门面丢弃持旧单位引用的在架意图，再重建战斗世界与单位。</summary>
     private void Reset() {
-        _moveCursor = 0;
+        Array.Clear(_moveCursor);
         _castCursor = 0;
         _focusCursor = 0;
         _frame = 0;

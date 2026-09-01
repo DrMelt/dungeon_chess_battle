@@ -35,6 +35,7 @@
 ## 空房清理与回放归档
 
 - 全部活跃连接断开且初始化完成 → `RoomEmpty` 事件 → 投递队列 → 大厅后台清理循环 `ProcessPendingRoomCleanups` → `RemoveRoom`（停止线程 → 回收端口 → 归档回放）。
-- 回放录制：`BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘，命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。三类记录共享同一帧轴（首条 tick 锚定绝对逻辑帧，规避 ushort 回绕），不设条目上限。
-- 归档：房间销毁或关服时编码 `ReplayRecordSnapshot` 经 `IReplayStore` 写入实现层 `InMemoryReplayStore`（保留最近 256 场），供大厅查询与 HTTP 下载。
+- 回放录制：`BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘，命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。三类条目共享同一帧轴（首条 tick 锚定绝对逻辑帧，规避 ushort 回绕），不设条目上限。录制器只管时间轴与三本账：段折叠判据与轨道成型在 `ReplayCommands`，两项修订号由 `BattleRoomServer` 读取后传入，Battle.Server 里读内容版本静态量的只有这一处。移动段收拢把条目数从"每人每 tick 一条"降到"每次变化一条"，重放端展开回逐 tick 提交。
+- 单位初始态：`InitializeFromStore` 在全部单位创建完成后把 NetId、配置键、阵营与出生点整表交录制器落盘，重放端照表重建，不再按实体 ID 连续分配的前提推演敌人。
+- 归档：房间销毁或关服时导出 `ReplayRecording`，经 `ReplayArchive.Encode` 成字节流写 `IReplayStore`（`InMemoryReplayStore` 保留最近 256 场）；摘要不另存，参与者记录主键随归档一并入库供归属检索。
 

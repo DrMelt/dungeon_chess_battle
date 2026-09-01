@@ -23,8 +23,9 @@ public class GameConfigDB : IGameConfigDB {
     public static readonly GameConfigDB Instance = new();
 
     /// <summary>
-    /// 战斗数据集修订号。任何影响战斗结果的变更都必须递增本值：内容侧含单位数值/技能/Buff/AI/仇恨/阵营/副本布局，
-    /// 引擎侧含结算时序与事件顺序。回放端据此校验录制端与重放端一致，不匹配直接拒绝重放。
+    /// 战斗数据集修订号，只背内容与布局侧：单位数值/技能/Buff/AI/仇恨/阵营/副本布局。
+    /// 引擎侧的结算时序与事件顺序由 <see cref="DungeonChessBattle.Battle.Shared.Combat.BattleLogicRevision"/> 背。
+    /// 任何影响战斗结果的变更都必须递增对应修订号；回放端两项都要与本地比对，任一不符直接拒绝重放。
     /// </summary>
     public const string DataRevision = "3";
 

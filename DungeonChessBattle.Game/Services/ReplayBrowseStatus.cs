@@ -7,25 +7,28 @@ namespace DungeonChessBattle.Game.Services;
 /// 传输只答"拿没拿到字节"，本态裁决"这份字节能不能重放"。
 /// </summary>
 public enum ReplayGateStatus {
-    /// <summary>取得可重放的快照。</summary>
+    /// <summary>取得可重放的记录。</summary>
     Ready,
 
     /// <summary>本地无副本且下载未到，尚无内容可裁决。</summary>
     NotCached,
 
-    /// <summary>字节流解码失败：本地缓存损坏或记录格式不兼容。</summary>
+    /// <summary>字节流不合容器规范：本地缓存损坏、被截断或不是回放文件。</summary>
     Corrupted,
 
-    /// <summary>内容数据修订号与本地配置不一致，重放会漂移。</summary>
+    /// <summary>回放格式版本不由本机读取，须由录制端重录，重下也无用。</summary>
+    Unsupported,
+
+    /// <summary>内容或结算逻辑修订号与本地不一致，重放会漂移。</summary>
     Incompatible,
 }
 
 /// <summary>
-/// 回放浏览服务对"能否取得可重放快照"的裁决结果。失败时 Snapshot 为 null，Reason 面向日志与提示。
+/// 回放浏览服务对"能否取得可重放记录"的裁决结果。失败时 Recording 为 null，Reason 面向日志与提示。
 /// 只能在 Game 层组装：下载状态与解码门控在浏览服务内归并为这份结论。
 /// </summary>
-public sealed record ReplayPlayableResult(ReplayGateStatus Status, ReplayRecordSnapshot? Snapshot = null, string? Reason = null) {
-    /// <summary>是否已取得可重放快照。</summary>
+public sealed record ReplayPlayableResult(ReplayGateStatus Status, ReplayRecording? Recording = null, string? Reason = null) {
+    /// <summary>是否已取得可重放记录。</summary>
     public bool IsReady => Status == ReplayGateStatus.Ready;
 }
 

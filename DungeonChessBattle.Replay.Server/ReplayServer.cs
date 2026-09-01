@@ -1,5 +1,6 @@
-using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Replay.Protocol.Dtos;
+using DungeonChessBattle.Replay.Shared;
+using DungeonChessBattle.Server.Abstractions;
 
 namespace DungeonChessBattle.Replay.Server;
 
@@ -7,35 +8,33 @@ namespace DungeonChessBattle.Replay.Server;
 /// 回放服务端业务：按参与者取摘要列表、取归档字节流。
 /// 入参一律是玩家记录主键——会话凭证的解析在端点完成，本类不认识凭证、连接与登录。
 /// 可见性边界：非参与者与不存在的回放同回 false，不暴露回放存在性。
-/// 摘要从 <see cref="IReplayStore"/> 归档读取并投影为协议 DTO；字节流原样交给端点流式输出。
+/// 摘要不另存，从归档的元数据块现读：列表展示的就是重放端将来读到的那一份元数据。
 /// </summary>
 /// <param name="replayStore">回放归档存储。</param>
 internal sealed class ReplayServer(IReplayStore replayStore) {
-    /// <summary>取该主键参与过的回放摘要列表，最近在前。</summary>
-    public ReplayListResult GetReplays(string recordId) =>
-        new([.. replayStore.GetReplaysByPlayerId(recordId).Select(ToSummary)]);
+    /// <summary>取该主键参与过的回放摘要列表，最近在前；元数据读不出的归档不列入。</summary>
+    public ReplayListResult GetReplays(string recordId) {
+        var replays = new List<ReplaySummaryDto>();
+        foreach (string roomId in replayStore.GetRoomIdsByPlayer(recordId)) {
+            if (!replayStore.TryGetArchive(roomId, out byte[] archive))
+                continue;
+            var meta = ReplayArchive.TryReadMeta(archive);
+            if (meta.Status == ReplayArchiveStatus.Ok && meta.Meta is { } info)
+                replays.Add(ReplaySummaryDto.From(info));
+        }
+
+        return new ReplayListResult(replays);
+    }
 
     /// <summary>取该主键参与过的回放归档字节流；房间 ID 非法、非参与者或归档不存在时返回 false。</summary>
-    public bool TryGetArchive(string recordId, string roomId, out byte[] data) {
-        data = [];
+    public bool TryGetArchive(string recordId, string roomId, out byte[] archive) {
+        archive = [];
         if (string.IsNullOrWhiteSpace(roomId))
             return false;
 
-        // 参与关系经该玩家的摘要索引校验：命中即证明回放存在且归属可查
-        if (!replayStore.GetReplaysByPlayerId(recordId).Any(summary => summary.RoomId == roomId))
+        // 参与关系经该玩家的房间 ID 索引校验：命中即证明回放存在且归属可查
+        if (!replayStore.GetRoomIdsByPlayer(recordId).Any(id => id == roomId))
             return false;
-        if (!replayStore.TryGetReplay(roomId, out byte[] stored))
-            return false;
-
-        data = stored;
-        return true;
+        return replayStore.TryGetArchive(roomId, out archive);
     }
-
-    private static ReplaySummaryDto ToSummary(ReplaySummary summary) => new(
-        summary.RoomId,
-        summary.DungeonKey,
-        summary.StartUnixTime,
-        summary.TickRate,
-        summary.DataVersion,
-        [.. summary.Players.Select(p => new ReplayPlayerDto(p.PlayerRecordId, p.PlayerName, p.UnitConfigKey))]);
 }

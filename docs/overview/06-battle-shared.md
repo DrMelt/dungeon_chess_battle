@@ -11,6 +11,7 @@
 - 玩家输入形状 `PlayerCommand`：移动、施法、聚焦三类输入的同一扁平形态，键为 `UnitId`，字段与线上请求载荷和回放记录条目同构。`CastTargetPos` 承载「单位目标丢弃位置锚点」这条唯一口径；本类型只声明形状，合法性判定在门面。
 - ID 口径与命名：单位 ID 在领域、命令与仇恨账本内一律 `UnitId`（成员名 `SourceUnitId`/`TargetUnitId`/`UnitId`），0 恒非法即 `UnitId.None`（LES 同步实体 ID 从 1 起分配）。SyncVar 与 MessagePack 不认包装类型，线协议、同步实体与回放条目恒为原生 `ushort`，这类字段一律用 `…NetId` 命名——后缀即"此处是原生承载，未进强类型"。领域内部不再有裸 ID 中转，收放只发生在命令构造点（服务端请求转发、`ReplayCommands`）与同步编解码点（`BattleEventCoder`、`UnitPawn.StateSync`）。
 - 按帧意图载荷 `CastIntent`：只带技能键、已解析的目标引用与位置锚点，不带裁定结论，射程与阵营一律在消费点按当时位置判定。
+- 结算逻辑修订号 `BattleLogicRevision.Value`：Battle.Logic 结算时序与事件顺序的指纹，与内容侧 `GameConfigDB.DataRevision` 并列构成回放的双重门控。落本层只因它要同时被录制端、重放端与客户端门控读到，而三者的公共下游只有这里；本层不含规则本身，递增义务见 `overview/07`。
 
 ## 端口契约
 

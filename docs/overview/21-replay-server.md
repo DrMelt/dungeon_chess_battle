@@ -8,7 +8,8 @@
 GET /replay/list     ─┐  请求头 X-Dcb-Session
 GET /replay/{roomId} ─┘ → ResolveRecord → IPlayerIdentityResolver → 玩家记录主键
                                                     ↓
-                                          ReplayServer → IReplayStore
+                                    ReplayServer → IReplayStore（字节流 + 参与者主键）
+                                                  → ReplayArchive.TryReadMeta → 摘要 DTO
 ```
 
 宿主只有一句 `app.MapReplayEndpoints()`，路由与鉴权都在本库，宿主不认识回放概念。
@@ -16,7 +17,7 @@ GET /replay/{roomId} ─┘ → ResolveRecord → IPlayerIdentityResolver → �
 ## 身份边界
 
 - 端点入参只有请求头里的会话凭证。本层不认识"登录"这个动作，也不认识连接：解析端口换成记录主键，换不到就 401。
-- 记录主键是回放归属的唯一口径：归档方（Battle.Server）按玩家名解析主键写入，查询方按凭证解析主键读取，两侧同一解析实现才不会错位。
+- 记录主键是回放归属的唯一口径：归档方（Battle.Server）按玩家名解析主键写入参与者索引，查询方按凭证解析主键读回房间列表，两侧同一解析实现才不会错位。摘要不另存一份——列表读的就是归档元数据块，与重放端读到的是同一份真相。
 - 会话凭证由服务端签发、可换发可撤销，比客户端自报玩家名强一层；但大厅 Hub 上的业务身份仍是自报的，**这层加固不覆盖那里**。
 
 ## 状态码口径

@@ -9,14 +9,14 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
 /// 回放本地缓存：目录内以 <c>{roomId}.replay</c> 存放归档字节流，文件内容与服务端归档逐字节同形。
-/// 条目元数据不另存副本，从文件前缀只读记录头部得到，因此没有第二份真相，也没有旁文件配对失败。
-/// 键只做文件系统安全化，不做业务校验；损坏与版本不符由读取方解码时判定。
+/// 条目元数据不另存副本，按容器块头精确读元数据块即得，因此没有第二份真相，也没有旁文件配对失败。
+/// 键只做文件系统安全化，不做业务校验；版本、损坏与内容一致性由读取方判定。
 /// </summary>
 public sealed class ReplayCache {
     private const string Extension = ".replay";
 
-    /// <summary>枚举时读取的文件前缀字节数；记录头部远小于此，装不下时整读重试一次。</summary>
-    private const int HeaderProbeBytes = 8 * 1024;
+    /// <summary>元数据块长度上限，超出即不是本格式能产出的归档，跳过该副本。</summary>
+    private const int MaxMetaBytes = 64 * 1024;
 
     private readonly string _directory;
 
@@ -43,7 +43,7 @@ public sealed class ReplayCache {
         }
     }
 
-    /// <summary>同步读取本地副本字节流；不存在或不可读时返回 false，供播放路径立即取快照。</summary>
+    /// <summary>同步读取本地副本字节流；不存在或不可读时返回 false，供播放路径立即解码。</summary>
     public bool TryRead(string roomId, out byte[] data) {
         string path = PathOf(roomId);
         if (!File.Exists(path)) {
@@ -81,24 +81,23 @@ public sealed class ReplayCache {
     }
 
     /// <summary>
-    /// 枚举本地条目：逐个文件读前缀解记录头部，前缀装不下则整读重试一次。
-    /// 解不出头部的副本不参与列表（半截文件或外部塞入的无关文件），留给按房间读取时判损坏重下；
-    /// 房间 ID 取自头部而非文件名，文件名做过非法字符替换不可逆。
+    /// 枚举本地条目：按块头声明的精确长度只读元数据块，块头本身要先一次前缀读才拿得到，故至多两轮。
+    /// 版本不符与读不出的副本不进列表（旧格式、半截文件、外部塞入的无关文件），
+    /// 留给按房间读取时判损坏重下；房间 ID 取自元数据而非文件名，文件名做过非法字符替换不可逆。
     /// </summary>
-    public async Task<IReadOnlyList<ReplayRecordHeader>> ReadEntriesAsync(CancellationToken cancellationToken = default) {
-        var entries = new List<ReplayRecordHeader>();
+    public async Task<IReadOnlyList<ReplayMeta>> ReadEntriesAsync(CancellationToken cancellationToken = default) {
+        var entries = new List<ReplayMeta>();
         foreach (string path in Directory.EnumerateFiles(_directory, "*" + Extension)) {
             cancellationToken.ThrowIfCancellationRequested();
             try {
-                var prefix = await ReadPrefixAsync(path, cancellationToken);
-                if (ReplayRecordCoder.TryReadHeader(prefix, out var header)
-                    || ReplayRecordCoder.TryReadHeader(await File.ReadAllBytesAsync(path, cancellationToken), out header))
-                    entries.Add(header!);
+                if (await ReadMetaAsync(path, cancellationToken) is { } meta)
+                    entries.Add(meta);
             }
             catch (IOException) {
                 // 这个副本此刻读不动，跳过，不影响其余条目
             }
         }
+
         return entries;
     }
 
@@ -122,19 +121,33 @@ public sealed class ReplayCache {
         return removed;
     }
 
-    // 只读前缀：头部在归档最前，为一行列表读完整场回放是浪费
-    private static async Task<byte[]> ReadPrefixAsync(string path, CancellationToken cancellationToken) {
+    // 元数据块读两轮：第一轮读够容器头与块头，第二轮补齐块体。
+    // TryReadMeta 认的是自归档第 0 字节起的前缀，故两轮读进同一个前缀缓冲，续读只填尾部。
+    private static async Task<ReplayMeta?> ReadMetaAsync(string path, CancellationToken cancellationToken) {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
             bufferSize: 4096, FileOptions.Asynchronous);
-        var buffer = new byte[Math.Min(HeaderProbeBytes, (int)stream.Length)];
+        var head = new byte[ReplayArchive.MetaProbeBytes];
+        await ReadIntoAsync(stream, head, cancellationToken);
+        var probe = ReplayArchive.TryReadMeta(head);
+        if (probe.Status != ReplayArchiveStatus.NeedMoreData || probe.RequiredBytes > MaxMetaBytes)
+            return null;
+
+        var prefix = new byte[probe.RequiredBytes];
+        head.CopyTo(prefix, 0);
+        await ReadIntoAsync(stream, prefix.AsMemory(ReplayArchive.MetaProbeBytes), cancellationToken);
+        var result = ReplayArchive.TryReadMeta(prefix);
+        return result.Status == ReplayArchiveStatus.Ok ? result.Meta : null;
+    }
+
+    // 读满整个缓冲；文件到不了就留零尾，由调用方的魔数与校验和判它不合规范
+    private static async Task ReadIntoAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) {
         int offset = 0;
         while (offset < buffer.Length) {
-            int read = await stream.ReadAsync(buffer.AsMemory(offset, buffer.Length - offset), cancellationToken);
+            int read = await stream.ReadAsync(buffer[offset..], cancellationToken);
             if (read == 0)
                 break;
             offset += read;
         }
-        return offset == buffer.Length ? buffer : buffer[..offset];
     }
 
     // 房间 ID 由服务端生成，此处仅兜住文件系统非法字符，避免越目录写入

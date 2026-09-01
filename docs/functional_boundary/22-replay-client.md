@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Replay.Protocol（DTO、路由与序列化约定）、Replay.Shared（记录模型）。
+- Replay.Protocol（DTO、路由与序列化约定）。

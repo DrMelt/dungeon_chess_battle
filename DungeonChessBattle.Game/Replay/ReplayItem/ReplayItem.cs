@@ -67,7 +67,7 @@ public partial class ReplayItem : Control {
         _ => "",
     };
 
-    /// <summary>刷新条目摘要：副本显示名、开始时间、参与玩家与是否仅存本地。</summary>
+    /// <summary>刷新条目摘要：副本显示名、开始时间、时长、参与玩家与是否仅存本地。</summary>
     public void UpdateSummary(ReplayRowView view) {
         RoomId = view.RoomId;
         if (_refs?.InfoLabel == null)
@@ -78,7 +78,15 @@ public partial class ReplayItem : Control {
         var players = string.Join("、", view.PlayerNames);
         // 服务端还有归档时随时可重下；只剩本地副本就标出来，删了这个文件就没有第二次
         var localOnly = view.FromServer ? "" : LocalOnlySuffix;
-        _refs.InfoLabel.SetText($"{dungeon}  {time}  {players}{localOnly}");
+        _refs.InfoLabel.SetText($"{dungeon}  {time}  {DurationText(view)}  {players}{localOnly}");
+    }
+
+    /// <summary>回放时长文本，由帧数与 tick 频率换算；频率缺失时不留空白字段。</summary>
+    private static string DurationText(ReplayRowView view) {
+        if (view.TickRate <= 0 || view.DurationTicks <= 0)
+            return "--:--";
+        int seconds = view.DurationTicks / view.TickRate;
+        return $"{seconds / 60:00}:{seconds % 60:00}";
     }
 
     /// <summary>行按钮点击：以当前房间 ID 上报面板。</summary>
