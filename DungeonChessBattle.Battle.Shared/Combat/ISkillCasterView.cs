@@ -21,7 +21,7 @@ public interface IWorldPoseView {
 }
 
 /// <summary>
-/// 施法判定只读视图：SkillCastValidator 聚合的字段子集，服务端权威单位与客户端预判共用。
+/// 施法判定只读视图：SkillCastValidator 聚合的字段子集，服务端与回放权威单位及 AI 决策共用。
 /// 在公共面（身份、数值、技能源）之上追加世界姿态（<see cref="IWorldPoseView"/>），
 /// 不继承仇恨通道与结算快照。服务端结算权威仍在 <see cref="BattleUnit"/>。
 /// </summary>

@@ -21,9 +21,10 @@ namespace DungeonChessBattle.Battle.Logic;
 /// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
 /// <see cref="ApplyDecisions"/> 先触发 AI 决策，<see cref="Tick"/> 结算移动并推进战斗、返回帧事件流；
 /// 事件流是仇恨推衍的唯一真相源。阶段由宿主写 <c>CurrentPhase</c>，死亡不产出事件而由生命值派生。
+/// 施法预输入排队不属本类，见 <see cref="CastPreInputBuffer"/>。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
-/// <param name="movementScene">竞技场移动场景，由房间按副本布局构建注入，与战斗世界同生命周期。</param>
+/// <param name="movementScene">竞技场移动场景，由房间按副本布局构建，与战斗世界同生命周期。</param>
 /// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
 /// <param name="logger">AI 决策日志，可选注入。</param>
 public sealed partial class BattleScene(
@@ -48,6 +49,9 @@ public sealed partial class BattleScene(
 
     /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
     private readonly List<IBattleEvent> _pendingEvents = [];
+
+    /// <summary>Tick 之外施法尝试的复用事件暂存，尝试成功后整批汇入 <see cref="_pendingEvents"/>。</summary>
+    private readonly BattleEventLog _scratchLog = new();
 
     /// <summary>单位 ID → 领域单位索引。</summary>
     private readonly Dictionary<UnitId, BattleUnit> _unitById = [];
@@ -132,21 +136,33 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 发起读条施法：技能存在、归属、状态与目标/位置校验通过后写入读条状态并暂存目标。
+    /// 施法唯一对外入口，在 <see cref="Tick"/> 之外发起一次尝试：技能属该单位且校验通过后，
+    /// 瞬发立即结算、否则写入读条状态与目标。产出事件先进跨帧缓冲，下一 tick 开头汇入帧日志。
+    /// AI 决策与 <see cref="CastPreInputBuffer"/> 共用本入口；不得从 Tick 内调用，暂存缓冲非重入安全。
     /// </summary>
-    /// <returns>校验通过并成功发起返回 true。</returns>
-    public bool BeginCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos) {
-        var skill = caster.GetSkill(skillKey);
-        if (skill == null)
+    /// <returns>已落地（瞬发结算或进入读条）返回 true；技能不属该单位或校验未过返回 false，不改状态不产事件。</returns>
+    public bool TryCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos) {
+        _scratchLog.Clear();
+        if (!AttemptCast(caster, skillKey, target, targetPos, _scratchLog))
             return false;
-        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
+        _pendingEvents.AddRange(_scratchLog);
+        return true;
+    }
+
+    /// <summary>
+    /// 施法落地唯一实现：技能属该单位且校验通过后，瞬发即结算、否则写读条状态与目标，
+    /// 事件写入调用方给定的日志。未落地不改状态不产事件；日志归属由调用方决定，
+    /// Tick 内读条完成用本帧日志，Tick 外走暂存缓冲。
+    /// </summary>
+    private bool AttemptCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos,
+        BattleEventLog log) {
+        var skill = caster.GetSkill(skillKey);
+        if (skill == null || !SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
             return false;
 
         // 瞬发技能：校验通过即立即结算，不进入读条状态机，不受移动取消施法影响
         if (skill.SpellTime <= 0f) {
-            var log = new BattleEventLog();
             ResolveCast(caster, skill, target, targetPos, log);
-            _pendingEvents.AddRange(log);
             return true;
         }
 
@@ -154,7 +170,7 @@ public sealed partial class BattleScene(
         caster.SkillCastRemaining = skill.SpellTime;
         caster.RuntimeState.CastTarget = target;
         caster.RuntimeState.CastTargetPos = targetPos;
-        _pendingEvents.Add(new CastStarted(caster.UnitId, skillKey, target?.UnitId));
+        log.Append(new CastStarted(caster.UnitId, skillKey, target?.UnitId));
         return true;
     }
 
@@ -234,7 +250,7 @@ public sealed partial class BattleScene(
         }
 
         string targetName = target?.UnitName ?? "(position)";
-        if (!BeginCast(caster, skillKey, target, targetPosition)) {
+        if (!TryCast(caster, skillKey, target, targetPosition)) {
             LogCastRejected(caster.UnitName, skillKey.Id, targetName);
             return;
         }
@@ -399,7 +415,6 @@ public sealed partial class BattleScene(
             list.AddRange(alive);
         }
     }
-
 
     /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却，推进全局冷却，并执行技能多态结算。</summary>
     private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {

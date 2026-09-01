@@ -54,12 +54,12 @@ public partial class BattleRoomServer {
     }
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
-        if (peer.Tag is LiteNetLibNetPeer lesPeer)
-            EntityManager.RemovePlayer(lesPeer);
-
         // 查找该 peer 对应的 playerId，通过反向索引
         _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
         if (playerId != null && _sessions.TryGetValue(playerId, out var session)) {
+            // 解绑控制先于移除玩家：否则 LES 连带销毁该玩家的单位载体，重连也救不回输入通道
+            ReleaseControlledPawn(session);
+
             // 清空会话连接状态，保留单位与战斗状态；玩家可凭 Store 成员身份随时重连
             session.PeerId = 0;
             session.NetPlayer = null;
@@ -68,6 +68,10 @@ public partial class BattleRoomServer {
                 _logger.LogInformation("[RoomId: {RoomId}] Player '{PlayerId}' disconnected (session retained).",
                     RoomId, playerId);
         }
+
+        // 无会话映射的连接（握手未完成等）同样要摘掉 LES 侧玩家
+        if (peer.Tag is LiteNetLibNetPeer lesPeer)
+            EntityManager.RemovePlayer(lesPeer);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Peer disconnected: {PeerId}, playerId={PlayerId}, Reason={Reason}",

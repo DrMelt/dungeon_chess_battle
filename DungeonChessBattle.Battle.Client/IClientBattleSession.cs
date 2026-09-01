@@ -20,15 +20,6 @@ public interface IClientBattleSession : IClientBattleService, IBattleViewSource 
         get;
     }
 
-    /// <summary>本地玩家单位的施法判定视图，控制器未就绪时返回 null。</summary>
-    ISkillCasterView? LocalCaster {
-        get;
-    }
-
-    /// <summary>按网络 ID 查询施法判定视图，不存在返回 null。</summary>
-    /// <param name="netId">单位网络实体 ID。</param>
-    ISkillCasterView? FindCaster(ushort netId);
-
     /// <summary>当前房间副本键，来自服务端权威房间实体同步；实体未同步时为 null。</summary>
     string? DungeonKey {
         get;

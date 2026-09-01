@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Shared.Enums;
 namespace DungeonChessBattle.Battle.Logic.Combat;
 
 /// <summary>
-/// 技能目标阵营关系校验。服务端权威校验与客户端预拦共用同一判定逻辑。
+/// 技能目标阵营关系校验。服务端权威校验与在线端目标选择共用同一判定逻辑。
 /// 敌我关系由副本配置的 CampRelationResolver 决定，调用方必须就绪后注入。
 /// Unknown 视为不可判定，受阵营策略限定的技能一律拒绝；空阵营不可判定，按不可作用处理。
 /// </summary>

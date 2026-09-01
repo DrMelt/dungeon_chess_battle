@@ -43,6 +43,6 @@ public partial class UnitSkillBaseGodot : Resource {
     /// <summary>是否需要指定位置目标。</summary>
     public bool NeedPosTarget => Config?.NeedPosTarget ?? false;
 
-    /// <summary>技能可释放的目标类型，直接读 SkillDefinition.TargetPolicy，UI 预拦与展示读取。</summary>
+    /// <summary>技能可释放的目标类型，直接读 SkillDefinition.TargetPolicy，UI 目标选择与展示读取。</summary>
     public SkillTargetPolicy TargetPolicy => Config?.TargetPolicy ?? SkillTargetPolicy.None;
 }

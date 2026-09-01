@@ -36,10 +36,11 @@ LES 自身时序与实体钩子可达性见 [lite-entity-system-update](../libra
 | D5 | 主控单位无本地步进，位移全等下行 | 操作响应至少滞后 RTT/2 加缓冲水位，本端没有可被纠正的预测位移 | — |
 | D9 | `UnitPawn` 全项目不带 `SyncVarFlags`，`SyncFlags.Interpolated` 未标注 | `EntityClassData` 的 flags 只取自字段或所在类上的该特性，默认 `None`；未标注则框架不写 `_interpValue`，`InterpolatedValue` 对远端实体退化，展示只能读 `Value` | — |
 | D10 | 回填落在 `EntityManager.Update` 开头，早于 4c 的下行写回 | 展示读数恒比本端已收到的权威值旧一个渲染帧 | I3 |
+| D11 | 移动输入无时效：`MoveInput` 只在写入方调用时更新，`Tick` 内不清零 | 连接在而输入流停摆（客户端卡发送）时单位按末值持续位移，服务端无自动停止点；玩家断开已由服务端解绑时显式归零，卡发送未覆盖 | — |
 
 已关闭：D1（本地结算结果回写他人 `Value`，回写通道已删除）、D2（回填对插值进度的依赖，改读 `Value` 后不存在，代价转入 D9）、D3（客户端 `Tick` 用渲染帧 dt）、D4（客户端重跑敌方 AI 与整场景结算）、D7（房间线程 `Thread.Sleep(1)` 控制轮询节奏，现为 `Thread.Yield()`）。
 
-输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行；本项目未覆写 `GetDefaultInput`，服务端输入队列排空的 tick 取默认包即静止，空档长短由排队深度决定。
+输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行，队列深度由客户端按 jitter 与缓冲水位自适应调节生成速率维持。本项目未覆写 `GetDefaultInput`，而 `GetDefaultInput` 只在控制器构造与客户端 pending 复位处取值：服务端输入队列排空的 tick 根本不调 `ApplyIncomingInput`，`CurrentInput` 保持上一 tick 值——空档期是**末值保持**而非回落静止。代价是输入流停摆（客户端卡发送但未断开）时单位按末值持续位移，服务端缺的是输入时效，不是输入复位。
 
 D6（缓冲水位）。`RoomBattleClient.BufferLowestSeconds/BufferHighestSeconds` 把 `PreferredBufferTimeLowest/Highest` 重设为 0.002/0.006 秒。LES 用同一水位同时约束下行插值缓冲与服务端输入队列，下界实算 `NetworkJitter × 1.5 + Lowest`；框架默认 0.025 在 128 Hz 下折成 3.2 tick，本地回环里 `TickLag` 的 `debt` 与 `queue` 两段几乎全由它撑起。该水位只够本地链路，公网须按 RTT 与抖动分档。
 

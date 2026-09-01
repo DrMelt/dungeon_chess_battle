@@ -14,7 +14,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// 技能列表面板：按技能目标类型（单位/位置/无目标）分发施法 RPC。
 /// 每帧从战斗会话上下文直读本地玩家操控角色作为固定显示单位，变化时重建全部按钮。
-/// 施法经战斗会话上下文发起，服务端权威读条与结算，施法目标仍取当前选中单位。
+/// 本面板只做目标选择，不判可否施放：按键即经战斗会话上下文上行，服务端权威裁定可否施放、
+/// 预输入排队与结算。
 /// </summary>
 public partial class SkillsList : Control {
     /// <summary>日志记录器。</summary>
@@ -55,9 +56,6 @@ public partial class SkillsList : Control {
     /// <summary>当前展示的技能所属单位 NetId，用于变化检测。</summary>
     private ushort? _shownUnitId;
 
-    /// <summary>技能预输入缓冲，不可施放时缓存按键并在可施放时自动施放。</summary>
-    private SkillPreInput? _preInput;
-
     /// <summary>
     /// 节点就绪：获取引用集合节点并校验导出引用。
     /// </summary>
@@ -71,34 +69,6 @@ public partial class SkillsList : Control {
             _logger.LogError("_sessionRef is not assigned!");
             return;
         }
-        _preInput = CreatePreInput();
-    }
-
-    /// <summary>
-    /// 组装预输入缓冲：判定直接消费按钮持有的技能定义，走领域共享静态判定
-    /// SkillCastValidator（目标/位置由本地场景解析），施放经当前战斗服务发送。
-    /// </summary>
-    private SkillPreInput? CreatePreInput() {
-        var session = _sessionRef;
-        if (session == null)
-            return null;
-        return new SkillPreInput(
-            (skill, targetNetId, posX, posZ) =>
-                CanCastLocal(session, skill, targetNetId, posX, posZ),
-            session.Command,
-            clock: null);
-    }
-
-    /// <summary>本地位施放判定：本地方单位权威状态 + 解析目标后统一走 SkillCastValidator。</summary>
-    private static bool CanCastLocal(BattleSessionContext session, SkillDefinition skill,
-        ushort targetNetId, float posX, float posZ) {
-        var caster = session.LocalCaster;
-        if (caster == null)
-            return false;
-        if (!session.TryGetCampRelations(out var relations))
-            return false;
-        var target = targetNetId != 0 ? session.FindCaster(targetNetId) : null;
-        return SkillCastValidator.CanCast(caster, skill, target, new System.Numerics.Vector2(posX, posZ), relations);
     }
 
     /// <summary>
@@ -107,7 +77,6 @@ public partial class SkillsList : Control {
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         HandleWaitPosTargetInput();
-        _preInput?.Refresh();
 
         var showUnit = _sessionRef?.LocalUnit;
         ushort? shownId = showUnit?.UnitId;
@@ -146,7 +115,6 @@ public partial class SkillsList : Control {
     /// <param name="unit">本地单位展示视图，无则清空按钮。</param>
     private void UpdateSkillsList(IUnitUiView? unit) {
         CancelWait();
-        _preInput?.Clear();
 
         var hBox = InterRefs?.HBoxContainerRef;
         if (hBox == null)
@@ -222,9 +190,9 @@ public partial class SkillsList : Control {
         SubmitCast(skill, 0, 0f, 0f, button);
     }
 
-    /// <summary>提交施法意图到预输入缓冲：可施放立即施放，否则入队并在可施放时自动施放。</summary>
+    /// <summary>提交施法意图：按键即上行，能否施放与预输入排队全由权威裁定。</summary>
     private void SubmitCast(SkillDefinition skill, ushort targetNetId, float posX, float posZ, ButtonSkillBase button) {
-        _preInput?.Submit(skill, targetNetId, posX, posZ);
+        _sessionRef?.Command.Cast(skill.SkillId, targetNetId, posX, posZ);
         button.ButtonPressed = false;
     }
 

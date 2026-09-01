@@ -55,11 +55,11 @@
 
 本端落后量（下行单程 + 插值水位 + 播放欠账 + 回填时点，即 client-prediction 的 D10）无法在本端消除：反算出的剩余秒恒比权威多 `落后 tick / Tickrate`，128 Hz 下约 0.1–0.2 秒。这是「传绝对时刻、本端推当前值」的固有代价，施法判定由服务端权威兜底，当前决定不补偿。
 
-Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显示（`ButtonSkillBase`）与施法预拦（`SkillCastValidator`）据此取数，剩余秒每渲染帧按截止 tick 反算；冷却/Buff 列表由回填通道独占，在线端不得本地改写。仇恨表无在线消费者，仅随投影下行。
+Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显示（`ButtonSkillBase`）据此取数，剩余秒每渲染帧按截止 tick 反算；冷却/Buff 列表由回填通道独占，在线端不得本地改写。在线端不判可否施放：按键即上行，可否施放与预输入排队由权威裁定。仇恨表无在线消费者，仅随投影下行。
 
 ## 领域单位 → UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit`（展示）、`LocalFocus`（聚焦展示）、`LocalCaster`/`FindCaster`（`ISkillCasterView` 判定角色）供技能预判。UI 组件每帧直读 `IUnitUiView` 字段。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit`（展示）与 `LocalFocus`（聚焦展示）。UI 组件每帧直读 `IUnitUiView` 字段。在线端不暴露施法判定角色：可否施放无本地裁定，`ISkillCasterView` 只在服务端与回放侧被消费。
 
 ## 契约分层
 
@@ -74,7 +74,7 @@ Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显
 
 ## 回放链
 
-`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑：输入按记录帧经 `SubmitMove` 注入，移动在 `BattleScene.Tick` 内与在线同序结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供展示契约消费，无网络与投影层。
+`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑：移动输入按记录帧经 `SubmitMove` 注入，施法输入经同一 `CastPreInputBuffer` 接管后交 `BattleScene.TryCast`；移动在 `BattleScene.Tick` 内与在线同序结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供展示契约消费，无网络与投影层。
 
 ## 两链收敛
 
@@ -99,3 +99,5 @@ sequenceDiagram
 ## 断线 / 重连
 
 客户端 `ClearRoomSessionState` 清空单位索引、聚焦、阶段与本地网络 ID，随连接状态重建为干净会话。
+
+服务端侧单位载体不随玩家断开销毁：断开玩家的单位原地站桩，领域状态与投影照常推进下行，重连方按 `BaselineSync` 全量重建视图。解绑与输入归零的先后约束见 `overview/13-battle-server`。

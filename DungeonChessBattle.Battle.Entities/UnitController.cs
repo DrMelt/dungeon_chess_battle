@@ -93,7 +93,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
 
         // 输入经 ServerApplyInput 转发到领域层消费：移动打断读条等在 Logic 层。
         // 实体层不再持有移动输入，位移由领域 BattleScene 统一结算。
-        // 本类不覆写 GetDefaultInput：无新输入包的 tick 回落 default 即静止，持续移动依赖每 tick 都有新包。
+        // 本类不覆写 GetDefaultInput：GetDefaultInput 只在控制器构造与客户端 pending 复位时取值，
+        // 服务端输入队列排空的 tick 不调 ApplyIncomingInput，CurrentInput 保持上一 tick 值（末值保持）。
         var input = CurrentInput;
         if (EntityManager.IsServer)
             ControlledEntity.ServerApplyInput(input, EntityManager.DeltaTimeF);

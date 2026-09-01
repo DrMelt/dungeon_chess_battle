@@ -1,3 +1,4 @@
+using System.Numerics;
 using DungeonChessBattle.Battle.Entities;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
@@ -112,6 +113,13 @@ public partial class BattleRoomServer {
             return;
         }
 
+        // 载体已销毁时绑定不报错，只会静默失去输入通道（PawnLogic.Update 跳过已销毁实体），响亮拒绝
+        if (pawn.IsDestroyed) {
+            _logger.LogError("[RoomId: {RoomId}] Bind skipped: pawn {Unit} (netId={NetId}) of player '{PlayerName}' is destroyed.",
+                RoomId, pawn.UnitKeyName.Value, pawn.Id, session.PlayerName);
+            return;
+        }
+
         // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API；
         //    同时把技能施放与聚焦目标的事件请求处理后注入房间权威校验，
         //    请求到达时框架自动按该控制器所属玩家回发成功/失败回执。
@@ -146,6 +154,9 @@ public partial class BattleRoomServer {
 
         int oldPeerId = session.PeerId;
 
+        // 解绑控制先于移除玩家：否则 LES 连带销毁该玩家的单位载体
+        ReleaseControlledPawn(session);
+
         // 从 LES 框架移除旧玩家
         if (session.NetPlayer != null)
             EntityManager.RemovePlayer(session.NetPlayer);
@@ -158,6 +169,18 @@ public partial class BattleRoomServer {
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("[RoomId: {RoomId}] Old peer {OldPeerId} disconnected for playerId '{PlayerId}' (replaced by new).",
                 RoomId, oldPeerId, playerId);
+    }
+
+    /// <summary>
+    /// 解除玩家对单位载体的控制：LES 的 <c>RemovePlayer</c> 经 <c>DestroyWithControlledEntity</c>
+    /// 连带销毁受控实体，而本项目单位属房间不属玩家，故先行 <c>StopControl</c> 解绑，使其只销毁控制器。
+    /// 解绑后把该单位移动输入归零：输入源消失后 <c>BattleUnit.MoveInput</c> 保持末值，单位按最后方向永久位移。
+    /// 仅房间线程调用，且必须先于 <c>RemovePlayer</c>。
+    /// </summary>
+    private void ReleaseControlledPawn(PlayerSession session) {
+        session.Controller?.StopControl();
+        if (session.ControlledPawn is { } pawn)
+            _battleScene.SubmitMove(pawn.Id, Vector2.Zero);
     }
 
     /// <summary>

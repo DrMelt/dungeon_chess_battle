@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
 /// 单位权威战斗状态，由 <see cref="BattleUnit.RuntimeState"/> 持有，BattleScene 读写推进。
-/// 读条目标、Buff、冷却、仇恨权威在此；Buff 与冷却经 <c>UnitPawn</c> 同步通道搬运，仇恨只下行不回填。
+/// 读条目标、Buff、冷却、仇恨权威在此；Buff 与冷却经 <c>UnitPawn</c> 同步通道搬运，
+/// 仇恨只下行不回填。施法预输入意图不属单位状态，由 <c>CastPreInputBuffer</c> 持有。
 /// </summary>
 public sealed class UnitCombatState {
     /// <summary>读条目标单位，服务端私有，不参与网络同步；null 表示无。</summary>

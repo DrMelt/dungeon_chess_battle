@@ -20,7 +20,7 @@ public partial class BattleSessionContext : Node {
     /// <summary>玩家命令窄契约实现。</summary>
     private readonly BattleSessionCommand _command = new();
 
-    /// <summary>玩家命令窄契约（供预输入缓冲直接消费，UI 不接触服务）。</summary>
+    /// <summary>玩家命令窄契约（供技能面板直接消费，UI 不接触服务）。</summary>
     public IBattleSessionCommand Command => _command;
 
     // =============================================================
@@ -39,12 +39,6 @@ public partial class BattleSessionContext : Node {
     /// <summary>本地玩家单位的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
     public IUnitUiView? LocalFocus => _state.LocalFocus;
 
-    /// <summary>本地玩家单位的施法判定视图（下行回填位置），控制器未就绪时返回 null。</summary>
-    public ISkillCasterView? LocalCaster => _state.LocalCaster;
-
-    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _state.FindCaster(netId);
-
     /// <summary>当前房间副本键，来自服务端权威 BattleRoomEntity 同步；实体未同步时为 null。</summary>
     public string? DungeonKey => _state.DungeonKey;
 
@@ -60,7 +54,7 @@ public partial class BattleSessionContext : Node {
     /// <summary>是否已在战斗中（会话已绑定）。</summary>
     public bool IsInBattle => _state.IsInBattle;
 
-    /// <summary>获取阵营关系函数用于领域判定（技能预拦等）；未就绪返回 false。</summary>
+    /// <summary>获取阵营关系函数用于领域判定（技能目标选择等）；未就绪返回 false。</summary>
     public bool TryGetCampRelations(out CampRelationResolver relations) => _state.TryGetCampRelations(out relations);
 
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>

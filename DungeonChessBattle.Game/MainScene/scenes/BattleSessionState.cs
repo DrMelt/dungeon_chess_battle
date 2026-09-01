@@ -51,12 +51,6 @@ public sealed class BattleSessionState : IBattleViewSource {
     /// <summary>本地玩家的聚焦目标展示视图；焦点为 0 或无目标时返回 null。</summary>
     public IUnitUiView? LocalFocus => _session?.LocalFocus;
 
-    /// <summary>本地玩家的施法判定视图（下行回填位置），控制器未就绪时返回 null。</summary>
-    public ISkillCasterView? LocalCaster => _session?.LocalCaster;
-
-    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _session?.FindCaster(netId);
-
     /// <summary>当前房间副本键，来自服务端权威房间实体同步；实体未同步时为 null。</summary>
     public string? DungeonKey => _session?.DungeonKey;
 
@@ -70,7 +64,7 @@ public sealed class BattleSessionState : IBattleViewSource {
     public long EventLogVersion => _session?.GetEventLogVersion() ?? 0;
 
     /// <summary>
-    /// 获取阵营关系函数用于领域判定（技能预拦等）；未就绪返回 false。
+    /// 获取阵营关系函数用于领域判定（技能目标选择、聚焦切换等）；未就绪返回 false。
     /// 调用方取得函数后必须转交领域校验器，不得自行判敌我。
     /// </summary>
     public bool TryGetCampRelations(out CampRelationResolver relations) {
@@ -92,7 +86,7 @@ public sealed class BattleSessionState : IBattleViewSource {
     public void AssertCampRelationsReady() {
         if (_relations == null) {
             _logger.LogError(
-                "[BattleSessionState] 战斗 Running 阶段阵营关系仍未装配（DungeonKey 未同步），技能预拦将被拒绝。");
+                "[BattleSessionState] 战斗 Running 阶段阵营关系仍未装配（DungeonKey 未同步），技能目标选择与聚焦切换将被拒绝。");
         }
     }
 

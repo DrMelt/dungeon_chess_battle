@@ -246,14 +246,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <inheritdoc />
     public IUnitUiView? FindUnit(ushort netId) => _battleScene?.FindUnit(netId) as IUnitUiView;
 
-    /// <summary>按网络 ID 查询施法判定视图（下行回填位置），不存在返回 null。</summary>
-    public ISkillCasterView? FindCaster(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
-
     /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
     public IUnitUiView? LocalUnit => FindUnit(_localNetId);
-
-    /// <summary>本地玩家单位施法判定视图（下行回填位置），控制器未就绪返回 null。</summary>
-    public ISkillCasterView? LocalCaster => FindCaster(_localNetId);
 
     /// <summary>本地玩家聚焦目标单位展示视图，无聚焦目标或目标已被服务端清 0 返回 null。</summary>
     public IUnitUiView? LocalFocus {
@@ -351,7 +345,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public long? BattleStartUnixTime => RoomState.BattleStartUnixTime;
 
     /// <summary>
-    /// 经可靠请求通道向服务端发起施法读条，服务端权威校验与结算。
+    /// 经可靠请求通道向服务端发起施法：服务端权威端的施法预输入缓冲接管该按键，状态就绪即交战斗世界裁定，
+    /// 未就绪则入槽等就绪 tick 再裁定；回执 true 仅表示意图已被接管，不保证最终可施放。
     /// 施法者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>

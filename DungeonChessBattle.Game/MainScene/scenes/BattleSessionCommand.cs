@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Game.MainScene.scenes;
 
 /// <summary>
 /// 战斗会话玩家命令契约：聚焦与施法的写侧入口。
-/// 继承 <see cref="ISkillCaster"/> 使技能预输入缓冲直接消费命令，UI 不接触
+/// 继承 <see cref="ISkillCaster"/> 使技能面板直接消费命令，UI 不接触
 /// <see cref="IClientBattleService"/> 与房间 ID，门面边界不被绕过。
 /// </summary>
 public interface IBattleSessionCommand : ISkillCaster {

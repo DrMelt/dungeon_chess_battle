@@ -66,9 +66,9 @@ public partial class BattleRoomServer {
             : (ushort)(1 + 1);
         _replayRecorder?.SetNextNetId(nextNetId);
 
-        // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions 先于位移，
+        // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions → 预输入重试 先于位移，
         // LateUpdate=Tick → 状态同步 → 整帧事件外送。
-        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene,
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, _castPreInput,
             scene => _stateSynchronizer.Sync(scene), HandleBattleFrameEvents));
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -188,8 +188,10 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理经 UnitController 可靠请求到达的技能施放请求：面向领域单位发起读条。
-    /// 返回值作为请求回执发回客户端。
+    /// 处理经 UnitController 可靠请求到达的技能施放请求：交 <see cref="CastPreInputBuffer"/> 接管，
+    /// 状态就绪当帧即由战斗世界裁定，未就绪则入该施法者的预输入槽，就绪 tick 再裁定一次。
+    /// 返回值作为请求回执发回客户端，true 表示意图已被接管（含入槽），不保证最终可施放。
+    /// 阶段非 Running、技能键非法、目标实体查不到三类即时拒绝。
     /// </summary>
     private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
         if (_battleScene.CurrentPhase != BattlePhase.Running) {
@@ -220,16 +222,17 @@ public partial class BattleRoomServer {
             targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
         }
 
-        bool began = _battleScene.BeginCast(caster, new SkillKeyId(req.SkillTypeId), target, targetPos);
-        if (!began) {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[RoomId: {RoomId}] Skill cast rejected (cooldown): {Caster}, SkillId={SkillId}",
+        // 回执 false 只有一种成因：状态已就绪但当帧被战斗世界裁定不可施放（不归属、目标条件未满足）
+        if (!_castPreInput.Submit(caster, new SkillKeyId(req.SkillTypeId), target, targetPos)) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[RoomId: {RoomId}] Skill request rejected: {Caster} cannot cast {SkillId} now.",
                     RoomId, casterPawn.UnitKeyName.Value, req.SkillTypeId);
             return false;
         }
 
+        // 接管含"当帧落地"与"入预输入槽"两种，后者由 CastPreInputBuffer 记 LogCastQueued
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Skill cast began: {Caster} -> {Target}, SkillId={SkillId}",
+            _logger.LogInformation("[RoomId: {RoomId}] Skill request taken: {Caster} -> {Target}, SkillId={SkillId}",
                 RoomId, casterPawn.UnitKeyName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
         return true;
     }

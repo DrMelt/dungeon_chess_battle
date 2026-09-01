@@ -37,7 +37,8 @@ internal sealed class PlayerSession(string playerId, string playerName) {
         get; set;
     }
 
-    /// <summary>玩家控制的单位 Pawn，用于调试与后续扩展。</summary>
+    /// <summary>玩家所属的单位 Pawn。解绑后仍保留：单位属房间不属玩家，
+    /// ReleaseControlledPawn 据此定位需归零移动输入的单位，重连据此重绑控制器。</summary>
     public UnitPawn? ControlledPawn {
         get; set;
     }
