@@ -144,6 +144,14 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         get; internal set;
     }
 
+    /// <summary>
+    /// 聚焦目标，<see cref="UnitId.None"/> 表示无。持续展示态，非逐帧意图：由输入门面设定后保持，
+    /// 目标死亡或消失随 <c>BattleScene.Tick</c> 清零。只影响展示，不参与结算，在线端随同步通道回填。
+    /// </summary>
+    public UnitId FocusTarget {
+        get; set;
+    }
+
     /// <summary>仇恨规则，未装配时用默认规则。</summary>
     public IHateRule EffectiveHateRule => HateRule ?? DefaultHateRule.Instance;
 

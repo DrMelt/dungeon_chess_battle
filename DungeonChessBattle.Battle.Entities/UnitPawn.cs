@@ -83,7 +83,7 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];
 
-    /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标。</summary>
+    /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标；权威值在领域 <c>BattleUnit.FocusTarget</c>，本字段只做下行载体。</summary>
     public SyncVar<ushort> FocusTargetNetId;
 
     /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>

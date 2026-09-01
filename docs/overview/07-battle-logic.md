@@ -5,7 +5,7 @@
 ## 战斗世界
 
 - `BattleScene` 实现 `IBattleSceneView`：`AddUnit` 注册领域单位 `BattleUnit`；单位权威状态自持，阶段由宿主写 `CurrentPhase`，移动在 `Tick` 内统一结算，状态同步由外部 `BattleStateSynchronizer` 完成，场景只做推进与结算。
-- 意图写入口一律 `internal`（`SubmitMove`、`ApplyDecisions`）或收在单位字段的 setter（`MoveInput`、`CastInput`），宿主只能经输入门面提交，见「输入门面」。
+- 意图写入口一律 `internal`（`SubmitMove`、`SubmitFocus`、`ApplyDecisions`）或收在单位字段的 setter（`MoveInput`、`CastInput`），宿主只能经输入门面提交，见「输入门面」。
 - 施法裁定只有一个消费点：`Tick` 的读条推进段，`Tick` 之前谁先提交意图不影响裁定结果。
 - 瞬发技能（SpellTime=0）校验通过即立即结算，不进入读条状态机，故无读条可被打断。
 
@@ -13,7 +13,8 @@
 
 `BattleIntentHub` 是宿主（战斗房间、回放引擎）唯一的输入面：
 
-- 对外四个动作：`PrepareTick`（AI 决策 → 在架施法重试）、`SubmitMove`、`SubmitCast`、`ClearQueuedCasts`。排队器 `CastPreInputBuffer` 由门面私有持有（类型亦 `internal`），宿主取不到它。
+- 对外三个动作：`PrepareTick`（AI 决策 → 在架施法重试）、`Submit(PlayerCommand)`、`ClearQueuedCasts`。三类玩家输入只有命令这一种形状，载荷合法性（阶段、技能键、ID 解析、聚焦目标存活）只在此判一次，服务端与回放同判。排队器 `CastPreInputBuffer` 由门面私有持有（类型亦 `internal`），宿主取不到它。
+- 生命周期两类：移动与施法是本帧意图，随 `Tick` 末作废、由输入源逐 tick 重投；聚焦是持续状态，设定后保持，只随目标死亡清零。命令统一的是提交路径，不是生命周期。
 - 键一律为网络 ID，施法者与目标在门内经 `BattleScene.FindBattleUnit` 解析，解析不到即不接管，服务端与回放同判。
 - 战斗推进不经门面：`AddUnit`/`RemoveUnit`/`CurrentPhase`/`Tick` 由宿主直接驱动 `BattleScene`。该写面的授权构成见 `overview/06`。
 
@@ -25,7 +26,7 @@
 
 ## Tick 推进管线
 
-`Tick(deltaTime)` 单出口，仅 Running 推进第 1–7 步，第 8 步无条件执行：
+`Tick(deltaTime)` 单出口，仅 Running 推进第 1–8 步，第 9 步无条件执行：
 
 1. 清空帧事件日志；累加运行时长，结算 Buff 全局节拍的跳数。
 2. 位移解算：读存活单位本帧移动输入组装为 `MoveIntent`，交 `IMovementScene.Resolve`，结果回写位置与朝向。不清意图——下一段还要据其判打断。
@@ -34,11 +35,12 @@
 5. 战斗结束判定切 Finished。
 6. 仇恨分发：`HateDispatcher` 把帧事件流交给每个存活单位按自身规则求值 → 效果按持有者路由落账。
 7. 死者仇恨账本清理，置于推衍之后避免死者被自身伤害事件重写。
-8. 作废本帧两类意图：`MoveInput` 归零、`CastInput` 置空。
+8. 聚焦清活：`FocusTarget` 指向不存在或已死亡单位时归零，判据与门面设置期校验同源。
+9. 作废本帧两类意图：`MoveInput` 归零、`CastInput` 置空。聚焦是持续态，不在此列。
 
 施法裁定全在第 3 步，事件直写本帧日志，参与当帧仇恨分发与状态同步。射程判定与结算读的都是第 2 步解算后的位置，同一份读数；技能写入的冷却仍在同帧第 4 步被扣一次，写在前扣在后，是既定行为。剩余偏差在 AI：其 `Decide` 发生在 `Tick` 之前，读上一 tick 末位置，与第 3 步的裁定之间隔着一次位移解算。
 
-单位死亡不产出事件：死亡是生命值派生的状态，消费方一律经 `IsDead` 判定，服务端聚焦清活与客户端视图隐藏同源消费；施法目标校验是已知例外，见「施法意图消费」。
+单位死亡不产出事件：死亡是生命值派生的状态，消费方一律经 `IsDead` 判定，战斗世界的聚焦清活与客户端视图隐藏同源消费；施法目标校验是已知例外，见「施法意图消费」。
 
 ## 施法意图消费
 
@@ -57,7 +59,7 @@
 - 唯一重试判据是 `SkillCastValidator.IsStateReady`（存活、非读条、总冷却归零）。射程、阵营与技能归属一律不预判，就绪时转投一次，被拒即弃。
 - 单槽语义：同一施法者只保一条，新按键覆盖旧意图并满窗重计。目标持 `BattleUnit` 引用，与读条目标同源，不做 ID 重解析。
 - 窗口是域内常量 `WindowSeconds = 0.5f`，服务端与回放必须同值，不开放配置注入；改值须一并决定既有录像的去留。当前取值跨不过 2.5 秒 GCD 与 2.0 秒读条，CD 期间的按键在窗口内等不到就绪即作废。
-- `Submit` 无返回值：两条分支都是接管（转投为本帧意图或入槽），不含可施放性结论。唯一的失败信号在门面 `SubmitCast`：施法者或目标解析不到。
+- `CastPreInputBuffer.Submit` 无返回值：两条分支都是接管（转投为本帧意图或入槽），不含可施放性结论。权威结论由门面 `Submit` 给出，false 的成因都在门内（阶段、技能键、施法者与目标解析）。
 - 在架意图持领域单位引用，故回放重建单位后必须经门面 `ClearQueuedCasts()`，否则转投落在已被替换的旧对象上。
 
 ## 事件日志

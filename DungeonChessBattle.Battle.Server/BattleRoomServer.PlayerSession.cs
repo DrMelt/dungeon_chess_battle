@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Battle.Shared.Inputs;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
 using LiteNetLib;
@@ -119,21 +120,13 @@ public partial class BattleRoomServer {
             return;
         }
 
-        // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API；
-        //    同时把技能施放与聚焦目标的事件请求处理后注入房间权威校验，
-        //    请求到达时框架自动按该控制器所属玩家回发成功/失败回执。
+        // 3. 创建控制器并绑定到该单位，LiteEntitySystem 标准 API：技能施放与聚焦请求到达时转成玩家命令，
+        //    权威判定与回放录制共用同一提交结论，框架自动按该控制器所属玩家回发回执。
         EntityManager.AddController<UnitController>(netPlayer, pawn, c => {
-            // 权威校验与回放录制共用同一处理结果，录制在旁路不改变校验
-            c.BindServerCastHandler(req => {
-                bool accepted = HandleCastSkillRequest(pawn, req);
-                TryRecordCastSkill(pawn, req, accepted);
-                return accepted;
-            });
-            c.BindServerFocusHandler(req => {
-                bool accepted = HandleSetFocusTargetRequest(pawn, req.TargetUnitNetId);
-                TryRecordFocusTarget(pawn, req.TargetUnitNetId, accepted);
-                return accepted;
-            });
+            c.BindServerCastHandler(req => SubmitAndRecord(PlayerCommand.Cast(
+                pawn.Id, req.SkillTypeId, req.TargetNetId, req.TargetPosX, req.TargetPosZ)));
+            c.BindServerFocusHandler(req => SubmitAndRecord(
+                PlayerCommand.Focus(pawn.Id, req.TargetUnitNetId)));
             session.Controller = c;
         });
 

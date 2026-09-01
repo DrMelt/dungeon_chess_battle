@@ -21,7 +21,7 @@
 - 冷却 / Buff / 仇恨 `SyncList`：服务端逐字段比对内容、一致则跳过重建，避免每帧全量发送；在线端按下行列表的内容指纹比对，指纹未变只跳过领域列表重建，条目剩余秒仍逐帧原地刷新。指纹归属回填的领域单位，换绑即失效，无需调用方重置。
 - 倒计时字段写**截止 tick**（`EndServerTick`），不逐 tick 推当前值；回填侧按本端插值 `ServerTick` 反算剩余秒，换算只出现在通道内。剩余秒非正一律落哨兵 0，反算见 0 短路归零，不参与 tick 差值——写成当前 tick 等于每 tick 重定基，两端 tick 同步前进，反算出的差永不收敛。
 - `MaxStacks`、`StackCount`、`DamageType` 等 Buff 字段随 Buff 条目一起写；在线端还原为 `ActiveBuff` 展示壳（`NetworkBuffDefinition`），不推进效果。
-- 仇恨表与聚焦 ID 只下行不回填：在线端不跑仇恨结算与 AI，聚焦另有轮询。
+- 仇恨表只下行不回填：在线端不跑仇恨结算与 AI。聚焦随通道双向——服务端投影领域值，在线端回填后由 UI 直读，本地不推算。
 - 每个剩余秒字段都要有推进者，且只在 `BattleScene.Tick` 内推进：读条 `SkillCastRemaining`、全局冷却 `GcdRemaining`、个体冷却 `CooldownEntry.Remaining`、`BuffInstance.Remaining` 各一处。截止 tick 是源剩余秒的派生量，源不推进则派生量逐 tick 重定基，本端读到一个恒定正数：显示上时间永不动，判定上冷却永不到期。
 
 ## 网络下发与客户端接收
@@ -38,16 +38,15 @@
 
 ### 回填字段集
 
-位置/朝向、生命、最大生命、半径、速度与攻防系数、治疗强度、施法技能与读条剩余一律读写 `Value`；全局冷却、个体冷却与 Buff 的截止时间按截止 tick 反算为剩余秒，Buff 还原为展示壳。`UnitPawn` 未标 `SyncFlags.Interpolated`，LES 的 A/B 插值通道未启用（见 client-prediction 的 D9），回填读的是 `Value`。
+位置/朝向、生命、最大生命、半径、速度与攻防系数、治疗强度、施法技能与读条剩余、聚焦目标一律读写 `Value`；全局冷却、个体冷却与 Buff 的截止时间按截止 tick 反算为剩余秒，Buff 还原为展示壳。`UnitPawn` 未标 `SyncFlags.Interpolated`，LES 的 A/B 插值通道未启用（见 client-prediction 的 D9），回填读的是 `Value`。
 
 ### 每帧 `UpdateAfterPollEvents`
 
 1. 副本键同步后 `EnsureBattleScene` 构建 `BattleScene`（本地 `PhysicsMovementScene`）；未同步随下一帧重试。
-2. `EntityManager.Update()` 驱动 LES 同步，其间 `ClientBattleLoop.VisualUpdate` 逐领域单位配对网络载体调 `SyncInto` 回填；其 `Update`/`LateUpdate` 为空实现，在线端不跑本地结算。
-3. 轮询 `FocusTargetNetId` 刷新本地聚焦映射。服务端维持"聚焦目标必存活"不变式，死亡不经事件通报，随生命值下行自愈。
-4. 每秒流量结算；轮询房间阶段变化触发 `BattlePhaseChanged`。
+2. `EntityManager.Update()` 驱动 LES 同步，其间 `ClientBattleLoop.VisualUpdate` 逐领域单位配对网络载体调 `SyncInto` 回填（含聚焦目标）；其 `Update`/`LateUpdate` 为空实现，在线端不跑本地结算。服务端维持"聚焦目标必存活"不变式，死亡不经事件通报，随生命值下行自愈。
+3. 每秒流量结算；轮询房间阶段变化触发 `BattlePhaseChanged`。
 
-实体创建回调 `OnPawnEntityCreated` 只登记 Pawn 并 `AddPawnUnit` 注册领域单位，**注册在前、`OnUnitCreated` 在后**，保证事件时刻领域单位已可查询。
+实体创建回调 `OnPawnEntityCreated` 只经 `AddPawnUnit` 注册领域单位，**注册在前、`OnUnitCreated` 在后**，保证事件时刻领域单位已可查询。
 
 ### 截止 tick 换算
 
@@ -59,7 +58,7 @@ Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显
 
 ## 领域单位 → UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit`（展示）与 `LocalFocus`（聚焦展示）。UI 组件每帧直读 `IUnitUiView` 字段。在线端不暴露施法判定角色：可否施放无本地裁定，`ISkillCasterView` 只在服务端与回放侧被消费。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit`（展示）与 `LocalFocus`（读本地领域单位的 `FocusTarget` 再查目标）。UI 组件每帧直读 `IUnitUiView` 字段。在线端不暴露施法判定角色：可否施放无本地裁定，`ISkillCasterView` 只在服务端与回放侧被消费。
 
 ## 契约分层
 
@@ -98,6 +97,6 @@ sequenceDiagram
 
 ## 断线 / 重连
 
-客户端 `ClearRoomSessionState` 清空单位索引、聚焦、阶段与本地网络 ID，随连接状态重建为干净会话。
+客户端 `ClearRoomSessionState` 清空单位索引、阶段与本地网络 ID，随连接状态重建为干净会话。
 
 服务端侧单位载体不随玩家断开销毁：断开玩家的单位原地站桩，领域状态与投影照常推进下行，重连方按 `BaselineSync` 全量重建视图。解绑与输入通道的先后约束见 `overview/13-battle-server`。

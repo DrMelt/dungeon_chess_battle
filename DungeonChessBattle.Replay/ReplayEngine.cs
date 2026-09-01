@@ -31,7 +31,6 @@ public sealed class ReplayEngine : IBattleViewSource {
     private int _castCursor;
     private int _focusCursor;
     private int _frame;
-    private readonly Dictionary<ushort, ushort> _focusByNetId = [];
 
     /// <summary>解码后的回放记录。</summary>
     public ReplayRecordSnapshot Snapshot {
@@ -49,9 +48,6 @@ public sealed class ReplayEngine : IBattleViewSource {
 
     /// <summary>按网络 ID 查战斗单位，不存在返回 null。</summary>
     public IUnitUiView? FindUnit(ushort netId) => _battleScene.FindUnit(netId) as IUnitUiView;
-
-    /// <summary>玩家聚焦映射，网络 ID → 目标网络 ID，0 表示无聚焦目标。</summary>
-    public IReadOnlyDictionary<ushort, ushort> FocusByNetId => _focusByNetId;
 
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
@@ -187,51 +183,44 @@ public sealed class ReplayEngine : IBattleViewSource {
     }
 
     /// <summary>
-    /// 按帧注入玩家输入：施法 → 移动 → 聚焦，三类共享同一帧轴。
-    /// 施法与移动都只登记意图，同序要求见 <see cref="BattleIntentHub.PrepareTick"/>。
+    /// 按帧注入玩家命令：施法 → 移动 → 聚焦，三类共享同一帧轴，经与在线同一个输入门面提交。
+    /// 施法与移动都只登记意图，同序要求见 <see cref="BattleIntentHub.PrepareTick"/>；<c>Accepted=false</c> 的条目跳过。
     /// </summary>
     private void InjectInputs() {
-        // 施法请求：未被权威投递接管的记录（Accepted=false：阶段非 Running、技能键非法、施法者或目标解析不到）跳过，以服务端结论为准
         while (_castCursor < _casts.Count) {
             var c = _casts[_castCursor];
             int targetFrame = c.Frame - _startTick;
             if (targetFrame > _frame)
                 break;
-            if (targetFrame == _frame && c.Accepted && c.PlayerIndex < _playerNetIdByIndex.Length)
-                SubmitCast(_playerNetIdByIndex[c.PlayerIndex], c);
+            if (targetFrame == _frame && c.Accepted)
+                _intentHub.Submit(c.ToCommand(NetIdOf(c.PlayerIndex)));
             _castCursor++;
         }
 
-        // 移动输入：登记本帧意图
         while (_moveCursor < _moves.Count) {
             var m = _moves[_moveCursor];
             int targetFrame = m.Frame - _startTick;
             if (targetFrame > _frame)
                 break;
-            if (targetFrame == _frame && m.PlayerIndex < _playerNetIdByIndex.Length)
-                _intentHub.SubmitMove(_playerNetIdByIndex[m.PlayerIndex], new Vector2(m.MoveX, m.MoveY));
+            if (targetFrame == _frame)
+                _intentHub.Submit(m.ToCommand(NetIdOf(m.PlayerIndex)));
             _moveCursor++;
         }
 
-        // 聚焦目标：仅影响展示，不经战斗世界
         while (_focusCursor < _focuses.Count) {
             var f = _focuses[_focusCursor];
             int targetFrame = f.Frame - _startTick;
             if (targetFrame > _frame)
                 break;
-            if (targetFrame == _frame && f.Accepted && f.PlayerIndex < _playerNetIdByIndex.Length)
-                _focusByNetId[_playerNetIdByIndex[f.PlayerIndex]] = f.TargetNetId;
+            if (targetFrame == _frame && f.Accepted)
+                _intentHub.Submit(f.ToCommand(NetIdOf(f.PlayerIndex)));
             _focusCursor++;
         }
     }
 
-    /// <summary>按记录载荷经输入门面提交施法意图：与在线端同解析同排队，复现权威排队后的落地时刻。</summary>
-    private void SubmitCast(ushort casterNetId, CastSkillRecord record) {
-        Vector2? targetPos = record.TargetNetId != 0
-            ? null
-            : new Vector2(record.TargetPosX, record.TargetPosZ);
-        _intentHub.SubmitCast(casterNetId, new SkillKeyId(record.SkillTypeId), record.TargetNetId, targetPos);
-    }
+    /// <summary>玩家序号 → 头部玩家表里的网络 ID；越界返回 0，门内解析不到即自然落空。</summary>
+    private ushort NetIdOf(byte playerIndex) =>
+        playerIndex < _playerNetIdByIndex.Length ? _playerNetIdByIndex[playerIndex] : (ushort)0;
 
     /// <summary>重置到战斗开始帧：先经门面丢弃持旧单位引用的在架意图，再重建战斗世界与单位。</summary>
     private void Reset() {
@@ -239,7 +228,6 @@ public sealed class ReplayEngine : IBattleViewSource {
         _castCursor = 0;
         _focusCursor = 0;
         _frame = 0;
-        _focusByNetId.Clear();
         _intentHub.ClearQueuedCasts();
         foreach (var unit in _battleScene.BattleUnits.ToArray())
             _battleScene.RemoveUnit(unit);

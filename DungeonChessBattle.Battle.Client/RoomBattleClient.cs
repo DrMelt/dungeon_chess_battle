@@ -41,7 +41,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     private ClientEntityManager? _entityManager;
 
     private BattleRoomEntity? _roomEntity;
-    private readonly List<UnitPawn> _roomPawns = [];
     private string? _currentRoomId;
     private readonly Lock _lock = new();
 
@@ -107,9 +106,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>房间当前阶段（来自服务端同步 BattleRoomEntity），未同步时为 Waiting。</summary>
     internal BattlePhase RoomPhase => RoomState.Phase;
 
-    /// <summary>单位网络 ID → 聚焦目标网络 ID，0 表示无聚焦目标。</summary>
-    private readonly Dictionary<ushort, ushort> _focusByNetId = [];
-
     /// <summary>本地玩家单位网络 ID，控制器就绪后写入，0 表示未就绪。</summary>
     private ushort _localNetId;
 
@@ -120,14 +116,12 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _battleScene = null;
         _battleUnitByNetId.Clear();
         _pawnByNetId.Clear();
-        _focusByNetId.Clear();
         _localNetId = 0;
         _eventLog.Clear();
         _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
-            _roomPawns.Clear();
             _currentRoomId = null;
         }
     }
@@ -171,9 +165,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             _spreadMax = 0;
             _countingPeer?.ResetTraffic();
         }
-
-        // 聚焦目标展示以服务端权威 SyncVar 为准，本地不参与推算。
-        SyncFocusTargets();
 
         // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
         var phase = RoomState.Phase;
@@ -234,12 +225,6 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         _battleScene?.AddUnit(unit);
     }
 
-    /// <summary>轮询聚焦目标 SyncVar：本地模拟不写聚焦，聚焦一律取服务端权威值；服务端保证目标存活。</summary>
-    private void SyncFocusTargets() {
-        foreach (var pawn in _roomPawns)
-            _focusByNetId[pawn.Id] = pawn.FocusTargetNetId.Value;
-    }
-
     /// <inheritdoc />
     public IReadOnlyList<IUnitUiView> Units => _battleScene?.BattleUnits ?? [];
 
@@ -249,13 +234,11 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     /// <summary>本地玩家单位展示视图，控制器未就绪返回 null。</summary>
     public IUnitUiView? LocalUnit => FindUnit(_localNetId);
 
-    /// <summary>本地玩家聚焦目标单位展示视图，无聚焦目标或目标已被服务端清 0 返回 null。</summary>
-    public IUnitUiView? LocalFocus {
-        get {
-            ushort target = _focusByNetId.GetValueOrDefault(_localNetId);
-            return target == 0 ? null : FindUnit(target);
-        }
-    }
+    /// <summary>本地玩家聚焦目标单位展示视图，读本地领域单位的回填值；无聚焦目标或目标已被清 0 返回 null。</summary>
+    public IUnitUiView? LocalFocus =>
+        _battleUnitByNetId.TryGetValue(_localNetId, out var unit) && !unit.FocusTarget.IsDefault
+            ? FindUnit(unit.FocusTarget)
+            : null;
 
     /// <summary>处理房间端口接收的二进制包：先识别可靠消息帧，其余 0xDC 帧交 LES 反序列化。</summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {

@@ -125,11 +125,44 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。宿主与回放一律经 <see cref="BattleIntentHub.SubmitMove"/> 转入。
+    /// 维持「聚焦目标必存活」不变式：聚焦指向不存在或已死亡单位时清除。
+    /// 与 <see cref="SubmitFocus"/> 的设置期校验同源，死亡不产出事件，故随本帧生命值结果收敛。
     /// </summary>
-    internal void SubmitMove(ushort netId, Vector2 moveDirection) {
-        if (_unitById.TryGetValue(netId, out var unit))
-            unit.MoveInput = moveDirection;
+    private void ClearDeadFocusTargets() {
+        foreach (var unit in _units) {
+            if (unit.FocusTarget.IsDefault || FindBattleUnit(unit.FocusTarget) is { IsDead: false })
+                continue;
+            unit.FocusTarget = UnitId.None;
+        }
+    }
+
+    /// <summary>
+    /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。宿主与回放一律经 <see cref="BattleIntentHub.Submit"/> 转入。
+    /// </summary>
+    /// <returns>单位存在并已写入意图返回 true。</returns>
+    internal bool SubmitMove(ushort netId, Vector2 moveDirection) {
+        if (!_unitById.TryGetValue(netId, out var unit))
+            return false;
+        unit.MoveInput = moveDirection;
+        return true;
+    }
+
+    /// <summary>
+    /// 提交聚焦目标：写该单位的持续展示态，0 表示清除。目标必须存在且存活，允许目标为自己；
+    /// 提交者或目标不合法即不接管。
+    /// </summary>
+    /// <returns>已写入返回 true。</returns>
+    internal bool SubmitFocus(ushort netId, ushort targetNetId) {
+        if (!_unitById.TryGetValue(netId, out var unit))
+            return false;
+        if (targetNetId == 0) {
+            unit.FocusTarget = UnitId.None;
+            return true;
+        }
+        if (!_unitById.TryGetValue(targetNetId, out var target) || target.IsDead)
+            return false;
+        unit.FocusTarget = target.UnitId;
+        return true;
     }
 
     /// <summary>
@@ -264,6 +297,9 @@ public sealed partial class BattleScene(
             }
 
             CleanupDeaths();
+
+            // 聚焦目标必存活：死亡当帧即清零
+            ClearDeadFocusTargets();
         }
 
         // 本帧意图统一作废，下一帧由输入源重投

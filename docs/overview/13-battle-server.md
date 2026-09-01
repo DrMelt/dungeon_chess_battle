@@ -21,7 +21,7 @@
 ## 战斗循环
 
 - `BattleLoop.Update` = 输入门面 `PrepareTick`（AI 决策 → 在架施法重试），都在位移结算之前；`LateUpdate` = `Tick`（推进）→ 状态同步 → 整帧事件外送。本钩子不参与预测回滚。
-- 施法请求经 `UnitController` 可靠通道到达后交 `BattleIntentHub.SubmitCast`：施法者与目标的 ID 解析在门面内完成，状态就绪即转投为该单位的本帧意图、未就绪入其排队槽，裁定一律在 `Tick` 的读条推进段做一次。回执 true 只表示意图已投递接管，不含可施放性结论；false 只源于阶段非 Running、技能键非法、施法者或目标解析不到。
+- 施法与聚焦请求经 `UnitController` 可靠通道到达，房间只把请求转成玩家命令交 `BattleIntentHub.Submit`：阶段、技能键、施法者与目标的 ID 解析、聚焦目标存活一律在门内判，房间不重复一遍；提交结论既作回执又作回放记录的 `Accepted`。裁定仍在 `Tick` 的读条推进段做一次，回执 true 只表示已接管，不含可施放性结论。
 - 事件外送：Tick 返回的领域事件经 `BattleEventCoder` 编码 → `ReliableMessageFrame` 打包 → `SendReliableOrdered` 逐在线会话广播。空帧不发，断线期间不补发。
 
 ## 玩家会话与断线重连
@@ -35,6 +35,6 @@
 ## 空房清理与回放归档
 
 - 全部活跃连接断开且初始化完成 → `RoomEmpty` 事件 → 投递队列 → 大厅后台清理循环 `ProcessPendingRoomCleanups` → `RemoveRoom`（停止线程 → 回收端口 → 归档回放）。
-- 回放录制：`BattleReplayRecorder` 在既有输入消费点旁路记录移动/施法/聚焦，三类记录共享同一帧轴（首条 tick 锚定绝对逻辑帧，规避 ushort 回绕），上限 100 万条。
+- 回放录制：`BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘，命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。三类记录共享同一帧轴（首条 tick 锚定绝对逻辑帧，规避 ushort 回绕），不设条目上限。
 - 归档：房间销毁或关服时编码 `ReplayRecordSnapshot` 经 `IReplayStore` 写入实现层 `InMemoryReplayStore`（保留最近 256 场），供大厅查询与 HTTP 下载。
 

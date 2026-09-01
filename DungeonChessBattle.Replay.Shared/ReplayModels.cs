@@ -7,13 +7,13 @@ namespace DungeonChessBattle.Replay.Shared;
 /// </summary>
 public static class ReplayFormatVersion {
     /// <summary>当前回放记录格式版本。</summary>
-    public const int Current = 4;
+    public const int Current = 5;
 }
 
 /// <summary>
 /// 回放记录头部元数据：房间与玩家初始状态，回放端据此重建战斗世界。
-/// StartTick 为战斗开始逻辑帧，NextNetId 为服务端最后一个单位 ID + 1，回放端据此对齐单位 ID；
-/// Complete 表示录制是否被条目上限截断；DataVersion 为录制端内容数据修订号，重放端据此校验内容一致。
+/// StartTick 为战斗开始逻辑帧，NextNetId 为服务端最后一个玩家单位 ID + 1，回放端据此连续分配敌人 ID；
+/// DataVersion 为录制端内容数据修订号，重放端据此校验内容一致。
 /// </summary>
 [MessagePackObject]
 public sealed record ReplayRecordHeader(
@@ -25,8 +25,7 @@ public sealed record ReplayRecordHeader(
     [property: Key(5)] IReadOnlyList<ReplayPlayerInfo> Players,
     [property: Key(6)] int StartTick,
     [property: Key(7)] ushort NextNetId,
-    [property: Key(8)] bool Complete,
-    [property: Key(9)] string DataVersion);
+    [property: Key(8)] string DataVersion);
 
 /// <summary>
 /// 玩家初始状态，回放端按 PlayerIndex 还原玩家单位。

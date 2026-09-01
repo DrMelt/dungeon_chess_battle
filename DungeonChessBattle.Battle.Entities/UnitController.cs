@@ -8,13 +8,13 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 单位的人工输入控制器。由 Godot UI 层每帧注入输入，框架自动发送到服务端。
 /// 客户端侧：SubmitInput 写入待发送缓冲并发往服务端，Send*Request 走可靠请求通道；
 /// 服务端侧：BeforeControlledUpdate 每逻辑 tick 读取 CurrentInput 并转发给受控单位，
-/// BindServer*Handler 订阅客户端事件请求并注入房间权威校验。
+/// BindServer*Handler 订阅客户端事件请求，处理委托由房间注入。
 /// </summary>
 public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
-    /// <summary>服务端：施放技能请求处理委托，由房间编排注入权威校验。</summary>
+    /// <summary>服务端：施放技能请求处理委托，由房间注入。</summary>
     private Func<CastSkillRequest, bool>? _castHandler;
 
-    /// <summary>服务端：聚焦目标设置请求处理委托，由房间编排注入权威校验。</summary>
+    /// <summary>服务端：聚焦目标设置请求处理委托，由房间注入。</summary>
     private Func<SetFocusTargetRequest, bool>? _focusHandler;
 
     /// <summary>

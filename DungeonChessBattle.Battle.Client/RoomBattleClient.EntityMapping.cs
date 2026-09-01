@@ -24,12 +24,9 @@ public partial class RoomBattleClient {
                 entity.BattleStartUnixTime.Value, entity.DungeonKey.Value);
     }
 
-    /// <summary>单位实体创建回调：缓存 Pawn，并构建本地领域单位注册。</summary>
+    /// <summary>单位实体创建回调：构建本地领域单位注册。</summary>
     private void OnPawnEntityCreated(UnitPawn pawn) {
         var unitName = pawn.UnitKeyName.Value;
-        lock (_lock) {
-            _roomPawns.Add(pawn);
-        }
 
         // 只构建领域单位并注册；位移、生命等状态由 ClientBattleLoop 每渲染帧从 SyncVar 回填。
         AddPawnUnit(pawn);

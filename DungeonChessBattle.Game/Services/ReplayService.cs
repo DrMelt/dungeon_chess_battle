@@ -63,8 +63,12 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     /// <summary>合并本地条目与服务端条目，服务端覆盖同房间本地条目，按开始时间倒序。</summary>
     private async Task<IReadOnlyList<ReplayListEntry>> BuildMergedEntriesAsync(CancellationToken cancellationToken) {
         var merged = new Dictionary<string, ReplayListEntry>();
-        foreach (var header in await cache.ReadEntriesAsync(cancellationToken))
+        foreach (var header in await cache.ReadEntriesAsync(cancellationToken)) {
+            // 格式版本不符的本地旧副本列出来也播不了，不列入；能否重放仍由解码门控
+            if (header.FormatVersion != ReplayFormatVersion.Current)
+                continue;
             merged[header.RoomId] = ToEntry(header);
+        }
         foreach (var dto in await client.GetServerListAsync(cancellationToken))
             merged[dto.RoomId] = ToEntry(dto);
 

@@ -3,9 +3,9 @@ using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.Entities.Requests;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -40,7 +40,6 @@ public partial class BattleRoomServer {
         var units = _stateStore.GetPrepareUnits(RoomId);
         var playerInfos = new List<ReplayPlayerInfo>(units.Count);
         int campAIndex = 0, campBIndex = 0;
-        byte playerIndex = 0;
         foreach (var selection in units) {
             // 玩家阵营由副本配置按选项键权威解析；首个阵营为主阵营，作为出生点分边依据
             var camps = ResolvePlayerCamps(selection);
@@ -49,11 +48,9 @@ public partial class BattleRoomServer {
                 : new Vector2(5f + campBIndex++ * SpawnSpacing, 0);
             var pawn = CreatePawnEntity(selection.UnitConfigKey, camps, spawnPos);
             _pawnByPlayerId[selection.PlayerId] = pawn;
-            // 回放玩家表与索引：序号即 playerIndex，敌人与非玩家单位不收录
-            _playerIndexByNetId[pawn.Id] = playerIndex;
+            // 回放玩家表：下标即记录条目里的玩家序号，敌人与非玩家单位不收录
             playerInfos.Add(new ReplayPlayerInfo(selection.PlayerId, selection.PlayerName,
                 selection.UnitConfigKey, selection.CampOptionKey, spawnPos.X, spawnPos.Y, pawn.Id));
-            playerIndex++;
         }
 
         // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
@@ -170,87 +167,13 @@ public partial class BattleRoomServer {
             _logger.LogInformation("[RoomId: {RoomId}] Battle started, phase={Phase}", RoomId, _battleScene.CurrentPhase);
     }
 
-    /// <summary>
-    /// 处理通过 UnitPawn 实例事件到达的玩家输入：经输入门面提交移动意图并旁路记录到回放，
-    /// 位移由领域 BattleScene.Tick 统一结算。
-    /// </summary>
+    /// <summary>处理经 UnitPawn 实例事件到达的玩家移动输入：转成玩家命令交输入门面，位移由领域 <c>BattleScene.Tick</c> 结算。</summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
-        _intentHub.SubmitMove(pawn.Id, input.MoveDirection);
-        TryRecordMoveInput(pawn, input);
+        SubmitAndRecord(PlayerCommand.Move(pawn.Id, input.MoveX, input.MoveY));
 
         if (_logger.IsEnabled(LogLevel.Trace))
             _logger.LogTrace("[RoomId: {RoomId}] PawnInput: {Unit} dir={Dir}, dt={Dt}",
                 RoomId, pawn.UnitKeyName.Value, input.MoveDirection, deltaTime);
-    }
-
-    /// <summary>
-    /// 处理经 UnitController 可靠请求到达的施法请求：交输入门面投递意图，
-    /// 施法者与目标的 ID 解析和排队都在门面内完成，房间不再另做一遍。返回值作为回执发回客户端。
-    /// </summary>
-    private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
-        if (_battleScene.CurrentPhase != BattlePhase.Running) {
-            _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: battle not running.", RoomId);
-            return false;
-        }
-
-        if (string.IsNullOrEmpty(req.SkillTypeId) || req.SkillTypeId.Length > SkillKeyId.MaxKeyLength) {
-            _logger.LogWarning("[RoomId: {RoomId}] Skill request dropped: skill key invalid or too long.", RoomId);
-            return false;
-        }
-
-        // TargetNetId 为 0 走位置目标（范围技能，XZ 平面），非 0 走单位目标
-        Vector2? targetPos = req.TargetNetId != 0 ? null : new Vector2(req.TargetPosX, req.TargetPosZ);
-
-        // 投递失败只剩一种成因：施法者或目标解析不到
-        if (!_intentHub.SubmitCast(casterPawn.Id, new SkillKeyId(req.SkillTypeId), req.TargetNetId, targetPos)) {
-            if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomId: {RoomId}] Skill request not delivered: {Caster} or target {Target} missing.",
-                    RoomId, casterPawn.UnitKeyName.Value, req.TargetNetId);
-            return false;
-        }
-
-        // 入排队槽的意图由排队器另记 LogCastQueued
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[RoomId: {RoomId}] Skill request taken: {Caster} -> {Target}, SkillId={SkillId}",
-                RoomId, casterPawn.UnitKeyName.Value,
-                req.TargetNetId == 0 ? "(position)" : req.TargetNetId.ToString(), req.SkillTypeId);
-        return true;
-    }
-
-    /// <summary>
-    /// 处理经 UnitController 可靠请求到达的聚焦目标设置：服务端校验目标合法性后写回权威状态。
-    /// 0 表示清除聚焦目标；目标必须存在且存活；允许目标为自己。仅影响展示，不经战斗世界。
-    /// 设置后目标死亡由投影期的 <see cref="ClearDeadFocusTargets"/> 清 0，不依赖死亡事件。
-    /// </summary>
-    private bool HandleSetFocusTargetRequest(UnitPawn pawn, ushort targetNetId) {
-        if (targetNetId != 0 && _battleScene.FindUnit(targetNetId) is not { IsDead: false }) {
-            if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
-                    RoomId, pawn.UnitKeyName.Value, targetNetId);
-            return false;
-        }
-
-        pawn.FocusTargetNetId.Value = targetNetId;
-
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[RoomId: {RoomId}] Focus target set: {Unit} -> {TargetId}",
-                RoomId, pawn.UnitKeyName.Value, targetNetId);
-        return true;
-    }
-
-    /// <summary>
-    /// 维持"聚焦目标必存活"不变式：聚焦指向不存在或已死亡单位时清 0。
-    /// 与 HandleSetFocusTargetRequest 的设置期校验同源，随状态投影每帧收敛，不依赖死亡事件。
-    /// </summary>
-    private void ClearDeadFocusTargets() {
-        foreach (var pawn in _roomPawns) {
-            var targetNetId = pawn.FocusTargetNetId.Value;
-            if (targetNetId == 0)
-                continue;
-            if (_battleScene.FindUnit(targetNetId) is { IsDead: false })
-                continue;
-            pawn.FocusTargetNetId.Value = 0;
-        }
     }
 
     /// <summary>
@@ -288,14 +211,11 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用，由 BattleLoop 每帧在 Tick 之后显式驱动。
     /// </summary>
     private sealed class BattleStateSynchronizer(BattleRoomServer room) {
-        /// <summary>同步战斗世界：单位投影 → 聚焦清活 → 房间阶段。由 BattleLoop.LateUpdate 驱动。</summary>
+        /// <summary>同步战斗世界：单位投影 → 房间阶段。由 BattleLoop.LateUpdate 驱动。</summary>
         public void Sync(BattleScene battleScene) {
             foreach (var unit in battleScene.BattleUnits)
                 if (room._pawnByNetId.TryGetValue(unit.UnitId, out var pawn))
                     pawn.SyncFrom(unit);
-
-            // 死亡无事件通道，聚焦清活随投影按生命值收敛
-            room.ClearDeadFocusTargets();
 
             if (room._roomEntity is not { } entity)
                 return;

@@ -12,10 +12,9 @@
 `UpdateAfterPollEvents` 每帧依次：
 
 1. 副本键同步后就绪时 `EnsureBattleScene` 构建在线 `BattleScene`（含本地 `PhysicsMovementScene`）；未同步时随下一帧重试。
-2. `EntityManager.Update()` 驱动 LES 实体同步，其间 `ClientBattleLoop.VisualUpdate`（LocalSingleton）在渲染帧把 SyncVar 读数回填领域单位；其 `Update`/`LateUpdate` 为空实现。
-3. 轮询 `UnitPawn` 聚焦 SyncVar，更新本地聚焦映射。
-4. 每秒流量统计结算。
-5. 轮询 `BattleRoomEntity` 阶段变化（`RoomState.Phase`）：触发 `BattlePhaseChanged`（LES 无公开 Changed 事件，无需镜像）。
+2. `EntityManager.Update()` 驱动 LES 实体同步，其间 `ClientBattleLoop.VisualUpdate`（LocalSingleton）在渲染帧把 SyncVar 读数回填领域单位（含聚焦目标）；其 `Update`/`LateUpdate` 为空实现。
+3. 每秒流量统计结算。
+4. 轮询 `BattleRoomEntity` 阶段变化（`RoomState.Phase`）：触发 `BattlePhaseChanged`（LES 无公开 Changed 事件，无需镜像）。
 
 ## 同步结构
 
@@ -23,7 +22,7 @@
 
 - **下行回填**：在线端不跑本地结算。`ClientBattleLoop.VisualUpdate` 每渲染帧按网络 ID 配对单位，经 `UnitPawn.SyncInto` 把 `Value` 覆写进领域 `BattleUnit` 作展示源，倒计时字段在通道内反算为剩余秒；`Update`/`LateUpdate` 空实现。移动、读条、冷却与预输入排队、Buff、伤害与敌方 AI 只在服务端结算。
 - **展示契约**：`IUnitUiView` / `IBuffUiView`（Battle.Shared.Combat）是 UI 唯一取数口径，在线与回放都以 `BattleUnit` 作为其实现。
-- **对外契约**：`IClientBattleSession : IClientBattleService, IBattleViewSource` 是房间链路对上层唯一可见面，在两个既有契约之上补本地玩家语义（`LocalUnit`/`LocalFocus`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。本地玩家成员不进 `IBattleViewSource`：回放无本地控制器。连接生命周期成员一律不入该契约。
+- **对外契约**：`IClientBattleSession : IClientBattleService, IBattleViewSource` 是房间链路对上层唯一可见面，在两个既有契约之上补本地玩家语义（`LocalUnit` 与读领域回填态 `FocusTarget` 的 `LocalFocus`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。本地玩家成员不进 `IBattleViewSource`：回放无本地控制器。连接生命周期成员一律不入该契约。
 - **契约分层**：`IWorldPoseView`（逻辑位置）→ `ISkillCasterView`（施法判定子集）；`IUnitUiView`（展示位置）与 `ISkillCasterView` 共享公共面（身份/数值/技能源），位置语义一致（在线为下行回填值，回放为本地结算值）。`ISkillCasterView` 无在线消费者：可否施放含预输入排队一律由权威裁定，在线端只暴露展示视图。
 
 在线链：`ClientBattleLoop.VisualUpdate`（`UnitPawn.SyncInto` 回填 SyncVar 读数）→ `RoomBattleClient.Units`（本地 `BattleScene.BattleUnits`）→ 经 `IClientBattleSession` 供 UI。

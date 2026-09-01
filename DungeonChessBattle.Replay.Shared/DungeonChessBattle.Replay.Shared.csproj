@@ -11,4 +11,9 @@
         <PackageReference Include="MessagePack" />
     </ItemGroup>
 
+    <!-- 记录条目与玩家命令的双向映射需要领域输入形状 PlayerCommand：依赖方向单向指向零依赖的数据契约层。 -->
+    <ItemGroup>
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+    </ItemGroup>
+
 </Project>
