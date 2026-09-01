@@ -53,7 +53,8 @@ public readonly record struct MoveInputRecord(
     [property: Key(3)] float MoveY);
 
 /// <summary>
-/// 施法请求条目：逻辑帧、玩家序号、请求载荷与服务端接受结果。
+/// 施法请求条目：逻辑帧、玩家序号、请求载荷与投递结果。
+/// Accepted 表示服务端已投递接管（含入排队槽），不含可施放性结论；投递成功但落地被拒的条目照常记录。
 /// </summary>
 [MessagePackObject]
 public readonly record struct CastSkillRecord(

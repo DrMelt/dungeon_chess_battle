@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
 /// 战斗单位领域实体：战斗世界自持的全部权威状态。
-/// 属性与技能装配期写入，战斗状态由 BattleScene 推进，移动输入由 BattleScene 结算。
+/// 属性与技能装配期写入，战斗状态由 BattleScene 推进。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端、在线与回放共用。
 /// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffUiView"/> 供展示层读取。
 /// 在线端本实体是下行回填容器：字段与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，不参与结算。
@@ -127,9 +127,21 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         get; set;
     }
 
-    /// <summary>本帧移动输入，由 AI 决策或玩家输入写入，领域 BattleScene 结算。</summary>
+    /// <summary>
+    /// 本帧移动意图，写者全在 Battle.Logic，<c>BattleScene.Tick</c> 末作废。零值即静止。
+    /// 本帧两个读者：位移解算取方向，读条推进据其非零与否判打断。
+    /// 非同步字段，不进 <c>UnitPawn.SyncFrom/SyncInto</c> 清单，在线端恒零。
+    /// </summary>
     public Vector2 MoveInput {
-        get; set;
+        get; internal set;
+    }
+
+    /// <summary>
+    /// 本帧施法意图，null 表示无。写者全在 Battle.Logic，由 <c>BattleScene.Tick</c> 的读条推进段消费、末尾作废；
+    /// 一帧一份，后写覆盖先写。非同步字段，裁定通过后才转为读条状态并投影。
+    /// </summary>
+    public CastIntent? CastInput {
+        get; internal set;
     }
 
     /// <summary>仇恨规则，未装配时用默认规则。</summary>

@@ -23,11 +23,10 @@ public class GameConfigDB : IGameConfigDB {
     public static readonly GameConfigDB Instance = new();
 
     /// <summary>
-    /// 战斗数据集修订号。任何影响战斗结果的内容变更（单位数值/技能/Buff/AI/仇恨/阵营/副本布局）
-    /// 都必须递增本值：回放端据此校验录制端与重放端内容一致，不匹配直接拒绝重放，
-    /// 把"数据演化导致旧回放静默漂移"变成声响失败。
+    /// 战斗数据集修订号。任何影响战斗结果的变更都必须递增本值：内容侧含单位数值/技能/Buff/AI/仇恨/阵营/副本布局，
+    /// 引擎侧含结算时序与事件顺序。回放端据此校验录制端与重放端一致，不匹配直接拒绝重放。
     /// </summary>
-    public const string DataRevision = "2";
+    public const string DataRevision = "3";
 
     /// <summary>魔法持续伤害 Buff 定义。</summary>
     public static DamageOverTimeBuff BuffDotMagic {

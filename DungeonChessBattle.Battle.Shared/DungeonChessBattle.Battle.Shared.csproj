@@ -8,4 +8,10 @@
         <RootNamespace>DungeonChessBattle.Battle.Shared</RootNamespace>
     </PropertyGroup>
 
+    <!-- 领域单位的写面只授战斗逻辑实现层：Shared 内的 internal 成员即「Battle.Logic 可写、其余程序集不可写」。
+         新增 internal 成员前先确认它确实是输入写通道，否则该用 private。 -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="DungeonChessBattle.Battle.Logic" />
+    </ItemGroup>
+
 </Project>

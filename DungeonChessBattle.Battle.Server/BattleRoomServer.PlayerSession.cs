@@ -1,4 +1,3 @@
-using System.Numerics;
 using DungeonChessBattle.Battle.Entities;
 using LiteEntitySystem;
 using LiteEntitySystem.Transport;
@@ -137,7 +136,6 @@ public partial class BattleRoomServer {
             });
             session.Controller = c;
         });
-        session.ControlledPawn = pawn;
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Bound controller: player '{PlayerName}' -> unit '{UnitName}' (campOption={CampOptionKey}).",
@@ -174,13 +172,11 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 解除玩家对单位载体的控制：LES 的 <c>RemovePlayer</c> 经 <c>DestroyWithControlledEntity</c>
     /// 连带销毁受控实体，而本项目单位属房间不属玩家，故先行 <c>StopControl</c> 解绑，使其只销毁控制器。
-    /// 解绑后把该单位移动输入归零：输入源消失后 <c>BattleUnit.MoveInput</c> 保持末值，单位按最后方向永久位移。
+    /// 解绑后该单位失去移动意图来源，下一 tick 即静止。
     /// 仅房间线程调用，且必须先于 <c>RemovePlayer</c>。
     /// </summary>
-    private void ReleaseControlledPawn(PlayerSession session) {
+    private static void ReleaseControlledPawn(PlayerSession session) {
         session.Controller?.StopControl();
-        if (session.ControlledPawn is { } pawn)
-            _battleScene.SubmitMove(pawn.Id, Vector2.Zero);
     }
 
     /// <summary>

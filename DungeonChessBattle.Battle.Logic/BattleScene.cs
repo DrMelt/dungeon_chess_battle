@@ -19,9 +19,9 @@ namespace DungeonChessBattle.Battle.Logic;
 /// <summary>
 /// 战斗世界实现：自持单位权威状态，统一驱动移动、读条、冷却、Buff、仇恨与技能结算。
 /// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
-/// <see cref="ApplyDecisions"/> 先触发 AI 决策，<see cref="Tick"/> 结算移动并推进战斗、返回帧事件流；
+/// <see cref="ApplyDecisions"/> 先触发 AI 决策产出意图，<see cref="Tick"/> 消费意图并推进战斗、返回帧事件流；
 /// 事件流是仇恨推衍的唯一真相源。阶段由宿主写 <c>CurrentPhase</c>，死亡不产出事件而由生命值派生。
-/// 施法预输入排队不属本类，见 <see cref="CastPreInputBuffer"/>。
+/// 宿主提交意图见 <see cref="BattleIntentHub"/>。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建，与战斗世界同生命周期。</param>
@@ -47,12 +47,6 @@ public sealed partial class BattleScene(
     /// <summary>每帧战斗事件日志：处理开始清空，处理中只增追加，帧末经只读视图消费与外送。</summary>
     private readonly BattleEventLog _eventLog = new();
 
-    /// <summary>Tick 之外产出的跨帧事件缓冲，下一帧 Tick 开头汇入帧日志统一外送。</summary>
-    private readonly List<IBattleEvent> _pendingEvents = [];
-
-    /// <summary>Tick 之外施法尝试的复用事件暂存，尝试成功后整批汇入 <see cref="_pendingEvents"/>。</summary>
-    private readonly BattleEventLog _scratchLog = new();
-
     /// <summary>单位 ID → 领域单位索引。</summary>
     private readonly Dictionary<UnitId, BattleUnit> _unitById = [];
 
@@ -62,11 +56,15 @@ public sealed partial class BattleScene(
     /// <inheritdoc />
     public IReadOnlyList<IBattleUnitView> Units => _units;
 
-    /// <summary>全部战斗单位具体列表，回放端位移结算与外部装配用。</summary>
+    /// <summary>全部战斗单位的写面枚举，供宿主装配与状态同步遍历；只读消费走 <see cref="Units"/>。</summary>
     public IReadOnlyList<BattleUnit> BattleUnits => _units;
 
     /// <inheritdoc />
     public IBattleUnitView? FindUnit(ushort netId) =>
+        _unitById.TryGetValue(netId, out var unit) ? unit : null;
+
+    /// <summary>按网络 ID 查领域单位写面，供输入门面解析意图与宿主增删实体用；只读消费走 <see cref="FindUnit"/>。</summary>
+    public BattleUnit? FindBattleUnit(ushort netId) =>
         _unitById.TryGetValue(netId, out var unit) ? unit : null;
 
     /// <summary>战斗开始 Unix 秒，取战斗世界构造时刻；无开战重置点，准备期耗时计入其中。</summary>
@@ -127,43 +125,35 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 提交移动输入：写入单位移动输入并按世界规则处理"移动即打断读条"。玩家输入与回放输入共用。
+    /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。宿主与回放一律经 <see cref="BattleIntentHub.SubmitMove"/> 转入。
     /// </summary>
-    public void SubmitMove(ushort netId, Vector2 moveDirection) {
-        if (!_unitById.TryGetValue(netId, out var unit))
-            return;
-        SetMoveInput(unit, moveDirection);
+    internal void SubmitMove(ushort netId, Vector2 moveDirection) {
+        if (_unitById.TryGetValue(netId, out var unit))
+            unit.MoveInput = moveDirection;
     }
 
     /// <summary>
-    /// 施法唯一对外入口，在 <see cref="Tick"/> 之外发起一次尝试：技能属该单位且校验通过后，
-    /// 瞬发立即结算、否则写入读条状态与目标。产出事件先进跨帧缓冲，下一 tick 开头汇入帧日志。
-    /// AI 决策与 <see cref="CastPreInputBuffer"/> 共用本入口；不得从 Tick 内调用，暂存缓冲非重入安全。
+    /// 施法裁定：技能属该单位且 <see cref="SkillCastValidator.CanCast"/> 通过后，瞬发立即结算、
+    /// 否则写入读条状态与目标，事件直写本帧日志。未通过只记日志不改状态，意图不退回——重投由输入源负责。
     /// </summary>
-    /// <returns>已落地（瞬发结算或进入读条）返回 true；技能不属该单位或校验未过返回 false，不改状态不产事件。</returns>
-    public bool TryCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos) {
-        _scratchLog.Clear();
-        if (!AttemptCast(caster, skillKey, target, targetPos, _scratchLog))
-            return false;
-        _pendingEvents.AddRange(_scratchLog);
-        return true;
-    }
-
-    /// <summary>
-    /// 施法落地唯一实现：技能属该单位且校验通过后，瞬发即结算、否则写读条状态与目标，
-    /// 事件写入调用方给定的日志。未落地不改状态不产事件；日志归属由调用方决定，
-    /// Tick 内读条完成用本帧日志，Tick 外走暂存缓冲。
-    /// </summary>
-    private bool AttemptCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos,
+    private void AttemptCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos,
         BattleEventLog log) {
+        string targetName = target?.UnitName ?? "(position)";
         var skill = caster.GetSkill(skillKey);
-        if (skill == null || !SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
-            return false;
+        if (skill == null) {
+            LogSkillNotFound(caster.UnitName, skillKey.Id);
+            return;
+        }
 
-        // 瞬发技能：校验通过即立即结算，不进入读条状态机，不受移动取消施法影响
+        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations)) {
+            LogCastRejected(caster.UnitName, skillKey.Id, targetName);
+            return;
+        }
+
+        // 瞬发技能：校验通过即立即结算，不进入读条状态机，无读条可被打断
         if (skill.SpellTime <= 0f) {
             ResolveCast(caster, skill, target, targetPos, log);
-            return true;
+            return;
         }
 
         caster.SkillCasting = skillKey;
@@ -171,26 +161,26 @@ public sealed partial class BattleScene(
         caster.RuntimeState.CastTarget = target;
         caster.RuntimeState.CastTargetPos = targetPos;
         log.Append(new CastStarted(caster.UnitId, skillKey, target?.UnitId));
-        return true;
     }
 
     /// <summary>
     /// 取消单位当前读条施法：产生 CastCanceled 事件并清理读条状态；无读条为空操作。
+    /// 唯一触发路径是读条推进段的"本帧有位移意图"判定。
     /// </summary>
-    public void CancelCast(BattleUnit unit) {
+    private static void CancelCast(BattleUnit unit, BattleEventLog log) {
         if (unit.SkillCasting == default)
             return;
-        _pendingEvents.Add(new CastCanceled(unit.UnitId, unit.SkillCasting));
+        log.Append(new CastCanceled(unit.UnitId, unit.SkillCasting));
         unit.SkillCasting = default;
         unit.SkillCastRemaining = 0f;
         unit.RuntimeState.ClearCast();
     }
 
     /// <summary>
-    /// AI 前置推进：逐个触发敌方单位的自治决策，动作经本场景执行。
-    /// 必须在移动结算之前调用，移动输入本帧生效。
+    /// AI 前置推进：逐单位触发自治决策，产出的移动与施法意图直写单位字段，不触碰结算状态。
+    /// 须在 <see cref="Tick"/> 之前由 <see cref="BattleIntentHub.PrepareTick"/> 调用。
     /// </summary>
-    public void ApplyDecisions() {
+    internal void ApplyDecisions() {
         if (CurrentPhase != BattlePhase.Running)
             return;
 
@@ -198,122 +188,96 @@ public sealed partial class BattleScene(
             if (unit.IsDead || unit.Intelligence is not { } intelligence)
                 continue;
 
-            // 正在读条：原地等待读条完成，避免移动打断自身读条
-            if (unit.SkillCasting != default) {
-                SetMoveInput(unit, Vector2.Zero);
+            // 正在读条：本帧不投移动意图，原地等读条完成，避免移动打断自身读条
+            if (unit.SkillCasting != default)
                 continue;
-            }
 
             var decision = intelligence.Decide(unit, this, _relations);
             switch (decision.Kind) {
-                case EnemyDecisionKind.Idle:
-                    SetMoveInput(unit, Vector2.Zero);
-                    break;
-
                 case EnemyDecisionKind.MoveTo:
-                    SetMoveInput(unit, decision.MoveDirection);
+                    unit.MoveInput = decision.MoveDirection;
                     break;
 
                 case EnemyDecisionKind.CastSkill:
-                    SetMoveInput(unit, Vector2.Zero);
-                    RequestCast(unit, decision.SkillId, decision.TargetNetId, decision.TargetPosition);
+                    SubmitAiCast(unit, decision.SkillId, decision.TargetNetId, decision.TargetPosition);
                     break;
 
-                default:
-                    // 未知决策类型按静止退化，决策器为领域内可控代码，正常不产生
-                    SetMoveInput(unit, Vector2.Zero);
-                    break;
+                    // Idle 与未知决策不投意图：静止是缺省结果
             }
         }
     }
 
-    /// <summary>写入移动输入并处理"移动即打断读条"；零向量表示静止，不打断读条。</summary>
-    private void SetMoveInput(BattleUnit unit, Vector2 moveDirection) {
-        unit.MoveInput = moveDirection;
-        if (moveDirection.LengthSquared() > 0.0001f)
-            CancelCast(unit);
-    }
-
-    /// <summary>按技能目标类型解析单位目标后发起读条；目标丢失或校验失败仅记日志，下一帧重新决策。</summary>
-    private void RequestCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetNetId, Vector2 targetPosition) {
-        var skill = caster.GetSkill(skillKey);
-        if (skill == null) {
-            LogSkillNotFound(caster.UnitName, skillKey.Id);
-            return;
-        }
-
+    /// <summary>
+    /// AI 决策的施法意图投递：按技能目标类型解析单位目标后写入该单位的 <c>CastInput</c>，位置锚点恒随决策携带；
+    /// 目标解不到即本帧不投，下一帧重新决策。
+    /// </summary>
+    private void SubmitAiCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetNetId, Vector2 targetPosition) {
         BattleUnit? target = null;
-        if (skill.NeedUnitTarget) {
+        if (caster.GetSkill(skillKey) is { NeedUnitTarget: true }) {
             if (!_unitById.TryGetValue(targetNetId, out var targetUnit))
                 return;
             target = targetUnit;
         }
 
-        string targetName = target?.UnitName ?? "(position)";
-        if (!TryCast(caster, skillKey, target, targetPosition)) {
-            LogCastRejected(caster.UnitName, skillKey.Id, targetName);
-            return;
-        }
-
-        LogCastStarted(caster.UnitName, skillKey.Id, targetName);
+        caster.CastInput = new CastIntent(skillKey, target, targetPosition);
     }
 
     /// <summary>
-    /// 按帧推进移动结算、读条、冷却与 Buff，返回本帧领域事件。
-    /// 仅在 Running 阶段推进；战斗结束条件满足时切换 Finished。
+    /// 按帧推进位移解算、施法裁定与读条、冷却与 Buff，返回本帧领域事件；仅在 Running 阶段推进，结束条件满足时切 Finished。
+    /// 单出口：两类意图在末尾统一作废，静止与无待决施法是缺省结果。作废点必须晚于读条推进段——它是移动意图的最后一个读者。
     /// </summary>
     public IReadOnlyList<IBattleEvent> Tick(float deltaTime) {
-        if (CurrentPhase != BattlePhase.Running) {
-            // 非 Running 不推进不外送事件；跨帧缓冲一并清空，避免战斗结束后滞留。
-            _pendingEvents.Clear();
-            return [];
-        }
-
-        ElapsedTime += deltaTime;
-
-        // 全局 Buff 节拍：每满一个间隔所有 Buff 同时结算一跳
-        _buffTickRemaining -= deltaTime;
-        int buffJumps = 0;
-        while (_buffTickRemaining <= 0) {
-            _buffTickRemaining += BuffTickInterval;
-            buffJumps++;
-        }
-
         _eventLog.Clear();
-        _eventLog.AppendRange(_pendingEvents);
-        _pendingEvents.Clear();
 
-        // 移动结算统一在领域层：本帧输入本帧生效，服务端与回放同源同序。
-        ResolveMovement(deltaTime);
+        if (CurrentPhase == BattlePhase.Running) {
+            ElapsedTime += deltaTime;
 
-        foreach (var unit in _units.ToArray()) {
-            TickCasting(unit, deltaTime, _eventLog);
+            // 全局 Buff 节拍：每满一个间隔所有 Buff 同时结算一跳
+            _buffTickRemaining -= deltaTime;
+            int buffJumps = 0;
+            while (_buffTickRemaining <= 0) {
+                _buffTickRemaining += BuffTickInterval;
+                buffJumps++;
+            }
+
+            // 位移解算在前：其后的施法裁定与结算一律读本帧新位置
+            ResolveMovement(deltaTime);
+
+            foreach (var unit in _units.ToArray()) {
+                TickCasting(unit, deltaTime, _eventLog);
+            }
+
+            foreach (var unit in _units.ToArray()) {
+                TickCooldowns(unit, deltaTime);
+            }
+
+            foreach (var unit in _units.ToArray()) {
+                TickBuffs(unit, deltaTime, _eventLog, buffJumps);
+            }
+
+            TryEndBattle();
+
+            // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
+            foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, _hateSettings, _relations)) {
+                if (_unitById.TryGetValue(effect.HolderNetId, out var holder))
+                    holder.RuntimeState.Hates.ApplyEffect(effect);
+            }
+
+            CleanupDeaths();
         }
 
-        foreach (var unit in _units.ToArray()) {
-            TickCooldowns(unit, deltaTime);
+        // 本帧意图统一作废，下一帧由输入源重投
+        foreach (var unit in _units) {
+            unit.MoveInput = Vector2.Zero;
+            unit.CastInput = null;
         }
-
-        foreach (var unit in _units.ToArray()) {
-            TickBuffs(unit, deltaTime, _eventLog, buffJumps);
-        }
-
-        TryEndBattle();
-
-        // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
-        foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, _hateSettings, _relations)) {
-            if (_unitById.TryGetValue(effect.HolderNetId, out var holder))
-                holder.RuntimeState.Hates.ApplyEffect(effect);
-        }
-
-        CleanupDeaths();
 
         return _eventLog;
     }
 
     /// <summary>
-    /// 移动结算统一在领域层：本帧输入本帧生效，服务端、在线与回放同源同序。
-    /// 意图集合只含存活且有位移输入的单位；静止与死亡单位不参与互斥，不作为他人的障碍。
+    /// 位移解算：本帧移动意图本帧生效，服务端、在线与回放同源同序；只读不清理，作废在 <see cref="Tick"/> 末。
+    /// 静止与死亡单位不入意图集，既不被推开也不构成他人障碍；遍历按注册顺序，保证互斥让位的解算顺序三端一致。
     /// </summary>
     private void ResolveMovement(float dt) {
         var intents = new List<MoveIntent>(_units.Count);
@@ -352,8 +316,18 @@ public sealed partial class BattleScene(
         CurrentPhase = BattlePhase.Finished;
     }
 
-    /// <summary>推进单位读条；读条完成时结算技能并清理读条状态。</summary>
+    /// <summary>
+    /// 施法裁定与读条推进，逐单位三步：消费本帧施法意图 → 本帧有非零位移意图且在读条则取消 → 推进读条，扣完即结算。
+    /// 消费排在打断判定之前，故同 tick 内「起读条 + 位移」当帧即被打断；三步都在位移解算之后，射程判定与结算读同一份本帧位置。
+    /// </summary>
     private void TickCasting(BattleUnit unit, float deltaTime, BattleEventLog log) {
+        // 意图不在此清理，作废收在 Tick 末
+        if (unit.CastInput is { } cast)
+            AttemptCast(unit, cast.Skill, cast.Target, cast.TargetPos, log);
+
+        if (unit.SkillCasting != default && unit.MoveInput.LengthSquared() > 0.0001f)
+            CancelCast(unit, log);
+
         if (unit.SkillCasting == default)
             return;
 
@@ -488,16 +462,12 @@ public sealed partial class BattleScene(
     #region 日志
 
     [LoggerMessage(Level = LogLevel.Warning,
-        Message = "[BattleScene] {Enemy} cannot find skill {SkillId}.")]
-    private partial void LogSkillNotFound(string enemy, string skillId);
+        Message = "[BattleScene] {Caster} cannot find skill {SkillId}.")]
+    private partial void LogSkillNotFound(string caster, string skillId);
 
     [LoggerMessage(Level = LogLevel.Information,
-        Message = "[BattleScene] {Enemy} cast rejected: {SkillId} on {Target}.")]
-    private partial void LogCastRejected(string enemy, string skillId, string target);
-
-    [LoggerMessage(Level = LogLevel.Information,
-        Message = "[BattleScene] {Enemy} starts casting skill {SkillId} on {Target}.")]
-    private partial void LogCastStarted(string enemy, string skillId, string target);
+        Message = "[BattleScene] {Caster} cast rejected: {SkillId} on {Target}.")]
+    private partial void LogCastRejected(string caster, string skillId, string target);
 
     #endregion
 }

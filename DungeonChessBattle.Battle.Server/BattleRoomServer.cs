@@ -66,9 +66,6 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的所有 UnitPawn。</summary>
     private readonly List<UnitPawn> _roomPawns = [];
 
-    /// <summary>网络实体 ID 到战斗世界领域单位的映射，与 UnitPawn 同 ID 互绑。</summary>
-    private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
-
     /// <summary>网络实体 ID 到 UnitPawn 的映射，状态同步器定位载体用。</summary>
     private readonly Dictionary<ushort, UnitPawn> _pawnByNetId = [];
 
@@ -87,8 +84,8 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的战斗世界，面向 BattleScene 具体类，不依赖网络载体与配置仓库。</summary>
     private readonly BattleScene _battleScene;
 
-    /// <summary>施法预输入缓冲：把玩家按键在状态未就绪时缓存，就绪后交回战斗世界，排队状态不入领域。</summary>
-    private readonly CastPreInputBuffer _castPreInput;
+    /// <summary>权威输入门面：本房间移动与施法意图的唯一提交入口，内含施法预输入缓冲。</summary>
+    private readonly BattleIntentHub _intentHub;
 
     /// <summary>本房间副本的阵营关系函数，AI 决策与战斗世界共用。</summary>
     private readonly CampRelationResolver _campRelations;
@@ -155,7 +152,7 @@ public partial class BattleRoomServer : INetEventListener {
         _campRelations = _dungeonRegistry.GetRelations(_dungeonKey);
         var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(_dungeonKey));
         _battleScene = new BattleScene(_campRelations, movementScene, logger: loggerFactory.CreateLogger<BattleScene>());
-        _castPreInput = new CastPreInputBuffer(_battleScene, loggerFactory.CreateLogger<CastPreInputBuffer>());
+        _intentHub = new BattleIntentHub(_battleScene, loggerFactory);
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
@@ -207,7 +204,7 @@ public partial class BattleRoomServer : INetEventListener {
         // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗世界注册才是线程安全的
         foreach (var pawn in _roomPawns) {
             pawn.InputHandler = null;
-            if (_battleUnitByNetId.TryGetValue(pawn.Id, out var unit))
+            if (_battleScene.FindBattleUnit(pawn.Id) is { } unit)
                 _battleScene.RemoveUnit(unit);
         }
 

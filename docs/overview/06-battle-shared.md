@@ -7,6 +7,8 @@
 - 战斗单位 `BattleUnit`（含 `UnitCombatState`：读条目标、Buff 权威列表、冷却、仇恨表）为领域数据实体；与外部载体 `UnitPawn` 的字段搬运在 `Battle.Entities` 的同步通道内完成，本层不依赖网络与框架类型。
 - 网络回填占位 `NetworkBuffDefinition`/`NoOpBuffEffect`：在线端把下行 Buff 还原为 `ActiveBuff` 展示壳所用的占位定义，效果永不触发，客户端不推进 Buff。
 - 只读消费入口 `IBattleUnitView`：AI、施法/目标校验与仇恨规则只读消费。结算输入为只读快照 `UnitSnapshot`。
+- 写权限约定：本层 `internal` 成员即「Battle.Logic 可写、其余程序集不可写」的面（`InternalsVisibleTo`），当前是 `BattleUnit.MoveInput` 与 `BattleUnit.CastInput` 两个 setter——写者全在 Battle.Logic：宿主一律经输入门面 `BattleIntentHub`，AI 决策直写单位字段；两类意图在 `Tick` 末统一作废。
+- 按帧意图载荷 `CastIntent`：只带技能键、已解析的目标引用与位置锚点，不带裁定结论，射程与阵营一律在消费点按当时位置判定。
 
 ## 端口契约
 

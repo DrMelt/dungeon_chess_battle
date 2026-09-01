@@ -1,4 +1,3 @@
-using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
 using Microsoft.Extensions.Logging;
@@ -7,23 +6,19 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DungeonChessBattle.Battle.Logic;
 
 /// <summary>
-/// 施法预输入缓冲：把玩家一次按键推迟到状态就绪的 tick 再交回 <see cref="BattleScene"/> 裁定。
-/// 只持技能键、目标引用与剩余有效秒数，不含射程、阵营等任何领域判定：重试判据唯一为
-/// <see cref="SkillCastValidator.IsStateReady"/>——会自然转就绪的状态阻塞才值得等待，
-/// 目标条件一律在提交时由战斗世界一次裁定，被拒即弃。
-/// 排队状态是宿主待办，不写进领域单位、不进同步通道。
-/// 由权威宿主在 <see cref="BattleScene.Tick"/> 之前的输入窗口驱动，服务端与回放同序同实现，落地逐位复现。
+/// 施法预输入缓冲：把状态未就绪的按键推迟到就绪的 tick，再转投为该单位的 <c>BattleUnit.CastInput</c>。
+/// 唯一重试判据是 <see cref="SkillCastValidator.IsStateReady"/>；射程、阵营等目标条件一律不预判，就绪时转投、被拒即弃。
+/// 由 <see cref="BattleIntentHub"/> 私有持有，在 <see cref="BattleScene.Tick"/> 之前推进，服务端与回放同序。
 /// </summary>
-/// <param name="scene">意图落地时提交到的战斗世界。</param>
+/// <param name="scene">战斗世界，只读其阶段以与战斗时钟同起停。</param>
 /// <param name="logger">可选日志注入。</param>
-public sealed partial class CastPreInputBuffer(BattleScene scene, ILogger<CastPreInputBuffer>? logger = null) {
+internal sealed partial class CastPreInputBuffer(BattleScene scene, ILogger<CastPreInputBuffer>? logger = null) {
     /// <summary>
-    /// 预输入有效窗口秒数。域内常量不开放注入：服务端与回放必须同值，
-    /// 分档调窗属战斗内容变更，须与既有录像的兼容决策一并处理。
+    /// 预输入有效窗口秒数。服务端与回放必须同值，故不开放注入；改值属战斗内容变更，须一并决定既有录像去留。
     /// </summary>
     public const float WindowSeconds = 0.5f;
 
-    /// <summary>意图落地时提交到的战斗世界，构造后只读，与之同生命周期。</summary>
+    /// <summary>战斗世界，仅 <see cref="BattleScene.CurrentPhase"/> 一个读者，与之同生命周期。</summary>
     private readonly BattleScene _scene = scene;
 
     /// <summary>排队与作废日志，未注入时用 NullLogger 静默。</summary>
@@ -36,28 +31,29 @@ public sealed partial class CastPreInputBuffer(BattleScene scene, ILogger<CastPr
     private readonly List<PendingIntent> _retired = [];
 
     /// <summary>
-    /// 提交一次施法意图：状态已就绪立即交战斗世界裁定，返回值即裁定结果；
-    /// 未就绪则覆盖该施法者的在架意图并满窗计时，返回 true 仅表示已被接管，不保证最终可施放。
+    /// 提交一次施法意图：状态就绪即转投为该单位的本帧意图，未就绪则覆盖其排队槽并满窗计时。
+    /// 两条分支都是接管，裁定推迟到消费点。
     /// </summary>
-    public bool Submit(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos) {
-        if (SkillCastValidator.IsStateReady(caster, skillKey))
-            return _scene.TryCast(caster, skillKey, target, targetPos);
+    public void Submit(BattleUnit caster, CastIntent intent) {
+        if (SkillCastValidator.IsStateReady(caster, intent.Skill)) {
+            caster.CastInput = intent;
+            return;
+        }
 
         _intents.RemoveAll(i => ReferenceEquals(i.Caster, caster));
-        _intents.Add(new PendingIntent(caster, skillKey, target, targetPos, WindowSeconds));
-        LogCastQueued(caster.UnitName, skillKey.Id);
-        return true;
+        _intents.Add(new PendingIntent(caster, intent, WindowSeconds));
+        LogCastQueued(caster.UnitName, intent.Skill.Id);
     }
 
     /// <summary>
-    /// 逐帧推进在架意图：剩余秒随本帧递减，超窗或施法者死亡即弃；状态就绪则提交一次并清槽，
-    /// 被战斗世界拒绝同样清槽。阶段非 Running 不推进，与战斗世界时钟同起停。
+    /// 逐帧推进在架意图：剩余秒随本帧递减，超窗或施法者死亡即弃；状态就绪则转投为本帧意图并清槽。
+    /// 转投后本类不再介入，阶段非 Running 不推进。
     /// </summary>
     public void Advance(float deltaTime) {
         if (_scene.CurrentPhase != BattlePhase.Running || _intents.Count == 0)
             return;
 
-        // 前向扫描保两端提交顺序一致；本帧已落地的意图只改他人生命与自身冷却，不改后续意图的判据
+        // 前向扫描保持两端提交顺序一致；本帧转投只写意图字段，不影响后续意图的就绪判据
         foreach (var intent in _intents) {
             if (intent.Caster.IsDead) {
                 _retired.Add(intent);
@@ -66,15 +62,15 @@ public sealed partial class CastPreInputBuffer(BattleScene scene, ILogger<CastPr
 
             intent.Remaining -= deltaTime;
             if (intent.Remaining <= 0f) {
-                LogCastExpired(intent.Caster.UnitName, intent.SkillKey.Id);
+                LogCastExpired(intent.Caster.UnitName, intent.Intent.Skill.Id);
                 _retired.Add(intent);
                 continue;
             }
 
-            if (!SkillCastValidator.IsStateReady(intent.Caster, intent.SkillKey))
+            if (!SkillCastValidator.IsStateReady(intent.Caster, intent.Intent.Skill))
                 continue;
 
-            _scene.TryCast(intent.Caster, intent.SkillKey, intent.Target, intent.TargetPos);
+            intent.Caster.CastInput = intent.Intent;
             _retired.Add(intent);
         }
 
@@ -83,21 +79,16 @@ public sealed partial class CastPreInputBuffer(BattleScene scene, ILogger<CastPr
         _retired.Clear();
     }
 
-    /// <summary>清空全部在架意图：回放重置重建单位后必须调用，在架的旧单位引用随重建失效。</summary>
+    /// <summary>清空全部在架意图：其施法者引用在单位重建后失效，宿主重置前必须调用。</summary>
     public void Clear() {
         _intents.Clear();
         _retired.Clear();
     }
 
-    /// <summary>
-    /// 在架施法意图：目标持领域单位引用，与读条目标 <c>UnitCombatState.CastTarget</c> 同源，不做 ID 重解析。
-    /// </summary>
-    private sealed class PendingIntent(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target,
-        Vector2? targetPos, float remaining) {
+    /// <summary>在架施法意图：载荷与转投目标 <c>BattleUnit.CastInput</c> 同形态，就绪即整体转投。</summary>
+    private sealed class PendingIntent(BattleUnit caster, CastIntent intent, float remaining) {
         public readonly BattleUnit Caster = caster;
-        public readonly SkillKeyId SkillKey = skillKey;
-        public readonly BattleUnit? Target = target;
-        public readonly Vector2? TargetPos = targetPos;
+        public readonly CastIntent Intent = intent;
         public float Remaining = remaining;
     }
 

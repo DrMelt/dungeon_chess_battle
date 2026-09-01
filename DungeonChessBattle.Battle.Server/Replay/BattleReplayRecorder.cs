@@ -15,7 +15,7 @@ namespace DungeonChessBattle.Battle.Server.Replay;
 /// <param name="players">玩家初始状态表。</param>
 internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
     int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
-    /// <summary>记录条目上限，50tick/s 满员 30 分钟约 72 万条移动输入。</summary>
+    /// <summary>记录条目上限。移动输入每 tick 每人一条：128 tick/s 下八人满员约 16 分钟触顶，单人约 2.2 小时。</summary>
     public const int MaxEntryCount = 1_000_000;
 
     private readonly Lock _lock = new();

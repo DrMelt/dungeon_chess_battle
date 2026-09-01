@@ -20,8 +20,8 @@
 
 ## 战斗循环
 
-- `BattleLoop.Update` = `ApplyDecisions`（AI 前置）→ `CastPreInputBuffer.Advance`（预输入重试），都在位移结算之前；`LateUpdate` = `Tick`（推进）→ 状态同步 → 整帧事件外送。本钩子不参与预测回滚。
-- 施法请求经 `UnitController` 可靠通道到达后交 `CastPreInputBuffer.Submit` 接管：状态就绪当帧交 `BattleScene.TryCast` 裁定，未就绪则入该施法者的预输入槽，就绪 tick 再裁定一次。回执 true 表示意图已被接管（含入槽），不保证最终可施放；false 只源于阶段非 Running、技能键非法、目标实体查不到与就绪后被裁定不可施放。
+- `BattleLoop.Update` = 输入门面 `PrepareTick`（AI 决策 → 在架施法重试），都在位移结算之前；`LateUpdate` = `Tick`（推进）→ 状态同步 → 整帧事件外送。本钩子不参与预测回滚。
+- 施法请求经 `UnitController` 可靠通道到达后交 `BattleIntentHub.SubmitCast`：施法者与目标的 ID 解析在门面内完成，状态就绪即转投为该单位的本帧意图、未就绪入其排队槽，裁定一律在 `Tick` 的读条推进段做一次。回执 true 只表示意图已投递接管，不含可施放性结论；false 只源于阶段非 Running、技能键非法、施法者或目标解析不到。
 - 事件外送：Tick 返回的领域事件经 `BattleEventCoder` 编码 → `ReliableMessageFrame` 打包 → `SendReliableOrdered` 逐在线会话广播。空帧不发，断线期间不补发。
 
 ## 玩家会话与断线重连
@@ -29,7 +29,7 @@
 - `PlayerSession` 聚合 playerId → PeerId/NetPlayer/Controller/Pawn，连接状态是会话本地数据不产生网络实体。
 - 连接密钥即 playerId：`OnConnectionRequest` 校验服务器密钥或 Store 房间成员白名单；同一 playerId 已有活跃连接时关闭旧连接接受新连接。
 - 断线仅清会话连接状态，单位与战斗状态保留，玩家可随时凭成员身份重连；重连重建 NetPlayer 并重新绑定控制器。
-- 移除 LES 玩家前必须先经 `ReleaseControlledPawn` 解绑：`ServerEntityManager.RemovePlayer` 内部走 `DestroyWithControlledEntity`，连带销毁受控 `UnitPawn`。移动输入由 `PawnLogic.Update` 驱动，服务端更新循环跳过已销毁实体，载体一旦销毁，重连绑上的就是死实体且不再报错——输入通道永久失效、全端只见该载体消失。解绑同时把该单位移动输入归零，否则失去输入源后单位按末值持续位移。`TryBindPlayerController` 以 `IsDestroyed` 兜底拒绝绑定。
+- 移除 LES 玩家前必须先经 `ReleaseControlledPawn` 解绑：`ServerEntityManager.RemovePlayer` 内部走 `DestroyWithControlledEntity`，连带销毁受控 `UnitPawn`。移动输入由 `PawnLogic.Update` 驱动，服务端更新循环跳过已销毁实体，载体一旦销毁，重连绑上的就是死实体且不再报错——输入通道永久失效、全端只见该载体消失。解绑后该单位再无移动输入来源，按帧归零的移动输入使其下一 tick 即静止，无需显式归零。`TryBindPlayerController` 以 `IsDestroyed` 兜底拒绝绑定。
 - 重连登记（大厅层 `RegisterPlayer`）仅当房间已有同名会话才允许，杜绝冒用他人 playerId 绑单位。
 
 ## 空房清理与回放归档

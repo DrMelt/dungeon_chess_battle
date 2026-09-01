@@ -31,7 +31,8 @@ Battle.Server 旁路录制 → IReplayStore 归档（摘要含 DataVersion）
 输入重放的成立依赖确定性与数据一致，二者都必须是契约而非假设：
 
 - 逻辑确定性：AI/伤害/移动均为纯函数无随机（`Battle.Logic/Shared/Server` 无 `Random`），固定逻辑步长，可以重算断言。
-- 内容一致性：`ReplayRecordHeader.DataVersion` 为录制端 `GameConfigDB.DataRevision`。门控两处：`Game.ReplayService` 下载解码后即判不可播放且不落缓存，`ReplayEngine` 构造再校验一次，引擎不信任输入。归档摘要与本地缓存条目都从记录头部携带 `DataVersion`，列表侧可在下载前标注。任何影响战斗结果的配置变化都必须递增 `DataRevision`，把数据演化导致的旧回放静默漂移变成声响失败。
+- 内容一致性：`ReplayRecordHeader.DataVersion` 为录制端 `GameConfigDB.DataRevision`。门控两处：`Game.ReplayService` 下载解码后即判不可播放且不落缓存，`ReplayEngine` 构造再校验一次，引擎不信任输入。归档摘要与本地缓存条目都从记录头部携带 `DataVersion`，列表侧可在下载前标注。任何影响战斗结果的变更都必须递增 `DataRevision`——内容侧是配置与布局，引擎侧是结算时序与事件顺序。
+- 同帧注入先后：施法与移动都只登记意图，裁定在 `BattleScene.Tick` 内单点完成；仍需同序的只剩门面 `PrepareTick` 的在架重试先于本帧新按键，见 `overview/07` 输入门面。
 - 格式版本：`ReplayFormatVersion.Current` 门控记录模型，模型或编码变化时递增，`ReplayRecordCoder` 解码校验。
 
 播放控制：`ReplayCoordinator` 以固定步长累积器驱动引擎，`SeekTo` 重置到首帧快进。

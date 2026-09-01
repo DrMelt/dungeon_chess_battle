@@ -29,18 +29,18 @@ LES 自身时序与实体钩子可达性见 [lite-entity-system-update](../libra
 | 4d | `ClientEntityManager.Update` 末尾 | 逐实体 `VisualUpdate`；`UnitPawn` 未标 `UpdateOnClient`，`AliveEntities` 内只有本地控制实体 |
 | 5 | `UnitGameShow._Process` | 直读 `BattleUnit.Position`、`Direction` 写 transform，无二次平滑 |
 
-在线端当前不存在预测模拟：客户端不跑 `ApplyDecisions` 与整场景 `Tick`，同步通道只有投影与回填两个方向、无本地回写，本地 `BattleScene` 只作展示回填容器，主控与他人的位移一律由服务端下行的 `Value` 决定。下行节奏是 `sendRate = ServerSendRate.EqualToFPS`，每 tick 一个状态，128 Hz 高于常见渲染帧率，直读 `Value` 不产生可见阶跃。
+在线端当前不存在预测模拟：客户端不跑输入门面的 `PrepareTick` 与整场景 `Tick`，同步通道只有投影与回填两个方向、无本地回写，本地 `BattleScene` 只作展示回填容器，主控与他人的位移一律由服务端下行的 `Value` 决定。下行节奏是 `sendRate = ServerSendRate.EqualToFPS`，每 tick 一个状态，128 Hz 高于常见渲染帧率，直读 `Value` 不产生可见阶跃。
 
 | 编号 | 缺陷 | 现象与触发条件 | 违反 |
 |---|---|---|---|
 | D5 | 主控单位无本地步进，位移全等下行 | 操作响应至少滞后 RTT/2 加缓冲水位，本端没有可被纠正的预测位移 | — |
 | D9 | `UnitPawn` 全项目不带 `SyncVarFlags`，`SyncFlags.Interpolated` 未标注 | `EntityClassData` 的 flags 只取自字段或所在类上的该特性，默认 `None`；未标注则框架不写 `_interpValue`，`InterpolatedValue` 对远端实体退化，展示只能读 `Value` | — |
 | D10 | 回填落在 `EntityManager.Update` 开头，早于 4c 的下行写回 | 展示读数恒比本端已收到的权威值旧一个渲染帧 | I3 |
-| D11 | 移动输入无时效：`MoveInput` 只在写入方调用时更新，`Tick` 内不清零 | 连接在而输入流停摆（客户端卡发送）时单位按末值持续位移，服务端无自动停止点；玩家断开已由服务端解绑时显式归零，卡发送未覆盖 | — |
+| D11 | 移动输入无时效：服务端输入队列排空的 tick 仍转发 `CurrentInput` 末值 | 连接在而客户端卡发送时单位按末值持续位移。领域侧已改为按帧作废的输入，转发一停即静止，但 `PawnLogic.Update` 每 tick 无条件转发末值，卡发送未被覆盖——时效缺在转发层，不在字段生命周期 | — |
 
 已关闭：D1（本地结算结果回写他人 `Value`，回写通道已删除）、D2（回填对插值进度的依赖，改读 `Value` 后不存在，代价转入 D9）、D3（客户端 `Tick` 用渲染帧 dt）、D4（客户端重跑敌方 AI 与整场景结算）、D7（房间线程 `Thread.Sleep(1)` 控制轮询节奏，现为 `Thread.Yield()`）。
 
-输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行，队列深度由客户端按 jitter 与缓冲水位自适应调节生成速率维持。本项目未覆写 `GetDefaultInput`，而 `GetDefaultInput` 只在控制器构造与客户端 pending 复位处取值：服务端输入队列排空的 tick 根本不调 `ApplyIncomingInput`，`CurrentInput` 保持上一 tick 值——空档期是**末值保持**而非回落静止。代价是输入流停摆（客户端卡发送但未断开）时单位按末值持续位移，服务端缺的是输入时效，不是输入复位。
+输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行，队列深度由客户端按 jitter 与缓冲水位自适应调节生成速率维持。本项目未覆写 `GetDefaultInput`，而 `GetDefaultInput` 只在控制器构造与客户端 pending 复位处取值：服务端输入队列排空的 tick 根本不调 `ApplyIncomingInput`，`CurrentInput` 保持上一 tick 值——空档期是**末值保持**而非回落静止。代价是输入流停摆（客户端卡发送但未断开）时单位按末值持续位移：`PawnLogic.Update` 每 tick 无条件把 `CurrentInput` 转给战斗世界，领域侧的按帧作废管不到这一层，缺的是转发时效，不是输入复位。
 
 D6（缓冲水位）。`RoomBattleClient.BufferLowestSeconds/BufferHighestSeconds` 把 `PreferredBufferTimeLowest/Highest` 重设为 0.002/0.006 秒。LES 用同一水位同时约束下行插值缓冲与服务端输入队列，下界实算 `NetworkJitter × 1.5 + Lowest`；框架默认 0.025 在 128 Hz 下折成 3.2 tick，本地回环里 `TickLag` 的 `debt` 与 `queue` 两段几乎全由它撑起。该水位只够本地链路，公网须按 RTT 与抖动分档。
 

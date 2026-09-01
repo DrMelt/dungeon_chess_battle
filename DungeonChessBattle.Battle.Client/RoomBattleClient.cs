@@ -345,8 +345,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     public long? BattleStartUnixTime => RoomState.BattleStartUnixTime;
 
     /// <summary>
-    /// 经可靠请求通道向服务端发起施法：服务端权威端的施法预输入缓冲接管该按键，状态就绪即交战斗世界裁定，
-    /// 未就绪则入槽等就绪 tick 再裁定；回执 true 仅表示意图已被接管，不保证最终可施放。
+    /// 经可靠请求通道向服务端发起施法：服务端输入门面接管该按键，回执 true 仅表示意图已投递，不含可施放性结论。
     /// 施法者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>

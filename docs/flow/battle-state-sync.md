@@ -74,7 +74,7 @@ Buff 与冷却经回填进入领域 `RuntimeState`，在线端的技能冷却显
 
 ## 回放链
 
-`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑：移动输入按记录帧经 `SubmitMove` 注入，施法输入经同一 `CastPreInputBuffer` 接管后交 `BattleScene.TryCast`；移动在 `BattleScene.Tick` 内与在线同序结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供展示契约消费，无网络与投影层。
+`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑：移动与施法意图一律经同一输入门面 `BattleIntentHub` 注入，施法经门面内的排队器转投为本帧意图，由 `BattleScene.Tick` 的读条推进段统一裁定；移动在 `BattleScene.Tick` 内与在线同序结算，直接读 `BattleUnit`（实现 `IUnitUiView`）供展示契约消费，无网络与投影层。
 
 ## 两链收敛
 
@@ -100,4 +100,4 @@ sequenceDiagram
 
 客户端 `ClearRoomSessionState` 清空单位索引、聚焦、阶段与本地网络 ID，随连接状态重建为干净会话。
 
-服务端侧单位载体不随玩家断开销毁：断开玩家的单位原地站桩，领域状态与投影照常推进下行，重连方按 `BaselineSync` 全量重建视图。解绑与输入归零的先后约束见 `overview/13-battle-server`。
+服务端侧单位载体不随玩家断开销毁：断开玩家的单位原地站桩，领域状态与投影照常推进下行，重连方按 `BaselineSync` 全量重建视图。解绑与输入通道的先后约束见 `overview/13-battle-server`。

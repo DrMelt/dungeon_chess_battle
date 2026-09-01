@@ -66,9 +66,9 @@ public partial class BattleRoomServer {
             : (ushort)(1 + 1);
         _replayRecorder?.SetNextNetId(nextNetId);
 
-        // 战斗循环收编进 LES tick 生命周期：Update=ApplyDecisions → 预输入重试 先于位移，
+        // 战斗循环收编进 LES tick 生命周期：Update=输入预备（AI 决策 → 在架施法重试）先于位移，
         // LateUpdate=Tick → 状态同步 → 整帧事件外送。
-        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, _castPreInput,
+        EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, _intentHub,
             scene => _stateSynchronizer.Sync(scene), HandleBattleFrameEvents));
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -154,7 +154,6 @@ public partial class BattleRoomServer {
             BodyRadius = config.BodyRadius,
             Position = spawnPos,
         };
-        _battleUnitByNetId[entity.Id] = unit;
         _battleScene.AddUnit(unit);
 
         // 技能定义供客户端 UnitGameShow 装配展示资源，本地字段不参与网络同步
@@ -162,9 +161,6 @@ public partial class BattleRoomServer {
 
         return entity;
     }
-
-    /// <summary>按网络 ID 查找战斗世界领域单位。</summary>
-    private BattleUnit? FindBattleUnit(ushort netId) => _battleUnitByNetId.GetValueOrDefault(netId);
 
     /// <summary>在本房间启动战斗：把战斗世界阶段置为 Running，阶段经状态同步器投影到房间载体，起始 tick 写入回放记录。</summary>
     public void StartBattle() {
@@ -175,11 +171,11 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理通过 UnitPawn 实例事件到达的玩家输入：提交战斗世界并按"移动即打断读条"规则消费。
-    /// 移动位移由领域 BattleScene.Tick 统一结算，在线与回放同源同序。
+    /// 处理通过 UnitPawn 实例事件到达的玩家输入：经输入门面提交移动意图并旁路记录到回放，
+    /// 位移由领域 BattleScene.Tick 统一结算。
     /// </summary>
     private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
-        _battleScene.SubmitMove(pawn.Id, input.MoveDirection);
+        _intentHub.SubmitMove(pawn.Id, input.MoveDirection);
         TryRecordMoveInput(pawn, input);
 
         if (_logger.IsEnabled(LogLevel.Trace))
@@ -188,10 +184,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 处理经 UnitController 可靠请求到达的技能施放请求：交 <see cref="CastPreInputBuffer"/> 接管，
-    /// 状态就绪当帧即由战斗世界裁定，未就绪则入该施法者的预输入槽，就绪 tick 再裁定一次。
-    /// 返回值作为请求回执发回客户端，true 表示意图已被接管（含入槽），不保证最终可施放。
-    /// 阶段非 Running、技能键非法、目标实体查不到三类即时拒绝。
+    /// 处理经 UnitController 可靠请求到达的施法请求：交输入门面投递意图，
+    /// 施法者与目标的 ID 解析和排队都在门面内完成，房间不再另做一遍。返回值作为回执发回客户端。
     /// </summary>
     private bool HandleCastSkillRequest(UnitPawn casterPawn, CastSkillRequest req) {
         if (_battleScene.CurrentPhase != BattlePhase.Running) {
@@ -204,36 +198,22 @@ public partial class BattleRoomServer {
             return false;
         }
 
-        if (FindBattleUnit(casterPawn.Id) is not { } caster)
-            return false;
+        // TargetNetId 为 0 走位置目标（范围技能，XZ 平面），非 0 走单位目标
+        Vector2? targetPos = req.TargetNetId != 0 ? null : new Vector2(req.TargetPosX, req.TargetPosZ);
 
-        BattleUnit? target = null;
-        Vector2? targetPos = null;
-        if (req.TargetNetId != 0) {
-            target = FindBattleUnit(req.TargetNetId);
-            if (target == null) {
-                _logger.LogWarning("[RoomId: {RoomId}] Skill request: target unit {TargetId} not found.",
-                    RoomId, req.TargetNetId);
-                return false;
-            }
-        }
-        else {
-            // 位置目标技能，范围伤害，XZ 平面
-            targetPos = new Vector2(req.TargetPosX, req.TargetPosZ);
-        }
-
-        // 回执 false 只有一种成因：状态已就绪但当帧被战斗世界裁定不可施放（不归属、目标条件未满足）
-        if (!_castPreInput.Submit(caster, new SkillKeyId(req.SkillTypeId), target, targetPos)) {
+        // 投递失败只剩一种成因：施法者或目标解析不到
+        if (!_intentHub.SubmitCast(casterPawn.Id, new SkillKeyId(req.SkillTypeId), req.TargetNetId, targetPos)) {
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning("[RoomId: {RoomId}] Skill request rejected: {Caster} cannot cast {SkillId} now.",
-                    RoomId, casterPawn.UnitKeyName.Value, req.SkillTypeId);
+                _logger.LogWarning("[RoomId: {RoomId}] Skill request not delivered: {Caster} or target {Target} missing.",
+                    RoomId, casterPawn.UnitKeyName.Value, req.TargetNetId);
             return false;
         }
 
-        // 接管含"当帧落地"与"入预输入槽"两种，后者由 CastPreInputBuffer 记 LogCastQueued
+        // 入排队槽的意图由排队器另记 LogCastQueued
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Skill request taken: {Caster} -> {Target}, SkillId={SkillId}",
-                RoomId, casterPawn.UnitKeyName.Value, target?.UnitName ?? "(position)", req.SkillTypeId);
+                RoomId, casterPawn.UnitKeyName.Value,
+                req.TargetNetId == 0 ? "(position)" : req.TargetNetId.ToString(), req.SkillTypeId);
         return true;
     }
 
@@ -243,14 +223,11 @@ public partial class BattleRoomServer {
     /// 设置后目标死亡由投影期的 <see cref="ClearDeadFocusTargets"/> 清 0，不依赖死亡事件。
     /// </summary>
     private bool HandleSetFocusTargetRequest(UnitPawn pawn, ushort targetNetId) {
-        if (targetNetId != 0) {
-            var targetUnit = FindBattleUnit(targetNetId);
-            if (targetUnit == null || targetUnit.IsDead) {
-                if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
-                        RoomId, pawn.UnitKeyName.Value, targetNetId);
-                return false;
-            }
+        if (targetNetId != 0 && _battleScene.FindUnit(targetNetId) is not { IsDead: false }) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[RoomId: {RoomId}] Focus target rejected: {Unit} -> target {TargetId} not found or dead.",
+                    RoomId, pawn.UnitKeyName.Value, targetNetId);
+            return false;
         }
 
         pawn.FocusTargetNetId.Value = targetNetId;
@@ -270,7 +247,7 @@ public partial class BattleRoomServer {
             var targetNetId = pawn.FocusTargetNetId.Value;
             if (targetNetId == 0)
                 continue;
-            if (FindBattleUnit(targetNetId) is { IsDead: false })
+            if (_battleScene.FindUnit(targetNetId) is { IsDead: false })
                 continue;
             pawn.FocusTargetNetId.Value = 0;
         }

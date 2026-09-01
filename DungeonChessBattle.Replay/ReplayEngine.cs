@@ -11,14 +11,12 @@ namespace DungeonChessBattle.Replay;
 
 /// <summary>
 /// 回放引擎：解码后的回放快照在本地用战斗世界确定性重跑。
-/// 与在线端共用同一 BattleScene，移动由 BattleScene.Tick 统一结算，与在线同源，
-/// 玩家输入按记录帧注入，施法输入经同一 <see cref="CastPreInputBuffer"/> 接管，
-/// 每帧顺序与服务端 BattleLoop 钩子一致：AI 决策 → 预输入重试 → 输入注入 → Tick。
-/// 事件流逐帧返回，单位状态经 BattleScene 直读。纯本地零网络依赖，Godot 主线程逐帧驱动。
+/// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故 ID 解析、排队与落点不会分叉。
+/// 每帧顺序与服务端 BattleLoop 钩子一致：门面预备 → 输入注入 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// </summary>
 public sealed class ReplayEngine : IBattleViewSource {
     private readonly BattleScene _battleScene;
-    private readonly CastPreInputBuffer _castPreInput;
+    private readonly BattleIntentHub _intentHub;
     private readonly DungeonConfig _dungeon;
     private readonly IUnitRegistry _unitRegistry;
     private readonly IDungeonRegistry _dungeonRegistry;
@@ -75,7 +73,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         _focuses = [.. snapshot.FocusTargets.OrderBy(f => f.Frame)];
         _playerNetIdByIndex = [.. snapshot.Header.Players.Select(p => p.NetId)];
 
-        // 内容一致校验：录制端内容修订号与当前一致才允许重放，把数据演化导致的静默漂移变成声响失败
+        // 内容一致校验：录制端内容修订号与当前不一致即拒绝重放
         if (snapshot.Header.DataVersion != GameConfigDB.DataRevision)
             throw new InvalidDataException(
                 $"Replay content mismatch: record data={snapshot.Header.DataVersion}, current={GameConfigDB.DataRevision}.");
@@ -85,7 +83,7 @@ public sealed class ReplayEngine : IBattleViewSource {
         _dungeon = dungeon;
         var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(snapshot.Header.DungeonKey));
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
-        _castPreInput = new CastPreInputBuffer(_battleScene);
+        _intentHub = new BattleIntentHub(_battleScene);
         BuildUnits();
         _battleScene.CurrentPhase = BattlePhase.Running;
     }
@@ -166,9 +164,8 @@ public sealed class ReplayEngine : IBattleViewSource {
         if (_battleScene.IsFinished)
             return [];
 
-        _battleScene.ApplyDecisions();
-        // 与服务端钩子同序：先重试在架意图，再注入本帧记录的新输入，最后推进战斗世界
-        _castPreInput.Advance(_dt);
+        // 与服务端同序：门面预备意图 → 注入本帧记录的新输入 → 推进战斗世界
+        _intentHub.PrepareTick(_dt);
         InjectInputs();
         var events = _battleScene.Tick(_dt);
         _frame++;
@@ -189,20 +186,12 @@ public sealed class ReplayEngine : IBattleViewSource {
         }
     }
 
-    /// <summary>按帧注入玩家输入：移动、施法（仅接受）与聚焦，三类共享同一帧轴。</summary>
+    /// <summary>
+    /// 按帧注入玩家输入：施法 → 移动 → 聚焦，三类共享同一帧轴。
+    /// 施法与移动都只登记意图，同序要求见 <see cref="BattleIntentHub.PrepareTick"/>。
+    /// </summary>
     private void InjectInputs() {
-        // 移动输入
-        while (_moveCursor < _moves.Count) {
-            var m = _moves[_moveCursor];
-            int targetFrame = m.Frame - _startTick;
-            if (targetFrame > _frame)
-                break;
-            if (targetFrame == _frame && m.PlayerIndex < _playerNetIdByIndex.Length)
-                _battleScene.SubmitMove(_playerNetIdByIndex[m.PlayerIndex], new Vector2(m.MoveX, m.MoveY));
-            _moveCursor++;
-        }
-
-        // 施法请求：未被权威接管的记录（Accepted=false，含阶段、技能键非法、目标缺失与就绪后被裁定不可施放）跳过，以服务端裁定为准
+        // 施法请求：未被权威投递接管的记录（Accepted=false：阶段非 Running、技能键非法、施法者或目标解析不到）跳过，以服务端结论为准
         while (_castCursor < _casts.Count) {
             var c = _casts[_castCursor];
             int targetFrame = c.Frame - _startTick;
@@ -211,6 +200,17 @@ public sealed class ReplayEngine : IBattleViewSource {
             if (targetFrame == _frame && c.Accepted && c.PlayerIndex < _playerNetIdByIndex.Length)
                 SubmitCast(_playerNetIdByIndex[c.PlayerIndex], c);
             _castCursor++;
+        }
+
+        // 移动输入：登记本帧意图
+        while (_moveCursor < _moves.Count) {
+            var m = _moves[_moveCursor];
+            int targetFrame = m.Frame - _startTick;
+            if (targetFrame > _frame)
+                break;
+            if (targetFrame == _frame && m.PlayerIndex < _playerNetIdByIndex.Length)
+                _intentHub.SubmitMove(_playerNetIdByIndex[m.PlayerIndex], new Vector2(m.MoveX, m.MoveY));
+            _moveCursor++;
         }
 
         // 聚焦目标：仅影响展示，不经战斗世界
@@ -225,31 +225,22 @@ public sealed class ReplayEngine : IBattleViewSource {
         }
     }
 
-    /// <summary>按记录载荷交预输入缓冲接管：与在线端同路，状态就绪立即裁定，否则入槽等就绪，
-    /// 使录像复现权威排队后的落地时刻。</summary>
+    /// <summary>按记录载荷经输入门面提交施法意图：与在线端同解析同排队，复现权威排队后的落地时刻。</summary>
     private void SubmitCast(ushort casterNetId, CastSkillRecord record) {
-        if (_battleScene.FindUnit(casterNetId) is not BattleUnit caster)
-            return;
-        BattleUnit? target = null;
-        Vector2? targetPos = null;
-        if (record.TargetNetId != 0) {
-            if (_battleScene.FindUnit(record.TargetNetId) is BattleUnit targetUnit)
-                target = targetUnit;
-        }
-        else {
-            targetPos = new Vector2(record.TargetPosX, record.TargetPosZ);
-        }
-        _castPreInput.Submit(caster, new SkillKeyId(record.SkillTypeId), target, targetPos);
+        Vector2? targetPos = record.TargetNetId != 0
+            ? null
+            : new Vector2(record.TargetPosX, record.TargetPosZ);
+        _intentHub.SubmitCast(casterNetId, new SkillKeyId(record.SkillTypeId), record.TargetNetId, targetPos);
     }
 
-    /// <summary>重置到战斗开始帧：重建战斗世界与单位，在架预输入意图随旧单位引用一并作废。</summary>
+    /// <summary>重置到战斗开始帧：先经门面丢弃持旧单位引用的在架意图，再重建战斗世界与单位。</summary>
     private void Reset() {
         _moveCursor = 0;
         _castCursor = 0;
         _focusCursor = 0;
         _frame = 0;
         _focusByNetId.Clear();
-        _castPreInput.Clear();
+        _intentHub.ClearQueuedCasts();
         foreach (var unit in _battleScene.BattleUnits.ToArray())
             _battleScene.RemoveUnit(unit);
         BuildUnits();
