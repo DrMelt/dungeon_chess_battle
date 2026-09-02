@@ -232,8 +232,8 @@ scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
 _sessionRef = NodePath("../../BattleSessionContext")
-_effectHints = NodePath("../../GamePlayEffects/EffectHints")
 PlayerInterfaceRes = ExtResource("6_8ka0p")
+_effectHints = NodePath("../../GamePlayEffects/EffectHints")
 
 [node name="SkillInfoPanel" parent="BattleInterface/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
 layout_mode = 1

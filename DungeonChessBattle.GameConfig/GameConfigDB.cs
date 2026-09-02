@@ -27,7 +27,7 @@ public class GameConfigDB : IGameConfigDB {
     /// 引擎侧的结算时序与事件顺序由 <see cref="DungeonChessBattle.Battle.Shared.Combat.BattleLogicRevision"/> 背。
     /// 任何影响战斗结果的变更都必须递增对应修订号；回放端两项都要与本地比对，任一不符直接拒绝重放。
     /// </summary>
-    public const string DataRevision = "4";
+    public const string DataRevision = "5";
 
     /// <summary>魔法持续伤害 Buff 定义。</summary>
     public static DamageOverTimeBuff BuffDotMagic {
@@ -70,7 +70,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_magic_damage"),
         SpellTime = 2.0f,
-        CooldownTime = 3.0f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
@@ -87,7 +87,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_cure"),
         SpellTime = 0.5f,
-        CooldownTime = 0.5f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
@@ -103,7 +103,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_add_dot_magic"),
         SpellTime = 0.0f,
-        CooldownTime = 3.0f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
@@ -119,7 +119,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_add_hot"),
         SpellTime = 0.0f,
-        CooldownTime = 1.5f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
@@ -135,7 +135,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_rect_range_damage"),
         SpellTime = 2.0f,
-        CooldownTime = 3.0f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = false,
         NeedPosTarget = true,
@@ -155,7 +155,7 @@ public class GameConfigDB : IGameConfigDB {
     } = new() {
         SkillId = new SkillKeyId("skill_taunt"),
         SpellTime = 0.5f,
-        CooldownTime = 8.0f,
+        CooldownTime = 0.0f,
         GcdTime = 2.5f,
         NeedUnitTarget = true,
         NeedPosTarget = false,
