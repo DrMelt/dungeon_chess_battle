@@ -10,5 +10,5 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// </summary>
 public static class BattleLogicRevision {
     /// <summary>当前结算逻辑修订号。</summary>
-    public const string Value = "1";
+    public const string Value = "2";
 }

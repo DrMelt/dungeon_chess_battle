@@ -99,11 +99,6 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         get; set;
     }
 
-    /// <summary>全局冷却剩余时间，秒。</summary>
-    public float GcdRemaining {
-        get; set;
-    }
-
     /// <summary>服务端权威战斗状态：读条目标、Buff、冷却、仇恨权威在此；在线端 Buff 与冷却为下行回填的展示壳。</summary>
     public UnitCombatState RuntimeState { get; } = new();
 
@@ -176,13 +171,24 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
 
     /// <inheritdoc />
     public float GetTotalCooldownRemaining(SkillKeyId skillKey) {
-        float remaining = GcdRemaining;
+        float remaining = GcdRemainingOf(GetSkill(skillKey)?.Gcd?.GroupKey);
         foreach (var cd in RuntimeState.Cooldowns) {
             if (cd.SkillKey != skillKey)
                 continue;
             return MathF.Max(remaining, cd.Remaining);
         }
         return remaining;
+    }
+
+    /// <summary>指定全局冷却组的剩余秒数；组键为空或该组无条目返回 0。</summary>
+    private float GcdRemainingOf(string? groupKey) {
+        if (string.IsNullOrEmpty(groupKey))
+            return 0f;
+        foreach (var gcd in RuntimeState.Gcds) {
+            if (gcd.GroupKey == groupKey)
+                return gcd.Remaining;
+        }
+        return 0f;
     }
 
     /// <inheritdoc />

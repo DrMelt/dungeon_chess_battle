@@ -34,8 +34,8 @@ public abstract class SkillDefinition {
         get; init;
     }
 
-    /// <summary>释放成功后触发的全局冷却，秒。</summary>
-    public required float GcdTime {
+    /// <summary>技能全局冷却配置，必须显式设置；null 表示不参与全局冷却。</summary>
+    public required GcdDefinition? Gcd {
         get; init;
     }
 

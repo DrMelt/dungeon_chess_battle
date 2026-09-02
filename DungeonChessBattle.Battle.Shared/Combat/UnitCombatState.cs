@@ -23,6 +23,9 @@ public sealed class UnitCombatState {
     /// <summary>当前生效 Buff 权威列表，服务端推进；在线端为同步通道回填的展示壳。</summary>
     public List<ActiveBuff> Buffs { get; } = [];
 
+    /// <summary>全局冷却组权威列表，服务端推进；在线端为同步通道回填的展示壳。每个组键至多一条。</summary>
+    public List<GcdEntry> Gcds { get; } = [];
+
     /// <summary>个体冷却权威列表，服务端推进；在线端为同步通道回填的展示壳。</summary>
     public List<CooldownEntry> Cooldowns { get; } = [];
 

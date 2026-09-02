@@ -63,11 +63,6 @@ public interface IUnitUiView : IUnitIdentityView, ICombatValuesView, ISkillSourc
         get;
     }
 
-    /// <summary>全局冷却剩余时间，秒。</summary>
-    float GcdRemaining {
-        get;
-    }
-
     /// <summary>当前朝向方向向量，XZ 平面。</summary>
     Vector2 Direction {
         get;

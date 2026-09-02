@@ -27,7 +27,7 @@ public class GameConfigDB : IGameConfigDB {
     /// 引擎侧的结算时序与事件顺序由 <see cref="DungeonChessBattle.Battle.Shared.Combat.BattleLogicRevision"/> 背。
     /// 任何影响战斗结果的变更都必须递增对应修订号；回放端两项都要与本地比对，任一不符直接拒绝重放。
     /// </summary>
-    public const string DataRevision = "5";
+    public const string DataRevision = "6";
 
     /// <summary>魔法持续伤害 Buff 定义。</summary>
     public static DamageOverTimeBuff BuffDotMagic {
@@ -71,7 +71,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_magic_damage"),
         SpellTime = 2.0f,
         CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        Gcd = GcdDefinition.Default,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -88,7 +88,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_cure"),
         SpellTime = 0.5f,
         CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        Gcd = GcdDefinition.Default,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
@@ -104,7 +104,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_add_dot_magic"),
         SpellTime = 0.0f,
         CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        Gcd = GcdDefinition.Default,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -120,7 +120,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_add_hot"),
         SpellTime = 0.0f,
         CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        Gcd = GcdDefinition.Default,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Same,
@@ -136,7 +136,7 @@ public class GameConfigDB : IGameConfigDB {
         SkillId = new SkillKeyId("skill_rect_range_damage"),
         SpellTime = 2.0f,
         CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        Gcd = GcdDefinition.Default,
         NeedUnitTarget = false,
         NeedPosTarget = true,
         TargetPolicy = SkillTargetPolicy.Different,
@@ -154,13 +154,13 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         SkillId = new SkillKeyId("skill_taunt"),
-        SpellTime = 0.5f,
-        CooldownTime = 0.0f,
-        GcdTime = 2.5f,
+        SpellTime = 0.0f,
+        CooldownTime = 20.0f,
+        Gcd = null,
         NeedUnitTarget = true,
         NeedPosTarget = false,
         TargetPolicy = SkillTargetPolicy.Different,
-        CastRange = 5f,
+        CastRange = 10f,
         Op = HateEffectOp.SetTop,
         Value = 1000.0f,
         Effect = new HateSkillEffect(),

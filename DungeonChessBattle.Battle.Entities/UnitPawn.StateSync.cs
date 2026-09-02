@@ -24,6 +24,9 @@ public partial class UnitPawn {
     /// <summary>上次回填的冷却列表内容指纹，未变化时跳过列表重建。</summary>
     private int _cooldownStamp = int.MinValue;
 
+    /// <summary>上次回填的全局冷却组列表内容指纹，未变化时跳过列表重建。</summary>
+    private int _gcdStamp = int.MinValue;
+
     /// <summary>
     /// 服务端投影：把领域单位权威状态写入本实体 SyncVar。标量由 LES 增量 diff 省流，
     /// 冷却/Buff/仇恨列表内容比对后节流重建。
@@ -35,7 +38,7 @@ public partial class UnitPawn {
         SkillCasting.Value = unit.SkillCasting.Id;
         SkillCastRemaining.Value = unit.SkillCastRemaining;
         FocusTargetNetId.Value = unit.FocusTarget;
-        GcdEndServerTick.Value = SyncTickHelper.EndTick(EntityManager, unit.GcdRemaining);
+        ProjectGcds(unit);
         ProjectCooldowns(unit);
         ProjectBuffs(unit);
         ProjectHates(unit);
@@ -50,7 +53,7 @@ public partial class UnitPawn {
         // 换绑即失效：LES 实体池复用的载体带着上一个单位的残留指纹
         if (!ReferenceEquals(unit, _stampOwner)) {
             _stampOwner = unit;
-            _buffStamp = _cooldownStamp = int.MinValue;
+            _buffStamp = _cooldownStamp = _gcdStamp = int.MinValue;
         }
 
         unit.Position = Position.Value;
@@ -59,7 +62,7 @@ public partial class UnitPawn {
         unit.SkillCasting = string.IsNullOrEmpty(SkillCasting.Value) ? default : new SkillKeyId(SkillCasting.Value);
         unit.SkillCastRemaining = SkillCastRemaining.Value;
         unit.FocusTarget = FocusTargetNetId.Value;
-        unit.GcdRemaining = SyncTickHelper.RemainingSeconds(EntityManager, GcdEndServerTick.Value);
+        ApplyGcds(unit);
         ApplyCooldowns(unit);
         ApplyBuffs(unit);
     }
@@ -96,6 +99,40 @@ public partial class UnitPawn {
         var snapshot = new SyncSkillCooldownSnapshot();
         snapshot.Set(entries);
         SkillCooldowns.Value = snapshot;
+    }
+
+    /// <summary>全局冷却组整包投影，内容一致时跳过，避免每帧重建产生网络流量。</summary>
+    private void ProjectGcds(BattleUnit unit) {
+        var gcds = unit.RuntimeState.Gcds;
+        var entries = new SyncGcdSnapshot.Entry[gcds.Count];
+        for (int i = 0; i < gcds.Count; i++)
+            entries[i] = new SyncGcdSnapshot.Entry(
+                gcds[i].GroupKey,
+                SyncTickHelper.EndTick(EntityManager, gcds[i].Remaining));
+
+        var current = Gcds.Value;
+        bool changed;
+        if (current == null) {
+            changed = true;
+        }
+        else {
+            changed = current.Entries.Count != entries.Length;
+            if (!changed) {
+                for (int i = 0; i < entries.Length; i++) {
+                    if (current.Entries[i].GroupKey != entries[i].GroupKey
+                        || current.Entries[i].EndServerTick != entries[i].EndServerTick) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!changed)
+            return;
+
+        var snapshot = new SyncGcdSnapshot();
+        snapshot.Set(entries);
+        Gcds.Value = snapshot;
     }
 
     /// <summary>Buff 全量投影，内容一致时跳过；剩余秒数落为截止 tick。</summary>
@@ -183,6 +220,31 @@ public partial class UnitPawn {
     }
 
     /// <summary>
+    /// 全局冷却组整包还原为领域条目：指纹变化才重建，指纹未变只逐条原地刷新剩余秒。
+    /// 条目截止 tick 在冷却期内恒定，剩余秒是按本端插值 ServerTick 的派生值，不刷新即倒计时冻结。
+    /// </summary>
+    private void ApplyGcds(BattleUnit unit) {
+        var snapshot = Gcds.Value;
+        List<GcdEntry> gcds = unit.RuntimeState.Gcds;
+        int stamp = GcdStamp(snapshot);
+        int count = snapshot?.Entries.Count ?? 0;
+        if (stamp == _gcdStamp && gcds.Count == count) {
+            if (snapshot != null)
+                for (int i = 0; i < count; i++)
+                    gcds[i].Remaining = SyncTickHelper.RemainingSeconds(EntityManager, snapshot.Entries[i].EndServerTick);
+            return;
+        }
+        _gcdStamp = stamp;
+
+        gcds.Clear();
+        if (snapshot == null)
+            return;
+        foreach (var entry in snapshot.Entries)
+            gcds.Add(new GcdEntry(entry.GroupKey,
+                SyncTickHelper.RemainingSeconds(EntityManager, entry.EndServerTick)));
+    }
+
+    /// <summary>
     /// Buff 列表还原为 <see cref="ActiveBuff"/> 展示壳：指纹变化才重建，指纹未变只原地刷新剩余秒。
     /// 在线端不推进 Buff，到期条目随服务端下行增删。
     /// </summary>
@@ -236,6 +298,19 @@ public partial class UnitPawn {
         hash.Add(snapshot.Entries.Count);
         foreach (var entry in snapshot.Entries) {
             hash.Add(entry.SkillId);
+            hash.Add(entry.EndServerTick);
+        }
+        return hash.ToHashCode();
+    }
+
+    /// <summary>全局冷却组整包内容指纹，含空快照。</summary>
+    private static int GcdStamp(SyncGcdSnapshot? snapshot) {
+        var hash = new HashCode();
+        if (snapshot == null)
+            return hash.ToHashCode();
+        hash.Add(snapshot.Entries.Count);
+        foreach (var entry in snapshot.Entries) {
+            hash.Add(entry.GroupKey);
             hash.Add(entry.EndServerTick);
         }
         return hash.ToHashCode();

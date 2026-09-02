@@ -385,13 +385,23 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 推进个体冷却与全局冷却：剩余秒数递减，个体冷却到期移除条目，全局冷却到期归零。
+    /// 推进个体冷却与全局冷却组：剩余秒数递减，个体冷却到期移除条目，全局冷却组到期移除条目。
     /// 二者一律只存剩余秒，截止 tick 由同步通道折算。
     /// </summary>
     private static void TickCooldowns(BattleUnit unit, double deltaTime) {
         float dt = (float)deltaTime;
-        if (unit.GcdRemaining > 0f)
-            unit.GcdRemaining = MathF.Max(0f, unit.GcdRemaining - dt);
+
+        var gcds = unit.RuntimeState.Gcds;
+        if (gcds.Count > 0) {
+            for (int i = gcds.Count - 1; i >= 0; i--) {
+                GcdEntry entry = gcds[i];
+                float remaining = entry.Remaining - dt;
+                if (remaining <= 0f)
+                    gcds.RemoveAt(i);
+                else
+                    entry.Remaining = remaining;
+            }
+        }
 
         var entries = unit.RuntimeState.Cooldowns;
         if (entries.Count == 0)
@@ -430,10 +440,10 @@ public sealed partial class BattleScene(
         }
     }
 
-    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却，推进全局冷却，并执行技能多态结算。</summary>
+    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却，推进所属全局冷却组，并执行技能多态结算。</summary>
     private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
-        caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
+        ApplyGcdAuthoritative(caster, skill.Gcd);
 
         var resolution = skill.Effect.Resolve(
             new SkillResolveContext(skill, caster, target, targetPos, FilterTargets(caster, skill)));
@@ -475,6 +485,22 @@ public sealed partial class BattleScene(
             return;
         }
         entries.Add(new CooldownEntry(skillKey, remaining));
+    }
+
+    /// <summary>按配置写入单位的权威全局冷却：同组已有条目时刷新取较大值，无条目则新建；配置为空、组键为空或时长非正不写入。</summary>
+    private static void ApplyGcdAuthoritative(BattleUnit unit, GcdDefinition? gcd) {
+        if (gcd == null || string.IsNullOrEmpty(gcd.GroupKey) || gcd.Time <= 0f)
+            return;
+        var entries = unit.RuntimeState.Gcds;
+        foreach (var entry in entries) {
+            if (entry.GroupKey != gcd.GroupKey)
+                continue;
+            if (gcd.Time <= entry.Remaining)
+                return;
+            entry.Remaining = gcd.Time;
+            return;
+        }
+        entries.Add(new GcdEntry(gcd.GroupKey, gcd.Time));
     }
 
     /// <summary>领域事件副作用统一应用：伤害/治疗落到目标生命值，单位已移除则忽略；新副作用在此扩展。</summary>
