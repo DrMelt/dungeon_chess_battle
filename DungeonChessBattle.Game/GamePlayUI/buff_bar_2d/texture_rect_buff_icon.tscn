@@ -2,7 +2,6 @@
 
 [ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/015000_hr1.png" id="1_otcmx"]
 [ext_resource type="Script" uid="uid://e46mpgrwp1p8" path="res://GamePlayUI/state_bar/state_bar_2d/TextureRectBuffIcon.cs" id="2_1t7jj"]
-[ext_resource type="Resource" uid="uid://bbrt0bufres01" path="res://GameAssets/Buffs/res_buff_resource_table.tres" id="3_kfti1"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_otcmx"]
 font_size = 20
@@ -20,7 +19,6 @@ offset_bottom = 32.0
 texture = ExtResource("1_otcmx")
 stretch_mode = 5
 script = ExtResource("2_1t7jj")
-buffResourceTable = ExtResource("3_kfti1")
 superpositionsLabelRef = NodePath("Label_Superposition")
 durationLabelRef = NodePath("Label_Duration")
 

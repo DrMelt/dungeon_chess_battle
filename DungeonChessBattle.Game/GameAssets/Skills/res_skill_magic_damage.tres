@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://Images/skills_buffs/Stone/000403_hr1.png" id="1_5yhb0"]
 [ext_resource type="Script" uid="uid://5jswv8456nig" path="res://GameAssets/Skills/scripts/Skill_Damage.cs" id="2_2535u"]
+[ext_resource type="PackedScene" uid="uid://c1dh80p12ey8c" path="res://effects/flare_AoE/Effect_Flare_AoE.tscn" id="3_applyfx"]
 
 [resource]
 script = ExtResource("2_2535u")
@@ -9,4 +10,5 @@ Icon = ExtResource("1_5yhb0")
 SkillName = "魔法攻击"
 SkillDescription = "对目标发动魔法攻击
 威力：140"
+ApplyEffectScene = ExtResource("3_applyfx")
 metadata/_custom_type_script = "uid://5jswv8456nig"

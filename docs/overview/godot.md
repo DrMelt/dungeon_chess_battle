@@ -5,6 +5,7 @@
 ## 装配根与子进程
 
 - `ServiceLocator` 是静态组合根，全程无 DI 容器：创建 `ILoggerFactory`（`GodotLoggerProvider` 接入 Godot 控制台）、安装 LES 框架日志转接、装配 `GameClientService`、`ServerProcessHost` 与回放浏览服务，静态字段即组合根。
+- `ResourceTables` 是展示资源表组合根：技能/Buff/副本三表唯一加载入口与唯一 `res://` 路径持有者，面板与表现层经静态属性取表，不触碰路径字符串。
 - 服务器是独立子进程：`ServerProcessHost` 解析服务器可执行路径，以 `--port` 传端口、环境变量 `DCB_SERVER_PASSWORD` 传密码、`DCB_SERVER_PARENT_PID` 传父 PID，就绪经 TCP 端口探测判定（握手时序见 `flow/connection-reconnect`）。
 - 子进程状态为查询式：后台线程只更新加锁保护的内部字段，UI 主线程轮询 `Status`，从根上避免跨线程触碰 Godot 节点。
 
@@ -23,7 +24,8 @@
 ## 取数与视图
 
 - UI 不直接持有网络对象：会话入口是门面的 `RoomSession`（`IClientBattleSession`），事件经其 C# 事件到达，数据查询统一经 `BattleSessionContext` 投影（本地 Pawn、全部单位、副本键、战斗计时、阵营关系函数）。诊断面板读门面的 `RoomNetworkStatus` 快照。
-- `UnitShowManager` 是单位视图唯一所有者：每帧从 `IBattleViewSource` 增量生成视图、重取单位引用并按 `IsDead` 收敛可见性；在线与回放经 `Bind` 切数据源，共用同一 `IBattleViewSource`，`UnitGameShow` 零改动；技能展示资源由 UI 侧按技能 ID 直查 `SkillResourceTable`，不在此装配；不对外提供查询。
+- `UnitShowManager` 是单位视图唯一所有者：每帧从 `IBattleViewSource` 增量生成视图、重取单位引用并按 `IsDead` 收敛可见性；在线与回放经 `Bind` 切数据源，共用同一 `IBattleViewSource`，`UnitGameShow` 零改动；技能展示资源由 UI 侧按技能 ID 经 `ResourceTables.Skills` 直查，范围提示与施放特效场景模板挂在技能资源上，由 `EffectHints` 创建与回收；不在此装配、不对外提供查询。
+- 副本环境经资源工厂创建：场景模板挂在副本资源 `EnvScene`，`DungeonResourceTable.InstantiateEnvironment` 按副本键实例化（未同步键回退默认副本模板），`BattleCoordinator` 管理创建与销毁并据会话副本键应用主题。
 - 阵营判定依赖 `DungeonRegistry.GetRelations(dungeonKey)` 装配的关系函数，副本键同步后延迟收敛，未知键抛异常不静默回退。
 
 ## 回放表现归属

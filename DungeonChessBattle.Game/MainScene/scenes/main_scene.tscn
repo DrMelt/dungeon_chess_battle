@@ -11,8 +11,6 @@
 [ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://GamePlayUI/state_info/took_damage_info.tscn" id="10_2ac7b"]
 [ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://GamePlayUI/state_info/buff_change_info.tscn" id="11_f6kqk"]
 [ext_resource type="Script" uid="uid://bvm0whqi2x4t4" path="res://GameAssets/Scene/EffectHints.cs" id="13_cxaww"]
-[ext_resource type="PackedScene" uid="uid://j7tawrug3ngu" path="res://effects/skill_range/circular/effect_skill_range_circular.tscn" id="14_125m5"]
-[ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="15_mshji"]
 [ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://MainScene/scenes/FocusOnOutline.cs" id="16_rmbqq"]
 [ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://MainScene/scenes/shader/outline.gdshader" id="17_uajju"]
 [ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="18_50oy0"]
@@ -32,9 +30,7 @@
 [ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
 [ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="34_7m0x"]
 [ext_resource type="Script" uid="uid://c83a7urju38u0" path="res://effects/target_mark/UnitTargetMarks.cs" id="35_7m0y"]
-[ext_resource type="Script" uid="uid://br23r02mlsw7q" path="res://GameAssets/Scene/DungeonEnv.cs" id="36_dungeonenv"]
 [ext_resource type="Script" uid="uid://c0sf7o0laqf4q" path="res://MainScene/scenes/BattleSessionContext.cs" id="37_battleSession"]
-[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_resource_table.tres" id="38_dungeonTable"]
 [ext_resource type="Script" uid="uid://bolcdqihs7w6m" path="res://MainScene/scenes/BattleCoordinator.cs" id="39_coordinator"]
 [ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
 [ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
@@ -42,41 +38,6 @@
 [ext_resource type="PackedScene" uid="uid://ck5ahdfwjheaw" path="res://Replay/ReplayPanel/replay_panel.tscn" id="42_replay"]
 [ext_resource type="Script" uid="uid://b8shyx6hpxkjm" path="res://Replay/ReplayCoordinator.cs" id="44_replaycoord"]
 [ext_resource type="PackedScene" uid="uid://baidpltv52ny4" path="res://Replay/ReplayHud/replay_hud.tscn" id="45_replayhud"]
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_kkwdv"]
-
-[sub_resource type="Gradient" id="Gradient_4ssfp"]
-colors = PackedColorArray(0.7539839, 0.75398386, 0.75398386, 1, 1, 1, 1, 1)
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_i3pf0"]
-noise_type = 0
-frequency = 0.0125
-fractal_type = 2
-fractal_gain = 1.0
-fractal_weighted_strength = 0.3
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_4ssfp"]
-width = 1024
-height = 1024
-noise = SubResource("FastNoiseLite_i3pf0")
-color_ramp = SubResource("Gradient_4ssfp")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
-albedo_color = Color(0.66245234, 0.66245234, 0.6624523, 1)
-albedo_texture = SubResource("NoiseTexture2D_4ssfp")
-metallic_specular = 0.0
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
-
-[sub_resource type="Sky" id="Sky_uq67j"]
-sky_material = SubResource("ProceduralSkyMaterial_r6hb3")
-process_mode = 1
-
-[sub_resource type="Environment" id="Environment_r6hb3"]
-background_mode = 2
-background_color = Color(0.758192, 0.758192, 0.758192, 1)
-background_energy_multiplier = 1.61
-sky = SubResource("Sky_uq67j")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
 render_priority = 0
@@ -105,13 +66,12 @@ _stateChangeInfo = NodePath("../BattleInterface/GamePlayEffects/UnitStateChange_
 
 [node name="BattleInterface" type="Node" parent="." unique_id=1240739248]
 
-[node name="BattleCoordinator" type="Node" parent="BattleInterface" unique_id=1868664182 node_paths=PackedStringArray("_unitManager", "_sessionContext", "_inputController", "_dungeonEnv", "_stateChangeInfo")]
+[node name="BattleCoordinator" type="Node" parent="BattleInterface" unique_id=1868664182 node_paths=PackedStringArray("_unitManager", "_sessionContext", "_inputController", "_stateChangeInfo")]
 process_priority = -1
 script = ExtResource("39_coordinator")
 _unitManager = NodePath("../UnitShowManager")
 _sessionContext = NodePath("../BattleSessionContext")
 _inputController = NodePath("../BattleInputController")
-_dungeonEnv = NodePath("../Env/DungeonEnv")
 _stateChangeInfo = NodePath("../GamePlayEffects/UnitStateChange_Info")
 
 [node name="BattleSessionContext" type="Node" parent="BattleInterface" unique_id=1868664181]
@@ -122,31 +82,6 @@ script = ExtResource("32_piuq")
 playerInterfaceResRef = ExtResource("6_8ka0p")
 sessionRef = NodePath("../BattleSessionContext")
 cameraRef = NodePath("../PlayerCamera3D")
-
-[node name="Env" type="Node" parent="BattleInterface" unique_id=2065306466]
-
-[node name="DungeonEnv" type="Node3D" parent="BattleInterface/Env" unique_id=1893531005 node_paths=PackedStringArray("_groundMesh", "_worldEnv", "_sunLight")]
-script = ExtResource("36_dungeonenv")
-_groundMesh = NodePath("MeshInstance3D_Plan")
-_worldEnv = NodePath("WorldEnvironment")
-_sunLight = NodePath("DirectionalLight3D")
-_dungeonResourceTable = ExtResource("38_dungeonTable")
-
-[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="BattleInterface/Env/DungeonEnv" unique_id=1498989808]
-transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
-mesh = SubResource("PlaneMesh_kkwdv")
-skeleton = NodePath("../../../..")
-surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="BattleInterface/Env/DungeonEnv" unique_id=2066106198]
-transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
-light_cull_mask = 4293919745
-shadow_enabled = true
-shadow_caster_mask = 4293919745
-sky_mode = 1
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="BattleInterface/Env/DungeonEnv" unique_id=1770447821]
-environment = SubResource("Environment_r6hb3")
 
 [node name="UnitShowManager" type="Node" parent="BattleInterface" unique_id=1868664179]
 script = ExtResource("31_yyqz")
@@ -175,8 +110,6 @@ _targetMarkPackedScene = ExtResource("34_7m0x")
 
 [node name="EffectHints" type="Node" parent="BattleInterface/GamePlayEffects" unique_id=1098280841]
 script = ExtResource("13_cxaww")
-_effectCircleRange_PKS = ExtResource("14_125m5")
-_effectRectRange_PKS = ExtResource("15_mshji")
 
 [node name="FocusOn_Outline" type="Node" parent="BattleInterface/GamePlayEffects" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
 script = ExtResource("16_rmbqq")
@@ -282,7 +215,7 @@ scale = Vector2(0.5, 0.5)
 mouse_filter = 2
 _sessionRef = NodePath("../../BattleSessionContext")
 
-[node name="Skills_List" parent="BattleInterface/GamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("25_5lst5")]
+[node name="Skills_List" parent="BattleInterface/GamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_sessionRef", "_effectHints") instance=ExtResource("25_5lst5")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -299,6 +232,7 @@ scale = Vector2(0.5, 0.5)
 offset_transform_position_ratio = Vector2(0.28, 0.765)
 offset_transform_scale = Vector2(0.8, 0.8)
 _sessionRef = NodePath("../../BattleSessionContext")
+_effectHints = NodePath("../../GamePlayEffects/EffectHints")
 PlayerInterfaceRes = ExtResource("6_8ka0p")
 
 [node name="SkillInfoPanel" parent="BattleInterface/GamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]

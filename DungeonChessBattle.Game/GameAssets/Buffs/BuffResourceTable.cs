@@ -8,6 +8,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有 Buff .tres 资源到 BuffResources 数组。
 /// 运行时通过每个资源的 BuffTypeId（来自 BuffDefinition.BuffTypeId）自动构建反向查找字典，
 /// 供 Buff 图标、名称与描述展示使用，无需任何字符串 ID。
+/// 表实例由 ResourceTables 组合根加载并调用 Initialize，本类不持有加载入口。
 /// </summary>
 [GlobalClass]
 public partial class BuffResourceTable : Resource {
@@ -21,9 +22,9 @@ public partial class BuffResourceTable : Resource {
 
     /// <summary>
     /// 初始化查找字典。每个 Buff 资源的 BuffTypeId 来自其 Config.BuffTypeId，
-    /// 因此可以作为 Key 精准匹配。
+    /// 因此可以作为 Key 精准匹配。由 ResourceTables 加载后调用，幂等。
     /// </summary>
-    private void Initialize() {
+    internal void Initialize() {
         if (_initialized)
             return;
 

@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Range;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.GamePlayUI.skill_list;
 using DungeonChessBattle.MainScene;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Effects;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -36,6 +38,10 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
+    /// <summary>范围提示协调器引用，选位置目标时按技能资源显示范围预览。</summary>
+    [Export]
+    private EffectHints? _effectHints;
+
     /// <summary>技能释放状态机状态。</summary>
     private enum SkillReleaseState {
         /// <summary>空闲。</summary>
@@ -49,6 +55,12 @@ public partial class SkillsList : Control {
 
     /// <summary>等待位置目标时按下的技能按钮。</summary>
     private ButtonSkillBase? _waitingButton;
+
+    /// <summary>当前范围提示实例，随鼠标位置每帧刷新。</summary>
+    private SkillRangeRect_Hint? _rangeHint;
+
+    /// <summary>当前范围提示对应的领域范围形状参数。</summary>
+    private RectShape? _rangeRect;
 
     /// <summary>当前面板创建的全部技能按钮列表。</summary>
     private readonly List<ButtonSkillBase> _skillButtonList = [];
@@ -69,6 +81,8 @@ public partial class SkillsList : Control {
             _logger.LogError("_sessionRef is not assigned!");
             return;
         }
+        if (_effectHints == null)
+            _logger.LogError("_effectHints is not assigned!");
     }
 
     /// <summary>
@@ -77,6 +91,7 @@ public partial class SkillsList : Control {
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
         HandleWaitPosTargetInput();
+        UpdateRangePreview();
 
         var showUnit = _sessionRef?.LocalUnit;
         ushort? shownNetId = showUnit?.UnitId;
@@ -135,7 +150,7 @@ public partial class SkillsList : Control {
             return;
 
         foreach (var skillDefinition in config.Skills) {
-            var skill = SkillResourceTable.LoadResource(skillDefinition);
+            var skill = ResourceTables.Skills.LoadResource(skillDefinition);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
             buttonSkill.Init(skill, unit, this);
             hBox.AddChild(buttonSkill);
@@ -183,6 +198,7 @@ public partial class SkillsList : Control {
             _state = SkillReleaseState.WaitingPosTarget;
             _waitingButton = button;
             PlayerInterfaceRes?.IsWaitingSkillTarget = true;
+            ShowRangePreview(button.BindSkill);
             return;
         }
 
@@ -197,12 +213,55 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 取消等待位置目标状态并通知交互状态。
+    /// 取消等待位置目标状态并通知交互状态，同时销毁范围提示。
     /// </summary>
     private void CancelWait() {
         _waitingButton?.ButtonPressed = false;
         _waitingButton = null;
         _state = SkillReleaseState.Idle;
         PlayerInterfaceRes?.IsWaitingSkillTarget = false;
+        _effectHints?.HideRangeHint();
+        _rangeHint = null;
+        _rangeRect = null;
+    }
+
+    /// <summary>
+    /// 展示范围提示：按技能资源的范围提示场景创建预览实例，参数取自领域范围形状。
+    /// 初始化延迟到挂载后一帧，经 UpdateRangePreview 执行，保证提示场景 _Ready 已完成。
+    /// </summary>
+    private void ShowRangePreview(UnitSkillBaseGodot skillRes) {
+        if (_effectHints == null)
+            return;
+        if (skillRes.InternalConfig?.CastArea is not RectShape shape)
+            return;
+
+        var hint = _effectHints.ShowRangeHint<SkillRangeRect_Hint>(
+            skillRes, _ => UpdateRangePreview());
+        if (hint == null)
+            return;
+
+        _rangeHint = hint;
+        _rangeRect = shape;
+        UpdateRangePreview();
+    }
+
+    /// <summary>
+    /// 按施法单位位置与鼠标地面位置刷新范围提示的位置与朝向。
+    /// 提示作用场景尚未 _Ready 时跳过本帧，等待挂载帧后执行。
+    /// </summary>
+    private void UpdateRangePreview() {
+        var hint = _rangeHint;
+        var shape = _rangeRect;
+        if (hint == null || shape == null || hint.InterRefs == null)
+            return;
+
+        var unit = _sessionRef?.LocalUnit;
+        var mouse = PlayerInterfaceRes?.MouseGroundPosition;
+        if (unit == null || mouse == null)
+            return;
+
+        var from = new Vector3(unit.Position.X, 0f, unit.Position.Y);
+        var to = new Vector3(mouse.Value.X, 0f, mouse.Value.Z);
+        hint.Init(from, to, shape.NearClamp, shape.FarClamp, shape.FromLeft, shape.ToRight);
     }
 }

@@ -14,10 +14,6 @@ public partial class BuffChangeInfo : FadeInfo {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BuffChangeInfo> _logger = ServiceLocator.GetLogger<BuffChangeInfo>();
 
-    /// <summary>Buff 资源表，用于按 BuffTypeId 匹配图标。</summary>
-    [Export]
-    private BuffResourceTable? buffResourceTable;
-
     /// <summary>Buff 变化类型。</summary>
     public enum Enum_BuffChangeType {
         /// <summary>Buff 被添加。</summary>
@@ -43,8 +39,6 @@ public partial class BuffChangeInfo : FadeInfo {
             _logger.LogError("label_ChangeRef is not assigned!");
         if (textureRectRef == null)
             _logger.LogError("textureRectRef is not assigned!");
-        if (buffResourceTable == null)
-            _logger.LogError("buffResourceTable is not assigned!");
     }
 
     /// <summary>
@@ -81,7 +75,7 @@ public partial class BuffChangeInfo : FadeInfo {
         };
 
         // 图标按 BuffTypeId 从资源表匹配；未注册时留空
-        textureRectRef.Texture = buffResourceTable?.GetResourceByBuffTypeId(buffData.BuffTypeId)?.Icon;
+        textureRectRef.Texture = ResourceTables.Buffs.GetResourceByBuffTypeId(buffData.BuffTypeId)?.Icon;
     }
 
     /// <summary>

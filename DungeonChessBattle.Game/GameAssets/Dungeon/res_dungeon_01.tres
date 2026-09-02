@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="DungeonGoblinCamp" format=3]
 
 [ext_resource type="Script" path="res://GameAssets/Dungeon/scripts/DungeonGoblinCamp.cs" id="1_script"]
+[ext_resource type="PackedScene" path="res://GameAssets/Dungeon/dungeon_env.tscn" id="2_env"]
 
 [resource]
 script = ExtResource("1_script")
@@ -9,3 +10,4 @@ Description = "哥布林们占据了这片林地，消灭它们并击败首领�
 GroundColor = Color(0.28, 0.38, 0.24, 1)
 SkyColor = Color(0.6, 0.78, 0.72, 1)
 LightColor = Color(1, 0.95, 0.85, 1)
+EnvScene = ExtResource("2_env")

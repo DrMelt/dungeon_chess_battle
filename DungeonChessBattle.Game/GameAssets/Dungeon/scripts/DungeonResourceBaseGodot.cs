@@ -33,6 +33,12 @@ public abstract partial class DungeonResourceBaseGodot : Resource {
     [Export]
     public Color LightColor { get; private set; } = new(1.00f, 0.95f, 0.85f, 1f);
 
+    /// <summary>该副本的环境表现场景模板，由 DungeonResourceTable.InstantiateEnvironment 实例化。</summary>
+    [Export]
+    public PackedScene? EnvScene {
+        get; private set;
+    }
+
     /// <summary>副本显示名。</summary>
     [Export]
     public string DisplayName { get; private set; } = "";

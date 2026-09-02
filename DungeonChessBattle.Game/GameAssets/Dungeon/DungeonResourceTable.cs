@@ -11,7 +11,7 @@ using DungeonConfigDef = GameConfig.Models.DungeonConfig;
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有副本 .tres 资源到 DungeonResources 数组，
 /// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态副本定义实例）
 /// 自动构建查找字典，客户端据副本键映射显示名与描述，无需任何字符串 ID。
-/// 由消费方（场景节点）以 [Export] 注入本资源表实例。
+/// 表实例由 ResourceTables 组合根加载并调用 Initialize，本类不持有加载入口。
 /// 新增副本时只需在 res_dungeon_resource_table.tres 中拖入对应的 .tres 资源即可。
 /// </summary>
 [GlobalClass]
@@ -24,8 +24,8 @@ public partial class DungeonResourceTable : Resource {
     private readonly Dictionary<DungeonConfigDef, DungeonResourceBaseGodot> _lookup = [];
     private bool _initialized;
 
-    /// <summary>初始化查找字典。每个副本资源的 Config 属性返回 GameConfigDB 中的唯一静态实例。</summary>
-    private void Initialize() {
+    /// <summary>初始化查找字典。每个副本资源的 Config 属性返回 GameConfigDB 中的唯一静态实例。由 ResourceTables 加载后调用，幂等。</summary>
+    internal void Initialize() {
         if (_initialized)
             return;
 
@@ -55,4 +55,17 @@ public partial class DungeonResourceTable : Resource {
 
     /// <summary>按副本键获取客户端描述；副本或资源未注册返回 null。</summary>
     public string? GetDescription(string? dungeonKey) => GetResource(dungeonKey)?.Description;
+
+    /// <summary>
+    /// 按副本键实例化环境表现场景；副本未注册或资源未配置环境场景返回 null。
+    /// 副本键未同步/未注册时回退默认副本模板，保证环境对象始终可实例化，
+    /// 主题仍由 DungeonEnv.ApplyDungeonTheme 按会话真实键修正。
+    /// 返回实例未挂载，由消费方 AddChild 并调用 ApplyDungeonTheme 装配主题。
+    /// </summary>
+    public DungeonEnv? InstantiateEnvironment(string? dungeonKey) {
+        // 副本键未同步/未注册时回退默认副本，保证环境对象始终可实例化
+        var resource = GetResource(dungeonKey)
+            ?? GetResource(GameConfigDB.DefaultDungeonKey);
+        return resource?.EnvScene?.Instantiate<DungeonEnv>();
+    }
 }

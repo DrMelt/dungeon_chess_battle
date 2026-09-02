@@ -34,7 +34,7 @@ public partial class SkillProgressBar : Control {
             return;
         }
 
-        var skill = SkillResourceTable.GetResourceBySkillId(new SkillKeyId(castingId));
+        var skill = ResourceTables.Skills.GetResourceBySkillId(new SkillKeyId(castingId));
         if (skill == null) {
             Visible = false;
             return;

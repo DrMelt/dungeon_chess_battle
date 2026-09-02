@@ -35,8 +35,7 @@ public partial class BattleCoordinator : Node {
     [Export]
     private BattleInputController? _inputController;
 
-    /// <summary>地牢环境根节点引用。</summary>
-    [Export]
+    /// <summary>当前战斗环境实例，EnterBattle 按会话副本键经资源表创建，ExitBattle 销毁。</summary>
     private DungeonEnv? _dungeonEnv;
 
     /// <summary>状态变化信息渲染器引用（受击/治疗/Buff 浮字），喂入战斗事件。</summary>
@@ -58,8 +57,19 @@ public partial class BattleCoordinator : Node {
     public Action? OnBattleFinished;
 
     /// <summary>
-    /// 进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定全部子组件并应用副本环境主题。
+    /// 确保战斗环境实例存在：按会话副本键经副本资源表创建并挂载。
     /// </summary>
+    private void EnsureEnvironment() {
+        if (_dungeonEnv != null)
+            return;
+        var env = ResourceTables.Dungeons.InstantiateEnvironment(_sessionContext?.DungeonKey);
+        if (env == null)
+            return;
+        AddChild(env);
+        _dungeonEnv = env;
+    }
+
+    /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定全部子组件并应用副本环境主题。</summary>
     public void EnterBattle(string roomId) {
         if (IsInBattle)
             ExitBattle();
@@ -75,7 +85,8 @@ public partial class BattleCoordinator : Node {
         _sessionContext?.Bind(session, _roomId);
         _inputController?.Reset();
 
-        // 按房间选中副本应用环境主题（地面/天空/光照差异化）
+        // 按房间选中副本创建并装配环境（场景模板经副本资源表）
+        EnsureEnvironment();
         _dungeonEnv?.ApplyDungeonTheme(_sessionContext?.DungeonKey);
         IsInBattle = true;
 
@@ -83,7 +94,7 @@ public partial class BattleCoordinator : Node {
             _logger.LogInformation("Battle entered: {RoomId}", roomId);
     }
 
-    /// <summary>退出战斗：退订阶段事件、解绑全部子组件并恢复默认环境主题。</summary>
+    /// <summary>退出战斗：退订阶段事件、解绑全部子组件并销毁战斗环境实例。</summary>
     public void ExitBattle() {
         if (!IsInBattle)
             return;
@@ -94,7 +105,10 @@ public partial class BattleCoordinator : Node {
         _stateChangeInfo?.Unbind();
         _sessionContext?.Unbind();
         _inputController?.Reset();
-        _dungeonEnv?.ResetTheme();
+
+        // 销毁战斗环境实例
+        _dungeonEnv?.QueueFree();
+        _dungeonEnv = null;
 
         _battleService = null;
         _roomId = "";

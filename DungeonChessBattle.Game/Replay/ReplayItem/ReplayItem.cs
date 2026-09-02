@@ -26,10 +26,6 @@ public partial class ReplayItem : Control {
     /// <summary>导出引用集合节点。</summary>
     private ReplayItemInterRefs? _refs;
 
-    /// <summary>副本资源表引用，解析副本显示名。</summary>
-    [Export]
-    private DungeonResourceTable? _dungeonResourceTable;
-
     /// <summary>当前条目归属的房间 ID。</summary>
     public string RoomId { get; private set; } = "";
 
@@ -43,8 +39,6 @@ public partial class ReplayItem : Control {
             _logger.LogError("ReplayItemInterRefs node not found.");
             return;
         }
-        if (_dungeonResourceTable == null)
-            _logger.LogError("_dungeonResourceTable is not assigned!");
 
         _refs.ActionButton?.Pressed += OnActionButtonPressed;
         _refs.PlayButton?.Pressed += OnPlayButtonPressed;
@@ -73,7 +67,7 @@ public partial class ReplayItem : Control {
         if (_refs?.InfoLabel == null)
             return;
 
-        var dungeon = _dungeonResourceTable?.GetDisplayName(view.DungeonKey) ?? view.DungeonKey;
+        var dungeon = ResourceTables.Dungeons.GetDisplayName(view.DungeonKey) ?? view.DungeonKey;
         var time = DateTimeOffset.FromUnixTimeSeconds(view.StartUnixTime).ToLocalTime().ToString("MM-dd HH:mm");
         var players = string.Join("、", view.PlayerNames);
         // 服务端还有归档时随时可重下；只剩本地副本就标出来，删了这个文件就没有第二次

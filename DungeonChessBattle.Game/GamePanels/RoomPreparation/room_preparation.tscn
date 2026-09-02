@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://c5d647266fb6a" path="res://GamePanels/RoomPreparation/RoomPreparationInterRefs.cs" id="4_irfs"]
 [ext_resource type="PackedScene" uid="uid://bf6aeputrgi3c" path="res://GamePanels/UnitCard/unit_card.tscn" id="5_n634y"]
 [ext_resource type="PackedScene" uid="uid://3gcu0g60a82n" path="res://GamePanels/RoomPreparation/UnitSelectPanel/unit_select_panel.tscn" id="6_select_panel"]
-[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_resource_table.tres" id="7_dungeonTable"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wcwia"]
 bg_color = Color(0.66656864, 0.6665687, 0.6665685, 1)
@@ -60,7 +59,6 @@ grow_vertical = 2
 mouse_filter = 1
 theme = ExtResource("1_n634y")
 script = ExtResource("1_vmdyc")
-_dungeonResourceTable = ExtResource("7_dungeonTable")
 
 [node name="RoomPreparationInterRefs" type="Node" parent="." unique_id=243983146 node_paths=PackedStringArray("HostLabel", "DungeonNameLabel", "PlayersLabel", "StatusLabel", "InfoLabel", "SelectUnitButton", "RemoveUnitButton", "StartBattleButton", "BackButton", "UnitCardGrid", "UnitSelectPanel")]
 script = ExtResource("4_irfs")

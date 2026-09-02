@@ -34,6 +34,28 @@ public partial class UnitSkillBaseGodot : Resource {
     [Export(PropertyHint.MultilineText)]
     public string SkillDescription { get; private set; } = "";
 
+    /// <summary>技能施放时在目标位置实例化的特效场景模板。</summary>
+    [Export]
+    public PackedScene? ApplyEffectScene {
+        get; private set;
+    }
+
+    /// <summary>选择位置目标时展示的范围提示场景模板。</summary>
+    [Export]
+    public PackedScene? RangeHintScene {
+        get; private set;
+    }
+
+    /// <summary>
+    /// 实例化施放特效节点；模板未配置返回 null。
+    /// </summary>
+    public Node3D? CreateApplyEffect() => ApplyEffectScene?.Instantiate<Node3D>();
+
+    /// <summary>
+    /// 实例化范围提示节点；模板未配置返回 null。
+    /// </summary>
+    public Node3D? CreateRangeHint() => RangeHintScene?.Instantiate<Node3D>();
+
     /// <summary>技能施放总时长（秒）。</summary>
     public float SkillSpellTime => Config?.SpellTime ?? 0;
 

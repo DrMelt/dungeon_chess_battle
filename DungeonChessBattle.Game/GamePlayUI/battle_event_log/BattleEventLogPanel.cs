@@ -28,10 +28,6 @@ public partial class BattleEventLogPanel : Control {
     /// <summary>日志文本最大保留条数，超出丢弃旧行，防止 RichTextLabel 无限增长。</summary>
     private const int MaxTextLines = 500;
 
-    /// <summary>Buff 资源表，按 BuffTypeId 解析名称，懒加载。</summary>
-    private static readonly Lazy<BuffResourceTable?> _buffTable = new(
-        () => GD.Load<BuffResourceTable>("res://GameAssets/Buffs/res_buff_resource_table.tres"));
-
     /// <summary>战斗会话上下文引用，提供事件日志投影与单位名称映射。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
@@ -148,9 +144,9 @@ public partial class BattleEventLogPanel : Control {
 
     /// <summary>按技能强类型 ID 解析技能名；资源表未注册回退为裸 ID。</summary>
     private static string ResolveSkillName(SkillKeyId skillId)
-        => SkillResourceTable.GetResourceBySkillId(skillId)?.SkillName ?? $"技能 {skillId.Id}";
+        => ResourceTables.Skills.GetResourceBySkillId(skillId)?.SkillName ?? $"技能 {skillId.Id}";
 
     /// <summary>按 Buff 类型 ID 解析 Buff 名；资源表未注册回退为裸 ID。</summary>
     private static string ResolveBuffName(ushort buffTypeId)
-        => _buffTable.Value?.GetResourceByBuffTypeId(buffTypeId)?.BuffName ?? $"Buff {buffTypeId}";
+        => ResourceTables.Buffs.GetResourceByBuffTypeId(buffTypeId)?.BuffName ?? $"Buff {buffTypeId}";
 }

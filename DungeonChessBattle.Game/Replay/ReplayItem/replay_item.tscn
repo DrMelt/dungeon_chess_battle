@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://c5xg7m7txiw07" path="res://Replay/ReplayItem/ReplayItem.cs" id="1_item"]
 [ext_resource type="Script" uid="uid://inioid1klg7g" path="res://Replay/ReplayItem/ReplayItemInterRefs.cs" id="2_irfs"]
-[ext_resource type="Resource" path="res://GameAssets/Dungeon/res_dungeon_resource_table.tres" id="3_dungeonTable"]
 
 [node name="ReplayItem" type="Control" unique_id=425651724]
 custom_minimum_size = Vector2(100, 40)
@@ -11,7 +10,6 @@ anchors_preset = 0
 offset_right = 289.0
 offset_bottom = 40.0
 script = ExtResource("1_item")
-_dungeonResourceTable = ExtResource("3_dungeonTable")
 
 [node name="ReplayItemInterRefs" type="Node" parent="." unique_id=689076948 node_paths=PackedStringArray("InfoLabel", "ActionButton", "PlayButton")]
 script = ExtResource("2_irfs")

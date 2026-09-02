@@ -16,10 +16,6 @@ public partial class SkillInfoPanel : Control {
     [Export]
     private PlayerInterfaceRes? playerInterfaceRes;
 
-    /// <summary>Buff 资源表，用于按 BuffTypeId 匹配名称与描述。</summary>
-    [Export]
-    private BuffResourceTable? buffResourceTable;
-
     /// <summary>技能名称标签。</summary>
     [ExportGroup("Internal")]
     [Export]
@@ -41,8 +37,6 @@ public partial class SkillInfoPanel : Control {
             _logger.LogError("skillNameLabel is not assigned!");
         if (skillDescriptionLabel == null)
             _logger.LogError("skillDescriptionLabel is not assigned!");
-        if (buffResourceTable == null)
-            _logger.LogError("buffResourceTable is not assigned!");
 
         UpdateInfo(null);
     }
@@ -73,7 +67,7 @@ public partial class SkillInfoPanel : Control {
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon { BindingBuffData: { } buffData }) {
-                var buffRes = buffResourceTable?.GetResourceByBuffTypeId(buffData.BuffTypeId);
+                var buffRes = ResourceTables.Buffs.GetResourceByBuffTypeId(buffData.BuffTypeId);
                 skillNameLabel?.Text = buffRes?.BuffName ?? $"Buff({buffData.BuffTypeId})";
                 skillDescriptionLabel?.Text = buffRes?.BuffDescription ?? string.Empty;
                 isShow = true;

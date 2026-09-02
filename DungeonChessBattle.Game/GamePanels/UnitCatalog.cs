@@ -19,7 +19,7 @@ public static class UnitCatalog {
     /// 构建前执行技能资源自检，配置与客户端资源的漂移在首次使用即暴露。
     /// </summary>
     private static Dictionary<UnitConfigKey, UnitConfig> BuildByKey() {
-        SkillResourceTable.Validate();
+        ResourceTables.Skills.Validate();
         var dict = new Dictionary<UnitConfigKey, UnitConfig>();
         foreach (var config in UnitRegistry.Instance.All)
             dict[config.ConfigKey] = config;
