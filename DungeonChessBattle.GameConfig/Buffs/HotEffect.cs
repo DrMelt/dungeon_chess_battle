@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.Logic.Combat;
+using DungeonChessBattle.GameConfig.Combat;
 
 namespace DungeonChessBattle.GameConfig.Buffs;
 

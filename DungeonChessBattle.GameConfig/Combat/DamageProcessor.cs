@@ -1,10 +1,10 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 
-namespace DungeonChessBattle.Battle.Logic.Combat;
+namespace DungeonChessBattle.GameConfig.Combat;
 
 /// <summary>
-/// 无状态伤害结算规则。忠实复刻既有公式：
-/// 原始 = 基础伤害 × 攻击方攻击系数；结算 = 原始 × 受击方承受系数；再钳制到生命上限与下限。
+/// 无状态伤害结算公式：原始 = 基础伤害 × 攻击方攻击系数，结算 = 原始 × 受击方承受系数，
+/// 受击方生命钳到 0 与其生命上限之间。
 /// </summary>
 public static class DamageProcessor {
     /// <summary>结算一次命中：计算攻击加成后的原始伤害，再按受击方承受系数折算并钳制生命。</summary>

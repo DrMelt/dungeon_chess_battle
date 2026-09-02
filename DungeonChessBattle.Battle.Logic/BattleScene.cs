@@ -63,6 +63,10 @@ public sealed partial class BattleScene(
     public IBattleUnitView? FindUnit(UnitId unitId) =>
         _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
+    /// <inheritdoc />
+    public bool CanCast(ISkillCasterView caster, SkillDefinition skill, ISkillCasterView? target, Vector2? targetPos) =>
+        SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations);
+
     /// <summary>按单位 ID 查领域单位写面，供输入门面解析意图与宿主增删实体用；只读消费走 <see cref="FindUnit"/>。</summary>
     public BattleUnit? FindBattleUnit(UnitId unitId) =>
         _unitById.TryGetValue(unitId, out var unit) ? unit : null;
@@ -431,7 +435,8 @@ public sealed partial class BattleScene(
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         caster.GcdRemaining = MathF.Max(caster.GcdRemaining, skill.GcdTime);
 
-        var resolution = skill.Effect.Resolve(new SkillResolveContext(skill, caster, target, targetPos, _units, _relations));
+        var resolution = skill.Effect.Resolve(
+            new SkillResolveContext(skill, caster, target, targetPos, FilterTargets(caster, skill)));
         foreach (var evt in resolution.Events) {
             ApplyEventEffect(evt);
             log.Append(evt);
@@ -440,6 +445,22 @@ public sealed partial class BattleScene(
             ApplyBuffToTarget(buff, log);
 
         log.Append(new CastCompleted(caster.UnitId, skill.SkillId, target?.UnitId));
+    }
+
+    /// <summary>
+    /// 技能可作用目标表：排除施法者自身，按技能目标阵营策略与副本敌我关系过滤。
+    /// 判据与 <see cref="SkillCastValidator"/> 同源，敌我裁定不留给内容侧策略对象，遍历序即单位注册序。
+    /// </summary>
+    private List<IBattleUnitView> FilterTargets(BattleUnit caster, SkillDefinition skill) {
+        var targets = new List<IBattleUnitView>(_units.Count);
+        foreach (var unit in _units) {
+            if (unit == caster)
+                continue;
+            if (!SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
+                continue;
+            targets.Add(unit);
+        }
+        return targets;
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值。</summary>

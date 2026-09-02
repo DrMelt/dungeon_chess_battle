@@ -1,3 +1,4 @@
+using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 
 namespace DungeonChessBattle.Battle.Shared;
@@ -24,4 +25,13 @@ public interface IBattleSceneView {
 
     /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
     IBattleUnitView? FindUnit(UnitId unitId);
+
+    /// <summary>
+    /// 施法可行性权威判定：阵营关系、射程与冷却口径由实现方自持，内容侧只取结果。
+    /// </summary>
+    /// <param name="caster">施法单位只读视图。</param>
+    /// <param name="skill">待判定的技能定义。</param>
+    /// <param name="target">已解析的单位目标；无单位目标需求时传 null。</param>
+    /// <param name="targetPos">已解析的位置目标；无位置目标需求时传 null。</param>
+    bool CanCast(ISkillCasterView caster, SkillDefinition skill, ISkillCasterView? target, Vector2? targetPos);
 }

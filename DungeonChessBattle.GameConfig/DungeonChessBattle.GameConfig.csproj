@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   </ItemGroup>
 
 </Project>

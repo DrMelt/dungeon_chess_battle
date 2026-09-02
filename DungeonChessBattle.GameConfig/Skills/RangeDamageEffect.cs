@@ -1,11 +1,11 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.Logic.Combat;
+using DungeonChessBattle.GameConfig.Combat;
 
 namespace DungeonChessBattle.GameConfig.Skills;
 
-/// <summary>范围伤害技能效果：遍历候选单位，按阵营与范围过滤后产伤害事件。</summary>
+/// <summary>范围伤害技能效果：遍历战斗世界预过滤的可作用目标，按形状过滤后产伤害事件。</summary>
 public sealed class RangeDamageEffect : ISkillEffect {
     /// <inheritdoc />
     public SkillResolution Resolve(SkillResolveContext ctx) {
@@ -15,11 +15,7 @@ public sealed class RangeDamageEffect : ISkillEffect {
 
         var aim = (ctx.TargetPos ?? Vector2.Zero) - ctx.Caster.Snapshot.Position;
         var events = new List<IBattleEvent>();
-        foreach (var unit in ctx.Candidates) {
-            if (unit.UnitId == ctx.Caster.UnitId)
-                continue;
-            if (!SkillTargetValidator.CanAffect(ctx.Caster, unit, skill.TargetPolicy, ctx.Relations))
-                continue;
+        foreach (var unit in ctx.Targets) {
             if (!area.Contains(unit.Snapshot.Position, ctx.Caster.Snapshot.Position, aim, unit.Snapshot.BodyRadius))
                 continue;
             var result = DamageProcessor.Process(ctx.Caster.Snapshot, unit.Snapshot, skill.Damage, skill.DamageType);

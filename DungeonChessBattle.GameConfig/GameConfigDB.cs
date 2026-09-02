@@ -5,7 +5,7 @@ using DungeonChessBattle.Battle.Shared.Range;
 using DungeonChessBattle.GameConfig.Models;
 using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
-using DungeonChessBattle.Battle.Logic.Intelligence;
+using DungeonChessBattle.GameConfig.Intelligence;
 using DungeonChessBattle.GameConfig.Buffs;
 using DungeonChessBattle.GameConfig.Skills;
 
@@ -23,7 +23,7 @@ public class GameConfigDB : IGameConfigDB {
     public static readonly GameConfigDB Instance = new();
 
     /// <summary>
-    /// 战斗数据集修订号，只背内容与布局侧：单位数值/技能/Buff/AI/仇恨/阵营/副本布局。
+    /// 战斗数据集修订号，只背内容与布局侧：单位数值/技能/Buff/伤害治疗公式/敌人决策算法/仇恨/阵营/副本布局。
     /// 引擎侧的结算时序与事件顺序由 <see cref="DungeonChessBattle.Battle.Shared.Combat.BattleLogicRevision"/> 背。
     /// 任何影响战斗结果的变更都必须递增对应修订号；回放端两项都要与本地比对，任一不符直接拒绝重放。
     /// </summary>

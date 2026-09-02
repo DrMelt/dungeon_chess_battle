@@ -1,6 +1,5 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
 
 namespace DungeonChessBattle.Battle.Shared.Combat;
@@ -10,15 +9,13 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// <param name="Caster">施法单位只读视图。</param>
 /// <param name="Target">单位目标；无单位目标需求时为空。</param>
 /// <param name="TargetPos">位置目标；无位置目标需求时为空。</param>
-/// <param name="Candidates">候选单位表，范围技能遍历用。</param>
-/// <param name="Relations">副本配置的阵营关系函数。</param>
+/// <param name="Targets">可作用目标表，战斗世界已按技能目标阵营策略与敌我关系过滤并排除施法者，范围效果遍历用。</param>
 public readonly record struct SkillResolveContext(
     SkillDefinition Skill,
     IBattleUnitView Caster,
     IBattleUnitView? Target,
     Vector2? TargetPos,
-    IReadOnlyList<IBattleUnitView> Candidates,
-    CampRelationResolver Relations);
+    IReadOnlyList<IBattleUnitView> Targets);
 
 /// <summary>技能结算结果：领域事件 + 待挂载的新 Buff 描述。</summary>
 public sealed record SkillResolution(

@@ -82,7 +82,6 @@ graph TD
     Logic --> Shared
     Entities --> Shared
     GameConfig --> Shared
-    GameConfig --> Logic
     BattleSrv --> Shared
     BattleSrv --> Logic
     BattleSrv --> Entities
@@ -144,9 +143,9 @@ graph TD
 | `DungeonChessBattle.Client`                  | 网络客户端门面 `GameClientService` 与连接状态机              | [02-client](functional_boundary/02-client.md)                                   | [client](overview/client.md)           |
 | `DungeonChessBattle.Client.Shared`           | 客户端连接契约：`IClientConnection` 最小连接抽象             | [20-client-shared](functional_boundary/20-client-shared.md)                     | [client](overview/client.md)           |
 | `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md)                     | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、仇恨、移动逻辑               | [07-battle-logic](functional_boundary/07-battle-logic.md)                       | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑      | [07-battle-logic](functional_boundary/07-battle-logic.md)                       | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                     | [08-battle-entities](functional_boundary/08-battle-entities.md)                 | [battle](overview/battle.md)           |
-| `DungeonChessBattle.GameConfig`              | 单位 / 副本配置库                                            | [09-gameconfig](functional_boundary/09-gameconfig.md)                           | [battle](overview/battle.md)           |
+| `DungeonChessBattle.GameConfig`              | 单位 / 副本配置与内容侧逻辑实现：效果、公式、敌人决策        | [09-gameconfig](functional_boundary/09-gameconfig.md)                           | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                            | [04-battle-client](functional_boundary/04-battle-client.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                       | [13-battle-server](functional_boundary/13-battle-server.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Lobby.Shared`            | 大厅共享值类型：房间状态枚举                                 | [17-lobby-shared](functional_boundary/17-lobby-shared.md)                       | [lobby](overview/lobby.md)             |
