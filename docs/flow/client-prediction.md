@@ -106,4 +106,4 @@ D8（输入顺序）。`main_scene.tscn` 给 `BattleCoordinator` 设 `process_pr
 
 `TickLag` 偏高先拆两半：`net` 是上行与服务端耗时，`debt` 是画面落后自己已收到数据的时长（`LerpBuf × state every`）。三段读数取自 state A 的回显，A 一旦积压就整体抬高它们，所以 loopback 下 `RTT 0` 而 `AckLag` 仍大，几乎必然是 `debt` 撑起来的，不是网络。
 
-本文时序与缺陷表随代码同步维护；`overview/04-battle-client.md` 与 `flow/battle-state-sync.md` 描述的是同一链路的现状，任一侧改动需同步另一侧。
+本文时序与缺陷表随代码同步维护。同一条链路的机制各有归属：帧处理与收包分流在 `overview/client`，同步通道与搬运规则在 `overview/battle`，端到端次序在 `flow/battle-state-sync`。本文只保留预测视角的判据与缺陷编号，不复述他处机制。
