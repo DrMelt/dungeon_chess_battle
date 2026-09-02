@@ -1,6 +1,6 @@
 # 大厅域内部机制
 
-覆盖 `Lobby.Server`、`Lobby.Protocol`、`Lobby.Shared`、`Server.DataStore` 与 `Server.DataStore.Shared`。连接与重连的跨域时序见 `flow/connection-reconnect`；模块边界见 `functional_boundary/12`、`19`、`17`、`11`、`10`。
+覆盖 `Lobby.Server`、`Lobby.Client`、`Lobby.Protocol` 与 `Lobby.Shared`。连接与重连的跨域时序见 `flow/connection-reconnect`；模块边界见 `functional_boundary/12`、`03`、`19`、`17`。门面的主线程模型与连接状态机不在本域，见 `overview/client`；房间状态、会话凭证与回放归档的存储机制不在本域，见 `overview/datastore`。
 
 ## 调用链与身份
 
@@ -17,21 +17,12 @@
 
 ## 会话凭证
 
-- 登录成功后 `IssueSessionToken(connectionId)` 换发一个随机串，随 `LoginResult.SessionToken` 回客户端；同一连接再次登录撤销旧凭证，不留双活身份；撤销随登录会话，连接断开即作废。
+- 登录成功后 `IssueSessionToken(connectionId)` 换发一个随机串，随 `LoginResult.SessionToken` 回客户端。换发即撤销、撤销随登录会话作废的口径在 `overview/datastore` 的身份与会话凭证一节，对客户端只剩一个后果：重连必须重新登录才换得到新凭证。
 - 它让身份走出 SignalR：服务端 HTTP 端点（当前只有回放）凭请求头自证，经 `IPlayerIdentityResolver` 换成玩家记录主键，不必再借大厅连接。大厅不解释谁在消费它——`GameServer` 构造依赖里没有回放项，`LobbyHub` 上也没有回放方法。
 - 加固有边界：凭证可换发可撤销，比客户端自报玩家名强一层，但 Hub 上的业务身份仍是自报的，这层加固不覆盖那里。
 
-## 存储并发策略
+## 大厅客户端
 
-- 房间级锁表 `GetRoomLock`：每房间一个常驻锁对象，串行化同房间读改写，保护 `List<T>` 操作与可变模型字段。锁对象不随房间删除回收——回收会让新旧锁错位竞态。
-- 对外读接口返回深拷贝（`CloneRoom` / 快照），阻止调用方绕过房间锁改写 Store 内可变对象。
-- 跨房间枚举（`ListActiveRooms`）不加锁，依赖 `ConcurrentDictionary` 弱一致性快照，字段可能略旧可接受。
-- 门面组合 `IGameStateStore` = `IRoomStateStore` + `IPlayerStateStore`，业务层只面向门面，存储引擎在装配层替换。并发语义：任何线程都可调用，同房间读改写由实现保证原子。
-- 不入本模型的东西：网络连接密钥（属网络层）、战斗房间会话（属房间私有）、战斗单位状态（由领域 `BattleUnit` 权威持有）、回放归档存储契约（在 `Server.Abstractions`，实现 `InMemoryReplayStore` 在本层）。
-
-## 关键语义
-
-- 成员移除 `RemovePlayerByConnection` 分两套：准备阶段（Waiting）执行人数扣减、单位清理、房主转让，最后一人退出删除房间全部状态；战斗中（InProgress）只做基础清理，生命周期归 `BattleRoomManager`。
-- 准备状态与准备单位增删都校验「已准备不可改」，未选单位不可准备；房主身份不参与准备判定，房主退出即转让。
-- 玩家记录注册表进程内只增不删，登录名 → 主键派生；同名玩家共享主键导致回放互见，属已知局限。
-- 会话凭证、玩家记录主键与回放归档都只在进程内有效：服务端重启后同名玩家派生新主键，旧主键只残留在客户端本地副本里，不再可比。`PlayerIdentityResolver` 凭证无效或所属连接已登出时返回 null 且不登记记录，避免匿名凭证凭空建主键。
+- 构建 `HubConnection` 连 `http://{host}:{port}/lobby`，注册服务端广播回调（房间快照、准备→战斗重定向）。请求模式统一：`RunHubCall` 检查连接状态后 fire-and-forget `InvokeAsync`，成功/失败结果经事件回调返回。回调全部发生在 SignalR 后台线程，转主线程由门面负责。
+- 连接代际 `_connectionVersion`：每次 `Connect` 递增，`StartAsync` 异步完成后检查代际是否过期，隔离旧连接的迟到回调干扰新连接。重连先清快照缓存再重建。
+- 缓存每个房间最近一次完整快照（`ConcurrentDictionary`），进房初始化经 `TryGetRoomSnapshot` 读取；断开与重连时清空。服务端签发的会话凭证也留存在本层，经 `SessionToken` 透传给上层。

@@ -2,7 +2,7 @@
 
 战斗权威状态从服务端到屏幕的端到端链：领域 → 投影 → 网络 → 领域回填 → UI，回放以同一展示契约消费。本文跨 `Battle.Logic`、`Battle.Entities`、`Battle.Client`、`Battle.Server`、`Replay`，只写这条链按什么次序走、错了出什么现象。
 
-单模块机制不在本文：搬运规则、截止 tick 换算、视图契约分层见 `overview/battle`；每帧处理、收包分流、事件日志仓库见 `overview/client`；UI 侧取数装配见 `overview/godot`；LES 自身时序见 `libraries/lite-entity-system-update`；在线端预测的框架调查与缺陷编号（D5–D11）见 [client-prediction](client-prediction.md)。
+单模块机制不在本文：搬运规则、截止 tick 换算、视图契约分层、每帧处理、收包分流与事件日志仓库见 `overview/battle`；UI 侧取数装配见 `overview/godot`；LES 自身时序见 `libraries/lite-entity-system-update`；在线端预测的框架调查与缺陷编号（D5–D11）见 [client-prediction](client-prediction.md)。
 
 ## 单一真相源
 
@@ -15,7 +15,7 @@
 - `SyncFrom`（领域 → 载体）只在服务端跑：`BattleStateSynchronizer` 由 `BattleLoop.LateUpdate` 在 `Tick` 之后逐单位调用，另写房间阶段。回放不投影，领域直读。
 - `SyncInto`（载体 → 领域）只在在线端跑：`ClientBattleLoop.VisualUpdate` 每渲染帧按网络 ID 配对调用。
 
-链上的传输是 LiteNetLib + LES，协议头 `0xDC`；`EntityManager.Update()` 驱动实体同步与状态回放。可靠事件帧与 LES 帧的分流在客户端接收侧，见 `overview/client`。
+链上的传输是 LiteNetLib + LES，协议头 `0xDC`；`EntityManager.Update()` 驱动实体同步与状态回放。可靠事件帧与 LES 帧的分流在客户端接收侧，见 `overview/battle` 的在线端一节。
 
 ## 回填时点决定本端落后
 
@@ -35,7 +35,7 @@
 
 ## 回放链与两链收敛
 
-`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑，移动与施法意图经同一个输入门面 `BattleIntentHub` 注入，移动在 `BattleScene.Tick` 内与在线同序结算，无网络与投影层。引擎侧条目注入与游标见 `overview/replay`。
+`ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑，移动与施法意图经同一个输入门面 `BattleIntentHub` 注入，与服务端走同一条 `BattleScene.Tick` 路径，无网络与投影层。引擎侧条目注入与游标见 `overview/replay`。
 
 在线经「服务端领域 → `BattleUnit` → `UnitPawn.SyncFrom` → SyncVar → 网络 → `UnitPawn.SyncInto` 回填本地 `BattleScene` → UI」，回放经「服务端领域 → `BattleUnit` → 输入重放 → 本地结算 → UI」，最终都收敛到 `IUnitUiView`/`IBuffUiView`：差别在回放每帧本地结算，在线直接显示下行读数。
 

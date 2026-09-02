@@ -1,6 +1,6 @@
 # DungeonChessBattle.Replay.Client
 
-回放获取侧，所属分组 Client。只向服务端取回放事实：服务端归档摘要列表与单场归档字节流下载。零 Godot 依赖，不含缓存、解码、门控、并集与重放。
+回放获取侧。只向服务端取回放事实：服务端归档摘要列表与单场归档字节流下载。零 Godot 依赖，不含缓存、解码、门控、并集与重放。
 
 ## 职责
 
@@ -14,7 +14,7 @@
 - 不构建战斗世界、不推进帧、不含播放控制，重放在 Replay 引擎。
 - 不含 UI、节点与屏幕态切换，呈现在 Godot 主工程。
 - 不建立连接、不登录、不签发凭证：服务器根地址与会话凭证都由注入的委托现取。
-- 不定义回放归档存储契约，归 Replay.Shared，实现在 Server.DataStore。
+- 不定义回放归档存储契约，归 Server.Abstractions（`IReplayStore`），实现在 Server.DataStore。
 
 ## 依赖
 

@@ -2,7 +2,7 @@
 
 回放的本质是：一份自包含字节流 + 一段可复现的确定性重算，在无网络、无实时输入、无权威服务器参与下，原样复现一场已结束战斗的完整表现。观看者不提供输入。
 
-本文跨 `Replay.Shared`、`Replay.Protocol`、`Replay.Server`、`Replay.Client`、`Replay`、`Battle.Server`、`Game` 多模块，描述回放的确定性契约与获取链路。模块职责见 `functional_boundary/16`、`18`、`21`、`22`、`23`，域内机制（容器格式、条目映射、状态码口径）见 `overview/replay`，在线并行的同步链路见 [battle-state-sync](battle-state-sync.md)。
+本文跨 `Replay.Shared`、`Replay.Protocol`、`Replay.Server`、`Replay.Client`、`Replay`、`Battle.Server`、`Game` 多模块，描述回放的确定性契约与获取链路。模块职责见 `functional_boundary/16`、`18`、`21`、`22`、`23`，域内机制（容器格式、条目映射、状态码口径）见 `overview/replay`，归档的存储结构与淘汰见 `overview/datastore`，在线并行的同步链路见 [battle-state-sync](battle-state-sync.md)。
 
 ## 获取链路
 

@@ -195,7 +195,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
     }
 
     /// <summary>Pawn 创建时构建领域单位并注册；战斗世界未就绪时先存映射，构建时统一补注册。
-    /// 装配完整单位配置（数值、AI、仇恨），使本地 BattleScene 能确定性重跑。</summary>
+    /// 本地 <c>BattleScene</c> 只作回填容器，<c>Tick</c> 在在线端没有调用点，配置字段不参与本端结算。</summary>
     private void AddPawnUnit(UnitPawn pawn) {
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;

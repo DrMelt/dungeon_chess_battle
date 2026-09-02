@@ -1,6 +1,6 @@
 # DungeonChessBattle.Server.Host
 
-服务器可执行宿主，所属分组 Server。ASP.NET Core Kestrel + SignalR 装配层，游戏服务器进程入口，不含领域业务实现。
+服务器可执行宿主。ASP.NET Core Kestrel + SignalR 装配层，游戏服务器进程入口，不含领域业务实现。
 
 ## 职责
 

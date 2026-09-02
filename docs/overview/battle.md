@@ -1,6 +1,6 @@
 # 战斗域内部机制
 
-覆盖 `Battle.Shared`、`Battle.Logic`、`Battle.Entities`、`Battle.Server` 与 `GameConfig`。端到端下行链见 `flow/battle-state-sync`，跨模块时序不在此复述；模块边界见 `functional_boundary/06`、`07`、`08`、`13`、`09`。
+覆盖 `Battle.Shared`、`Battle.Logic`、`Battle.Entities`、`Battle.Server`、`Battle.Client` 与 `GameConfig`。端到端下行链见 `flow/battle-state-sync`，跨模块时序不在此复述；模块边界见 `functional_boundary/06`、`07`、`08`、`13`、`04`、`09`。门面的主线程模型与连接状态机不在本域，见 `overview/client`。
 
 ## Tick 推进管线
 
@@ -38,8 +38,8 @@
 
 ## 确定性移动
 
-- `MovementMath` 纯函数层：位移增量、两两互斥让位、圆↔矩形推挤、边界钳制。`IMovementScene.Resolve` 收整帧全部意图一次批量解算，服务端、在线与回放经 `BattleScene.Tick` 共用同一路径。
-- 让位为就地迭代、结果依赖意图顺序，故三端必须同序组装意图；互斥范围限于本帧有位移意图的存活单位，静止与死亡单位不入意图集，既不被推开也不构成他人障碍。
+- `MovementMath` 纯函数层：位移增量、两两互斥让位、圆↔矩形推挤、边界钳制。`IMovementScene.Resolve` 收整帧全部意图一次批量解算，服务端与回放经 `BattleScene.Tick` 共用同一路径；在线端不在此列，位移读的是下行值。
+- 让位为就地迭代、结果依赖意图顺序，故服务端与回放必须同序组装意图；互斥范围限于本帧有位移意图的存活单位，静止与死亡单位不入意图集，既不被推开也不构成他人障碍。
 - `PhysicsMovementScene` 基于 Aether.Physics2D 只做静态几何宽相查询，不运行动态模拟，天然适配 LES 回滚重放；固定子步长防快速单位隧穿细薄障碍，位移途中不再做单位间检测。
 - 三条输入路径都逐 tick 重投，`Tick` 末作废才成立：服务端 LES 每 tick 转发 `CurrentInput`（无新输入包时是末值）、AI 每 tick 重决策、回放逐帧注入。转发一停（控制器或载体销毁）下一 tick 即静止，服务端解绑无需显式归零；玩家卡发送不在此列，时效缺在转发层，见 `flow/client-prediction` 的 D11。
 - 持续性位移（击退、冲刺）不得建成移动意图：它无源可投，只能是领域状态由 `Tick` 递进。
@@ -59,10 +59,22 @@
 - 冷却 / Buff / 仇恨 `SyncList`：服务端逐字段比对内容、一致则跳过重建，避免每帧全量发送；在线端按下行列表的内容指纹比对，指纹未变只跳过领域列表重建，条目剩余秒仍逐帧原地刷新。指纹归属回填的领域单位，换绑（含 LES 实体池复用）即失效，无需调用方重置。
 - 倒计时字段写**截止 tick**（`EndServerTick`），不逐 tick 推当前值；回填侧按本端插值 `ServerTick` 经 `SyncTickHelper.RemainingSeconds` 反算剩余秒（`SequenceDiff` 处理 16 位回绕），换算只出现在通道内。剩余秒非正一律落哨兵 0，反算见 0 短路归零、不参与 tick 差值——写成当前 tick 等于每 tick 重定基，两端 tick 同步前进，反算出的差永不收敛。
 - `MaxStacks`、`StackCount`、`DamageType` 等 Buff 字段随 Buff 条目一起写；在线端还原为 `ActiveBuff` 展示壳（占位定义 `NetworkBuffDefinition` + 永不触发的 `NoOpBuffEffect`），不推进效果。
-- 仇恨表只下行不回填：在线端不跑仇恨结算与 AI。聚焦随通道双向——服务端投影领域值，在线端回填后由 UI 直读，本地不推算。
+- 仇恨表只下行不回填：在线端只读下行值，不本地结算与推算。聚焦随通道双向——服务端投影领域值，在线端回填后由 UI 直读。
 - 每个剩余秒字段都要有推进者，且只在 `BattleScene.Tick` 内推进：读条 `SkillCastRemaining`、全局冷却 `GcdRemaining`、个体冷却 `CooldownEntry.Remaining`、`BuffInstance.Remaining` 各一处。截止 tick 是源剩余秒的派生量，源不推进则派生量逐 tick 重定基，本端读到一个恒定正数：显示上时间永不动，判定上冷却永不到期。
 
 字段清单曾分散在服务端投影器与客户端镜像两处，下行有值而领域无读数的缺口即由此产生；通道收拢后同类缺口换了形态——字段搬进了领域，推进者没跟着搬，见末条。
+
+## 在线端
+
+`Battle.Client` 是战斗域的客户端半边：持有一份本地 `BattleScene`，但只当回填容器，不当模拟机。
+
+- 连接建立时创建 `ClientEntityManager`（包头 `0xDC`），用 `CountingNetPeer` 装饰 LES peer 采集出站流量；订阅 `BattleRoomEntity`、`UnitPawn`、`UnitController` 三类实体的构造事件（`callOnExisting: true` 补拉已同步实体）。收到控制器实体即视为本地控制器（`OnlyForOwner` 分发，不依赖 `IsLocalControlled` 的构造时序），用于输入提交与施法请求。
+- 每帧 `UpdateAfterPollEvents` 依次：副本键同步后就绪时 `EnsureBattleScene` 构建在线 `BattleScene`（含本地 `PhysicsMovementScene`），未同步随下一帧重试；`EntityManager.Update()` 驱动 LES 同步，其间 `ClientBattleLoop.VisualUpdate` 每渲染帧把 SyncVar 读数回填领域单位（含聚焦目标），其 `Update`/`LateUpdate` 为空实现；结算每秒流量统计；轮询 `BattleRoomEntity` 的 `RoomState.Phase` 变化触发 `BattlePhaseChanged`（LES 无公开 Changed 事件，无需镜像）。
+- 收包分流：`OnNetworkReceiveInternal` 先识别可靠消息帧（`0xDC` + `0x10` 类型头），解码 `ReliableBattleEventLog` → `BattleEventCoder` 逐条解码为领域事件 → 存入 `BattleEventLogStore` 并触发 `BattleEventsReceived`；其余 `0xDC` 帧交 LES 反序列化。
+- 在线端不跑任何结算：移动、读条、冷却与预输入排队、Buff、伤害与敌方 AI 一律服务端权威，下行读数即展示源（通道方向见 `flow/battle-state-sync`）。本地 `BattleScene` 与移动场景因此只被构建、不被驱动——`BattleScene.Tick` 在在线端没有调用点。
+- `BattleEventLogStore` 保存当前房间会话全部事件，`GetEventLog()` 只读暴露，`GetEventLogVersion()` 版本号在会话重置（断线/重连/离开）时自增，UI 据此做增量消费与历史回填。连接内可靠有序，断线期间事件不补发。
+- 对外唯一可见面 `IClientBattleSession : IClientBattleService, IBattleViewSource`：在两个既有契约之上补本地玩家语义（`LocalUnit` 与读领域回填态 `FocusTarget` 的 `LocalFocus`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。本地玩家成员不进 `IBattleViewSource`——回放无本地控制器；连接生命周期成员一律不入该契约。
+- 断线/重连时 `ClearRoomSessionState` 清空单位索引、阶段与本地网络 ID，随连接状态重建为干净会话。
 
 ## LES 使用约束
 

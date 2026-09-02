@@ -1,6 +1,6 @@
 # DungeonChessBattle.Client.Shared
 
-客户端最小连接契约库，所属分组 Shared。定义客户端连接抽象，供门面统一驱动大厅 SignalR 与房间 LiteNetLib+LES 两端。
+客户端最小连接契约库。定义客户端连接抽象，供门面统一驱动大厅 SignalR 与房间 LiteNetLib+LES 两端。
 
 ## 职责
 

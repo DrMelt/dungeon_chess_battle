@@ -26,6 +26,7 @@
 | `IReplayStore` 归档读写与按主键检索 | Server.DataStore `InMemoryReplayStore` | 写 Battle.Server、读 Replay.Server |
 
 - 入参与返回值限原生类型、字符串与纯原语 DTO；零依赖契约库，供服务端各库与宿主共享，实现与调用方互不感知。
+- 后两个端口的实现都落在状态存储域，凭证换发与归档淘汰的机制见 `overview/datastore`。
 - 只映射不签发：凭证由大厅登录换发、随连接作废；解析不出主键就等于「这串凭证不代表任何人」，调用方据此拒绝。
 - 摘要模型不在本层：归档字节流自身的元数据块是唯一真相，本端口只认字节与主键。回放记录格式契约在 `Replay.Shared`，HTTP 契约在 `Replay.Protocol`。
 - 不覆盖大厅自身鉴权：Hub 上的业务身份仍是登录时自报的玩家名，对外暴露前需先加固登录。

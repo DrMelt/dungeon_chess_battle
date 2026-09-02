@@ -1,6 +1,6 @@
 # DungeonChessBattle.Lobby.Server
 
-大厅服务器，所属分组 Server。承载大厅 SignalR 传输端点、业务实现与协调门面，经房间管理契约编排战斗房间生命周期。
+大厅服务器。承载大厅 SignalR 传输端点、业务实现与协调门面，经房间管理契约编排战斗房间生命周期。
 
 ## 职责
 

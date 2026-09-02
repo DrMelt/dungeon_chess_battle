@@ -2,7 +2,7 @@
 
 一条端到端链：启动子进程 → 登录大厅 → 建房/加入 → 准备 → 开始战斗并重定向到房间端口 → 断开 → 重连恢复 → 收敛复位。跨 `Game`、`Client`、`Lobby.Client`、`Lobby.Server`、`Server.DataStore`、`Battle.Server`。
 
-各模块内部机制不在本文：门面的主线程模型见 `overview/client`，登录会话与身份反查见 `overview/lobby`，房间侧会话与载体见 `overview/battle`，子进程状态查询见 `overview/godot`，宿主装配与看护见 `overview/server`。
+各模块内部机制不在本文：门面的主线程模型见 `overview/client`，登录会话与身份反查见 `overview/lobby`，凭证换发与房间状态的存储口径见 `overview/datastore`，房间侧会话与载体（服务端与在线端）见 `overview/battle`，子进程状态查询见 `overview/godot`，宿主装配与看护见 `overview/server`。
 
 ## 握手
 
@@ -36,7 +36,7 @@
 
 房间意外断开 → `AttemptReconnectToRoom`，全程处于 Reconnecting：
 
-1. 重连大厅 `LobbyClient.Reconnect`（先清缓存再重建，旧连接代际作废，见 `overview/client`）。
+1. 重连大厅 `LobbyClient.Reconnect`（先清缓存再重建，旧连接代际作废，见 `overview/lobby` 的大厅客户端一节）。
 2. 重新 `Login`，`_reconnectPendingLogin` 等待登录结果——凭证与登录会话同生命周期，断连即作废，没有新凭证就过不了服务端校验。
 3. `RequestReconnectRoom` 经登录会话反查身份 + 房间密码校验，拿回房间端口。
 4. 重定向回房间端口，按 `PlayerId` 恢复会话，重连方按 `BaselineSync` 全量重建视图。
