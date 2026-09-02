@@ -4,6 +4,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Inputs;
+using DungeonChessBattle.GameConfig;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.SyncData;
@@ -133,25 +134,7 @@ public partial class BattleRoomServer {
         // 领域单位（权威）：战斗世界结算读写，状态同步器写 SyncVar
         var config = _unitRegistry.GetByKey(unitName)
             ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
-        var unit = new BattleUnit {
-            UnitId = entity.Id,
-            UnitName = unitName,
-            Camps = camps,
-            Skills = config.Skills,
-            Intelligence = config.Intelligence,
-            HateRule = config.HateRule,
-            HateFactor = config.HateFactor,
-            MaxHealth = config.MaxHealth,
-            Health = config.MaxHealth,
-            PhysicalAttackBase = config.PhysicalAttackBase,
-            PhysicalTakePercent = config.PhysicalTakePercent,
-            MagicAttackBase = config.MagicAttackBase,
-            MagicTakePercent = config.MagicTakePercent,
-            CureIntensity = config.CureIntensity,
-            BaseSpeed = config.BaseSpeed,
-            BodyRadius = config.BodyRadius,
-            Position = spawnPos,
-        };
+        var unit = BattleUnitFactory.Create(config, entity.Id, camps, spawnPos);
         _battleScene.AddUnit(unit);
 
         // 技能定义供客户端 UnitGameShow 装配展示资源，本地字段不参与网络同步

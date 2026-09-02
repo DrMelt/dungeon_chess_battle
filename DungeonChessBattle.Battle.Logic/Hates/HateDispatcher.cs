@@ -7,6 +7,7 @@ namespace DungeonChessBattle.Battle.Logic.Hates;
 
 /// <summary>
 /// 仇恨分发器：把本帧领域事件逐个交给每个单位，由单位自身规则评估产出仇恨效果。
+/// 规则为 null 的单位不参与仇恨计算，直接跳过。
 /// 无状态纯函数，只输出效果列表不落账；落账由 BattleScene 按持有者路由到单位仇恨表。
 /// 目标对象为中心：只有规则自身认为与事件相关时才产生效果，且只写本单位自己的仇恨表。
 /// </summary>
@@ -34,7 +35,9 @@ public static class HateDispatcher {
             foreach (var unit in units) {
                 if (unit.IsDead)
                     continue;
-                effects.AddRange(unit.HateRule.Evaluate(unit, evt, ctx));
+                if (unit.HateRule is not { } rule)
+                    continue;
+                effects.AddRange(rule.Evaluate(unit, evt, ctx));
             }
         }
         return effects;

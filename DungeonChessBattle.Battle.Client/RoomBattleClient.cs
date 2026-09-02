@@ -200,24 +200,19 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;
 
-        var config = UnitRegistry.Instance.GetByKey(pawn.UnitKeyName.Value);
+        // 基础数值经配置只读视图共享服务端同份配置；未知配置键即配置漂移，与回放端一致地响亮失败
+        var config = UnitRegistry.Instance.GetByKey(pawn.UnitKeyName.Value)
+            ?? throw new InvalidOperationException($"Unknown unit config key '{pawn.UnitKeyName.Value}' on client.");
         var unit = new BattleUnit {
             UnitId = pawn.Id,
             UnitName = pawn.UnitKeyName.Value,
             Camps = pawn.CampTags,
-            Skills = config?.Skills ?? pawn.Skills,
-            Intelligence = config?.Intelligence,
-            HateRule = config?.HateRule,
-            HateFactor = config?.HateFactor ?? 1f,
-            MaxHealth = config?.MaxHealth ?? 0f,
-            Health = config?.MaxHealth ?? 0f,
-            PhysicalAttackBase = config?.PhysicalAttackBase ?? 1f,
-            PhysicalTakePercent = config?.PhysicalTakePercent ?? 1f,
-            MagicAttackBase = config?.MagicAttackBase ?? 1f,
-            MagicTakePercent = config?.MagicTakePercent ?? 1f,
-            CureIntensity = config?.CureIntensity ?? 1f,
-            BaseSpeed = config?.BaseSpeed ?? pawn.BaseSpeed.Value,
-            BodyRadius = config?.BodyRadius ?? pawn.BodyRadius.Value,
+            BaseConfig = config.BaseConfig,
+            Skills = config.Skills,
+            Intelligence = config.Intelligence,
+            HateRule = config.HateRule,
+            HateFactor = config.HateFactor,
+            Health = config.BaseConfig.MaxHealth,
             Position = pawn.Position.Value,
         };
         _battleUnitByNetId[pawn.Id] = unit;

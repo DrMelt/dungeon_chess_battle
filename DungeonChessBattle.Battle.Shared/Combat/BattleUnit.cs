@@ -10,9 +10,15 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// 属性与技能装配期写入，战斗状态由 BattleScene 推进。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端、在线与回放共用。
 /// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffUiView"/> 供展示层读取。
-/// 在线端本实体是下行回填容器：字段与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，不参与结算。
+/// 在线端本实体是下行回填容器：动态状态与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，
+/// 基础数值经 <see cref="BaseConfig"/> 读取单位基础状态，不参与结算。
 /// </summary>
 public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
+    /// <summary>单位基础状态，基础数值与基准技能集的唯一来源，装配期注入后不变。</summary>
+    public required UnitBaseConfig BaseConfig {
+        get; init;
+    }
+
     /// <inheritdoc />
     public required UnitId UnitId {
         get; init;
@@ -38,23 +44,21 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         get; init;
     }
 
-    /// <summary>仇恨规则，未装配时经 <see cref="EffectiveHateRule"/> 用默认规则。</summary>
+    /// <summary>仇恨规则，装配期直传配置；null 表示不参与仇恨计算。</summary>
     public IHateRule? HateRule {
         get; init;
     }
 
     /// <inheritdoc />
-    IHateRule IHateActorView.HateRule => EffectiveHateRule;
+    IHateRule? IHateActorView.HateRule => HateRule;
 
     /// <inheritdoc />
     public float HateFactor {
         get; init;
     } = 1f;
 
-    /// <summary>最大生命值，装配时写入。</summary>
-    public float MaxHealth {
-        get; set;
-    }
+    /// <summary>最大生命值，取自配置基础值。</summary>
+    public float MaxHealth => BaseConfig.MaxHealth;
 
     /// <summary>当前生命值。</summary>
     public float Health {
@@ -64,40 +68,26 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     /// <summary>单位是否已死亡：当前生命值 ≤ 0。死亡判据唯一来源，领域结算、投影校正与展示隐藏统一依此。</summary>
     public bool IsDead => Health <= 0f;
 
-    /// <summary>物理攻击基础系数即伤害倍率。</summary>
-    public float PhysicalAttackBase {
-        get; set;
-    } = 1f;
+    /// <summary>物理攻击基础系数即伤害倍率，取自配置基础值。</summary>
+    public float PhysicalAttackBase => BaseConfig.PhysicalAttackBase;
 
-    /// <summary>物理伤害承受系数即减免倍率。</summary>
-    public float PhysicalTakePercent {
-        get; set;
-    } = 1f;
+    /// <summary>物理伤害承受系数即减免倍率，取自配置基础值。</summary>
+    public float PhysicalTakePercent => BaseConfig.PhysicalTakePercent;
 
-    /// <summary>魔法攻击基础系数即伤害倍率。</summary>
-    public float MagicAttackBase {
-        get; set;
-    } = 1f;
+    /// <summary>魔法攻击基础系数即伤害倍率，取自配置基础值。</summary>
+    public float MagicAttackBase => BaseConfig.MagicAttackBase;
 
-    /// <summary>魔法伤害承受系数即减免倍率。</summary>
-    public float MagicTakePercent {
-        get; set;
-    } = 1f;
+    /// <summary>魔法伤害承受系数即减免倍率，取自配置基础值。</summary>
+    public float MagicTakePercent => BaseConfig.MagicTakePercent;
 
-    /// <summary>治疗强度系数即治疗倍率。</summary>
-    public float CureIntensity {
-        get; set;
-    } = 1f;
+    /// <summary>治疗强度系数即治疗倍率，取自配置基础值。</summary>
+    public float CureIntensity => BaseConfig.CureIntensity;
 
-    /// <summary>基础移动速度。</summary>
-    public float BaseSpeed {
-        get; set;
-    }
+    /// <summary>基础移动速度，取自配置基础值。</summary>
+    public float BaseSpeed => BaseConfig.BaseSpeed;
 
-    /// <summary>碰撞半径，供技能范围判定与空间互斥使用。</summary>
-    public float BodyRadius {
-        get; set;
-    }
+    /// <summary>碰撞半径，取自配置基础值。</summary>
+    public float BodyRadius => BaseConfig.BodyRadius;
 
     /// <summary>当前施法技能，default 表示无施法。</summary>
     public SkillKeyId SkillCasting {
@@ -151,9 +141,6 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     public UnitId FocusTarget {
         get; set;
     }
-
-    /// <summary>仇恨规则，未装配时用默认规则。</summary>
-    public IHateRule EffectiveHateRule => HateRule ?? DefaultHateRule.Instance;
 
     /// <inheritdoc />
     public UnitSnapshot Snapshot => new() {

@@ -63,8 +63,8 @@ public interface IHateActorView {
     /// <summary>对指定目标的仇恨值，无条目返回 0。目标选择按本查询取数，不必复制整张账本。</summary>
     float HateOf(UnitId targetUnitId);
 
-    /// <summary>仇恨规则，以自身为中心评估事件产生仇恨。</summary>
-    IHateRule HateRule {
+    /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；null 表示不参与仇恨计算。</summary>
+    IHateRule? HateRule {
         get;
     }
 }

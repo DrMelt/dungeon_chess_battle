@@ -27,7 +27,7 @@ public class GameConfigDB : IGameConfigDB {
     /// 引擎侧的结算时序与事件顺序由 <see cref="DungeonChessBattle.Battle.Shared.Combat.BattleLogicRevision"/> 背。
     /// 任何影响战斗结果的变更都必须递增对应修订号；回放端两项都要与本地比对，任一不符直接拒绝重放。
     /// </summary>
-    public const string DataRevision = "3";
+    public const string DataRevision = "4";
 
     /// <summary>魔法持续伤害 Buff 定义。</summary>
     public static DamageOverTimeBuff BuffDotMagic {
@@ -171,16 +171,17 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "WhiteMage",
-        BodyRadius = 0.5f,
-        MaxHealth = 1000f,
-        CureIntensity = 1.0f,
-        PhysicalAttackBase = 1.0f,
-        PhysicalTakePercent = 1.0f,
-        MagicAttackBase = 1.0f,
-        MagicTakePercent = 1.0f,
-        BaseSpeed = 2.0f,
         HateFactor = 0.8f,
-        HateRule = DefaultHateRule.Instance,
+        HateRule = new DefaultHateRule(),
+        BaseConfig = new UnitBaseConfig(
+            MaxHealth: 1000f,
+            BodyRadius: 0.5f,
+            BaseSpeed: 2.0f,
+            PhysicalAttackBase: 1.0f,
+            PhysicalTakePercent: 1.0f,
+            MagicAttackBase: 1.0f,
+            MagicTakePercent: 1.0f,
+            CureIntensity: 1.0f),
         Skills =
         [
             SkillAddHot,
@@ -197,17 +198,18 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "Goblin",
-        BodyRadius = 0.5f,
-        MaxHealth = 800f,
-        CureIntensity = 1.0f,
-        PhysicalAttackBase = 1.2f,
-        PhysicalTakePercent = 1.0f,
-        MagicAttackBase = 1.0f,
-        MagicTakePercent = 1.0f,
-        BaseSpeed = 2.2f,
         IsPlayerSelectable = false,
-        HateRule = DefaultHateRule.Instance,
+        HateRule = new DefaultHateRule(),
         Intelligence = new EnemyIntelligence(),
+        BaseConfig = new UnitBaseConfig(
+            MaxHealth: 800f,
+            BodyRadius: 0.5f,
+            BaseSpeed: 2.2f,
+            PhysicalAttackBase: 1.2f,
+            PhysicalTakePercent: 1.0f,
+            MagicAttackBase: 1.0f,
+            MagicTakePercent: 1.0f,
+            CureIntensity: 1.0f),
         Skills =
         [
             SkillMagicDamage,
@@ -220,17 +222,18 @@ public class GameConfigDB : IGameConfigDB {
         get;
     } = new() {
         ConfigKey = "GoblinBoss",
-        BodyRadius = 0.8f,
-        MaxHealth = 2000f,
-        CureIntensity = 1.0f,
-        PhysicalAttackBase = 1.5f,
-        PhysicalTakePercent = 0.8f,
-        MagicAttackBase = 1.3f,
-        MagicTakePercent = 0.8f,
-        BaseSpeed = 1.8f,
         IsPlayerSelectable = false,
-        HateRule = BossHateRule.Instance,
+        HateRule = new DefaultHateRule(),
         Intelligence = new EnemyIntelligence(),
+        BaseConfig = new UnitBaseConfig(
+            MaxHealth: 2000f,
+            BodyRadius: 0.8f,
+            BaseSpeed: 1.8f,
+            PhysicalAttackBase: 1.5f,
+            PhysicalTakePercent: 0.8f,
+            MagicAttackBase: 1.3f,
+            MagicTakePercent: 0.8f,
+            CureIntensity: 1.0f),
         Skills =
         [
             SkillAddDotMagic,

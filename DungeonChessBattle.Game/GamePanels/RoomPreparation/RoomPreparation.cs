@@ -287,7 +287,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
             if (unitConfigKey != null && UnitCatalog.GetByKey(unitConfigKey) is { } config) {
                 // 已选择职业：展示职业名 + 玩家名 + 真实 HP 数值
-                card.SetupUnit(config.ConfigKey, config.MaxHealth);
+                card.SetupUnit(config.ConfigKey, config.BaseConfig.MaxHealth);
                 card.SetUserName(player.PlayerName);
             }
             else {

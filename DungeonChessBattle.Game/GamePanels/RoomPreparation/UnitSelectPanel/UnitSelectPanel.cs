@@ -55,7 +55,7 @@ public partial class UnitSelectPanel : BaseGamePanel {
             if (!config.IsPlayerSelectable)
                 continue;
             var card = _refs.UnitCardScene.Instantiate<UnitCard>();
-            card.SetupUnit(config.ConfigKey, config.MaxHealth);
+            card.SetupUnit(config.ConfigKey, config.BaseConfig.MaxHealth);
             card.UnitSelected += OnCardSelected;
             _refs.UnitCardGrid.AddChild(card);
         }

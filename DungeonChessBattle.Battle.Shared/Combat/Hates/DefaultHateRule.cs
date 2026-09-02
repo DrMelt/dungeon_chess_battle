@@ -8,15 +8,9 @@ namespace DungeonChessBattle.Battle.Shared.Combat.Hates;
 /// 伤害：被打的单位把攻击者记进自己的仇恨表；治疗：被治疗者阵营的敌对存活单位把治疗者记进自己的仇恨表。
 /// 伤害与治疗产生的仇恨量以来源单位的仇恨倍率缩放，见 <see cref="IHateActorView.HateFactor"/>。
 /// 仇恨指令（嘲讽）：默认按请求原样落账，把目标仇恨抬到当前最高之上或按操作符修改。
-/// 无状态单例，可复用为任意单位的基础规则。
+/// 无状态实现，装配期可任意新建共享为任意单位的基础规则。
 /// </summary>
 public sealed class DefaultHateRule : IHateRule {
-    /// <summary>规则单例。</summary>
-    public static readonly DefaultHateRule Instance = new();
-
-    private DefaultHateRule() {
-    }
-
     /// <inheritdoc />
     public IReadOnlyList<HateEffect> Evaluate(IBattleUnitView self, IBattleEvent e, HateContext ctx) {
         return e switch {

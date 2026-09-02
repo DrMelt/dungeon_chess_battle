@@ -27,14 +27,10 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>单位朝向方向向量，XZ 平面单位向量。</summary>
     public SyncVar<Vector2> Direction;
 
-    /// <summary>单位碰撞半径，供技能范围判定使用。</summary>
-    public SyncVar<float> BodyRadius;
-
     /// <summary>当前生命值。</summary>
     public SyncVar<float> Health;
 
-    /// <summary>最大生命值。</summary>
-    public SyncVar<float> MaxHealth;
+    // 最大生命值等基础数值不走网络：两端经配置只读视图读同一份 UnitConfig，零同步冗余。
 
     /// <summary>单位所属阵营列表，装配期一次写入的权威同步数据。</summary>
     public readonly SyncSpanSerializable<SyncCampsData> CampsData = new(() => new SyncCampsData());
@@ -53,24 +49,6 @@ public partial class UnitPawn : PawnLogic {
 
     /// <summary>当前施法剩余读条时间，秒。</summary>
     public SyncVar<float> SkillCastRemaining;
-
-    /// <summary>物理攻击基础系数即伤害倍率。</summary>
-    public SyncVar<float> PhysicalAttackBase;
-
-    /// <summary>魔法攻击基础系数即伤害倍率。</summary>
-    public SyncVar<float> MagicAttackBase;
-
-    /// <summary>物理伤害承受系数即减免倍率。</summary>
-    public SyncVar<float> PhysicalTakePercent;
-
-    /// <summary>魔法伤害承受系数即减免倍率。</summary>
-    public SyncVar<float> MagicTakePercent;
-
-    /// <summary>治疗强度系数即治疗倍率。</summary>
-    public SyncVar<float> CureIntensity;
-
-    /// <summary>基础移动速度。</summary>
-    public SyncVar<float> BaseSpeed;
 
     /// <summary>单位当前持有的 Buff 列表。</summary>
     public readonly SyncList<SyncBuffData> BuffsList = [];

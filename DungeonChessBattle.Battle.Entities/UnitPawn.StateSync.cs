@@ -7,6 +7,7 @@ namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
 /// UnitPawn 与领域 BattleUnit 的状态同步通道：字段清单唯一声明处，两方向逐字段成对。
+/// 只承载运行时动态状态；最大生命值等基础数值两端经同一份配置只读视图获取，不进本通道。
 /// <see cref="SyncFrom"/> 是服务端权威投影（领域 → 载体），<see cref="SyncInto"/> 是在线端回填（载体 → 领域），
 /// 不设端别守卫，调用点负责选向；误端调用即覆写对端状态而非空操作。
 /// 倒计时字段线上语义固定为截止 tick、领域侧固定为剩余秒，换算在本通道内双向闭合：
@@ -31,14 +32,6 @@ public partial class UnitPawn {
         Position.Value = unit.Position;
         Direction.Value = unit.Direction;
         Health.Value = unit.Health;
-        MaxHealth.Value = unit.MaxHealth;
-        BodyRadius.Value = unit.BodyRadius;
-        BaseSpeed.Value = unit.BaseSpeed;
-        PhysicalAttackBase.Value = unit.PhysicalAttackBase;
-        PhysicalTakePercent.Value = unit.PhysicalTakePercent;
-        MagicAttackBase.Value = unit.MagicAttackBase;
-        MagicTakePercent.Value = unit.MagicTakePercent;
-        CureIntensity.Value = unit.CureIntensity;
         SkillCasting.Value = unit.SkillCasting.Id;
         SkillCastRemaining.Value = unit.SkillCastRemaining;
         FocusTargetNetId.Value = unit.FocusTarget;
@@ -63,14 +56,6 @@ public partial class UnitPawn {
         unit.Position = Position.Value;
         unit.Direction = Direction.Value;
         unit.Health = Health.Value;
-        unit.MaxHealth = MaxHealth.Value;
-        unit.BodyRadius = BodyRadius.Value;
-        unit.BaseSpeed = BaseSpeed.Value;
-        unit.PhysicalAttackBase = PhysicalAttackBase.Value;
-        unit.PhysicalTakePercent = PhysicalTakePercent.Value;
-        unit.MagicAttackBase = MagicAttackBase.Value;
-        unit.MagicTakePercent = MagicTakePercent.Value;
-        unit.CureIntensity = CureIntensity.Value;
         unit.SkillCasting = string.IsNullOrEmpty(SkillCasting.Value) ? default : new SkillKeyId(SkillCasting.Value);
         unit.SkillCastRemaining = SkillCastRemaining.Value;
         unit.FocusTarget = FocusTargetNetId.Value;

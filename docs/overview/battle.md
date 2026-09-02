@@ -55,7 +55,7 @@
 
 `UnitPawn.StateSync.cs` 是 `BattleUnit` ↔ `UnitPawn` 字段清单的唯一声明处，`SyncFrom`（服务端投影，领域 → 载体）与 `SyncInto`（在线回填，载体 → 领域）逐字段成对，不设端别守卫，选向由调用点负责；调用点只做配对与调度，不出现字段清单。搬运规则六条：
 
-- 计数型字段（生命、位置、半径、读条剩余等）直接写 SyncVar，靠 LES 做增量 diff。
+- 计数型字段（生命、位置、读条剩余等）直接写 SyncVar，靠 LES 做增量 diff；最大生命值等不变基础数值不进本通道，两端经同一份配置只读视图读取。
 - 冷却 / Buff / 仇恨 `SyncList`：服务端逐字段比对内容、一致则跳过重建，避免每帧全量发送；在线端按下行列表的内容指纹比对，指纹未变只跳过领域列表重建，条目剩余秒仍逐帧原地刷新。指纹归属回填的领域单位，换绑（含 LES 实体池复用）即失效，无需调用方重置。
 - 倒计时字段写**截止 tick**（`EndServerTick`），不逐 tick 推当前值；回填侧按本端插值 `ServerTick` 经 `SyncTickHelper.RemainingSeconds` 反算剩余秒（`SequenceDiff` 处理 16 位回绕），换算只出现在通道内。剩余秒非正一律落哨兵 0，反算见 0 短路归零、不参与 tick 差值——写成当前 tick 等于每 tick 重定基，两端 tick 同步前进，反算出的差永不收敛。
 - `MaxStacks`、`StackCount`、`DamageType` 等 Buff 字段随 Buff 条目一起写；在线端还原为 `ActiveBuff` 展示壳（占位定义 `NetworkBuffDefinition` + 永不触发的 `NoOpBuffEffect`），不推进效果。
