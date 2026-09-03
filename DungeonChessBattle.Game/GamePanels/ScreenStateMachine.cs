@@ -10,12 +10,12 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 退出恢复 FrontUI 并隐藏在线战斗 UI。
 /// </summary>
 /// <param name="frontUI">前厅 UI 容器引用（Interface/FrontUI）。</param>
-/// <param name="onlineBattleUI">在线战斗 UI 根（GamePlayUI），回放期间隐藏。</param>
+/// <param name="onlineBattleUI">在线战斗 UI 根（BattleGamePlayUI），回放期间隐藏。</param>
 public sealed class ScreenStateMachine(Control? frontUI, Control? onlineBattleUI) {
     /// <summary>前厅 UI 容器（FrontUI），进入战斗/回放时整体隐藏。</summary>
     private readonly Control _frontUI = frontUI ?? throw new System.ArgumentNullException(nameof(frontUI));
 
-    /// <summary>在线战斗 UI 根（GamePlayUI），进入回放时隐藏。</summary>
+    /// <summary>在线战斗 UI 根（BattleGamePlayUI），进入回放时隐藏。</summary>
     private readonly Control? _onlineBattleUI = onlineBattleUI;
 
     /// <summary>当前屏幕状态。</summary>
@@ -36,7 +36,7 @@ public sealed class ScreenStateMachine(Control? frontUI, Control? onlineBattleUI
     }
 
     /// <summary>
-    /// 进入回放：切换屏幕态、隐藏 FrontUI 与在线战斗 UI（回放控制条由回放场景自管）。
+    /// 进入回放：切换屏幕态、隐藏 FrontUI 与在线战斗 UI（回放控制条与输入面板由 ReplayCoordinator 自管）。
     /// </summary>
     public void EnterReplay() {
         TransitionTo(GameScreenState.Replay);

@@ -30,7 +30,8 @@
 
 ## 回放表现归属
 
-- `Game/Replay/` 一场景一目录、一所有者：`ReplayPanel` 取数与呈现、不碰屏幕态，`ReplayItem` 暴露下载与播放两按钮并上报房间 ID，`ReplayHud` 只管播放控制（默认隐藏），`ReplayCoordinator` 管引擎生命周期与表现绑定。
+- `Game/Replay/` 一场景一目录、一所有者：`ReplayPanel` 取数与呈现、不碰屏幕态，`ReplayItem` 暴露下载与播放两按钮并上报房间 ID，`ReplayHud` 只管播放控制，`ReplayInputPanel` 读引擎输入时间轴呈现当前帧前后条目并提供逐条跳转，`ReplayCoordinator` 管引擎生命周期与表现绑定。
+- 回放表现整棵挂在主场景 `BattleInterface/ReplayUI` 容器下，默认隐藏：整容器显隐是回放表现的唯一开关，由 `ReplayCoordinator` 切，新增回放面板不必再动协调器的接线。
 - 过程状态在 `ServiceLocator.ReplayService`（缓存、双重门控、服务端 ∪ 本地并集裁决），面板 `_Process` 每帧读行视图渲染；下载进度、缓存命中与版本不符都表现为行状态。
 - 启动回放仅由 `ReplayPanel` 对播放按钮显式触发，后台获取完成不自动进入。入口面板是前厅页面之一，由 GameLobby 经 `BaseGamePanel` 导航链打开，启动播放后自行返回，故退出回放落回大厅——落点归导航链，显隐归 `ScreenStateMachine`。
 - 事件反馈复用在线 `UnitStateChangeInfo`：`ReplayCoordinator` 每帧把 `ReplayEngine.Step()` 的 `IBattleEvent` 流喂给它，弹共用的受击/治疗/Buff 浮字，退出解绑。

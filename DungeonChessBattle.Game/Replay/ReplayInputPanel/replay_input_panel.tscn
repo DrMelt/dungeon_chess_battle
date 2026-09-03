@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://4nw5r5gseln"]
+
+[ext_resource type="Script" uid="uid://cxll0tj7cchp6" path="res://Replay/ReplayInputPanel/ReplayInputPanel.cs" id="1_input"]
+[ext_resource type="Script" uid="uid://bv6cnvgifwo76" path="res://Replay/ReplayInputPanel/ReplayInputPanelInterRefs.cs" id="2_irfs"]
+
+[node name="ReplayInputPanel" type="PanelContainer" unique_id=1900000002]
+offset_right = 250.0
+offset_bottom = 80.0
+script = ExtResource("1_input")
+
+[node name="ReplayInputPanelInterRefs" type="Node" parent="." unique_id=1900000010 node_paths=PackedStringArray("ListLabel", "CounterLabel", "PrevButton", "NextButton")]
+script = ExtResource("2_irfs")
+ListLabel = NodePath("../MarginContainer/VBox/ListLabel")
+CounterLabel = NodePath("../MarginContainer/VBox/Header/CounterLabel")
+PrevButton = NodePath("../MarginContainer/VBox/Header/PrevButton")
+NextButton = NodePath("../MarginContainer/VBox/Header/NextButton")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1943438832]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer" unique_id=1900000003]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBox" unique_id=1900000004]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="MarginContainer/VBox/Header" unique_id=1900000005]
+layout_mode = 2
+text = "输入条目"
+vertical_alignment = 1
+
+[node name="CounterLabel" type="Label" parent="MarginContainer/VBox/Header" unique_id=1900000006]
+modulate = Color(0.75, 0.75, 0.75, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0/0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="PrevButton" type="Button" parent="MarginContainer/VBox/Header" unique_id=1900000007]
+layout_mode = 2
+size_flags_vertical = 4
+text = "◀ 上一条"
+
+[node name="NextButton" type="Button" parent="MarginContainer/VBox/Header" unique_id=1900000008]
+layout_mode = 2
+size_flags_vertical = 4
+text = "下一条 ▶"
+
+[node name="ListLabel" type="RichTextLabel" parent="MarginContainer/VBox" unique_id=1900000009]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 12
+bbcode_enabled = true

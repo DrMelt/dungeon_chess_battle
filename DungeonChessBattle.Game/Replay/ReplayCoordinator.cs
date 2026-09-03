@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// <summary>
 /// 回放编排：以回放获取端交来的回放记录构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
 /// 复用 BattleInterface 的共享 <see cref="UnitShowManager"/> 对齐驱动单位展示。提供播放/暂停/倍速/拖动控制。
-/// 由回放入口面板 LoadReplay 启动，退出时释放引擎与展示。
+/// 由回放入口面板 LoadReplay 启动，退出时释放引擎与展示；回放表现（控制条与输入面板）整棵挂在 ReplayUI 容器上，随回放起落。
 /// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换屏幕态。
 /// </summary>
 public partial class ReplayCoordinator : Node {
@@ -32,9 +32,9 @@ public partial class ReplayCoordinator : Node {
     [Export]
     private UnitShowManager? _unitManager;
 
-    /// <summary>回放控制条，启动/退出时切换显隐。</summary>
+    /// <summary>回放表现容器（控制条与输入面板挂在它下面），启动/退出时整容器切显隐。</summary>
     [Export]
-    private Control? _hud;
+    private Control? _replayUI;
 
     /// <summary>状态变化信息渲染器（复用在线实例，受击/治疗/Buff 浮字）。</summary>
     [Export]
@@ -75,7 +75,7 @@ public partial class ReplayCoordinator : Node {
         _isPaused = false;
         _unitManager?.Bind(_engine);
         _stateChangeInfo?.Bind(_engine);
-        ShowReplay();
+        _replayUI?.Visible = true;
         EmitSignal(SignalName.ReplayStarted);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", recording.Meta.RoomId, _engine.Units.Count);
@@ -98,12 +98,15 @@ public partial class ReplayCoordinator : Node {
     /// <summary>切换播放/暂停。</summary>
     public void TogglePause() => _isPaused = !_isPaused;
 
-    /// <summary>按进度比例拖动（0~1），早于当前帧时引擎内部重置快进。</summary>
-    public void SeekToFraction(float fraction) {
+    /// <summary>按进度比例拖动（0~1）。</summary>
+    public void SeekToFraction(float fraction) => SeekToFrame((int)(fraction * (_engine?.TotalFrames ?? 0)));
+
+    /// <summary>跳转到指定相对帧，早于当前帧时引擎内部重置快进；播放/暂停态不变。</summary>
+    public void SeekToFrame(int frame) {
         if (_engine == null)
             return;
         _accumulator = 0;
-        _engine.SeekTo((int)(fraction * _engine.TotalFrames));
+        _engine.SeekTo(Math.Clamp(frame, 0, _engine.TotalFrames));
     }
 
     /// <summary>退出回放：释放引擎与单位展示，恢复屏幕态。</summary>
@@ -115,20 +118,10 @@ public partial class ReplayCoordinator : Node {
         _engine = null;
         _accumulator = 0;
         _isPaused = false;
-        HideReplay();
+        _replayUI?.Visible = false;
         EmitSignal(SignalName.ReplayFinished);
     }
 
     /// <summary>节点退出场景树：兜底释放引擎与展示并通知主场景恢复。</summary>
     public override void _ExitTree() => ExitReplay();
-
-    /// <summary>切换到回放表现：显示回放控制条（单位复用共享世界，由 UnitShowManager 生灭）。</summary>
-    private void ShowReplay() {
-        _hud?.Visible = true;
-    }
-
-    /// <summary>退出回放表现：隐藏回放控制条。</summary>
-    private void HideReplay() {
-        _hud?.Visible = false;
-    }
 }

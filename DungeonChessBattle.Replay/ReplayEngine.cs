@@ -25,6 +25,7 @@ public sealed class ReplayEngine : IBattleViewSource {
     private readonly List<ReplayCastEntry> _casts;
     private readonly List<ReplayFocusEntry> _focuses;
     private readonly UnitId[] _playerUnitIdByIndex;
+    private readonly ReplayInputTimeline _inputs;
     private readonly int _startTick;
     private readonly float _dt;
 
@@ -43,6 +44,15 @@ public sealed class ReplayEngine : IBattleViewSource {
 
     /// <summary>按单位 ID 查战斗单位，不存在返回 null。</summary>
     public IUnitUiView? FindUnit(UnitId unitId) => _battleScene.FindUnit(unitId) as IUnitUiView;
+
+    /// <summary>玩家表，下标即输入条目的玩家序号。</summary>
+    public IReadOnlyList<ReplayPlayerInfo> Players => _meta.Players;
+
+    /// <summary>输入条目时间轴：构造期一次性建好的只读投影，不随推进变化。</summary>
+    public ReplayInputTimeline Inputs => _inputs;
+
+    /// <summary>战斗开始的绝对逻辑帧，条目帧号与帧轴互转的唯一偏移量。</summary>
+    public int StartTick => _startTick;
 
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
@@ -73,6 +83,9 @@ public sealed class ReplayEngine : IBattleViewSource {
         if (_meta.LogicVersion != BattleLogicRevision.Value)
             throw new InvalidDataException(
                 $"Replay logic mismatch: record logic={_meta.LogicVersion}, current={BattleLogicRevision.Value}.");
+
+        // 只读投影建在门后：被拒的归档不必先做一遍三表混排
+        _inputs = ReplayInputTimeline.Build(recording);
 
         var dungeon = dungeonRegistry.GetByKey(_meta.DungeonKey)
             ?? throw new InvalidDataException($"Replay references unknown dungeon key: {_meta.DungeonKey}");
