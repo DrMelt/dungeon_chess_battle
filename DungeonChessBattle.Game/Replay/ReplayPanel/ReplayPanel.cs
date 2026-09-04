@@ -4,6 +4,7 @@ using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
+using MainSceneNode = DungeonChessBattle.MainScene.MainScene;
 
 namespace DungeonChessBattle.Game.ReplayUI;
 
@@ -12,14 +13,14 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// 本面板不保存过程状态（列表、在途与进度皆在 ReplayService），_Process 每帧消费行视图结论渲染。
 /// 每行有下载按钮（只获取）与播放按钮（显式启动回放）。
 /// 前厅页面之一，打开与返回走 BaseGamePanel 导航链；屏幕态交 ReplayCoordinator 信号仲裁。
-/// 回放编排器由外部场景注入，UI 控件经 ReplayPanelInterRefs 绑定。
+/// 回放组装场景互斥加载，播放请求经导出的 <see cref="MainSceneNode"/> 装配启动，本面板不接触回放引擎与编排器。
 /// </summary>
 public partial class ReplayPanel : BaseGamePanel {
     private static readonly ILogger<ReplayPanel> _logger = ServiceLocator.GetLogger<ReplayPanel>();
 
-    /// <summary>回放场景编排器，跨场景依赖，由 MainScene 注入。</summary>
+    /// <summary>主场景装配根：回放组装场景互斥加载，启动请求交其实例化并驱动。</summary>
     [Export]
-    private ReplayCoordinator? _coordinator;
+    private MainSceneNode? _assembler;
 
     /// <summary>导出引用集合节点。</summary>
     public ReplayPanelInterRefs? InterRefs {
@@ -59,16 +60,15 @@ public partial class ReplayPanel : BaseGamePanel {
     /// <summary>下载按钮回调：可下载与否由服务层裁决，本面板只上报房间 ID。</summary>
     private void OnRowActionPressed(string roomId) => ServiceLocator.ReplayService.RequestFetch(roomId);
 
-    /// <summary>播放按钮回调：服务层取可重放记录，成功即显式启动回放并返回大厅。</summary>
+    /// <summary>播放按钮回调：服务层取可重放记录，成功即交主场景装配回放场景启动并返回大厅。</summary>
     private void OnPlayPressed(string roomId) {
         var result = ServiceLocator.ReplayService.TryGetPlayable(roomId);
-        if (!result.IsReady || result.Recording is null || _coordinator is null) {
+        if (!result.IsReady || result.Recording is null) {
             if (IsInstanceValid(this))
                 _logger.LogWarning("回放本地副本无法读取或版本不兼容，无法启动: {RoomId}（{Status}）", roomId, result.Status);
             return;
         }
-        _coordinator.LoadReplay(result.Recording);
-        if (_coordinator.IsActive)
+        if (_assembler?.StartReplay(result.Recording) == true)
             GoBack();
     }
 

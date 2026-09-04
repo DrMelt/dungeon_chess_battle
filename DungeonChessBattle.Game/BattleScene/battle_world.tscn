@@ -1,0 +1,224 @@
+[gd_scene load_steps=28 format=3]
+
+[ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_game_show.tscn" id="2_blw6q"]
+[ext_resource type="Script" uid="uid://coab1v74bi3y6" path="res://GameAssets/Scene/UserCamera3D.cs" id="5_sxf1u"]
+[ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="6_8ka0p"]
+[ext_resource type="Script" uid="uid://ccgejvj13ik36" path="res://GamePlayUI/state_change_info/UnitStateChangeInfo.cs" id="7_6vwic"]
+[ext_resource type="Script" uid="uid://bjv2abd1tuqei" path="res://GamePlayUI/state_change_info/UnitStateChangeInfoInterRefs.cs" id="8_4ssfp"]
+[ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="9_i3pf0"]
+[ext_resource type="PackedScene" uid="uid://5ic2blbudhci" path="res://GamePlayUI/state_info/took_damage_info.tscn" id="10_2ac7b"]
+[ext_resource type="PackedScene" uid="uid://dwhgs4ttwo2s0" path="res://GamePlayUI/state_info/buff_change_info.tscn" id="11_f6kqk"]
+[ext_resource type="Script" uid="uid://bvm0whqi2x4t4" path="res://GameAssets/Scene/EffectHints.cs" id="13_cxaww"]
+[ext_resource type="Script" uid="uid://cl2h0cjfi0cbf" path="res://BattleScene/FocusOnOutline.cs" id="16_rmbqq"]
+[ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://BattleScene/shader/outline.gdshader" id="17_uajju"]
+[ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="18_50oy0"]
+[ext_resource type="Script" uid="uid://bp86c6ji4udvs" path="res://GamePlayUI/DungeonTimeLabel.cs" id="20_bmhqt"]
+[ext_resource type="PackedScene" uid="uid://bnyra1mkp6yn2" path="res://GamePlayUI/state_bar/state_bar_2d/state_bar_2d.tscn" id="21_nqfqb"]
+[ext_resource type="Script" uid="uid://brkohrm5ph0gp" path="res://GamePlayUI/state_bar/state_bar_mark/StateBarMark.cs" id="22_cdc5x"]
+[ext_resource type="PackedScene" uid="uid://bmraovrwblgf1" path="res://GamePlayUI/state_bar/state_bar_mark/state_bar_mark_2d.tscn" id="23_hfd03"]
+[ext_resource type="PackedScene" uid="uid://ba80u8ig7xf1k" path="res://GamePlayUI/state_bar/state_bar_list/state_bar_list.tscn" id="24_o75dv"]
+[ext_resource type="PackedScene" uid="uid://bxw2fxx6n6hp8" path="res://GamePlayUI/skill_list/skills_list.tscn" id="25_5lst5"]
+[ext_resource type="PackedScene" uid="uid://k4ex0wiw2tif" path="res://GamePlayUI/ui_info/panel_ui_info.tscn" id="26_eo60w"]
+[ext_resource type="Script" uid="uid://88yvgj5vmctr" path="res://BattleScene/UnitShowManager.cs" id="31_yyqz"]
+[ext_resource type="Script" uid="uid://bejrk18uieflq" path="res://BattleScene/BattleInputController.cs" id="32_piuq"]
+[ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="34_7m0x"]
+[ext_resource type="Script" uid="uid://c83a7urju38u0" path="res://effects/target_mark/UnitTargetMarks.cs" id="35_7m0y"]
+[ext_resource type="Script" uid="uid://c0sf7o0laqf4q" path="res://BattleScene/BattleSessionContext.cs" id="37_battleSession"]
+[ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
+[ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
+render_priority = 0
+shader = ExtResource("17_uajju")
+shader_parameter/outline_color = Color(0.9838709, 0.9432114, 0.868354, 1)
+shader_parameter/outline_width = 0.002
+
+[node name="BattleScene" type="Node" unique_id=896337408]
+
+[node name="BattleSessionContext" type="Node" parent="." unique_id=1868664181]
+script = ExtResource("37_battleSession")
+
+[node name="BattleInputController" type="Node" parent="." unique_id=1868664180 node_paths=PackedStringArray("sessionRef", "cameraRef")]
+script = ExtResource("32_piuq")
+playerInterfaceResRef = ExtResource("6_8ka0p")
+sessionRef = NodePath("../BattleSessionContext")
+cameraRef = NodePath("../PlayerCamera3D")
+
+[node name="UnitShowManager" type="Node" parent="." unique_id=1868664179 node_paths=PackedStringArray("_sessionRef")]
+script = ExtResource("31_yyqz")
+_unitShowScene = ExtResource("2_blw6q")
+_sessionRef = NodePath("../BattleSessionContext")
+
+[node name="PlayerCamera3D" type="Camera3D" parent="." unique_id=1696345154 node_paths=PackedStringArray("_sessionRef")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 10, 0)
+rotation_edit_mode = 1
+cull_mask = 1059
+projection = 1
+current = true
+fov = 44.3
+size = 11.425
+far = 1000.0
+script = ExtResource("5_sxf1u")
+_cameraMoveSpeed = 0.5
+_rotationEnabled = false
+_sessionRef = NodePath("../BattleSessionContext")
+
+[node name="GamePlayEffects" type="Node" parent="." unique_id=801121985]
+
+[node name="UnitMarks" type="Node" parent="GamePlayEffects" unique_id=1018245733 node_paths=PackedStringArray("_sessionRef")]
+script = ExtResource("35_7m0y")
+_sessionRef = NodePath("../../BattleSessionContext")
+_targetMarkPackedScene = ExtResource("34_7m0x")
+
+[node name="EffectHints" type="Node" parent="GamePlayEffects" unique_id=1098280841]
+script = ExtResource("13_cxaww")
+
+[node name="FocusOn_Outline" type="Node" parent="GamePlayEffects" unique_id=1186720211 node_paths=PackedStringArray("outLineMeshInstance")]
+script = ExtResource("16_rmbqq")
+playerInterfaceRes = ExtResource("6_8ka0p")
+outLineMeshInstance = NodePath("MeshInstance3D_Outline")
+
+[node name="MeshInstance3D_Outline" type="MeshInstance3D" parent="GamePlayEffects/FocusOn_Outline" unique_id=317289446]
+material_override = SubResource("ShaderMaterial_3um0x")
+
+[node name="UnitStateChange_Info" type="Node" parent="GamePlayEffects" unique_id=820233417 node_paths=PackedStringArray("_sessionRef")]
+script = ExtResource("7_6vwic")
+_popupScale = 0.5
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="UnitStateChangeInfoInterRefs" type="Node" parent="GamePlayEffects/UnitStateChange_Info" unique_id=188019131]
+script = ExtResource("8_4ssfp")
+PlayerUISettingsRes = ExtResource("9_i3pf0")
+TookDamageInfoPackedScene = ExtResource("10_2ac7b")
+BuffChangeInfoPackedScene = ExtResource("11_f6kqk")
+
+[node name="BattleGamePlayUI" type="Control" parent="." unique_id=955543473]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("18_50oy0")
+
+[node name="StateBar_Units" type="Control" parent="BattleGamePlayUI" unique_id=885250196 node_paths=PackedStringArray("_sessionRef")]
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("22_cdc5x")
+_sessionRef = NodePath("../../BattleSessionContext")
+stateBarSimple2d_PKD = ExtResource("23_hfd03")
+
+[node name="DungeonTimeLabel" type="Label" parent="BattleGamePlayUI" unique_id=2106499744 node_paths=PackedStringArray("_sessionRef")]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -155.0
+offset_right = 0.00048828125
+offset_bottom = 24.0
+grow_horizontal = 0
+text = "DungeonTimeLabel"
+vertical_alignment = 1
+script = ExtResource("20_bmhqt")
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="StateBar2d_Selected" parent="BattleGamePlayUI" unique_id=716113945 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
+layout_mode = 1
+mouse_filter = 2
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="StateBar2d_LocalPlayer" parent="BattleGamePlayUI" unique_id=1122334455 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("21_nqfqb")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -279.0
+offset_top = -36.0
+offset_right = 282.0
+offset_bottom = 44.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("40_localplayer")
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="HP_StateBar" parent="BattleGamePlayUI/StateBar2d_LocalPlayer" index="1" unique_id=1600851250]
+offset_left = 79.0
+offset_top = 1.0
+offset_right = 479.0
+offset_bottom = 33.0
+
+[node name="Panel_Skill_ProgressBar" parent="BattleGamePlayUI/StateBar2d_LocalPlayer" index="2" unique_id=1753394107]
+offset_left = -195.0
+offset_top = -201.0
+offset_right = -45.0
+offset_bottom = -169.0
+
+[node name="HBoxContainer_Buffs" parent="BattleGamePlayUI/StateBar2d_LocalPlayer" index="3" unique_id=1095143621]
+offset_left = -18.0
+offset_top = -219.0
+offset_right = 462.0
+offset_bottom = -91.0
+
+[node name="StateBar_List" parent="BattleGamePlayUI" unique_id=318767437 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("24_o75dv")]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -282.0
+offset_top = 128.0
+offset_right = -278.0
+offset_bottom = 132.0
+grow_horizontal = 0
+scale = Vector2(0.5, 0.5)
+mouse_filter = 2
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[node name="Skills_List" parent="BattleGamePlayUI" unique_id=839039226 node_paths=PackedStringArray("_sessionRef", "_effectHints") instance=ExtResource("25_5lst5")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -207.0
+offset_top = -186.0
+offset_right = 609.0
+offset_bottom = 78.0
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(0.5, 0.5)
+offset_transform_position_ratio = Vector2(0.28, 0.765)
+offset_transform_scale = Vector2(0.8, 0.8)
+_sessionRef = NodePath("../../BattleSessionContext")
+PlayerInterfaceRes = ExtResource("6_8ka0p")
+_effectHints = NodePath("../../GamePlayEffects/EffectHints")
+
+[node name="SkillInfoPanel" parent="BattleGamePlayUI" unique_id=1544932786 instance=ExtResource("26_eo60w")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+offset_left = -307.0
+offset_top = -145.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="BattleEventLogPanel" parent="BattleGamePlayUI" unique_id=2106499746 node_paths=PackedStringArray("_sessionRef") instance=ExtResource("41_evtlog")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 26.0
+offset_top = -211.0
+offset_right = 323.0
+offset_bottom = -34.0
+grow_vertical = 0
+_sessionRef = NodePath("../../BattleSessionContext")
+
+[editable path="BattleGamePlayUI/StateBar2d_LocalPlayer"]
+

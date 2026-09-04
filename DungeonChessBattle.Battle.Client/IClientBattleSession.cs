@@ -3,13 +3,21 @@ using DungeonChessBattle.Battle.Shared.Combat;
 namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
-/// 在线战斗会话契约：房间链路对展示层的唯一可见面，由 <see cref="RoomBattleClient"/> 实现。
-/// 读侧继承 <see cref="IBattleViewSource"/> 的展示口径，写侧继承 <see cref="IClientBattleService"/>
-/// 的命令与事件，另补本地玩家语义与房间权威元信息。
+/// 在线战斗会话契约：房间链路对上层的唯一可见面，由 <see cref="RoomBattleClient"/> 实现。
+/// 写侧继承 <see cref="IClientBattleService"/> 的命令与事件，读侧为本契约自持的单位读数
+/// （<see cref="Units"/> 与 <see cref="FindUnit"/>），另补本地玩家语义与房间权威元信息。
+/// 消费方是 Game 层的表现层数据源投影与战斗编排器，UI 面板不直接持有本契约。
 /// 不含连接生命周期——连接一律由客户端门面状态机发起，消费方拿不到传输对象。
-/// 本地玩家成员为在线专属，不入 <see cref="IBattleViewSource"/>，回放侧无本地控制器。
 /// </summary>
-public interface IClientBattleSession : IClientBattleService, IBattleViewSource {
+public interface IClientBattleSession : IClientBattleService {
+    /// <summary>全部展示单位视图，读本地回填的战斗世界。</summary>
+    IReadOnlyList<IUnitUiView> Units {
+        get;
+    }
+
+    /// <summary>按单位 ID 查展示单位，不存在返回 null。</summary>
+    IUnitUiView? FindUnit(UnitId unitId);
+
     /// <summary>本地玩家单位的展示视图，控制器未就绪时返回 null。</summary>
     IUnitUiView? LocalUnit {
         get;

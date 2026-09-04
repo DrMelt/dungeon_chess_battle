@@ -44,7 +44,7 @@ LES 自身时序与实体钩子可达性见 [lite-entity-system-update](../libra
 
 D6（缓冲水位）。`RoomBattleClient.BufferLowestSeconds/BufferHighestSeconds` 把 `PreferredBufferTimeLowest/Highest` 重设为 0.002/0.006 秒。LES 用同一水位同时约束下行插值缓冲与服务端输入队列，下界实算 `NetworkJitter × 1.5 + Lowest`；框架默认 0.025 在 128 Hz 下折成 3.2 tick，本地回环里 `TickLag` 的 `debt` 与 `queue` 两段几乎全由它撑起。该水位只够本地链路，公网须按 RTT 与抖动分档。
 
-D8（输入顺序）。`main_scene.tscn` 给 `BattleCoordinator` 设 `process_priority = -1`，输入提交先于 `GameClientDriver` 的 `EntityManager.Update`，本帧 pending 在紧随的 tick 内即被采纳；代价是同一 `Tick` 里的 `BattleInputController.UpdateRaycast` 取上一帧相机位。
+D8（输入顺序）。`battle_assemble.tscn` 给 `BattleCoordinator` 设 `process_priority = -1`，输入提交先于 `GameClientDriver` 的 `EntityManager.Update`，本帧 pending 在紧随的 tick 内即被采纳；代价是同一 `Tick` 里的 `BattleInputController.UpdateRaycast` 取上一帧相机位。
 
 缺陷编号不复用。
 

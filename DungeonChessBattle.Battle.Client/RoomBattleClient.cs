@@ -17,11 +17,13 @@ namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// 房间战斗客户端，负责与房间端口的 LES 二进制协议 0xDC 通信。
-/// 实现 <see cref="IClientBattleSession"/>（组合 IClientBattleService 与 IBattleViewSource），
+/// 实现 <see cref="IClientBattleSession"/>（写侧组合 <see cref="IClientBattleService"/>，
+/// 读侧自持单位读数 <see cref="Units"/> 与 <see cref="FindUnit"/>），
 /// 管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
 /// 在线端构建 BattleScene（领域单位 BattleUnit 实现展示契约），由 <see cref="ClientBattleLoop"/> 每渲染帧
 /// 把网络 SyncVar 读数回填进领域单位；当前在线端不跑本地结算，移动与伤害一律服务端权威；
-/// 房间同步状态经 <see cref="BattleRoomState"/> 投影统一读取，作为 IBattleViewSource 供 UI 取数。
+/// 房间同步状态经 <see cref="BattleRoomState"/> 投影统一读取；本端读数由 Game 层表现层统一数据源
+/// （<c>BattleSessionContext</c>）投影给 UI，UI 不直接绑定本类。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleSession {
@@ -146,7 +148,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         SampleStateSpread();
 
         // 展示取数由 ClientBattleLoop（LocalSingleton）在 LES 主循环内驱动：
-        // VisualUpdate 每渲染帧回填 SyncVar 读数进本地 BattleScene，展示再经 IBattleViewSource 直读。
+        // VisualUpdate 每渲染帧回填 SyncVar 读数进本地 BattleScene，表现层经统一数据源直读。
 
         // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;

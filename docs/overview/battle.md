@@ -73,7 +73,7 @@
 - 收包分流：`OnNetworkReceiveInternal` 先识别可靠消息帧（`0xDC` + `0x10` 类型头），解码 `ReliableBattleEventLog` → `BattleEventCoder` 逐条解码为领域事件 → 存入 `BattleEventLogStore` 并触发 `BattleEventsReceived`；其余 `0xDC` 帧交 LES 反序列化。
 - 在线端不跑任何结算：移动、读条、冷却与预输入排队、Buff、伤害与敌方 AI 一律服务端权威，下行读数即展示源（通道方向见 `flow/battle-state-sync`）。本地 `BattleScene` 与移动场景因此只被构建、不被驱动——`BattleScene.Tick` 在在线端没有调用点。
 - `BattleEventLogStore` 保存当前房间会话全部事件，`GetEventLog()` 只读暴露，`GetEventLogVersion()` 版本号在会话重置（断线/重连/离开）时自增，UI 据此做增量消费与历史回填。连接内可靠有序，断线期间事件不补发。
-- 对外唯一可见面 `IClientBattleSession : IClientBattleService, IBattleViewSource`：在两个既有契约之上补本地玩家语义（`LocalUnit` 与读领域回填态 `FocusTarget` 的 `LocalFocus`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。本地玩家成员不进 `IBattleViewSource`——回放无本地控制器；连接生命周期成员一律不入该契约。
+- 对外唯一可见面 `IClientBattleSession : IClientBattleService`：写侧继承 `IClientBattleService` 的命令与事件，读侧自持单位读数（`Units`/`FindUnit`，读本地回填的战斗世界），另补本地玩家语义（`LocalUnit` 与读领域回填态 `FocusTarget` 的 `LocalFocus`）与房间权威元信息（`DungeonKey`/`BattleStartUnixTime`）。连接生命周期成员一律不入该契约。UI 不直接消费本契约，由 Game 层的在线投影接进统一数据源（见 `overview/godot`）。
 - 断线/重连时 `ClearRoomSessionState` 清空单位索引、阶段与本地网络 ID，随连接状态重建为干净会话。
 
 ## LES 使用约束

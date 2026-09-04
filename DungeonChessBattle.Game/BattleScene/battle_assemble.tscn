@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://bolcdqihs7w6m" path="res://BattleScene/BattleCoordinator.cs" id="1_coord"]
+[ext_resource type="PackedScene" path="res://BattleScene/battle_world.tscn" id="2_world"]
+
+[node name="BattleCoordinator" type="Node" unique_id=1868664182 node_paths=PackedStringArray("_sessionContext", "_inputController")]
+process_priority = -1
+script = ExtResource("1_coord")
+_sessionContext = NodePath("BattleScene/BattleSessionContext")
+_inputController = NodePath("BattleScene/BattleInputController")
+
+[node name="BattleScene" parent="." instance=ExtResource("2_world")]

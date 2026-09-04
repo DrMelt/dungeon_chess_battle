@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Entities.SyncData;
+using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -12,8 +13,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
 /// 状态变化信息渲染器：把 <see cref="IBattleEvent"/> 流渲染为单位头顶的受击/治疗/Buff 增减浮字。
-/// 纯表现组件：单位取数经注入的 <see cref="IBattleViewSource"/>，事件由驱动方（在线/回放编排器）喂入。
-/// 在线与回放共用此唯一实例，UI 不感知事件来源。
+/// 纯表现组件：单位取数与帧事件都来自直持的统一数据源 <see cref="BattleSessionContext"/>，
+/// 在线与回放共用此唯一实例与同一节点，UI 不感知事件来源。
 /// </summary>
 public partial class UnitStateChangeInfo : Node {
     /// <summary>日志记录器。</summary>
@@ -23,8 +24,9 @@ public partial class UnitStateChangeInfo : Node {
     [Export]
     private float _popupScale = 1f;
 
-    /// <summary>当前展示数据源（在线为领域战斗世界、回放为回放引擎），用于单位取数。</summary>
-    private IBattleViewSource? _viewSource;
+    /// <summary>统一数据源引用，在线与回放均由 BattleSessionContext 投影，用于单位取数与帧事件消费。</summary>
+    [Export]
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>浮字容器：承载全部表现浮字，浮字淡出后自行销毁，容器随本节点释放。</summary>
     private Node? _effects_root;
@@ -47,29 +49,30 @@ public partial class UnitStateChangeInfo : Node {
         InterRefsOrThrow.BuffChangeInfoPackedScene?.Instantiate<BuffChangeInfo>()
         ?? throw new InvalidOperationException("[StateChangeInfo] BuffChangeInfoPackedScene is not assigned or instantiation failed.");
 
-    /// <summary>节点就绪：获取引用集合节点。</summary>
+    /// <summary>节点就绪：获取引用集合节点并校验导出引用。</summary>
     public override void _Ready() {
         InterRefs = GetNode<UnitStateChangeInfoInterRefs>("UnitStateChangeInfoInterRefs");
         if (InterRefs == null)
             _logger.LogError("StateChangeInfoInterRefs node not found.");
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
         _effects_root = new Node { Name = "EffectsRoot" };
         AddChild(_effects_root);
     }
 
-    /// <summary>绑定展示数据源。</summary>
-    public void Bind(IBattleViewSource source) {
-        _viewSource = source;
-    }
-
-    /// <summary>解绑展示数据源。</summary>
-    public void Unbind() {
-        _viewSource = null;
+    /// <summary>每帧从统一数据源取走帧事件并渲染浮字，未绑定态取数为空、帧空转。</summary>
+    public override void _Process(double delta) {
+        if (_sessionRef is not { } source)
+            return;
+        var events = source.DrainFrameEvents();
+        if (events.Count > 0)
+            Consume(events);
     }
 
     /// <summary>
-    /// 消费一帧战斗事件：按事件类型在目标单位位置弹出现时表现提示。由驱动方（在线/回放编排器）喂入。
+    /// 消费一帧战斗事件：按事件类型在目标单位位置弹出现时表现提示。
     /// </summary>
-    public void Consume(IReadOnlyList<IBattleEvent> events) {
+    private void Consume(IReadOnlyList<IBattleEvent> events) {
         foreach (var battleEvent in events) {
             switch (battleEvent) {
                 case DamageOccurred dmg:
@@ -95,8 +98,8 @@ public partial class UnitStateChangeInfo : Node {
         }
     }
 
-    /// <summary>按单位 ID 查找展示单位，来源为注入的展示数据源。</summary>
-    private IUnitUiView? FindUnit(UnitId unitId) => _viewSource?.FindUnit(unitId);
+    /// <summary>按单位 ID 查找展示单位，来源为统一数据源。</summary>
+    private IUnitUiView? FindUnit(UnitId unitId) => _sessionRef?.FindUnit(unitId);
 
     /// <summary>
     /// 将世界坐标投影为屏幕坐标。

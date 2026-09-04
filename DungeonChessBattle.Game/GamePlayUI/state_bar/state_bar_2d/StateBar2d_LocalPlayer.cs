@@ -1,4 +1,4 @@
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;

@@ -1,5 +1,4 @@
-using System;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -7,13 +6,14 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 地牢计时标签，每帧由战斗开始时刻计算并显示战斗时长。
+/// 地牢计时标签，每帧由统一数据源的战斗已运行秒数显示战斗时长。
+/// 在线读数由本地时钟相对权威开始时刻推算，回放取引擎帧轴。
 /// </summary>
 public partial class DungeonTimeLabel : Label {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<DungeonTimeLabel> _logger = ServiceLocator.GetLogger<DungeonTimeLabel>();
 
-    /// <summary>战斗会话上下文引用，用于获取战斗开始时刻。</summary>
+    /// <summary>战斗会话上下文引用，用于获取战斗计时。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
 
@@ -26,19 +26,16 @@ public partial class DungeonTimeLabel : Label {
     }
 
     /// <summary>
-    /// 每帧刷新显示当前战斗时间（从战斗开始时刻起经过的秒数，分:秒格式）。
-    /// 开始时刻未同步（0 或 null）时显示占位，避免以 Unix 纪元为基准的错误计时。
+    /// 每帧刷新显示战斗已运行秒数（分:秒格式）。计时未就绪时显示占位。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
-        long? startUnix = _sessionRef?.BattleStartUnixTime;
-        if (startUnix is not { } start || start <= 0) {
+        if (_sessionRef?.BattleElapsed is not { } elapsed || elapsed <= 0) {
             Text = "Time: --:--";
             return;
         }
-        long totalSeconds = (long)(DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(start)).TotalSeconds;
+        long totalSeconds = (long)elapsed;
         Text = $"Time: {totalSeconds / 60:D2}:{totalSeconds % 60:D2}";
     }
-
 }
 

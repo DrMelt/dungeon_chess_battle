@@ -3,7 +3,7 @@ using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.MainScene;
+namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
 /// 焦点单位轮廓高亮节点，跟随鼠标悬停的单位更新轮廓网格。

@@ -1,6 +1,6 @@
 [gd_resource type="StandardMaterial3D" format=3 uid="uid://bo4gmq06y2p8p"]
 
-[ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://MainScene/scenes/shader/outline.gdshader" id="1_u5f5n"]
+[ext_resource type="Shader" uid="uid://buy62qqijj8sk" path="res://BattleScene/shader/outline.gdshader" id="1_u5f5n"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3um0x"]
 render_priority = 0

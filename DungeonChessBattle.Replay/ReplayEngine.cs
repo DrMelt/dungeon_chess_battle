@@ -13,8 +13,10 @@ namespace DungeonChessBattle.Replay;
 /// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故 ID 解析、排队与落点不会分叉。
 /// 每帧顺序与服务端 BattleLoop 钩子一致：门面预备 → 输入注入 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// 世界重建照录制端的单位初始态表，实体 ID 与阵营取记录值，属性按配置键取当前配置。
+/// 本类只承担重放驱动与世界读数，不实现表现层数据源契约——展示取数由 Game 层统一数据源
+/// <c>BattleSessionContext</c> 经此处只读成员装配。
 /// </summary>
-public sealed class ReplayEngine : IBattleViewSource {
+public sealed class ReplayEngine {
     private readonly BattleScene _battleScene;
     private readonly BattleIntentHub _intentHub;
     private readonly IUnitRegistry _unitRegistry;
@@ -39,11 +41,23 @@ public sealed class ReplayEngine : IBattleViewSource {
     /// <summary>战斗是否已结束。</summary>
     public bool IsFinished => _battleScene.IsFinished;
 
-    /// <summary>战斗世界全部单位，展示层直读状态。</summary>
+    /// <summary>战斗世界全部单位，表现层数据源装配的唯一取数口。</summary>
     public IReadOnlyList<IUnitUiView> Units => _battleScene.BattleUnits;
 
     /// <summary>按单位 ID 查战斗单位，不存在返回 null。</summary>
     public IUnitUiView? FindUnit(UnitId unitId) => _battleScene.FindUnit(unitId) as IUnitUiView;
+
+    /// <summary>归档记录的副本键，展示层据此装配副本环境与阵营关系。</summary>
+    public string DungeonKey => _meta.DungeonKey;
+
+    /// <summary>录制端的战斗开始时刻，UTC Unix 秒。</summary>
+    public long BattleStartUnixTime => _meta.StartUnixTime;
+
+    /// <summary>已重放的逻辑秒数，由帧轴与固定步长推算。</summary>
+    public double ElapsedSeconds => _frame * (double)_dt;
+
+    /// <summary>当前帧的 UTC Unix 毫秒：录制开始时刻加帧轴，事件日志与在线接收时刻同数轴。</summary>
+    public long FrameUnixMs => _meta.StartUnixTime * 1000L + (long)(ElapsedSeconds * 1000.0);
 
     /// <summary>玩家表，下标即输入条目的玩家序号。</summary>
     public IReadOnlyList<ReplayPlayerInfo> Players => _meta.Players;

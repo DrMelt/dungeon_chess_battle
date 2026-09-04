@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 
-namespace DungeonChessBattle.Game.MainScene.scenes;
+namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
 /// 目标循环选择器：持有选敌游标，按存活、阵营敌对过滤，并从循环游标之后选择下一敌方单位。

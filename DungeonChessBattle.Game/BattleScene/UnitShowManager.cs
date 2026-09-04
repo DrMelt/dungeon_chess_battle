@@ -5,13 +5,13 @@ using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.MainScene;
+namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
 /// 单位展示管理器：单位视图（UnitGameShow）的全生命周期所有者。
-/// 面向 IBattleViewSource 每帧对齐驱动，在线经在线战斗世界、回放经 ReplayEngine。
-/// 单位数据查询与玩家操作归 BattleSessionContext。
-/// 由 MainScene / 回放控制器在进入/退出战斗时 Bind/Unbind。
+/// 直持统一数据源 <see cref="BattleSessionContext"/> 每帧对齐驱动，在线与回放各随其组装场景持有一份。
+/// 单位数据查询与玩家操作归 BattleSessionContext，本组件无绑定生命周期：
+/// 收不到进出通知，按数据源绑定代次自检换向并清场旧视图。
 /// </summary>
 public partial class UnitShowManager : Node {
     /// <summary>日志记录器。</summary>
@@ -21,37 +21,36 @@ public partial class UnitShowManager : Node {
     [Export]
     private PackedScene? _unitShowScene;
 
-    /// <summary>当前展示数据源（Bind 时注入），在线为在线战斗世界、回放为 ReplayEngine。</summary>
-    private IBattleViewSource? _source;
+    /// <summary>统一数据源引用，在线与回放均由 BattleSessionContext 投影。</summary>
+    [Export]
+    private BattleSessionContext? _sessionRef;
 
     /// <summary>单位网络实体 ID → UnitGameShow 映射。</summary>
     private readonly Dictionary<ushort, UnitGameShow> _unitShows = [];
 
-    /// <summary>进入战斗：注入展示数据源并清空旧视图。</summary>
-    public void Bind(IBattleViewSource source) {
-        ClearUnits();
-        _source = source;
-    }
+    /// <summary>上次对齐的绑定代次，与数据源当前值不等即视为换向。</summary>
+    private long _bindGeneration;
 
-    /// <summary>退出战斗：清理全部单位视图并释放数据源。</summary>
-    public void Unbind() {
-        ClearUnits();
-        _source = null;
-    }
-
-    /// <summary>节点退出场景树：兜底退订（防止战斗中途场景被释放导致事件悬挂）。</summary>
-    public override void _ExitTree() {
-        Unbind();
+    /// <summary>节点就绪：校验导出引用。</summary>
+    public override void _Ready() {
+        if (_sessionRef == null)
+            _logger.LogError("_sessionRef is not assigned!");
     }
 
     /// <summary>
-    /// 每帧对齐展示数据源：按 netId 重取单位视图引用、按死亡状态收敛可见性，对新增单位生成视图。
+    /// 每帧对齐统一数据源：绑定代次变化先清场，再按 netId 重取单位视图引用、按死亡状态收敛可见性，对新增单位生成视图。
     /// 在线单位晚到与回放 Seek 重建均在此收敛；死亡不经事件通报，视图只隐藏不销毁。
     /// </summary>
     public override void _Process(double delta) {
-        var source = _source;
+        var source = _sessionRef;
         if (source == null)
             return;
+
+        // 常驻节点收不到进出通知：换绑与解绑由绑定代次自检，未绑定态取数恒空故清场后自然空转
+        if (source.BindGeneration != _bindGeneration) {
+            _bindGeneration = source.BindGeneration;
+            ClearUnits();
+        }
 
         foreach (var (netId, show) in _unitShows) {
             var unit = source.FindUnit(netId);

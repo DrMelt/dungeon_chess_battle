@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI.battle_event_log;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;

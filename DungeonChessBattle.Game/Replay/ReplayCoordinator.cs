@@ -1,18 +1,18 @@
 using System;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Replay;
-using DungeonChessBattle.Game.GamePlayUI;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using Godot;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.ReplayUI;
 
 /// <summary>
-/// 回放编排：以回放获取端交来的回放记录构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
-/// 复用 BattleInterface 的共享 <see cref="UnitShowManager"/> 对齐驱动单位展示。提供播放/暂停/倍速/拖动控制。
-/// 由回放入口面板 LoadReplay 启动，退出时释放引擎与展示；回放表现（控制条与输入面板）整棵挂在 ReplayUI 容器上，随回放起落。
+/// 回放编排：`replay_assemble.tscn` 的根节点，以回放记录构建 <see cref="ReplayEngine"/>，按固定逻辑步长推进，
+/// 把回放装配 <see cref="ReplayBattleViewSource"/> 注入共享 <see cref="BattleSessionContext"/> 作为表现层统一数据源，
+/// 同场景的单位展示与浮字组件自持该数据源，与在线同口径驱动。提供播放/暂停/倍速/拖动控制。
+/// 组装场景由 MainScene 在 StartReplay 时实例化、回放结束时释放；本节点管引擎生命周期与回放表现（ReplayUI）显隐。
 /// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换屏幕态。
 /// </summary>
 public partial class ReplayCoordinator : Node {
@@ -28,17 +28,13 @@ public partial class ReplayCoordinator : Node {
     [Signal]
     public delegate void ReplayFinishedEventHandler();
 
-    /// <summary>单位展示管理器（复用 BattleInterface 共享实例，在线/回放同一所有者）。</summary>
-    [Export]
-    private UnitShowManager? _unitManager;
-
     /// <summary>回放表现容器（控制条与输入面板挂在它下面），启动/退出时整容器切显隐。</summary>
     [Export]
     private Control? _replayUI;
 
-    /// <summary>状态变化信息渲染器（复用在线实例，受击/治疗/Buff 浮字）。</summary>
+    /// <summary>战斗会话上下文（复用在线实例），回放期间作为表现层统一数据源。</summary>
     [Export]
-    private UnitStateChangeInfo? _stateChangeInfo;
+    private BattleSessionContext? _sessionContext;
 
     private ReplayEngine? _engine;
     private double _accumulator;
@@ -73,12 +69,11 @@ public partial class ReplayCoordinator : Node {
         _engine = engine;
         _accumulator = 0;
         _isPaused = false;
-        _unitManager?.Bind(_engine);
-        _stateChangeInfo?.Bind(_engine);
+        _sessionContext?.Bind(new ReplayBattleViewSource(engine));
         _replayUI?.Visible = true;
         EmitSignal(SignalName.ReplayStarted);
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", recording.Meta.RoomId, _engine.Units.Count);
+            _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", recording.Meta.RoomId, engine.Units.Count);
     }
 
     /// <summary>每帧推进回放引擎：按倍速累积固定步长，未加载/暂停/结束时为空操作。</summary>
@@ -90,7 +85,7 @@ public partial class ReplayCoordinator : Node {
         _accumulator += delta * PlaySpeed;
         while (_accumulator >= engine.FixedDelta) {
             var events = engine.Step();
-            _stateChangeInfo?.Consume(events);
+            _sessionContext?.AppendEvents(events);
             _accumulator -= engine.FixedDelta;
         }
     }
@@ -109,12 +104,11 @@ public partial class ReplayCoordinator : Node {
         _engine.SeekTo(Math.Clamp(frame, 0, _engine.TotalFrames));
     }
 
-    /// <summary>退出回放：释放引擎与单位展示，恢复屏幕态。</summary>
+    /// <summary>退出回放：解绑统一数据源，释放引擎并恢复屏幕态。</summary>
     public void ExitReplay() {
         if (!IsActive)
             return;
-        _unitManager?.Unbind();
-        _stateChangeInfo?.Unbind();
+        _sessionContext?.Unbind();
         _engine = null;
         _accumulator = 0;
         _isPaused = false;

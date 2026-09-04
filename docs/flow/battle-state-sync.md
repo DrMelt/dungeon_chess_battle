@@ -31,7 +31,7 @@
 
 ## 领域单位到 UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，再经 `BattleSessionContext.Units` 暴露；同一契约另给 `LocalUnit` 与 `LocalFocus`。UI 组件每帧直读 `IUnitUiView` 字段，判定视图不进这条取数路径（见 `overview/battle` 的视图契约）。
+`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，包成在线装配 `OnlineBattleViewSource` 注入统一数据源 `BattleSessionContext`；同一处另给 `LocalUnit` 与 `LocalFocus`。回放侧改由 `ReplayBattleViewSource` 把 `ReplayEngine` 的世界读数注入同一节点，两路在表现层无差别。UI 与表现组件直持该节点引用，每帧读 `IUnitUiView` 字段，判定视图不进这条取数路径（见 `overview/battle` 的视图契约）。
 
 ## 回放链与两链收敛
 
@@ -51,7 +51,7 @@ sequenceDiagram
     Loop BattleLoop.LateUpdate 每帧
         Sync->>Net: pawn.SyncFrom 写 SyncVar，倒计时落截止 tick
         Client->>Client: 收到事件与 SyncVar 增量
-        Client->>UI: pawn.SyncInto 回填领域单位，经 IBattleViewSource 供 UI 取数
+        Client->>UI: pawn.SyncInto 回填领域单位，经统一数据源供表现层取数
     end
 ```
 

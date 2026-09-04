@@ -3,29 +3,24 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.GamePlayUI;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 
-namespace DungeonChessBattle.MainScene;
+namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
-/// 战斗编排器：战斗子系统（UnitShowManager/BattleSessionContext/BattleInputController/DungeonEnv）
+/// 战斗编排器：`battle_assemble.tscn` 的根节点，战斗子系统（BattleSessionContext/BattleInputController/DungeonEnv）
 /// 的生命周期与阶段分发中枢。
-/// 进入/退出战斗时统一 Bind/Unbind 各子组件并订阅战斗阶段事件；Running 阶段与应用副本环境主题，
-/// Finished 阶段经 OnBattleFinished 回调交还 MainScene 走应用级退出。
-/// 数据查询仍经 BattleSessionContext 门面，本组件不做数据投影。
-/// 由 MainScene 在战斗启动时 EnterBattle、退出时 ExitBattle，帧循环经 Tick 推进。
+/// 进入战斗时单独构建在线装配（视图源 + 命令）注入统一数据源并订阅战斗阶段事件，退出时解绑；
+/// Running 阶段与应用副本环境主题，Finished 阶段经 OnBattleFinished 回调交还 MainScene 走应用级退出。
+/// 展示组件自持统一数据源取数与自取帧事件，本组件不碰传输对象、不逐组件接线。
+/// 组装场景由 MainScene 进战斗时实例化、退出时释放，帧循环经 _Process 推进。
 /// </summary>
 public partial class BattleCoordinator : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BattleCoordinator> _logger = ServiceLocator.GetLogger<BattleCoordinator>();
-
-    /// <summary>单位展示管理器引用。</summary>
-    [Export]
-    private UnitShowManager? _unitManager;
 
     /// <summary>战斗会话上下文引用。</summary>
     [Export]
@@ -38,17 +33,13 @@ public partial class BattleCoordinator : Node {
     /// <summary>当前战斗环境实例，EnterBattle 按会话副本键经资源表创建，ExitBattle 销毁。</summary>
     private DungeonEnv? _dungeonEnv;
 
-    /// <summary>状态变化信息渲染器引用（受击/治疗/Buff 浮字），喂入战斗事件。</summary>
-    [Export]
-    private UnitStateChangeInfo? _stateChangeInfo;
-
     /// <summary>当前战斗服务（EnterBattle 时注入，用于阶段订阅与输入提交）。</summary>
     private IClientBattleService? _battleService;
 
     /// <summary>当前房间 ID（EnterBattle 时注入，用于阶段事件过滤）。</summary>
     private string _roomId = "";
 
-    /// <summary>是否已在战斗中（子组件已绑定）。</summary>
+    /// <summary>是否已在战斗中（统一数据源与阶段事件已绑定）。</summary>
     public bool IsInBattle {
         get; private set;
     }
@@ -69,7 +60,7 @@ public partial class BattleCoordinator : Node {
         _dungeonEnv = env;
     }
 
-    /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定全部子组件并应用副本环境主题。</summary>
+    /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定统一数据源并应用副本环境主题。</summary>
     public void EnterBattle(string roomId) {
         if (IsInBattle)
             ExitBattle();
@@ -79,10 +70,8 @@ public partial class BattleCoordinator : Node {
         _battleService = session;
 
         session.BattlePhaseChanged += OnBattlePhase;
-        _unitManager?.Bind(session);
-        _stateChangeInfo?.Bind(session);
         _battleService.BattleEventsReceived += OnBattleEvents;
-        _sessionContext?.Bind(session, _roomId);
+        _sessionContext?.Bind(new OnlineBattleViewSource(session), new BattleSessionCommand(session, _roomId));
         _inputController?.Reset();
 
         // 按房间选中副本创建并装配环境（场景模板经副本资源表）
@@ -94,15 +83,13 @@ public partial class BattleCoordinator : Node {
             _logger.LogInformation("Battle entered: {RoomId}", roomId);
     }
 
-    /// <summary>退出战斗：退订阶段事件、解绑全部子组件并销毁战斗环境实例。</summary>
+    /// <summary>退出战斗：退订阶段事件、解绑统一数据源并销毁战斗环境实例。</summary>
     public void ExitBattle() {
         if (!IsInBattle)
             return;
 
         _battleService?.BattlePhaseChanged -= OnBattlePhase;
         _battleService?.BattleEventsReceived -= OnBattleEvents;
-        _unitManager?.Unbind();
-        _stateChangeInfo?.Unbind();
         _sessionContext?.Unbind();
         _inputController?.Reset();
 
@@ -127,11 +114,11 @@ public partial class BattleCoordinator : Node {
         ExitBattle();
     }
 
-    /// <summary>战斗事件流订阅：转发给状态变化渲染器弹出现时浮字。</summary>
+    /// <summary>战斗事件流订阅：交统一数据源入帧缓冲与事件日志。</summary>
     private void OnBattleEvents(string roomId, IReadOnlyList<IBattleEvent> events) {
         if (roomId != _roomId)
             return;
-        _stateChangeInfo?.Consume(events);
+        _sessionContext?.AppendEvents(events);
     }
 
     private void OnBattlePhase(string roomId, BattlePhase phase) {

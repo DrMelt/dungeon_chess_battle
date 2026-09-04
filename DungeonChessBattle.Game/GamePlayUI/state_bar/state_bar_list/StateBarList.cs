@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Common;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;

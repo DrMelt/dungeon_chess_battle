@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;

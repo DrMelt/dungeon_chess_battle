@@ -2,18 +2,17 @@ using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePlayUI;
-using DungeonChessBattle.Game.MainScene.scenes;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Godot.Collections;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.MainScene;
+namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
 /// 战斗输入控制器：采集玩家输入（移动/瞄准）并提交战斗服务，
 /// 同时负责 3D 交互拾取（更新鼠标悬停单位/地面瞄准点、左键聚焦目标）写入共享交互状态。
-/// 由 MainScene 在每帧 _Process 中调度 Tick；等待目标选择时暂缓提交移动输入。
+/// 由 BattleCoordinator 在每帧 _Process 中调度 Tick；等待目标选择时暂缓提交移动输入。
 /// </summary>
 public partial class BattleInputController : Node {
     /// <summary>日志记录器。</summary>

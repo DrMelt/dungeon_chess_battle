@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://d0xwy2djp8quy"]
+
+[ext_resource type="Script" uid="uid://b8shyx6hpxkjm" path="res://Replay/ReplayCoordinator.cs" id="1_coord"]
+[ext_resource type="PackedScene" path="res://BattleScene/battle_world.tscn" id="2_world"]
+[ext_resource type="PackedScene" uid="uid://baidpltv52ny4" path="res://Replay/ReplayHud/replay_hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" uid="uid://4nw5r5gseln" path="res://Replay/ReplayInputPanel/replay_input_panel.tscn" id="4_inputpanel"]
+
+[node name="ReplayCoordinator" type="Node" unique_id=1265385099 node_paths=PackedStringArray("_replayUI", "_sessionContext")]
+script = ExtResource("1_coord")
+_replayUI = NodePath("ReplayUI")
+_sessionContext = NodePath("BattleScene/BattleSessionContext")
+
+[node name="ReplayUI" type="Control" parent="." unique_id=85086063]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ReplayHud" parent="ReplayUI" unique_id=1013972245 node_paths=PackedStringArray("_coordinator") instance=ExtResource("3_hud")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -455.5
+offset_top = -77.0
+offset_right = 455.5
+offset_bottom = -43.0
+grow_horizontal = 2
+grow_vertical = 0
+_coordinator = NodePath("../..")
+
+[node name="ReplayInputPanel" parent="ReplayUI" unique_id=1734829017 node_paths=PackedStringArray("_coordinator") instance=ExtResource("4_inputpanel")]
+layout_mode = 0
+offset_left = 29.0
+offset_top = 121.0
+offset_right = 302.0
+offset_bottom = 380.0
+_coordinator = NodePath("../..")
+
+[node name="BattleScene" parent="." unique_id=2060186014 instance=ExtResource("2_world")]

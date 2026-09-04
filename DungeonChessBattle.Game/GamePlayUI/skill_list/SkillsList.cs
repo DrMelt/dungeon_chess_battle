@@ -5,7 +5,7 @@ using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.GamePlayUI.skill_list;
-using DungeonChessBattle.MainScene;
+using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Effects;
 using Godot;
@@ -208,7 +208,7 @@ public partial class SkillsList : Control {
 
     /// <summary>提交施法意图：按键即上行，能否施放与预输入排队全由权威裁定。</summary>
     private void SubmitCast(SkillDefinition skill, ushort targetNetId, float posX, float posZ, ButtonSkillBase button) {
-        _sessionRef?.Command.Cast(skill.SkillId, targetNetId, posX, posZ);
+        _sessionRef?.Command?.Cast(skill.SkillId, targetNetId, posX, posZ);
         button.ButtonPressed = false;
     }
 

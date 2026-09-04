@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
 /// RoomBattleClient 的 LES 实体创建回调。
-/// 实体创建时构建领域 BattleUnit，展示层经 IBattleViewSource 取数。
+/// 实体创建时构建领域 BattleUnit，展示层经统一数据源投影取数。
 /// </summary>
 public partial class RoomBattleClient {
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
