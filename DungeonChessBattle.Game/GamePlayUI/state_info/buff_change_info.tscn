@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cuk20lgw2mm3e" path="res://GamePlayUI/state_info/BuffChangeInfo.cs" id="1_s8gib"]
 [ext_resource type="Curve" uid="uid://dv8q0bcq2sbx0" path="res://GamePlayUI/state_info/fade_curve.tres" id="2_3vdwg"]
-[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/015000_hr1.png" id="3_qbiga"]
+[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/buff_placeholder.png" id="3_qbiga"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_s8gib"]
 font_size = 42

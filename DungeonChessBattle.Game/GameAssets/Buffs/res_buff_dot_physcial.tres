@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Buff_DOT_Physcial" format=3 uid="uid://btx4sae0q273i"]
 
-[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/015000_hr1.png" id="0_5hg7k"]
+[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/buff_placeholder.png" id="0_5hg7k"]
 [ext_resource type="Script" uid="uid://bp831r2s67k7t" path="res://GameAssets/Buffs/scripts/Buff_DOT_Physcial.cs" id="1_51lf4"]
 
 [resource]

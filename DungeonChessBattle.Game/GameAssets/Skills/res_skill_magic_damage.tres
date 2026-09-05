@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Skill_Damage" format=3 uid="uid://ki4rvmooffx3"]
 
-[ext_resource type="Texture2D" uid="uid://vnqi14mutk6l" path="res://Images/skills_buffs/Stone/000403_hr1.png" id="1_5yhb0"]
+[ext_resource type="Texture2D" uid="uid://xhpxi4oowct4" path="res://Images/skills_buffs/magic_damage/magic_damage_skill_80x80.png" id="1_5yhb0"]
 [ext_resource type="Script" uid="uid://5jswv8456nig" path="res://GameAssets/Skills/scripts/Skill_Damage.cs" id="2_2535u"]
 [ext_resource type="PackedScene" uid="uid://c1dh80p12ey8c" path="res://effects/flare_AoE/Effect_Flare_AoE.tscn" id="3_applyfx"]
 

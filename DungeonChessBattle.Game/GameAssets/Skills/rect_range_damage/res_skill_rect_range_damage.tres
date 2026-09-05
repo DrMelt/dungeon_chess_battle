@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Skill_Range_Damage" format=3 uid="uid://dkyowavmc04rk"]
 
-[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://Images/skills_buffs/000400_hr1.png" id="1_8kfua"]
+[ext_resource type="Texture2D" uid="uid://uos10o78q5w3" path="res://Images/skills_buffs/icon_placeholder_80x80.png" id="1_8kfua"]
 [ext_resource type="Script" uid="uid://bqqt3y3s4xm54" path="res://GameAssets/Skills/rect_range_damage/Skill_Range_Damage.cs" id="2_hn6dw"]
 [ext_resource type="PackedScene" uid="uid://bgluhhynft6kx" path="res://effects/skill_range/rect/effect_skill_range_rect.tscn" id="3_rangehint"]
 [ext_resource type="PackedScene" uid="uid://by8ljj417lj6b" path="res://GameAssets/Skills/rect_range_damage/effect/effect_skill_rect_range_damage.tscn" id="4_applyfx"]

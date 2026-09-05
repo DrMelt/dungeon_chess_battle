@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b12ds1vg5bxh4"]
 
-[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/015000_hr1.png" id="1_otcmx"]
+[ext_resource type="Texture2D" uid="uid://dfmwbamrpr2o0" path="res://Images/skills_buffs/buff_placeholder.png" id="1_otcmx"]
 [ext_resource type="Script" uid="uid://e46mpgrwp1p8" path="res://GamePlayUI/state_bar/state_bar_2d/TextureRectBuffIcon.cs" id="2_1t7jj"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_otcmx"]

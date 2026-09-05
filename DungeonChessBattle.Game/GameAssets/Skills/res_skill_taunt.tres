@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Skill_Taunt" format=3 uid="uid://cwhwi52yso5g4"]
 
-[ext_resource type="Texture2D" uid="uid://nwtq8tptjcot" path="res://Images/skills_buffs/Taunt/Provoke.png" id="1_8vn0q"]
+[ext_resource type="Texture2D" uid="uid://c1coyotouf2e4" path="res://Images/skills_buffs/taunt/taunt_skill_80x80.png" id="1_8vn0q"]
 [ext_resource type="Script" uid="uid://cqvsyei5tdeq6" path="res://GameAssets/Skills/scripts/Skill_Taunt.cs" id="2_script"]
 
 [resource]

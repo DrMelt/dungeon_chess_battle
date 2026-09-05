@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="Buff_DOT" format=3 uid="uid://d2uqaxajtlili"]
 
-[ext_resource type="Texture2D" uid="uid://bclgcqsi0ihrl" path="res://Images/skills_buffs/Aero/210403_hr1.png" id="1_j8fmd"]
+[ext_resource type="Texture2D" uid="uid://dh0dd82vbyn72" path="res://Images/skills_buffs/dot_magic/dot_magic_buff_48x64.png" id="1_j8fmd"]
 [ext_resource type="Script" uid="uid://cb8wkicsguayw" path="res://GameAssets/Buffs/scripts/Buff_DOT.cs" id="2_j8fmd"]
 
 [resource]

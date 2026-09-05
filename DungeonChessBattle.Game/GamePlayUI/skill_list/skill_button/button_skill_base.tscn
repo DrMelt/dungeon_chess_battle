@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://djuu70u5pdyyo"]
 
-[ext_resource type="Texture2D" uid="uid://7witifp6p4np" path="res://Images/skills_buffs/000400_hr1.png" id="1_xjo8s"]
+[ext_resource type="Texture2D" uid="uid://uos10o78q5w3" path="res://Images/skills_buffs/icon_placeholder_80x80.png" id="1_xjo8s"]
 [ext_resource type="Script" uid="uid://0uvgvvb764ni" path="res://GamePlayUI/skill_list/skill_button/ButtonSkillBase.cs" id="2_rvfo7"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="3_m5lm5"]
 
