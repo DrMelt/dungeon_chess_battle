@@ -1,0 +1,6 @@
+[gd_resource type="FontVariation" format=3 uid="uid://b16wmitucnkp6"]
+
+[ext_resource type="FontFile" uid="uid://dpa74m81rjo5m" path="res://fonts/Noto_Sans_SC/NotoSansSC-VariableFont_wght.ttf" id="1_61fyi"]
+
+[resource]
+base_font = ExtResource("1_61fyi")

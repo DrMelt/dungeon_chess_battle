@@ -10,4 +10,7 @@ public static class ServerProcessEnv {
 
     /// <summary>父进程 PID，服务器端 ParentProcessWatcher 读取，客户端消失时防孤儿进程。</summary>
     public const string ParentPid = "DCB_SERVER_PARENT_PID";
+
+    /// <summary>mods 根目录绝对路径，客户端与服务器子进程共享同一份启用内容。</summary>
+    public const string ModDir = "DCB_SERVER_MOD_DIR";
 }

@@ -43,4 +43,9 @@ public class RoomListing {
     public DateTime CreatedAt {
         get; init;
     }
+
+    /// <summary>服务端内容指纹（DataRevision），客户端不一致拒绝加入。</summary>
+    public string ContentFingerprint {
+        get; init;
+    } = string.Empty;
 }

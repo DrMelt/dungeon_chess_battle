@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;

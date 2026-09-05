@@ -24,8 +24,20 @@ public partial class BuffBaseGodot : Resource {
 
     /// <summary>Buff 名称。</summary>
     [Export]
-    public string BuffName { get; private set; } = "";
+    public string BuffName {
+        get; private set;
+    } = "";
+
     /// <summary>Buff 描述。</summary>
     [Export]
-    public string BuffDescription { get; private set; } = "";
+    public string BuffDescription {
+        get; private set;
+    } = "";
+
+    /// <summary>由 mod 资源装配运行时填充展示字段（图标/名称/描述），内部调用。</summary>
+    internal void ApplyViewData(Texture2D? icon, string name, string description) {
+        Icon = icon;
+        BuffName = name;
+        BuffDescription = description;
+    }
 }

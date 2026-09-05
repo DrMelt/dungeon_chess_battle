@@ -4,13 +4,12 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Inputs;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
-using LiteEntitySystem;
 using LiteNetLib.Utils;
 using Microsoft.Extensions.Logging;
 

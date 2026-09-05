@@ -1,4 +1,4 @@
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.AspNetCore.SignalR;

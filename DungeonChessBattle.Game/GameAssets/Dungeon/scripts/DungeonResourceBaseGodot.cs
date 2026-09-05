@@ -2,7 +2,7 @@ using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = DungeonChessBattle.Battle.GameConfig.Models.DungeonConfig;
 
 /// <summary>
 /// Godot 副本资源基类。仅承载展示所需数据（显示名/描述）与领域副本定义引用，
@@ -46,4 +46,16 @@ public abstract partial class DungeonResourceBaseGodot : Resource {
     /// <summary>副本描述（支持多行文本）。</summary>
     [Export(PropertyHint.MultilineText)]
     public string Description { get; private set; } = "";
+
+    /// <summary>由 mod 资源装配运行时填充展示字段（主题色/场景/显示名/描述），内部调用。</summary>
+    internal void ApplyViewData(
+        Color groundColor, Color skyColor, Color lightColor,
+        PackedScene? envScene, string displayName, string description) {
+        GroundColor = groundColor;
+        SkyColor = skyColor;
+        LightColor = lightColor;
+        EnvScene = envScene;
+        DisplayName = displayName;
+        Description = description;
+    }
 }

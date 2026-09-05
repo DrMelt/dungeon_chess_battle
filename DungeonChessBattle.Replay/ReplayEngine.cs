@@ -3,7 +3,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Replay;

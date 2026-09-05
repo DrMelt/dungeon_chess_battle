@@ -1,10 +1,9 @@
 using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
 using LiteNetLib;

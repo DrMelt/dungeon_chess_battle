@@ -3,11 +3,11 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.GameConfig.Models;
+using DungeonChessBattle.Battle.GameConfig.Models;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -95,6 +95,16 @@ public partial class RoomPreparation : BaseGamePanel {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("进入房间: {RoomId}, isHost={IsHost}", roomId, isHost);
 
+        // 内容一致性：房间指纹与服务端指纹不一致即缺 mod 或版本不符，拒绝进入准备
+        if (config is not null && !string.IsNullOrEmpty(config.ContentFingerprint)
+            && config.ContentFingerprint != GameConfigDB.DataRevision) {
+            _logger.LogError(
+                "内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。缺少 mod 或版本不符。",
+                roomId, config.ContentFingerprint, GameConfigDB.DataRevision);
+            InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法加入该房间";
+            return;
+        }
+
         RenderRoomState(config);
         InterRefs?.StatusLabel?.Text = "请选择单位...";
         RefreshUnitGrid();
@@ -132,7 +142,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
         string? dungeonKey = Client.CurrentRoomSnapshot?.DungeonKey;
-        GameConfig.Models.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        Battle.GameConfig.Models.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
         IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
         string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
 
@@ -171,6 +181,16 @@ public partial class RoomPreparation : BaseGamePanel {
     /// 事件视为刷新信号，展示数据一律读取客户端当前会话，避免串房。
     /// </summary>
     private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
+        // 快照为权威指纹来源，进房乐观配置后仍以快照复核，防止列表迟到信息
+        if (!string.IsNullOrEmpty(snapshot.ContentFingerprint)
+            && snapshot.ContentFingerprint != GameConfigDB.DataRevision) {
+            _logger.LogError(
+                "快照内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。",
+                eventRoomId, snapshot.ContentFingerprint, GameConfigDB.DataRevision);
+            InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法继续";
+            return;
+        }
+
         RenderRoomState(null);
         RefreshUnitGrid();
         RefreshActionButtons();

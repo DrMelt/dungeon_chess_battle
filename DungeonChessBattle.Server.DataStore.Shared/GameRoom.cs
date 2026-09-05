@@ -58,4 +58,9 @@ public class GameRoom(string roomId) {
     public RoomStatus Status {
         get; set;
     } = RoomStatus.Waiting;
+
+    /// <summary>房间创建时服务端内容指纹（DataRevision），客户端不一致拒绝加入，保证对战双方内容同源。</summary>
+    public string ContentFingerprint {
+        get; set;
+    } = string.Empty;
 }

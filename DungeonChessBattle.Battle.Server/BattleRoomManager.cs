@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;

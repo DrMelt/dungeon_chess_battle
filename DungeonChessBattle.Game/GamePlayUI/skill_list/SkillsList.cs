@@ -4,7 +4,6 @@ using DungeonChessBattle.Battle.Shared.Range;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
-using DungeonChessBattle.Game.GamePlayUI.skill_list;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Effects;

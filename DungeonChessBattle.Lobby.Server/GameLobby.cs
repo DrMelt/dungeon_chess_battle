@@ -1,7 +1,7 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -46,11 +46,11 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     }
 
     /// <summary>解析权威副本键：非法键回落默认副本。</summary>
-    /// <param name="dungeonKey">客户端提交的副本键。</param>
+    /// <param name="dungeonKey">副本键，null 或空串表示未选定（建房未带配置、房间配置缺失）。</param>
     /// <returns>合法的副本键。</returns>
     private string ResolveDungeonKey(string? dungeonKey) {
         var info = _dungeonRegistry.GetByKey(dungeonKey);
-        return info?.DungeonKey ?? GameConfigDB.DefaultDungeonKey;
+        return info?.DungeonKey ?? _dungeonRegistry.DefaultDungeonKey;
     }
 
     /// <summary>
@@ -92,14 +92,17 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             };
         }
         else {
-            // 启用默认值填充房间，无配置直接进入战斗
+            // 启用默认值填充房间，无配置直接进入战斗：副本键经同一解析路径回落默认副本
             config = new GameRoom(roomId) {
-                DungeonKey = GameConfigDB.DefaultDungeonKey,
+                DungeonKey = ResolveDungeonKey(null),
                 HostName = hostDisplayName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
             };
         }
+
+        // 房间携带服务端当前内容指纹，客户端不一致拒绝加入，保证内容同源
+        config.ContentFingerprint = GameConfigDB.DataRevision;
 
         // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + 连接归属 + playerId
         if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, config,
@@ -175,6 +178,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
                 HasPassword = r.HasPassword,
                 Status = r.Status,
                 CreatedAt = r.CreatedAt,
+                ContentFingerprint = r.ContentFingerprint,
             })
             .ToList();
         if (_logger.IsEnabled(LogLevel.Information))
@@ -298,10 +302,11 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             config?.MaxPlayers ?? 2,
             config?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            _dungeonRegistry.GetByKey(state.DungeonKey)?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
+            ResolveDungeonKey(state.DungeonKey),
             config?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
-            [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))]);
+            [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))],
+            config?.ContentFingerprint ?? string.Empty);
 
         await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
 

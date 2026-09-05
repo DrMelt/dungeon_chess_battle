@@ -2,7 +2,7 @@ using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.Battle.Server.Replay;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Replay.Shared;
 using Microsoft.Extensions.Logging;
 

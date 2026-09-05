@@ -17,4 +17,9 @@ public sealed record ServerProcessConfig {
 
     /// <summary>就绪探测轮询间隔。</summary>
     public TimeSpan ReadyPollInterval { get; init; } = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>mods 根目录绝对路径，经环境变量注入子进程；为空时不传，服务器按纯内置内容启动。</summary>
+    public string? ModDirectory {
+        get; init;
+    }
 }

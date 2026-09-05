@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = DungeonChessBattle.Battle.GameConfig.Models.DungeonConfig;
 
 /// <summary>
 /// 副本资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
@@ -38,6 +38,12 @@ public partial class DungeonResourceTable : Resource {
         _initialized = true;
     }
 
+    /// <summary>追加运行时 mod 副本资源；同 Config 覆盖已有条目。必须在 Initialize 后调用。</summary>
+    internal void RegisterModResource(DungeonResourceBaseGodot resource) {
+        if (resource.InternalConfig is { } config)
+            _lookup[config] = resource;
+    }
+
     /// <summary>
     /// 按副本键获取副本资源；副本未注册或资源未在资源表映射时返回 null。
     /// 环境主题、显示名等展示数据统一经此入口装配。
@@ -65,7 +71,7 @@ public partial class DungeonResourceTable : Resource {
     public DungeonEnv? InstantiateEnvironment(string? dungeonKey) {
         // 副本键未同步/未注册时回退默认副本，保证环境对象始终可实例化
         var resource = GetResource(dungeonKey)
-            ?? GetResource(GameConfigDB.DefaultDungeonKey);
+            ?? GetResource(DungeonRegistry.Instance.DefaultDungeonKey);
         return resource?.EnvScene?.Instantiate<DungeonEnv>();
     }
 }

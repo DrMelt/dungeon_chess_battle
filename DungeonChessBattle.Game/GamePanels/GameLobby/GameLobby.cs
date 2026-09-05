@@ -4,7 +4,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Game.ReplayUI;
@@ -50,7 +50,10 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
     /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
-    private string _selectedDungeonKey = GameConfigDB.DefaultDungeonKey;
+    private string _selectedDungeonKey = DefaultDungeonKey;
+
+    /// <summary>默认副本键，经副本登记点取用，不在面板内持有常量。</summary>
+    private static string DefaultDungeonKey => DungeonRegistry.Instance.DefaultDungeonKey;
 
     #endregion
 
@@ -141,7 +144,7 @@ public partial class GameLobby : BaseGamePanel {
             _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
-            DungeonKey: dungeon?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
+            DungeonKey: dungeon?.DungeonKey ?? DefaultDungeonKey,
             Description: ResourceTables.Dungeons.GetDescription(_selectedDungeonKey) ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config: config);
@@ -188,11 +191,12 @@ public partial class GameLobby : BaseGamePanel {
             var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
             var config = new RoomListing {
                 RoomId = roomId,
-                DungeonKey = dungeon?.DungeonKey ?? GameConfigDB.DefaultDungeonKey,
+                DungeonKey = dungeon?.DungeonKey ?? DefaultDungeonKey,
                 HostName = ServiceLocator.ClientService.PlayerName,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
+                ContentFingerprint = GameConfigDB.DataRevision,
             };
             _roomPreparation.EnterRoom(roomId, config, isHost: true);
             NavigateTo(_roomPreparation);
@@ -218,10 +222,11 @@ public partial class GameLobby : BaseGamePanel {
             // 使用缓存的选中房间配置，或构造默认配置
             var config = _selectedRoomConfig ?? new RoomListing {
                 RoomId = joinedRoomId,
-                DungeonKey = GameConfigDB.DefaultDungeonKey,
+                DungeonKey = DefaultDungeonKey,
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
+                ContentFingerprint = GameConfigDB.DataRevision,
             };
             _roomPreparation.EnterRoom(joinedRoomId, config, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))

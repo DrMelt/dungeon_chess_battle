@@ -40,6 +40,12 @@ public partial class BuffResourceTable : Resource {
         _initialized = true;
     }
 
+    /// <summary>追加运行时 mod Buff 资源；同 BuffTypeId 覆盖已有条目。必须在 Initialize 后调用。</summary>
+    internal void RegisterModResource(BuffBaseGodot resource) {
+        if (resource.BuffTypeId != 0)
+            _lookup[resource.BuffTypeId] = resource;
+    }
+
     /// <summary>
     /// 通过 Buff 类型 ID 查找对应的 Buff 资源实例。
     /// </summary>

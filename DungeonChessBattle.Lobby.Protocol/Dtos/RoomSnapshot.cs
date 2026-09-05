@@ -16,6 +16,7 @@ namespace DungeonChessBattle.Lobby.Protocol.Dtos;
 /// <param name="DungeonKey">选中的副本键。</param>
 /// <param name="Players">房间内玩家列表，包含玩家名与准备标志。</param>
 /// <param name="Units">准备单位列表。</param>
+/// <param name="ContentFingerprint">服务端内容指纹，客户端不一致拒绝继续准备。</param>
 public sealed record RoomSnapshot(
     string RoomId,
     string Description,
@@ -25,4 +26,5 @@ public sealed record RoomSnapshot(
     string DungeonKey,
     int CurrentPlayers,
     IReadOnlyList<PlayerReadyDto> Players,
-    IReadOnlyList<PrepareUnitDto> Units);
+    IReadOnlyList<PrepareUnitDto> Units,
+    string ContentFingerprint);

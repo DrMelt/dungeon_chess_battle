@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -44,6 +44,12 @@ public partial class SkillResourceTable : Resource {
         }
 
         _initialized = true;
+    }
+
+    /// <summary>追加运行时 mod 技能资源；同 Config 覆盖已有条目。必须在 Initialize 后调用。</summary>
+    internal void RegisterModResource(UnitSkillBaseGodot resource) {
+        if (resource.InternalConfig is { } config)
+            _lookup[config] = resource;
     }
 
     /// <summary>

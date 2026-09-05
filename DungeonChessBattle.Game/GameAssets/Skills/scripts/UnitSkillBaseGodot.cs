@@ -46,6 +46,17 @@ public partial class UnitSkillBaseGodot : Resource {
         get; private set;
     }
 
+    /// <summary>由 mod 资源装配运行时填充展示字段（图标/名称/描述/特效与提示场景），内部调用。</summary>
+    internal void ApplyViewData(
+        Texture2D? icon, string name, string description,
+        PackedScene? applyEffectScene, PackedScene? rangeHintScene) {
+        Icon = icon;
+        SkillName = name;
+        SkillDescription = description;
+        ApplyEffectScene = applyEffectScene;
+        RangeHintScene = rangeHintScene;
+    }
+
     /// <summary>
     /// 实例化施放特效节点；模板未配置返回 null。
     /// </summary>

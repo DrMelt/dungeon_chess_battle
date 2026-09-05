@@ -1,9 +1,9 @@
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = DungeonChessBattle.Battle.GameConfig.Models.DungeonConfig;
 
 /// <summary>哥布林营地副本资源。</summary>
 [GlobalClass]

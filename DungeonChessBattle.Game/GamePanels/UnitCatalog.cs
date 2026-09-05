@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.GameConfig;
-using DungeonChessBattle.GameConfig.Models;
+using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig.Models;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
-/// 客户端单位目录：以 GameConfig.UnitRegistry 为数据源，按配置键索引单位配置。
+/// 客户端单位目录：以 Battle.GameConfig.UnitRegistry 为数据源，按配置键索引单位配置。
 /// 客户端与服务端共享同一份配置；技能展示资源由 UnitShowManager 从 Config.Skills 构建。
 /// </summary>
 public static class UnitCatalog {

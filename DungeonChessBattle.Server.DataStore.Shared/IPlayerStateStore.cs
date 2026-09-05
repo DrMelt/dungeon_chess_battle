@@ -32,6 +32,7 @@ public interface IPlayerStateStore {
     bool IsAllOthersReady(string roomId);
 
     /// <summary>获取房间准备状态快照。</summary>
+    /// <remarks>副本键原样取自房间配置，未选定为空串；默认副本的解析归调用方经副本登记点完成，Store 不兜底内容默认值。</remarks>
     RoomStateSnapshot GetRoomState(string roomId);
 
     /// <summary>判断指定连接是否为指定房间的房主，基于连接归属表。</summary>

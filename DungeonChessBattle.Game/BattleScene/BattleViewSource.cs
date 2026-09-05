@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Replay;
 
 namespace DungeonChessBattle.Game.BattleScene;

@@ -127,6 +127,8 @@ public sealed class ServerProcessHost : IServerHost {
                 psi.ArgumentList.Add(port.ToString());
                 if (!string.IsNullOrEmpty(serverPassword))
                     psi.Environment[ServerProcessEnv.Password] = serverPassword;
+                if (!string.IsNullOrEmpty(_config.ModDirectory))
+                    psi.Environment[ServerProcessEnv.ModDir] = _config.ModDirectory;
                 // 注入父进程 PID，供服务器端 ParentProcessWatcher 检测客户端存活（防孤儿）
                 psi.Environment[ServerProcessEnv.ParentPid] = System.Environment.ProcessId.ToString();
 

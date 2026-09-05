@@ -12,7 +12,7 @@
 
 ## 域与链
 
-- 域：`godot` 主工程装配与表现；`client` 客户端装配与契约；`battle` 战斗世界、房间服务、在线端与配置登记；`lobby` 大厅与大厅客户端；`datastore` 状态存储与身份凭证；`replay` 回放子系统；`server` 服务端装配与契约。
+- 域：`godot` 主工程装配与表现；`client` 客户端装配与契约；`battle` 战斗世界、房间服务、在线端与配置登记；`lobby` 大厅与大厅客户端；`datastore` 状态存储与身份凭证；`replay` 回放子系统；`server` 服务端装配与契约；`mod` 内容装载与展示资源契约。
 - 链：`battle-state-sync` 权威状态下行；`connection-reconnect` 启动—进房—重连—收敛；`replay-design` 录制—归档—获取—重放；`client-prediction` 在线预测调查与缺陷登记。
 
 ## 发现重复时怎么删

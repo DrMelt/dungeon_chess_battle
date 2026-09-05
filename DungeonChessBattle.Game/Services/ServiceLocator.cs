@@ -42,9 +42,12 @@ public static class ServiceLocator {
     /// </summary>
     public static ILogger CreateLogger(string categoryName) => LoggerFactoryInstance.CreateLogger(categoryName);
 
-    /// <summary>游戏服务器宿主单例（独立子进程实现）。</summary>
+    /// <summary>游戏服务器宿主单例（独立子进程实现），注入 mods 根目录使子进程加载同一启用内容。</summary>
     public static readonly IServerHost ServerService = new ServerProcessHost(
-        LoggerFactoryInstance.CreateLogger<ServerProcessHost>());
+        LoggerFactoryInstance.CreateLogger<ServerProcessHost>(),
+        new ServerProcessConfig {
+            ModDirectory = ProjectSettings.GlobalizePath("user://mods"),
+        });
 
     /// <summary>游戏客户端服务单例。</summary>
     public static readonly GameClientService ClientService = new(

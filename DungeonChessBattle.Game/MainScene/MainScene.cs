@@ -56,9 +56,11 @@ public partial class MainScene : Node {
     #endregion
 
     /// <summary>
-    /// 节点就绪：校验导出引用、订阅战斗服务事件、构造屏幕状态机。
+    /// 节点就绪：装配 mod 内容、校验导出引用、订阅战斗服务事件、构造屏幕状态机。
+    /// mod 装配必须先于任何面板与资源表访问，主场景是最早的装配时机。
     /// </summary>
     public override void _Ready() {
+        ModManager.EnsureInitialized();
         ValidateExports();
 
         // 订阅战斗启动事件（服务层事实源，GameLobby 为纯显示层不桥接）

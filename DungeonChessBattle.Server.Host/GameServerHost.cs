@@ -1,6 +1,6 @@
 ﻿using DungeonChessBattle.Server.Abstractions;
 using DungeonChessBattle.Battle.Server;
-using DungeonChessBattle.GameConfig;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;
 using DungeonChessBattle.Server.DataStore;
