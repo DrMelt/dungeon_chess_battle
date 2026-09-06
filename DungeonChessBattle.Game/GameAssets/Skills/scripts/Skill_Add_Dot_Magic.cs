@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Add_Dot_Magic : UnitSkillBaseGodot {
     /// <summary>指向附加魔法 DOT 的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillAddDotMagic;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.AddDotMagic));
 }

@@ -58,7 +58,7 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     /// <summary>重建列表、刷新状态与错误。</summary>
     private void Refresh() {
-        if (InterRefs?.ModList is not { } list)
+        if (InterRefs?.ModList is not { } list || InterRefs.StatusLabel is not { } statusLabel)
             return;
 
         foreach (Node stale in list.GetChildren().ToArray()) {
@@ -76,14 +76,16 @@ public partial class ModManagementPanel : BaseGamePanel {
         if (catalog.Packages.Count == 0)
             list.AddChild(SingleLine("未发现任何 mod。把 mod 包放进下方 mods 目录，每个 mod 一个子目录。"));
 
-        InterRefs.StatusLabel!.Text = BuildStatus(catalog);
+        statusLabel.Text = BuildStatus(catalog);
 
         var errors = catalog.Errors
             .Concat(catalog.AssemblyErrors)
             .Concat(catalog.DisplayErrors)
             .ToList();
-        InterRefs.ErrorLabel!.Text = errors.Count > 0 ? string.Join("\n", errors) : "";
-        InterRefs.ErrorLabel.Visible = errors.Count > 0;
+        if (InterRefs?.ErrorLabel is { } errorLabel) {
+            errorLabel.Text = errors.Count > 0 ? string.Join("\n", errors) : "";
+            errorLabel.Visible = errors.Count > 0;
+        }
     }
 
     /// <summary>构造单个 mod 的一行：启用开关、ID、构成、问题说明。</summary>
@@ -144,7 +146,7 @@ public partial class ModManagementPanel : BaseGamePanel {
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
         string facts = $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个"
             + $"\nmods 目录：{ModManager.ModsRootPath}"
-            + $"\n运行中数据修订号：{GameConfigDB.DataRevision}"
+            + $"\n运行中数据修订号：{GameContentHost.Registry.DataRevision}"
             + stale;
         return _notice is null ? facts : $"{facts}\n{_notice}";
     }

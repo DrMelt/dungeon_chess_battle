@@ -20,7 +20,7 @@
 - 射程判定与结算读的都是第 2 步解算后的位置，同一份读数；技能写入的冷却仍在同帧第 4 步被扣一次，写在前扣在后，是既定行为。剩余偏差在 AI：`Decide` 发生在 `Tick` 之前，读上一 tick 末位置，与第 3 步裁定之间隔着一次位移解算。
 - 单位死亡不产出事件：死亡是生命值派生态，消费方一律经 `IsDead` 判定。施法目标校验是已知例外——施法校验与战斗世界的目标预过滤两处都不看存活，生命写回只钳区间不判下界，对 `Health == 0` 的单位施放治疗或挂 HoT 会把它抬回存活，而其仇恨账本已被 `CleanupDeaths` 清空、`TryEndBattle` 可能已判过结束。施法者侧有 `IsDead` 防御，目标侧没有；预输入窗口把这条窄竞态的触发面放大到一个排队周期。
 - `BattleEventLog` 每帧开头 Clear → 只增追加 → 帧末经只读视图外送，仅当帧有效，调用方不得跨帧持有。非 Running 阶段不推进，返回的就是这份空日志。
-- 这份步序即 `BattleLogicRevision.Value` 所背的东西：步骤顺序、事件产生次序、第 9 步作废口径任一变动都要递增，否则旧录像在同一份输入下重跑出不同结果而双重门控看不出差别。漏递增不报错。内容与布局侧的变化走 `GameConfigDB.DataRevision`，不走这里。
+- 这份步序即 `BattleLogicRevision.Value` 所背的东西：步骤顺序、事件产生次序、第 9 步作废口径任一变动都要递增，否则旧录像在同一份输入下重跑出不同结果而双重门控看不出差别。漏递增不报错。内容与布局侧的变化走 `GameContentHost.Registry.DataRevision`，不走这里。
 
 ## 输入门面与预输入
 
@@ -100,4 +100,4 @@
 - `UnitRegistry`（ConfigKey ↔ UnitConfig）与 `DungeonRegistry`（DungeonKey ↔ DungeonConfig）是唯一登记点，服务端建模与控制器绑定校验、客户端 `UnitCatalog` 展示共享同一份配置，新增单位/副本必须经登记；敌人生成以注册表权威配置键为准，`GetByConfig` 反查杜绝拼写错配。
 - 玩家阵营是选项键 → 实际阵营列表的映射：客户端提交选项键，服务端按 `DungeonConfig.PlayerCampOptions` 权威解析，单位配置不含阵营。
 - `DungeonConfig.Layout`（边界 + 静态障碍矩形）是三端构建移动场景的同源依据；`RelationsResolver` 是敌我判定唯一来源。
-- `UnitConfig` 除数值外直接装配内容侧逻辑实现（`Intelligence` 敌人决策、`Skills` 及其效果与公式，无状态实例可多单位多房间共享、`HateRule`），`GameConfigDB` 编译期实例化领域只读定义，零反射、无热加载。这些实现在 `GameConfig` 内，只经 `IUnitIntelligence`/`ISkillEffect` 等 Shared 端口被战斗世界调用，施法可行性经 `IBattleSceneView.CanCast` 向引擎取结论，配置层不引用 `Battle.Logic`。
+- `UnitConfig` 除数值外直接装配内容侧逻辑实现（`Intelligence` 敌人决策、`Skills` 及其效果与公式，无状态实例可多单位多房间共享、`HateRule`），`ContentSetRegistry` 编译期实例化领域只读定义，零反射、无热加载。这些实现在 `GameConfig` 内，只经 `IUnitIntelligence`/`ISkillEffect` 等 Shared 端口被战斗世界调用，施法可行性经 `IBattleSceneView.CanCast` 向引擎取结论，配置层不引用 `Battle.Logic`。

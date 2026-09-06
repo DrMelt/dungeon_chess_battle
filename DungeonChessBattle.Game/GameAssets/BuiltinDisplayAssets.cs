@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Game.Shared;
 using Godot;
@@ -12,7 +13,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// 可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与 <c>res://</c> 路径只能留在本工程，故这一步不由 <c>Game.Mod</c> 承担。
 /// </summary>
 public static class BuiltinDisplayAssets {
-    /// <summary>引擎预置场景的资源名，mod 的 godot_assets.json 以此引用特效、范围提示与环境场景。</summary>
+    /// <summary>引擎预置场景的资源名，mod 展示代码以此引用特效、范围提示与环境场景。</summary>
     public static class AssetIds {
         /// <summary>矩形范围伤害施放特效。</summary>
         public const string RectRangeDamage = "apply_effect_rect_range_damage";
@@ -49,5 +50,31 @@ public static class BuiltinDisplayAssets {
             runtime.RegisterBuff(buff);
         foreach (var dungeon in ResourceTables.Dungeons.AllResources)
             runtime.RegisterDungeon(dungeon);
+
+        // 单位没有编辑器资源表，内置单位外观即共享模板回退；注册空占位让索引查到内容单位的合并起点，
+        // mod 只改模型/配色不声明显示名时仍保配置键名，与其余三表「内容有展示无即补占位」同形状
+        foreach (var unit in GameContentHost.Registry.Units)
+            runtime.RegisterUnit(new BuiltInUnitView(unit.ConfigKey));
+    }
+
+    /// <summary>内置单位展示占位视图：仅承载显示名回退配置键，模型/配色留空由消费方回落共享模板。</summary>
+    private sealed class BuiltInUnitView(string configKey) : IUnitView {
+        /// <inheritdoc/>
+        public string ConfigKey => configKey;
+
+        /// <inheritdoc/>
+        public string DisplayName => configKey;
+
+        /// <inheritdoc/>
+        public string Description => "";
+
+        /// <inheritdoc/>
+        public Texture2D? Icon => null;
+
+        /// <inheritdoc/>
+        public PackedScene? ModelScene => null;
+
+        /// <inheritdoc/>
+        public Color? BodyColor => null;
     }
 }

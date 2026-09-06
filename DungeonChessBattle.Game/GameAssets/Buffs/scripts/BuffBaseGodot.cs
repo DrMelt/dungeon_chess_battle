@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class BuffBaseGodot : Resource, IBuffView {
     /// <summary>
-    /// 子类重写此属性，直接返回 GameConfigDB 中的领域 Buff 定义。
+    /// 子类重写此属性，直接返回内容注册表中的领域 Buff 定义（类型安全，编译期检查）。
     /// </summary>
     protected virtual BuffDefinition? Config => null;
 
@@ -45,8 +45,8 @@ public partial class BuffBaseGodot : Resource, IBuffView {
         if (icon is not null)
             Icon = icon;
         if (!string.IsNullOrEmpty(name))
-            BuffName = name!;
+            BuffName = name;
         if (!string.IsNullOrEmpty(description))
-            BuffDescription = description!;
+            BuffDescription = description;
     }
 }

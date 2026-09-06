@@ -21,11 +21,15 @@ noise = SubResource("FastNoiseLite_i3pf0")
 color_ramp = SubResource("Gradient_4ssfp")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tsefa"]
-albedo_color = Color(0.28, 0.38, 0.24, 1)
+albedo_color = Color(0.18, 0.2, 0.28, 1)
 albedo_texture = SubResource("NoiseTexture2D_4ssfp")
 metallic_specular = 0.0
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_r6hb3"]
+sky_top_color = Color(0.08, 0.1, 0.2, 1)
+sky_horizon_color = Color(0.1, 0.12, 0.22, 1)
+ground_bottom_color = Color(0.14, 0.16, 0.24, 1)
+ground_horizon_color = Color(0.18, 0.2, 0.28, 1)
 
 [sub_resource type="Sky" id="Sky_uq67j"]
 sky_material = SubResource("ProceduralSkyMaterial_r6hb3")
@@ -33,7 +37,7 @@ process_mode = 1
 
 [sub_resource type="Environment" id="Environment_r6hb3"]
 background_mode = 2
-background_color = Color(0.6, 0.78, 0.72, 1)
+background_color = Color(0.1, 0.12, 0.22, 1)
 background_energy_multiplier = 1.61
 sky = SubResource("Sky_uq67j")
 
@@ -47,7 +51,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
-light_color = Color(1, 0.95, 0.85, 1)
+light_color = Color(0.6, 0.65, 1, 1)
 light_cull_mask = 4293919745
 shadow_enabled = true
 shadow_caster_mask = 4293919745

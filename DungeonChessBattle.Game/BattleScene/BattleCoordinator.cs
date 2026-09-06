@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 战斗编排器：`battle_assemble.tscn` 的根节点，战斗子系统（BattleSessionContext/BattleInputController/DungeonEnv）
 /// 的生命周期与阶段分发中枢。
 /// 进入战斗时单独构建在线装配（视图源 + 命令）注入统一数据源并订阅战斗阶段事件，退出时解绑；
-/// Running 阶段与应用副本环境主题，Finished 阶段经 OnBattleFinished 回调交还 MainScene 走应用级退出。
+/// Running 阶段收敛副本环境（实体同步后键变化时整棵重建），Finished 阶段经 OnBattleFinished 回调交还 MainScene 走应用级退出。
 /// 展示组件自持统一数据源取数与自取帧事件，本组件不碰传输对象、不逐组件接线。
 /// 组装场景由 MainScene 进战斗时实例化、退出时释放，帧循环经 _Process 推进。
 /// </summary>
@@ -33,6 +33,9 @@ public partial class BattleCoordinator : Node {
     /// <summary>当前战斗环境实例，EnterBattle 按会话副本键经资源表创建，ExitBattle 销毁。</summary>
     private DungeonEnv? _dungeonEnv;
 
+    /// <summary>环境实例对应的副本键；会话键变化时重建，覆盖实体同步前后的时序差异。</summary>
+    private string? _dungeonEnvKey;
+
     /// <summary>当前战斗服务（EnterBattle 时注入，用于阶段订阅与输入提交）。</summary>
     private IClientBattleService? _battleService;
 
@@ -48,19 +51,28 @@ public partial class BattleCoordinator : Node {
     public Action? OnBattleFinished;
 
     /// <summary>
-    /// 确保战斗环境实例存在：按会话副本键经副本资源表创建并挂载。
+    /// 确保战斗环境实例与会话副本键一致：键为 null（实体未同步）或键变化的首次装配，
+    /// 场景模板内已固化主题，键变化只能整棵重建；未同步键回退默认副本场景由资源工厂裁决。
     /// </summary>
     private void EnsureEnvironment() {
-        if (_dungeonEnv != null)
+        string? key = _sessionContext?.DungeonKey;
+        if (_dungeonEnv != null && _dungeonEnvKey == key)
             return;
-        var env = ResourceTables.Dungeons.InstantiateEnvironment(_sessionContext?.DungeonKey);
+        if (_dungeonEnv != null) {
+            RemoveChild(_dungeonEnv);
+            _dungeonEnv.QueueFree();
+            _dungeonEnv = null;
+            _dungeonEnvKey = null;
+        }
+        var env = ResourceTables.Dungeons.InstantiateEnvironment(key);
         if (env == null)
             return;
         AddChild(env);
         _dungeonEnv = env;
+        _dungeonEnvKey = key;
     }
 
-    /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定统一数据源并应用副本环境主题。</summary>
+    /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件、绑定统一数据源并装配副本环境。</summary>
     public void EnterBattle(string roomId) {
         if (IsInBattle)
             ExitBattle();
@@ -74,9 +86,8 @@ public partial class BattleCoordinator : Node {
         _sessionContext?.Bind(new OnlineBattleViewSource(session), new BattleSessionCommand(session, _roomId));
         _inputController?.Reset();
 
-        // 按房间选中副本创建并装配环境（场景模板经副本资源表）
+        // 按房间选中副本创建环境（场景模板内固化主题，经副本资源表）
         EnsureEnvironment();
-        _dungeonEnv?.ApplyDungeonTheme(_sessionContext?.DungeonKey);
         IsInBattle = true;
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -94,8 +105,12 @@ public partial class BattleCoordinator : Node {
         _inputController?.Reset();
 
         // 销毁战斗环境实例
-        _dungeonEnv?.QueueFree();
+        if (_dungeonEnv != null) {
+            RemoveChild(_dungeonEnv);
+            _dungeonEnv.QueueFree();
+        }
         _dungeonEnv = null;
+        _dungeonEnvKey = null;
 
         _battleService = null;
         _roomId = "";
@@ -130,9 +145,9 @@ public partial class BattleCoordinator : Node {
     private void DeferredBattlePhase(int phase) {
         if (phase == (int)BattlePhase.Running) {
             // 战斗真正开始时房间实体已同步，DungeonKey 可用；
-            // 阵营关系未装配属时序故障，经会话侧响应校验后再应用副本环境主题
+            // 阵营关系未装配属时序故障，经会话侧响应校验后再收敛环境（键变化时整棵重建）
             _sessionContext?.OnBattleRunning();
-            _dungeonEnv?.ApplyDungeonTheme(_sessionContext?.DungeonKey);
+            EnsureEnvironment();
         }
 
         if (phase == (int)BattlePhase.Finished) {

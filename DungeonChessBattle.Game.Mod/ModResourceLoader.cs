@@ -46,7 +46,7 @@ public sealed class ModResourceLoader(string modsRootPath, string? modsRootGodot
 
         PackedScene? scene = null;
         // mod 自带场景只在宿主声明了引擎路径挂载点时可加载
-        if (modsRootGodotPath is not null && TryGetGodotPath(in key, out string? godotPath)) {
+        if (modsRootGodotPath is { } root && TryGetGodotPath(root, in key, out string? godotPath)) {
             try {
                 scene = GD.Load<PackedScene>(godotPath);
             }
@@ -77,13 +77,13 @@ public sealed class ModResourceLoader(string modsRootPath, string? modsRootGodot
         return true;
     }
 
-    /// <summary>把同一寻址解析为 Godot 路径体系下的加载路径；未声明挂载点或越界返回 false。</summary>
-    private bool TryGetGodotPath(in ModAssetKey key, out string? godotPath) {
+    /// <summary>把同一寻址解析为 Godot 路径体系下的加载路径；越界或根路径为空返回 false。</summary>
+    private static bool TryGetGodotPath(string root, in ModAssetKey key, out string? godotPath) {
         godotPath = null;
         if (!IsContained(key))
             return false;
 
-        godotPath = $"{modsRootGodotPath!.TrimEnd('/')}/{key.ModId}/{key.RelativePath}";
+        godotPath = $"{root.TrimEnd('/')}/{key.ModId}/{key.RelativePath}";
         return true;
     }
 

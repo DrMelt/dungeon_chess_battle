@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
@@ -70,10 +71,10 @@ public partial class BattleSessionContext : Node {
     public long EventLogVersion => _source?.EventLogVersion ?? 0;
 
     /// <summary>获取阵营关系函数用于领域判定；未就绪返回 false。</summary>
-    public bool TryGetCampRelations(out CampRelationResolver relations) {
+    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations) {
         if (_source is { } source)
             return source.TryGetCampRelations(out relations);
-        relations = null!;
+        relations = null;
         return false;
     }
 

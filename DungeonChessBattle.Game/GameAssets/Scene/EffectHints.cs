@@ -31,7 +31,7 @@ public partial class EffectHints : Node {
 
         AddChild(hint);
         ActiveHint = hint;
-        _pendingInit = () => init((T)ActiveHint!);
+        _pendingInit = () => init(hint);
         return hint;
     }
 

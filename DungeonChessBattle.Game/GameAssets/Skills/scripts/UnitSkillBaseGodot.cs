@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class UnitSkillBaseGodot : Resource, ISkillView {
     /// <summary>
-    /// 子类重写此属性，直接返回 GameConfigDB 中的领域技能定义（类型安全，编译期检查）。
+    /// 子类重写此属性，直接返回内容注册表中的领域技能定义（类型安全，编译期检查）。
     /// </summary>
     protected virtual SkillDefinition? Config => null;
 
@@ -62,9 +62,9 @@ public partial class UnitSkillBaseGodot : Resource, ISkillView {
         if (icon is not null)
             Icon = icon;
         if (!string.IsNullOrEmpty(name))
-            SkillName = name!;
+            SkillName = name;
         if (!string.IsNullOrEmpty(description))
-            SkillDescription = description!;
+            SkillDescription = description;
         if (applyEffectScene is not null)
             ApplyEffectScene = applyEffectScene;
         if (rangeHintScene is not null)

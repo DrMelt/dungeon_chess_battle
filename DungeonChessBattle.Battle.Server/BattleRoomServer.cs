@@ -13,7 +13,7 @@ namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// 单房间的 LES 实体服务器。每个房间拥有独立的 NetManager + ServerEntityManager，
-/// 独立的战斗世界实例 BattleScene 与领域技能仓库 GameConfigDB，并运行在独立线程中，
+/// 独立的战斗世界实例 BattleScene 与内容注册表，并运行在独立线程中，
 /// 实现物理级别的 Entity 同步隔离与房间数据所有权。
 /// 战斗流程由 BattleScene 统一驱动，读条、冷却、Buff、结算与阶段；
 /// 房间级阶段状态由战斗世界投影写载体，战斗内领域事件经整帧事件日志广播到客户端。

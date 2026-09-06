@@ -295,7 +295,7 @@ public sealed partial class GameClientService {
         _logger.LogInformation("已离开房间");
 
         if (!string.IsNullOrEmpty(roomId))
-            OnRoomLeft?.Invoke(roomId!);
+            OnRoomLeft?.Invoke(roomId);
     }
 
     /// <summary>清空断线重连所需的本房间缓存：房间 ID、端口与密码。</summary>

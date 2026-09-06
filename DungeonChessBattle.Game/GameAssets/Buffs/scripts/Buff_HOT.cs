@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Buff_HOT : BuffBaseGodot {
     /// <summary>指向持续治疗的领域 Buff 定义。</summary>
-    protected override BuffDefinition Config => GameConfigDB.BuffHot;
+    protected override BuffDefinition Config =>
+        GameContentHost.Registry.GetRequiredBuff(BuiltInContent.BuffTypeIds.Hot);
 }

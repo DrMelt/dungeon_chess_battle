@@ -33,7 +33,7 @@
 - 表现层只认一个数据源：`BattleSessionContext` 是纯门面，读数全部转发给当前装配的 `IBattleViewSource`，未绑定时恒空；装配对象由编排器单独构建注入——`OnlineBattleViewSource` 委托门面 `RoomSession`（事件日志也取自会话仓库），`ReplayBattleViewSource` 委托 `ReplayEngine` 并自持回放事件日志仓库（帧事件按引擎帧轴落账）。帧事件缓冲与阵营关系懒装配在 `BattleViewSourceBase` 共用。本节点不认识会话与引擎类型，绑定生命周期只在本节点。UI 与表现组件不持有网络对象与引擎实例，一律以导出节点引用直持本节点（`_sessionRef`）取数，无逐组件 `Bind`。`AppendEvents` 是驱动方投喂一帧领域事件的唯一入口，浮字组件每帧自取。诊断面板读门面的 `RoomNetworkStatus` 快照。
 - 命令写侧不进读侧契约：`BattleSessionCommand`（持会话与房间 ID）仅在线装配，经 `BattleSessionContext.Command` 消费（未绑定与回放为 null）；移动输入直接走 `IClientBattleService`。回放不受理命令，本地玩家语义恒 null，本地状态栏与技能面板随之隐藏。
 - `UnitShowManager` 是单位视图唯一所有者：每帧从直持的统一数据源增量生成视图、重取单位引用并按 `IsDead` 收敛可见性；本节点不接进出通知，按 `BattleSessionContext.BindGeneration` 自检数据源换向并清场（重连重绑即靠此收敛）；在线与回放各自一份 world 实例，`UnitGameShow` 零改动；技能展示资源由 UI 侧按技能 ID 经 `ResourceTables.Skills` 直查，范围提示与施放特效场景模板挂在技能资源上，由 `EffectHints` 创建与回收；不在此装配、不对外提供查询。
-- 副本环境经资源工厂创建：场景模板挂在副本资源 `EnvScene`，`DungeonResourceTable.InstantiateEnvironment` 按副本键实例化（未同步键回退默认副本模板），`BattleCoordinator` 管理创建与销毁并据会话副本键应用主题。
+- 副本环境经资源工厂创建：场景模板挂在副本资源 `EnvScene`，主题在场景模板内固化（每副本一份成品场景），`DungeonResourceTable.InstantiateEnvironment` 按副本键实例化（未同步键回退默认副本模板），`BattleCoordinator` 管理创建与销毁并按键变化整棵重建。
 - 阵营判定依赖 `DungeonRegistry.GetRelations(dungeonKey)` 装配的关系函数，副本键同步后延迟收敛，未知键抛异常不静默回退。
 
 ## 回放表现归属

@@ -98,10 +98,10 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 内容一致性：房间指纹与服务端指纹不一致即缺 mod 或版本不符，拒绝进入准备
         if (config is not null && !string.IsNullOrEmpty(config.ContentFingerprint)
-            && config.ContentFingerprint != GameConfigDB.DataRevision) {
+            && config.ContentFingerprint != GameContentHost.Registry.DataRevision) {
             _logger.LogError(
                 "内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。缺少 mod 或版本不符。",
-                roomId, config.ContentFingerprint, GameConfigDB.DataRevision);
+                roomId, config.ContentFingerprint, GameContentHost.Registry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法加入该房间";
             return;
         }
@@ -184,10 +184,10 @@ public partial class RoomPreparation : BaseGamePanel {
     private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
         // 快照为权威指纹来源，进房乐观配置后仍以快照复核，防止列表迟到信息
         if (!string.IsNullOrEmpty(snapshot.ContentFingerprint)
-            && snapshot.ContentFingerprint != GameConfigDB.DataRevision) {
+            && snapshot.ContentFingerprint != GameContentHost.Registry.DataRevision) {
             _logger.LogError(
                 "快照内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。",
-                eventRoomId, snapshot.ContentFingerprint, GameConfigDB.DataRevision);
+                eventRoomId, snapshot.ContentFingerprint, GameContentHost.Registry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法继续";
             return;
         }

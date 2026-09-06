@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Enums;
@@ -70,7 +71,7 @@ public interface IBattleViewSource {
     IReadOnlyList<IBattleEvent> DrainFrameEvents();
 
     /// <summary>获取阵营关系函数用于领域判定；未就绪返回 false。</summary>
-    bool TryGetCampRelations(out CampRelationResolver relations);
+    bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations);
 
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
     CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps);
@@ -154,9 +155,9 @@ public abstract class BattleViewSourceBase : IBattleViewSource {
     }
 
     /// <inheritdoc />
-    public bool TryGetCampRelations(out CampRelationResolver relations) {
+    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations) {
         var resolved = RelationsOrResolve();
-        relations = resolved ?? null!;
+        relations = resolved;
         return resolved != null;
     }
 

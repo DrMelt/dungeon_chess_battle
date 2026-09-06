@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Add_Hot : UnitSkillBaseGodot {
     /// <summary>指向附加持续治疗的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillAddHot;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.AddHot));
 }

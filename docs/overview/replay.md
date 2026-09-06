@@ -25,7 +25,7 @@ chunk*  : u16 Type | u8 Codec | u32 StoredLen | u32 RawLen | u32 Crc32 | payload
 - 时间轴取 `Meta.EndTick`，不由最后一条输入倒推：战斗打完之后的收尾段也在进度条上。
 - `ReplayCommands` 是玩家命令与归档条目双向映射的唯一权威，段折叠判据、账本骨架与轨道成型同在此：帧连续且方向位相同即续段，读侧展开为逐帧重投，`Tick` 末作废的意图契约不变——折叠只改存储不改语义；分量 bit-exact，量化会让确定性斜坡换一条。录制端只持时间轴与三本账，两项修订号由调用方读好供给。玩家数上限 `ReplayMoveTrack.MaxPlayers`（256）只定这一处。命令持 `UnitId`、条目持玩家表序号与 `ushort` 目标 ID，ID 升降级只在这组映射里发生。
 - 移动段收拢把条目数从「每人每 tick 一条」降到「每次变化一条」，不设条目上限；三类条目共享同一帧轴，首条 tick 锚定绝对逻辑帧以规避 ushort 回绕。
-- 双修订号：`DataVersion` 是录制端 `GameConfigDB.DataRevision`（配置与布局），`LogicVersion` 是录制端 `BattleLogicRevision.Value`（结算时序与事件顺序），由重放端校验，任一不符拒绝重放。
+- 双修订号：`DataVersion` 是录制端 `GameContentHost.Registry.DataRevision`（配置与布局），`LogicVersion` 是录制端 `BattleLogicRevision.Value`（结算时序与事件顺序），由重放端校验，任一不符拒绝重放。
 - 编码端 `BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘——命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。`BattleRoomManager` 归档时 `Encode` 成字节流写 `IReplayStore`，参与者记录主键随归档一并入库供归属检索；摘要不另存。
 
 ## 重放引擎

@@ -22,38 +22,58 @@ public static partial class BuiltInContent {
 
     /// <summary>把全部内置内容注册进内容注册表。行为经行为目录实例化，行为目录须已注册内置行为。</summary>
     public static void Register(ContentSetRegistry registry, BehaviorCatalog catalog) {
-        RegisterBuffs(registry, catalog);
-        RegisterSkills(registry);
-        RegisterUnits(registry, catalog);
-        RegisterDungeons(registry, catalog);
+        var buffs = RegisterBuffs(registry, catalog);
+        var skills = RegisterSkills(registry, buffs);
+        var units = RegisterUnits(registry, catalog, skills);
+        RegisterDungeons(registry, catalog, units);
         registry.SetDefaultDungeonKey(DefaultDungeonKey);
     }
 
-    private static void RegisterBuffs(ContentSetRegistry registry, BehaviorCatalog catalog) {
-        registry.RegisterBuff(new DamageOverTimeBuff {
-            BuffTypeId = 1,
+    private static Dictionary<ushort, BuffDefinition> RegisterBuffs(
+        ContentSetRegistry registry, BehaviorCatalog catalog) {
+        var dotMagic = new DamageOverTimeBuff {
+            BuffTypeId = BuffTypeIds.DotMagic,
             Duration = 30.0,
             MaxStacks = 1,
             DamageType = DamageType.Magic,
             DamagePerSec = 10.0f,
             Effect = catalog.BuffEffect(BehaviorIds.BuffEffect.Dot),
-        });
-        registry.RegisterBuff(new DamageOverTimeBuff {
-            BuffTypeId = 2,
+        };
+        var dotPhysical = new DamageOverTimeBuff {
+            BuffTypeId = BuffTypeIds.DotPhysical,
             Duration = 15.0,
             MaxStacks = 1,
             DamageType = DamageType.Physical,
             DamagePerSec = 100.0f,
             Effect = catalog.BuffEffect(BehaviorIds.BuffEffect.Dot),
-        });
-        registry.RegisterBuff(new HealOverTimeBuff {
-            BuffTypeId = 3,
+        };
+        var hot = new HealOverTimeBuff {
+            BuffTypeId = BuffTypeIds.Hot,
             Duration = 15.0,
             MaxStacks = 1,
             HealthPerSec = 100.0f,
             Effect = catalog.BuffEffect(BehaviorIds.BuffEffect.Hot),
-        });
+        };
+
+        registry.RegisterBuff(dotMagic);
+        registry.RegisterBuff(dotPhysical);
+        registry.RegisterBuff(hot);
+        return new Dictionary<ushort, BuffDefinition> {
+            [BuffTypeIds.DotMagic] = dotMagic,
+            [BuffTypeIds.DotPhysical] = dotPhysical,
+            [BuffTypeIds.Hot] = hot,
+        };
     }
+    /// <summary>内置 Buff 同步身份常量，注册与资源脚本消费方共用。</summary>
+    public static class BuffTypeIds {
+        /// <summary>魔法持续伤害。</summary>
+        public const ushort DotMagic = 1;
+        /// <summary>物理持续伤害。</summary>
+        public const ushort DotPhysical = 2;
+        /// <summary>持续治疗。</summary>
+        public const ushort Hot = 3;
+    }
+
     /// <summary>技能键常量，注册与消费方共用。</summary>
     public static class SkillKeys {
         /// <summary>魔法单体伤害。</summary>
@@ -70,7 +90,8 @@ public static partial class BuiltInContent {
         public const string Taunt = "skill_taunt";
     }
 
-    private static void RegisterSkills(ContentSetRegistry registry) {
+    private static Dictionary<string, SkillDefinition> RegisterSkills(
+        ContentSetRegistry registry, Dictionary<ushort, BuffDefinition> buffs) {
         var skills = new Dictionary<string, SkillDefinition>(StringComparer.Ordinal) {
             [SkillKeys.MagicDamage] = new DamageSkillDefinition {
                 SkillId = new SkillKeyId(SkillKeys.MagicDamage),
@@ -106,7 +127,7 @@ public static partial class BuiltInContent {
                 NeedPosTarget = false,
                 TargetPolicy = SkillTargetPolicy.Different,
                 CastRange = 10f,
-                Buff = registry.GetBuff(1)!,
+                Buff = buffs[BuffTypeIds.DotMagic],
                 Effect = new Skills.AddBuffEffect(),
             },
             [SkillKeys.AddHot] = new AddBuffSkillDefinition {
@@ -118,7 +139,7 @@ public static partial class BuiltInContent {
                 NeedPosTarget = false,
                 TargetPolicy = SkillTargetPolicy.Same,
                 CastRange = 8f,
-                Buff = registry.GetBuff(3)!,
+                Buff = buffs[BuffTypeIds.Hot],
                 Effect = new Skills.AddBuffEffect(),
             },
             [SkillKeys.RectRangeDamage] = new RangeDamageSkillDefinition {
@@ -151,10 +172,13 @@ public static partial class BuiltInContent {
 
         foreach (var skill in skills.Values)
             registry.RegisterSkill(skill);
+        return skills;
     }
 
-    private static void RegisterUnits(ContentSetRegistry registry, BehaviorCatalog catalog) {
-        registry.RegisterUnit(new UnitConfig {
+    private static Dictionary<string, UnitConfig> RegisterUnits(
+        ContentSetRegistry registry, BehaviorCatalog catalog,
+        Dictionary<string, SkillDefinition> skills) {
+        var whiteMage = new UnitConfig {
             ConfigKey = "WhiteMage",
             IsPlayerSelectable = true,
             BaseConfig = new UnitBaseConfig(
@@ -162,18 +186,32 @@ public static partial class BuiltInContent {
                 PhysicalAttackBase: 1.0f, PhysicalTakePercent: 1.0f,
                 MagicAttackBase: 1.0f, MagicTakePercent: 1.0f, CureIntensity: 1.0f),
             Skills = [
-                registry.GetSkill(new SkillKeyId(SkillKeys.AddHot))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.Cure))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.AddDotMagic))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.MagicDamage))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.RectRangeDamage))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.Taunt))!,
+                skills[SkillKeys.AddHot],
+                skills[SkillKeys.Cure],
+                skills[SkillKeys.AddDotMagic],
+                skills[SkillKeys.MagicDamage],
+                skills[SkillKeys.RectRangeDamage],
+                skills[SkillKeys.Taunt],
             ],
             HateRule = catalog.HateRule(BehaviorIds.HateRule.Default),
             HateFactor = 0.8f,
-        });
-
-        registry.RegisterUnit(new UnitConfig {
+        };
+        var goblin = new UnitConfig {
+            ConfigKey = "Goblin",
+            IsPlayerSelectable = false,
+            BaseConfig = new UnitBaseConfig(
+                MaxHealth: 800f, BodyRadius: 0.5f, BaseSpeed: 2.2f,
+                PhysicalAttackBase: 1.2f, PhysicalTakePercent: 1.0f,
+                MagicAttackBase: 1.0f, MagicTakePercent: 1.0f, CureIntensity: 1.0f),
+            Skills = [
+                skills[SkillKeys.MagicDamage],
+                skills[SkillKeys.RectRangeDamage],
+            ],
+            Intelligence = catalog.Intelligence(BehaviorIds.Intelligence.EnemyBasic),
+            HateRule = catalog.HateRule(BehaviorIds.HateRule.Default),
+            HateFactor = 1.0f,
+        };
+        var goblinBoss = new UnitConfig {
             ConfigKey = "GoblinBoss",
             IsPlayerSelectable = false,
             BaseConfig = new UnitBaseConfig(
@@ -181,19 +219,30 @@ public static partial class BuiltInContent {
                 PhysicalAttackBase: 1.5f, PhysicalTakePercent: 0.8f,
                 MagicAttackBase: 1.3f, MagicTakePercent: 0.8f, CureIntensity: 1.0f),
             Skills = [
-                registry.GetSkill(new SkillKeyId(SkillKeys.AddDotMagic))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.MagicDamage))!,
-                registry.GetSkill(new SkillKeyId(SkillKeys.RectRangeDamage))!,
+                skills[SkillKeys.AddDotMagic],
+                skills[SkillKeys.MagicDamage],
+                skills[SkillKeys.RectRangeDamage],
             ],
             Intelligence = catalog.Intelligence(BehaviorIds.Intelligence.EnemyBasic),
             HateRule = catalog.HateRule(BehaviorIds.HateRule.Default),
             HateFactor = 1.0f,
-        });
+        };
+
+        registry.RegisterUnit(whiteMage);
+        registry.RegisterUnit(goblin);
+        registry.RegisterUnit(goblinBoss);
+        return new Dictionary<string, UnitConfig>(StringComparer.Ordinal) {
+            [whiteMage.ConfigKey.Value] = whiteMage,
+            [goblin.ConfigKey.Value] = goblin,
+            [goblinBoss.ConfigKey.Value] = goblinBoss,
+        };
     }
 
-    private static void RegisterDungeons(ContentSetRegistry registry, BehaviorCatalog catalog) {
-        var goblin = registry.GetUnit("Goblin")!;
-        var goblinBoss = registry.GetUnit("GoblinBoss")!;
+    private static void RegisterDungeons(
+        ContentSetRegistry registry, BehaviorCatalog catalog,
+        Dictionary<string, UnitConfig> units) {
+        var goblin = units["Goblin"];
+        var goblinBoss = units["GoblinBoss"];
         var relations = catalog.CampRelation(BehaviorIds.CampRelation.PveBoss);
 
         registry.RegisterDungeon(new DungeonConfig(

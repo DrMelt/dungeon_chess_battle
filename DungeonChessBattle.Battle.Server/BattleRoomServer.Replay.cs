@@ -22,7 +22,7 @@ public partial class BattleRoomServer {
     /// 编码与归档归属由调用方决定，本类不碰存储。
     /// </summary>
     internal ReplayRecording? BuildReplayRecording() => _replayRecorder?.BuildRecording(
-        GameConfigDB.DataRevision, BattleLogicRevision.Value);
+        GameContentHost.Registry.DataRevision, BattleLogicRevision.Value);
 
     /// <summary>创建回放记录器：玩家表下标即记录里的玩家序号，网络 ID 到序号的反查收在录制器内。</summary>
     private void CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players) {

@@ -30,7 +30,7 @@ Battle.Server 命令录制 → IReplayStore 归档（字节流 + 参与者主键
 
 - 逻辑确定性：AI/伤害/移动均为纯函数无随机（`Battle.Logic/Shared/Server/GameConfig` 无 `Random`），固定逻辑步长，可以重算断言。
 - 输入形状唯一：`PlayerCommand`（Battle.Shared）是三类玩家输入的唯一形态。在线把请求转成命令交门面，命令同时被录制器落成条目；重放把条目还原成命令交同一个门面。载荷拆分（如施法的单位目标与位置锚点取舍）只有一份实现，判定（阶段、技能键、ID 解析、聚焦目标存活）也只在门内一次，两端同判是复现权威结论的前提。
-- 内容一致性：两项修订号都要对上——`DataVersion` 是录制端 `GameConfigDB.DataRevision`（配置与布局），`LogicVersion` 是录制端 `BattleLogicRevision.Value`（结算时序与事件顺序）。门控两处：`Game.ReplayService` 下载解码后即判不可播放且不落缓存，`ReplayEngine` 构造再校验一次，引擎不信任输入。归档与本地缓存条目都从元数据块携带两项修订号，列表侧可在下载前标注。任何影响战斗结果的变更都必须递增对应修订号。
+- 内容一致性：两项修订号都要对上——`DataVersion` 是录制端 `GameContentHost.Registry.DataRevision`（配置与布局），`LogicVersion` 是录制端 `BattleLogicRevision.Value`（结算时序与事件顺序）。门控两处：`Game.ReplayService` 下载解码后即判不可播放且不落缓存，`ReplayEngine` 构造再校验一次，引擎不信任输入。归档与本地缓存条目都从元数据块携带两项修订号，列表侧可在下载前标注。任何影响战斗结果的变更都必须递增对应修订号。
 - 同帧注入先后：施法与移动都只登记意图，裁定在 `BattleScene.Tick` 内单点完成；仍需同序的只剩门面 `PrepareTick` 的在架重试先于本帧新按键，机制见 `overview/battle` 的输入门面一节。
 - 世界重建同源：归档带全部单位的初始态表（ID、阵营、出生点），重放端照表建世界，不再依赖"实体 ID 连续分配"这类运行期前提；单位属性仍按配置键取当前配置，避免与配置双真相。
 - 存储不改输入语义：移动按玩家分轨收拢为方向意图段，折叠判据与轨道成型同载于 `ReplayCommands`（与载荷拆分一处，录制端不碰条目形状），重放端逐帧展开重投，与在线"输入源逐 tick 重投、`Tick` 末作废"同构；分量 bit-exact，量化会让确定性斜坡换一条。

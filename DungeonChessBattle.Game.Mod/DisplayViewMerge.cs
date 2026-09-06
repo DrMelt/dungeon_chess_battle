@@ -39,6 +39,8 @@ internal sealed class UnitViewMerge(IUnitView previous, IUnitView next) : IUnitV
     public string DisplayName => ViewMerge.TextOr(next.DisplayName, previous.DisplayName);
     public string Description => ViewMerge.TextOr(next.Description, previous.Description);
     public Texture2D? Icon => next.Icon ?? previous.Icon;
+    public PackedScene? ModelScene => next.ModelScene ?? previous.ModelScene;
+    public Color? BodyColor => next.BodyColor ?? previous.BodyColor;
 }
 
 internal sealed class DungeonViewMerge(IDungeonView previous, IDungeonView next) : IDungeonView {
@@ -48,8 +50,5 @@ internal sealed class DungeonViewMerge(IDungeonView previous, IDungeonView next)
     public string Key => next.Key;
     public string DisplayName => ViewMerge.TextOr(next.DisplayName, previous.DisplayName);
     public string Description => ViewMerge.TextOr(next.Description, previous.Description);
-    public Color? GroundColor => next.GroundColor ?? previous.GroundColor;
-    public Color? SkyColor => next.SkyColor ?? previous.SkyColor;
-    public Color? LightColor => next.LightColor ?? previous.LightColor;
     public PackedScene? EnvScene => next.EnvScene ?? previous.EnvScene;
 }

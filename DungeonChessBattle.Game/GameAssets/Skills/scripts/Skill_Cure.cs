@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Cure : UnitSkillBaseGodot {
     /// <summary>指向治疗的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillCure;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.Cure));
 }

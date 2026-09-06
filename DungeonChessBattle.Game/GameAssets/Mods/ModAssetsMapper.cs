@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Game.Mod;
@@ -41,8 +42,11 @@ public static class ModAssetsMapper {
                 continue;
             }
 
-            var view = display.GetSkill(config.SkillId.Id)!;
-            var resource = hasTemplate ? (UnitSkillBaseGodot)template!.Duplicate() : new ModSkillResource(config);
+            var view = display.GetSkill(config.SkillId.Id)
+                ?? throw new InvalidOperationException($"技能 '{config.SkillId.Id}' 已声明覆盖但展示视图缺失。");
+            var resource = hasTemplate && template is { } t
+                ? (UnitSkillBaseGodot)t.Duplicate()
+                : new ModSkillResource(config);
             resource.ApplyViewData(
                 view.Icon, view.Name, view.Description, view.ApplyEffectScene, view.RangeHintScene);
             skills.RegisterModResource(resource);
@@ -62,8 +66,11 @@ public static class ModAssetsMapper {
                 continue;
             }
 
-            var view = display.GetBuff(config.BuffTypeId)!;
-            var resource = hasTemplate ? (BuffBaseGodot)template!.Duplicate() : new ModBuffResource(config);
+            var view = display.GetBuff(config.BuffTypeId)
+                ?? throw new InvalidOperationException($"Buff {config.BuffTypeId} 已声明覆盖但展示视图缺失。");
+            var resource = hasTemplate && template is { } t
+                ? (BuffBaseGodot)t.Duplicate()
+                : new ModBuffResource(config);
             resource.ApplyViewData(view.Icon, view.Name, view.Description);
             buffs.RegisterModResource(resource);
             display.RegisterBuff(resource);
@@ -82,13 +89,12 @@ public static class ModAssetsMapper {
                 continue;
             }
 
-            var view = display.GetDungeon(config.DungeonKey)!;
-            var resource = hasTemplate
-                ? (DungeonResourceBaseGodot)template!.Duplicate()
+            var view = display.GetDungeon(config.DungeonKey)
+                ?? throw new InvalidOperationException($"副本 '{config.DungeonKey}' 已声明覆盖但展示视图缺失。");
+            var resource = hasTemplate && template is { } t
+                ? (DungeonResourceBaseGodot)t.Duplicate()
                 : new ModDungeonResource(config);
-            resource.ApplyViewData(
-                view.GroundColor, view.SkyColor, view.LightColor,
-                view.EnvScene, view.DisplayName, view.Description);
+            resource.ApplyViewData(view.EnvScene, view.DisplayName, view.Description);
             dungeons.RegisterModResource(resource);
             display.RegisterDungeon(resource);
         }

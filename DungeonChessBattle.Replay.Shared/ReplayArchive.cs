@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using MessagePack;
 
@@ -172,7 +173,7 @@ public static class ReplayArchive {
                     unitsSeen = true;
                     if (!TryDeserialize(payload.Value, out ReplayUnitInit[]? parsed))
                         return Bad("单位初始态解码失败");
-                    units.AddRange(parsed!);
+                    units.AddRange(parsed);
                     break;
                 case ReplayChunkType.MoveTrack:
                     if (movesSeen)
@@ -180,7 +181,7 @@ public static class ReplayArchive {
                     movesSeen = true;
                     if (!TryDeserialize(payload.Value, out ReplayMoveTrack[]? tracks))
                         return Bad("移动轨道解码失败");
-                    moves.AddRange(tracks!);
+                    moves.AddRange(tracks);
                     break;
                 case ReplayChunkType.Cast:
                     if (castsSeen)
@@ -188,7 +189,7 @@ public static class ReplayArchive {
                     castsSeen = true;
                     if (!TryDeserialize(payload.Value, out ReplayCastEntry[]? castEntries))
                         return Bad("施法条目解码失败");
-                    casts.AddRange(castEntries!);
+                    casts.AddRange(castEntries);
                     break;
                 case ReplayChunkType.Focus:
                     if (focusesSeen)
@@ -196,7 +197,7 @@ public static class ReplayArchive {
                     focusesSeen = true;
                     if (!TryDeserialize(payload.Value, out ReplayFocusEntry[]? focusEntries))
                         return Bad("聚焦条目解码失败");
-                    focuses.AddRange(focusEntries!);
+                    focuses.AddRange(focusEntries);
                     break;
                 default:
                     // 未知块：读侧不认识其语义，跳过后其余部分仍可重放，这是小版本演进的立足点
@@ -311,7 +312,8 @@ public static class ReplayArchive {
         return output;
     }
 
-    private static bool TryDeserialize<T>(ReadOnlyMemory<byte> payload, out T? value) {
+    private static bool TryDeserialize<T>(ReadOnlyMemory<byte> payload,
+        [NotNullWhen(true)] out T? value) {
         try {
             value = MessagePackSerializer.Deserialize<T>(payload);
             return value is not null;

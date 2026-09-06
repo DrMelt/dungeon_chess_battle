@@ -99,10 +99,10 @@ public partial class ButtonSkillBase : Button {
             return;
 
         var unit = IsInitialized ? BindUnit : null;
-        if (unit == null)
+        if (unit == null || _bindingSkill == null)
             return;
 
-        float remaining = unit.GetTotalCooldownRemaining(_bindingSkill!.SkillId);
+        float remaining = unit.GetTotalCooldownRemaining(_bindingSkill.SkillId);
         if (remaining > 0f) {
             SelfModulate = _coolingColor;
             if (_labelCooldownTimeRef != null) {

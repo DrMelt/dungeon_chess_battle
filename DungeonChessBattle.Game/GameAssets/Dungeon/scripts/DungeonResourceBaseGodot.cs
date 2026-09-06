@@ -13,7 +13,7 @@ using DungeonChessBattle.Game.Shared;
 [GlobalClass]
 public abstract partial class DungeonResourceBaseGodot : Resource, IDungeonView {
     /// <summary>
-    /// 子类重写此属性，直接返回 GameConfigDB 中的领域副本定义（类型安全，编译期检查）。
+    /// 子类重写此属性，直接返回内容注册表中的领域副本定义（类型安全，编译期检查）。
     /// </summary>
     protected virtual DungeonConfigDef? Config => null;
 
@@ -26,28 +26,11 @@ public abstract partial class DungeonResourceBaseGodot : Resource, IDungeonView 
     /// <summary>IDungeonView 以 Key 暴露副本键。</summary>
     string IDungeonView.Key => DungeonKey;
 
-    /// <summary>环境主题：地面颜色。未配置时回退默认林地主题。</summary>
-    [Export]
-    public Color GroundColor { get; private set; } = new(0.28f, 0.38f, 0.24f, 1f);
-
-    /// <summary>环境主题：天空背景颜色。未配置时回退默认林地主题。</summary>
-    [Export]
-    public Color SkyColor { get; private set; } = new(0.60f, 0.78f, 0.72f, 1f);
-
-    /// <summary>环境主题：方向光补光颜色。未配置时回退默认林地主题。</summary>
-    [Export]
-    public Color LightColor { get; private set; } = new(1.00f, 0.95f, 0.85f, 1f);
-
-    /// <summary>环境表现场景模板，未配置为 null。</summary>
+    /// <summary>环境表现场景模板，主题已在场景内固化，未配置为 null。</summary>
     [Export]
     public PackedScene? EnvScene {
         get; private set;
     }
-
-    // IDungeonView 用可空表达「未声明」，本类成员总有值，在此对齐
-    Color? IDungeonView.GroundColor => GroundColor;
-    Color? IDungeonView.SkyColor => SkyColor;
-    Color? IDungeonView.LightColor => LightColor;
 
     /// <summary>副本显示名。</summary>
     [Export]
@@ -59,19 +42,12 @@ public abstract partial class DungeonResourceBaseGodot : Resource, IDungeonView 
 
     /// <summary>由 mod 资源装配运行时填充展示字段；null 或空串的成员保持模板原值，内部调用。</summary>
     internal void ApplyViewData(
-        Color? groundColor, Color? skyColor, Color? lightColor,
         PackedScene? envScene, string? displayName, string? description) {
-        if (groundColor is { } ground)
-            GroundColor = ground;
-        if (skyColor is { } sky)
-            SkyColor = sky;
-        if (lightColor is { } light)
-            LightColor = light;
         if (envScene is not null)
             EnvScene = envScene;
         if (!string.IsNullOrEmpty(displayName))
-            DisplayName = displayName!;
+            DisplayName = displayName;
         if (!string.IsNullOrEmpty(description))
-            Description = description!;
+            Description = description;
     }
 }

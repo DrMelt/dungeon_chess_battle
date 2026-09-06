@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Taunt : UnitSkillBaseGodot {
     /// <summary>指向单体嘲讽的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillTaunt;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.Taunt));
 }

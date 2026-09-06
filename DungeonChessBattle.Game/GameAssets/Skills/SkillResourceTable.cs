@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// 技能资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
 ///
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有技能 .tres 资源到 SkillResources 数组。
-/// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态技能定义实例）
+/// 运行时通过每个资源的 Config 属性（返回内容注册表中的唯一静态技能定义实例）
 /// 自动构建反向查找字典，以技能定义对象为键，查询不依赖技能键字符串。
 ///
 /// 新增技能时只需在 res_skill_resource_table.tres 中拖入对应的 .tres 资源即可。
@@ -27,7 +27,7 @@ public partial class SkillResourceTable : Resource {
     private bool _initialized;
 
     /// <summary>
-    /// 初始化查找字典。每个技能资源的 Config 属性返回 GameConfigDB 中的
+    /// 初始化查找字典。每个技能资源的 Config 属性返回内容注册表中的
     /// 唯一静态技能定义实例，因此可以用 Config 作为 Key 精准匹配。
     /// 由 ResourceTables 加载后调用，幂等。
     /// </summary>
@@ -65,7 +65,7 @@ public partial class SkillResourceTable : Resource {
     /// <summary>
     /// 通过技能定义查找并创建对应的 Godot 技能资源实例。
     /// </summary>
-    /// <param name="config">GameConfigDB 中的技能定义</param>
+    /// <param name="config">内容注册表中的技能定义</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本</returns>
     /// <exception cref="KeyNotFoundException">
     /// 定义未在资源表 .tres 中注册时抛出。
@@ -85,7 +85,7 @@ public partial class SkillResourceTable : Resource {
     /// <param name="skillKey">技能配置键。</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本；未找到返回 null。</returns>
     public UnitSkillBaseGodot? GetResourceBySkillId(SkillKeyId skillKey) {
-        var config = GameConfigDB.GetSkillById(skillKey);
+        var config = GameContentHost.Registry.GetSkill(skillKey);
         if (config == null)
             return null;
         try {

@@ -23,7 +23,8 @@ public readonly record struct RestrictedString {
     public bool IsDefault => string.IsNullOrEmpty(_value);
 
     /// <inheritdoc />
-    public override string ToString() => IsDefault ? "<none>" : _value!;
+    public override string ToString() =>
+        IsDefault ? "<none>" : _value ?? string.Empty;
 
     /// <summary>基于语义值比较，忽略内部存储差异。</summary>
     public bool Equals(RestrictedString other) => Value == other.Value;

@@ -173,7 +173,8 @@ public sealed class ServerProcessHost : IServerHost {
         process.BeginErrorReadLine();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("服务器进程已启动: {Exe} port={Port}", process.StartInfo.FileName, port);
-        _ = WaitForReadyAsync(process, port, cts!.Token);
+        _ = WaitForReadyAsync(process, port, cts?.Token ??
+            throw new InvalidOperationException("服务器进程已启动但取消源缺失，时序错误。"));
     }
 
     /// <inheritdoc cref="IServerHost.Stop"/>

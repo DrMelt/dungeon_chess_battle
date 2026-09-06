@@ -9,7 +9,7 @@ using DungeonConfigDef = DungeonChessBattle.Battle.Shared.Content.DungeonConfig;
 /// <summary>
 /// 副本资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有副本 .tres 资源到 DungeonResources 数组，
-/// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态副本定义实例）
+/// 运行时通过每个资源的 Config 属性（返回内容注册表中的唯一静态副本定义实例）
 /// 自动构建查找字典，供环境场景模板实例化；副本显示名与描述经 <c>ModAssets</c> 展示索引取。
 /// 表实例由 ResourceTables 组合根加载并调用 Initialize，本类不持有加载入口。
 /// 新增副本时只需在 res_dungeon_resource_table.tres 中拖入对应的 .tres 资源即可。
@@ -24,7 +24,7 @@ public partial class DungeonResourceTable : Resource {
     private readonly Dictionary<DungeonConfigDef, DungeonResourceBaseGodot> _lookup = [];
     private bool _initialized;
 
-    /// <summary>初始化查找字典。每个副本资源的 Config 属性返回 GameConfigDB 中的唯一静态实例。由 ResourceTables 加载后调用，幂等。</summary>
+    /// <summary>初始化查找字典。每个副本资源的 Config 属性返回内容注册表中的唯一静态实例。由 ResourceTables 加载后调用，幂等。</summary>
     internal void Initialize() {
         if (_initialized)
             return;
@@ -65,9 +65,9 @@ public partial class DungeonResourceTable : Resource {
 
     /// <summary>
     /// 按副本键实例化环境表现场景；副本未注册或资源未配置环境场景返回 null。
-    /// 副本键未同步/未注册时回退默认副本模板，保证环境对象始终可实例化，
-    /// 主题仍由 DungeonEnv.ApplyDungeonTheme 按会话真实键修正。
-    /// 返回实例未挂载，由消费方 AddChild 并调用 ApplyDungeonTheme 装配主题。
+    /// 副本键未同步/未注册时回退默认副本场景模板，保证环境对象始终可实例化，
+    /// 主题已在场景模板内固化，加载即成品。
+    /// 返回实例未挂载，由消费方 AddChild 使用。
     /// </summary>
     public DungeonEnv? InstantiateEnvironment(string? dungeonKey) {
         // 副本键未同步/未注册时回退默认副本，保证环境对象始终可实例化

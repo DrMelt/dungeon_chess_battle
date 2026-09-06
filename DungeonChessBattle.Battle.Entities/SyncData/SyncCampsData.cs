@@ -60,10 +60,10 @@ public struct SyncCampsData : ISpanSerializable {
         var result = new string[Count];
         for (int i = 0; i < Count; i++) {
             result[i] = i switch {
-                0 => Camp0!,
-                1 => Camp1!,
-                _ => Camp2!,
-            };
+                0 => Camp0,
+                1 => Camp1,
+                _ => Camp2,
+            } ?? throw new InvalidOperationException($"阵营槽位 {i} 未填充。");
         }
         return result;
     }

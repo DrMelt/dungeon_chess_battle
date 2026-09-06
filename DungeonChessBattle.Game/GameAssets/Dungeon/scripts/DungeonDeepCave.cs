@@ -9,5 +9,6 @@ using DungeonConfigDef = DungeonChessBattle.Battle.Shared.Content.DungeonConfig;
 [GlobalClass]
 public partial class DungeonDeepCave : DungeonResourceBaseGodot {
     /// <inheritdoc/>
-    protected override DungeonConfigDef Config => GameConfigDB.DungeonDeepCave;
+    protected override DungeonConfigDef Config =>
+        GameContentHost.Registry.GetRequiredDungeon("deep_cave");
 }

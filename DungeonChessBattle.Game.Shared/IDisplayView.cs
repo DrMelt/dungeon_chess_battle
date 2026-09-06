@@ -79,22 +79,7 @@ public interface IDungeonView {
         get;
     }
 
-    /// <summary>环境主题：地面色，未声明为 null 由消费方回退。</summary>
-    Color? GroundColor {
-        get;
-    }
-
-    /// <summary>环境主题：天空色，未声明为 null 由消费方回退。</summary>
-    Color? SkyColor {
-        get;
-    }
-
-    /// <summary>环境主题：方向光补光色，未声明为 null 由消费方回退。</summary>
-    Color? LightColor {
-        get;
-    }
-
-    /// <summary>环境表现场景模板，未配置为 null。</summary>
+    /// <summary>环境表现场景模板，主题已在场景内固化，未配置为 null 由消费方回退默认副本场景。</summary>
     PackedScene? EnvScene {
         get;
     }
@@ -122,6 +107,16 @@ public interface IUnitView {
 
     /// <summary>单位图标，未配置或解析失败为 null。</summary>
     Texture2D? Icon {
+        get;
+    }
+
+    /// <summary>单位模型场景模板，未配置为 null 由消费方回退内置共享模板。</summary>
+    PackedScene? ModelScene {
+        get;
+    }
+
+    /// <summary>单位主体配色，未配置为 null 由消费方保持模型原样。</summary>
+    Color? BodyColor {
         get;
     }
 }

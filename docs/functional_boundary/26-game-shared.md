@@ -6,7 +6,7 @@ Godot 侧展示层共享契约库。定义"展示数据长什么样"、"展示�
 
 ## 职责
 
-- 展示视图契约 `ISkillView` / `IBuffView` / `IDungeonView` / `IUnitView`：内置资源与 mod 展示代码共同的成员形状。未声明的字符串成员为空串、资源成员为 null，回退值由消费方决定。
+- 展示视图契约 `ISkillView` / `IBuffView` / `IDungeonView` / `IUnitView`：内置资源与 mod 展示代码共同的成员形状。未声明的字符串成员为空串、资源成员为 null，回退值由消费方决定。`IUnitView` 额外携带模型场景与主体配色（`ModelScene`/`BodyColor`），未配置为 null，消费方回落共享模板。
 - 展示入口契约 `IModDisplayEntry` / `ModDisplayContext`：展示代码 mod 实现入口，在装配期把资源与视图注册进注册面；上下文携带 mod ID 与包内资源加载器。
 - 展示注册面 `IModDisplayRuntime`：注册纹理与场景资源名、注册四类条目视图。注册什么由内容方定，宿主只把这个口递出去。
 - 展示索引查询面 `IDisplayRegistry`：按身份键取视图、按资源名取纹理与场景。

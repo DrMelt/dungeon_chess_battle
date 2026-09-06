@@ -45,15 +45,31 @@ public sealed partial class ContentSetRegistry(string builtInRevision, string mo
     /// <summary>按技能键取定义；不存在返回 null。</summary>
     public SkillDefinition? GetSkill(SkillKeyId key) => _skillsByKey.GetValueOrDefault(key.Id);
 
+    /// <summary>按技能键取定义；不存在抛异常，装配期与内置内容消费方必得。</summary>
+    public SkillDefinition GetRequiredSkill(SkillKeyId key) =>
+        GetSkill(key) ?? throw new InvalidOperationException($"技能 '{key.Id}' 未注册。");
+
     /// <summary>按 BuffTypeId 取定义；不存在返回 null。</summary>
     public BuffDefinition? GetBuff(ushort typeId) => _buffsByTypeId.GetValueOrDefault(typeId);
+
+    /// <summary>按 BuffTypeId 取定义；不存在抛异常，装配期与内置内容消费方必得。</summary>
+    public BuffDefinition GetRequiredBuff(ushort typeId) =>
+        GetBuff(typeId) ?? throw new InvalidOperationException($"Buff {typeId} 未注册。");
 
     /// <summary>按单位配置键取配置；不存在返回 null。</summary>
     public UnitConfig? GetUnit(UnitConfigKey key) => _unitsByKey.GetValueOrDefault(key);
 
+    /// <summary>按单位配置键取配置；不存在抛异常，装配期与内置内容消费方必得。</summary>
+    public UnitConfig GetRequiredUnit(UnitConfigKey key) =>
+        GetUnit(key) ?? throw new InvalidOperationException($"单位 '{key.Value}' 未注册。");
+
     /// <summary>按副本键取配置；不存在返回 null。</summary>
     public DungeonConfig? GetDungeon(string? key) =>
         string.IsNullOrWhiteSpace(key) ? null : _dungeonsByKey.GetValueOrDefault(key);
+
+    /// <summary>按副本键取配置；不存在抛异常，装配期与内置内容消费方必得。</summary>
+    public DungeonConfig GetRequiredDungeon(string key) =>
+        GetDungeon(key) ?? throw new InvalidOperationException($"副本 '{key}' 未注册。");
 
     internal void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
 

@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Damage : UnitSkillBaseGodot {
     /// <summary>指向单体魔法伤害的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillMagicDamage;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.MagicDamage));
 }

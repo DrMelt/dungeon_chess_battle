@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Skill_Range_Damage : UnitSkillBaseGodot {
     /// <summary>指向矩形范围伤害的领域技能定义。</summary>
-    protected override SkillDefinition Config => GameConfigDB.SkillRectRangeDamage;
+    protected override SkillDefinition Config =>
+        GameContentHost.Registry.GetRequiredSkill(new SkillKeyId(BuiltInContent.SkillKeys.RectRangeDamage));
 }

@@ -30,7 +30,7 @@ ModAssets.Initialize(catalog, registry, display)          Game.Mod
 - 内容是代码而不是文件：数值/引用以领域对象经 `IModContentRuntime.RegisterXxx` 注册，技能引用 Buff 直接持有对象引用，编译期类型安全，不存在「引用未知字符串键」的运行时静默错位。覆改数值必须重编译数据 DLL，逃不过门控。
 - 行为注册（`IModRuntime`）与内容注册（`IModContentRuntime`）合成 `IModBootstrapContext`——行为实现只依赖 `Battle.Shared` 契约（服务端可装载），展示资源引用 `Game.Shared`（仅客户端）。数据代码在 `code/`，展示代码在 `code_display/`，服务端只装 `code/`。
 - 基座是最高优先级最低的一层，任何 mod 的 `priority` 都大于它，天然可被覆盖。
-- 展示注册次序即覆盖次序：内置先入表、mod 后入表，同键条目由 mod 改写；合并是字段级的，mod 只声明图标时不会把内置名称一并清空。与数据面的行为目录同一套形状——注册什么由内容方定，宿主只递注册器。
+- 展示注册次序即覆盖次序：内置先入表、mod 后入表，同键条目由 mod 改写；合并是字段级的，mod 只声明图标时不会把内置名称一并清空。与数据面的行为目录同一套形状——注册什么由内容方定，宿主只递注册器。单位没有编辑器资源表：`BuiltinDisplayAssets` 为每个内容单位注册空占位视图（显示名回退配置键），mod 经 `IUnitView.ModelScene`/`BodyColor` 覆盖模型与配色，未覆盖即回落共享模板 `unit_game_show.tscn`；模型与配色是纯客户端展示数据，不进指纹。
 - 服务端 `Program` 读 `--mod-dir`；客户端 `ServerProcessHost` 以 `DCB_SERVER_MOD_DIR` 把同一 `user://mods` 传给子进程。两端读同一目录即同一启用集、同一代码、同一指纹，不需要额外同步通道。
 - 停用的 mod 若被启用中的 mod 依赖，依赖者报「依赖已停用」并整条不装载，不静默漏内容。
 - 用户侧入口是主菜单的 mod 管理面板：列 mod（含解析失败与被拒载的目录）、切启用集、看逐项错误与数据修订号。面板只呈现 `ModCatalog` 的扫描结果，启停落盘后仍需重启进程才影响装配。

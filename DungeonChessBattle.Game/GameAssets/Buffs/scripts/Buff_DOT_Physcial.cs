@@ -10,5 +10,6 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class Buff_DOT_Physcial : BuffBaseGodot {
     /// <summary>指向物理 DOT 的领域 Buff 定义。</summary>
-    protected override BuffDefinition Config => GameConfigDB.BuffDotPhysical;
+    protected override BuffDefinition Config =>
+        GameContentHost.Registry.GetRequiredBuff(BuiltInContent.BuffTypeIds.DotPhysical);
 }

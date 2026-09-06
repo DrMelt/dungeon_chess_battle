@@ -197,7 +197,7 @@ public partial class GameLobby : BaseGamePanel {
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
-                ContentFingerprint = GameConfigDB.DataRevision,
+                ContentFingerprint = GameContentHost.Registry.DataRevision,
             };
             _roomPreparation.EnterRoom(roomId, config, isHost: true);
             NavigateTo(_roomPreparation);
@@ -227,7 +227,7 @@ public partial class GameLobby : BaseGamePanel {
                 MaxPlayers = 2,
                 CurrentPlayers = 1,
                 Status = RoomStatus.Waiting,
-                ContentFingerprint = GameConfigDB.DataRevision,
+                ContentFingerprint = GameContentHost.Registry.DataRevision,
             };
             _roomPreparation.EnterRoom(joinedRoomId, config, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))

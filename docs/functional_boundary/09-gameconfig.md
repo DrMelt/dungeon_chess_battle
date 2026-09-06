@@ -10,8 +10,8 @@
 - `BehaviorCatalog`：行为目录（技能/Buff 效果、敌人决策、仇恨规则、阵营关系），内置行为按 `BehaviorIds` 注册，mod 代码经 `IModEntry` 增补或覆盖。
 - 内容侧逻辑实现：技能与 Buff 效果策略（`ISkillEffect`/`IBuffEffect`）、伤害与治疗公式（`DamageProcessor`/`HealProcessor`）、默认敌人决策（`EnemyIntelligence`），全部在 `BehaviorCatalog` 注册为无状态可共享实例。
 - 单位与副本的权威登记点：`UnitRegistry`/`DungeonRegistry` 从 `ContentSetRegistry` 构建，配置键与配置模型映射。
-- 默认副本键与配置读取契约。
-- 修订号递增义务在内容侧：单位数值、技能与 Buff 效果、伤害治疗公式、敌人决策算法、仇恨规则选型、阵营与副本布局任一变化，都必须递增 `BuiltInContent.BuiltInRevision`；用户 mod 内容经指纹联动进 `GameConfigDB.DataRevision`。漏递增不报错，只会让旧录像在同一份输入下重跑出不同结果而门控看不出差别。
+- 默认副本键与数据修订号读取：消费方经 `ContentSetRegistry`/`DungeonRegistry` 单点取用，无独立静态配置门面。
+- 修订号递增义务在内容侧：单位数值、技能与 Buff 效果、伤害治疗公式、敌人决策算法、仇恨规则选型、阵营与副本布局任一变化，都必须递增 `BuiltInContent.BuiltInRevision`；用户 mod 内容经指纹联动进 `GameContentHost.Registry.DataRevision`。漏递增不报错，只会让旧录像在同一份输入下重跑出不同结果而门控看不出差别。
 
 ## 边界外
 

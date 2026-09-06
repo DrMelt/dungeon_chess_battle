@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using LiteNetLib.Utils;
 
 namespace DungeonChessBattle.Battle.Entities.SyncData;
@@ -17,10 +18,10 @@ public static class ReliableMessageFrame {
     }
 
     /// <summary>识别可靠消息帧并返回消息体读取器；非可靠消息帧返回 false，body 未定义。</summary>
-    public static bool TryReadBody(ReadOnlySpan<byte> data, out NetDataReader body) {
+    public static bool TryReadBody(ReadOnlySpan<byte> data, [NotNullWhen(true)] out NetDataReader? body) {
         if (data.Length < HeaderLength || data[0] != NetworkDefaults.PacketHeader
             || data[1] != NetworkDefaults.ReliableServerMessage) {
-            body = null!;
+            body = null;
             return false;
         }
         body = new NetDataReader(data[HeaderLength..].ToArray());

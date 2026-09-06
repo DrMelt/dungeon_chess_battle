@@ -91,9 +91,9 @@ public sealed class ReplayEngine {
         (_moveRunsByPlayer, _moveCursor) = BuildMoveTracks(recording.MoveTracks, _meta.Players.Count);
 
         // 双重门控：内容修订号管配置与布局，逻辑修订号管结算时序，任一不符重算都不可能对上
-        if (_meta.DataVersion != GameConfigDB.DataRevision)
+        if (_meta.DataVersion != GameContentHost.Registry.DataRevision)
             throw new InvalidDataException(
-                $"Replay content mismatch: record data={_meta.DataVersion}, current={GameConfigDB.DataRevision}.");
+                $"Replay content mismatch: record data={_meta.DataVersion}, current={GameContentHost.Registry.DataRevision}.");
         if (_meta.LogicVersion != BattleLogicRevision.Value)
             throw new InvalidDataException(
                 $"Replay logic mismatch: record logic={_meta.LogicVersion}, current={BattleLogicRevision.Value}.");

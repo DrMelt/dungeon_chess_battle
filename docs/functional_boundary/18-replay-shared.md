@@ -20,4 +20,4 @@
 
 ## 依赖
 
-- MessagePack、`System.IO.Compression`；Battle.Shared（取 `PlayerCommand` 输入形状与 `UnitId` 强类型，供条目双向映射）。两项修订号不经本层：`GameConfigDB.DataRevision` 与 `BattleLogicRevision.Value` 由录制端读进元数据，本层只搬运字段不解释其值。
+- MessagePack、`System.IO.Compression`；Battle.Shared（取 `PlayerCommand` 输入形状与 `UnitId` 强类型，供条目双向映射）。两项修订号不经本层：`GameContentHost.Registry.DataRevision` 与 `BattleLogicRevision.Value` 由录制端读进元数据，本层只搬运字段不解释其值。

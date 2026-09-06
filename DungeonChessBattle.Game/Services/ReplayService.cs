@@ -36,7 +36,7 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
 
     /// <summary>录制端两项修订号与本地是否一致：内容修订号管配置与布局，逻辑修订号管结算时序。任一缺失判不一致。</summary>
     private static bool IsContentCompatible(string? dataVersion, string? logicVersion) =>
-        !string.IsNullOrEmpty(dataVersion) && dataVersion == GameConfigDB.DataRevision
+        !string.IsNullOrEmpty(dataVersion) && dataVersion == GameContentHost.Registry.DataRevision
         && !string.IsNullOrEmpty(logicVersion) && logicVersion == BattleLogicRevision.Value;
 
     /// <summary>取合并后的行视图：基于静态列表快照现场构建动态可用态，进度实时；列表未刷新时返回空。</summary>
@@ -206,7 +206,7 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
         if (!IsContentCompatible(recording.Meta.DataVersion, recording.Meta.LogicVersion))
             return new ReplayPlayableResult(ReplayGateStatus.Incompatible, Reason:
                 $"回放由内容 {recording.Meta.DataVersion}/逻辑 {recording.Meta.LogicVersion} 录制，" +
-                $"本地为 {GameConfigDB.DataRevision}/{BattleLogicRevision.Value}。");
+                $"本地为 {GameContentHost.Registry.DataRevision}/{BattleLogicRevision.Value}。");
 
         return new ReplayPlayableResult(ReplayGateStatus.Ready, recording);
     }

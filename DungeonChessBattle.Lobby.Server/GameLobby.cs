@@ -102,7 +102,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         }
 
         // 房间携带服务端当前内容指纹，客户端不一致拒绝加入，保证内容同源
-        config.ContentFingerprint = GameConfigDB.DataRevision;
+        config.ContentFingerprint = GameContentHost.Registry.DataRevision;
 
         // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + 连接归属 + playerId
         if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, config,

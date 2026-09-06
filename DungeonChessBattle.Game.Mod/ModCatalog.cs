@@ -177,7 +177,7 @@ public sealed class ModCatalog {
         string directoryName = Path.GetFileName(mod.DirectoryPath);
         return new ModPackage {
             Id = mod.Manifest?.Id ?? directoryName,
-            Name = string.IsNullOrEmpty(mod.Manifest?.Name) ? directoryName : mod.Manifest!.Name,
+            Name = string.IsNullOrEmpty(mod.Manifest?.Name) ? directoryName : mod.Manifest.Name,
             Version = mod.Manifest?.Version ?? "",
             Priority = mod.Manifest?.Priority ?? 0,
             IsEnabled = false,

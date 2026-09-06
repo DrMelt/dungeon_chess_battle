@@ -9,5 +9,6 @@ using DungeonConfigDef = DungeonChessBattle.Battle.Shared.Content.DungeonConfig;
 [GlobalClass]
 public partial class DungeonGoblinCamp : DungeonResourceBaseGodot {
     /// <inheritdoc/>
-    protected override DungeonConfigDef Config => GameConfigDB.DungeonGoblinCamp;
+    protected override DungeonConfigDef Config =>
+        GameContentHost.Registry.GetRequiredDungeon("goblin_camp");
 }
