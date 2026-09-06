@@ -13,19 +13,26 @@ public static class ResourceTables {
     private static BuffResourceTable? _buffs;
     private static DungeonResourceTable? _dungeons;
 
+    // Godot res:// 虚拟资源路径，非文件系统绝对路径，S1075 误报
+#pragma warning disable S1075
+    private const string SkillsTableRes = "res://GameAssets/Skills/res_skill_resource_table.tres";
+    private const string BuffsTableRes = "res://GameAssets/Buffs/res_buff_resource_table.tres";
+    private const string DungeonsTableRes = "res://GameAssets/Dungeon/res_dungeon_resource_table.tres";
+#pragma warning restore S1075
+
     /// <summary>技能资源表单例，懒加载并初始化反查字典。</summary>
     public static SkillResourceTable Skills => _skills ??= LoadAndInit<SkillResourceTable>(
-        "res://GameAssets/Skills/res_skill_resource_table.tres",
+        SkillsTableRes,
         static table => table.Initialize());
 
     /// <summary>Buff 资源表单例，懒加载并初始化反查字典。</summary>
     public static BuffResourceTable Buffs => _buffs ??= LoadAndInit<BuffResourceTable>(
-        "res://GameAssets/Buffs/res_buff_resource_table.tres",
+        BuffsTableRes,
         static table => table.Initialize());
 
     /// <summary>副本资源表单例，懒加载并初始化反查字典。</summary>
     public static DungeonResourceTable Dungeons => _dungeons ??= LoadAndInit<DungeonResourceTable>(
-        "res://GameAssets/Dungeon/res_dungeon_resource_table.tres",
+        DungeonsTableRes,
         static table => table.Initialize());
 
     private static T LoadAndInit<T>(string path, Action<T> init) where T : Resource {

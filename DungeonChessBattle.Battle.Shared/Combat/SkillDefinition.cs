@@ -63,7 +63,7 @@ public abstract class SkillDefinition {
     } = 0f;
 
     /// <summary>位置目标技能的有效范围形状，非位置目标技能为空。</summary>
-    public RangeShape? CastArea {
+    public IRangeShape? CastArea {
         get; init;
     }
 

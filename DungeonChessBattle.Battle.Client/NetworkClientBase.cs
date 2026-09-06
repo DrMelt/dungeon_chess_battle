@@ -123,10 +123,10 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
         OnFullyConnected?.Invoke();
     }
 
-    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo info) {
+    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Disconnected. Reason={Reason}", info.Reason);
-        OnPeerDisconnectedInternal(peer, info);
+            _logger.LogInformation("Disconnected. Reason={Reason}", disconnectInfo.Reason);
+        OnPeerDisconnectedInternal(peer, disconnectInfo);
         OnFullyDisconnected?.Invoke();
     }
 
@@ -135,19 +135,19 @@ public abstract class NetworkClientBase : INetEventListener, IClientConnection {
     }
 
     /// <summary>子类重写以在连接断开时清理自身资源。</summary>
-    protected virtual void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
+    protected virtual void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo disconnectInfo) {
     }
 
-    void INetEventListener.OnNetworkError(IPEndPoint ep, SocketError err) {
+    void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError) {
     }
-    void INetEventListener.OnConnectionRequest(ConnectionRequest r) => r.Reject();
-    void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint ep, NetPacketReader r, UnconnectedMessageType t) {
+    void INetEventListener.OnConnectionRequest(ConnectionRequest request) => request.Reject();
+    void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
     }
     void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency) {
     }
 
     /// <summary>子类实现的网络接收入口。</summary>
-    void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod delivery) {
+    void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
         var data = reader.GetRemainingBytes();
         OnNetworkReceiveInternal(data);
     }

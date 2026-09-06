@@ -66,7 +66,6 @@ public sealed partial class GameClientService {
 
         Host = host;
         Port = roomPort;
-        _cachedRoomPort = roomPort;
         _cachedRoomId = roomId;
         if (isBattleStart) {
             // 战斗启动重定向：连接成功后触发 OnBattleStarted，而非 OnRoomJoined

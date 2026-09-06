@@ -35,7 +35,9 @@ public sealed class ModAssemblyLoader : IDisposable {
 
         Type? entryType = types
             .FirstOrDefault(t => !t.IsInterface && !t.IsAbstract && typeof(TEntry).IsAssignableFrom(t));
-        return entryType is null ? null : Activator.CreateInstance(entryType) is TEntry entry ? entry : null;
+        if (entryType is null)
+            return null;
+        return Activator.CreateInstance(entryType) as TEntry;
     }
 
     /// <inheritdoc/>

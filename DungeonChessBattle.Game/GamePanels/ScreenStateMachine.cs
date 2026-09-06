@@ -46,13 +46,10 @@ public sealed class ScreenStateMachine(Control? frontUI) {
     }
 
     /// <summary>
-    /// 退出回放：恢复 FrontUI 并回到大厅。
-    /// 回放仅从大厅进入，入口面板在启动播放时已自行返回，恢复后大厅即在原位。
+    /// 退出回放：行为与退出战斗一致（恢复 FrontUI 并回到大厅），复用同一实现。
+    /// 回放仅从大厅进入，恢复后大厅即在原位。
     /// </summary>
-    public void ExitReplay() {
-        _frontUI.Visible = true;
-        TransitionTo(GameScreenState.Lobby);
-    }
+    public void ExitReplay() => ExitBattle();
 
     private void TransitionTo(GameScreenState next) {
         Current = next;

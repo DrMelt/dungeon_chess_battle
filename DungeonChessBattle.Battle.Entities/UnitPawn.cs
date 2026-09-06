@@ -18,6 +18,8 @@ public partial class UnitPawn : PawnLogic {
     /// <param name="entityParams">实体框架参数。</param>
     public UnitPawn(EntityParams entityParams) : base(entityParams) { }
 
+    // 本类同步字段直接作为 public 字段供 LiteEntitySystem 反射发现，禁止改为属性
+#pragma warning disable S1104 // LES 反射 GetFields 读取同步字段
     /// <summary>单位配置键，两端据此读取装配配置；不是显示名。</summary>
     public readonly SyncString UnitKeyName = new();
 
@@ -63,6 +65,7 @@ public partial class UnitPawn : PawnLogic {
 
     /// <summary>聚焦目标单位网络 ID，0 表示无聚焦目标；权威值在领域 <c>BattleUnit.FocusTarget</c>，本字段只做下行载体。</summary>
     public SyncVar<ushort> FocusTargetNetId;
+#pragma warning restore S1104
 
     /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>
     public Action<UnitPawn, UnitInputPacket, float>? InputHandler {

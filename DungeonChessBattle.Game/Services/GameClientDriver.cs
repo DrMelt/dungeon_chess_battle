@@ -28,7 +28,7 @@ public partial class GameClientDriver : Node {
     }
 
     /// <summary>连接断开：通知回放浏览服务取消在途并清空过程状态。</summary>
-    private void OnConnectionChanged(string host, int port, bool connected) {
+    private static void OnConnectionChanged(string host, int port, bool connected) {
         if (!connected)
             ServiceLocator.ReplayService.OnSessionInvalid();
     }

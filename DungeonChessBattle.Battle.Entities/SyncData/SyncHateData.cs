@@ -7,10 +7,14 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// </summary>
 public struct SyncHateData : ISpanSerializable {
     /// <summary>目标单位的网络 ID。</summary>
-    public ushort TargetNetId;
+    public ushort TargetNetId {
+        get; set;
+    }
 
     /// <summary>仇恨值。</summary>
-    public float HateValue;
+    public float HateValue {
+        get; set;
+    }
 
     /// <summary>序列化后的最大字节数。</summary>
     public readonly int MaxSize => 2 + 4; // 6 bytes

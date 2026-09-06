@@ -127,7 +127,7 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     /// <summary>构成列：数据代码与展示代码是否齐备。</summary>
     private static string CompositionOf(ModPackage mod) =>
-        $"代码 {(mod.HasCode ? "有" : "—")}　展示 {(mod.HasDisplayCode ? "有" : "—")}　优先级 {mod.Priority}";
+        $"代码 {(mod.HasCode ? "有" : "—")}\u3000展示 {(mod.HasDisplayCode ? "有" : "—")}\u3000优先级 {mod.Priority}";
 
     /// <summary>问题列：优先显示该 mod 的装载错误，其次显示其依赖关系。</summary>
     private static string ProblemOf(ModPackage mod) {
@@ -160,8 +160,9 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 故新状态要重启进程才生效——服务器子进程同样按重启后的启用集装配。
     /// </summary>
     private void OnToggleRequested(string modId, bool enabled) {
+        string result = enabled ? "启用" : "停用";
         _notice = ModAssets.SetEnabled(modId, enabled)
-            ? $"「{modId}」已{(enabled ? "启用" : "停用")}，重启游戏与服务器进程后生效"
+            ? $"「{modId}」已{result}，重启游戏与服务器进程后生效"
             : $"启停未生效：{modId} 不在当前扫描结果内";
         Refresh();
     }
@@ -175,7 +176,7 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找存档路径。</summary>
     private void OnOpenFolderPressed() {
-        if (DirAccess.MakeDirRecursiveAbsolute("user://mods") != Error.Ok)
+        if (DirAccess.MakeDirRecursiveAbsolute(ModManager.ModsRootGodotPath) != Error.Ok)
             _logger.LogWarning("创建 mods 目录失败：{Path}", ModManager.ModsRootPath);
 
         if (OS.ShellOpen($"file://{ModManager.ModsRootPath}") != Error.Ok) {

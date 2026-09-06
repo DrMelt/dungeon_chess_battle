@@ -300,14 +300,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         lock (GetRoomLock(roomId)) {
             if (!_roomReadyStates.TryGetValue(roomId, out var states) || states.IsEmpty)
                 return false;
-            if (!_prepareUnits.TryGetValue(roomId, out var units))
+            if (!_prepareUnits.TryGetValue(roomId, out _))
                 return false;
 
-            foreach (var playerName in states.Keys) {
-                if (!PlayerHasUnitLocked(roomId, playerName))
-                    return false;
-            }
-            return true;
+            return states.Keys.All(playerName => PlayerHasUnitLocked(roomId, playerName));
         }
     }
 
@@ -471,15 +467,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
                 // 房主退出：转让给剩余玩家，房主表与招募板配置同步更新，保持一致
                 if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == leavingName) {
-                    string? newHost = null;
-                    if (states != null) {
-                        foreach (var name in states.Keys) {
-                            if (name != leavingName) {
-                                newHost = name;
-                                break;
-                            }
-                        }
-                    }
+                    string? newHost = states?.Keys.FirstOrDefault(name => name != leavingName);
                     if (newHost != null) {
                         _roomHosts[roomId] = newHost;
                         config.HostName = newHost;

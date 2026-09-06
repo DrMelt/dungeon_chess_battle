@@ -48,7 +48,7 @@ public partial class BattleRoomServer {
 
         // 获取或新建 PlayerSession
         var session = _sessions.GetOrAdd(effectivePlayerId,
-            _ => new PlayerSession(effectivePlayerId, $"Player_{effectivePlayerId[..Math.Min(effectivePlayerId.Length, 8)]}"));
+            playerId => new PlayerSession(playerId, $"Player_{playerId[..Math.Min(playerId.Length, 8)]}"));
 
         session.PeerId = peer.Id;
         session.NetPlayer = netPlayer;

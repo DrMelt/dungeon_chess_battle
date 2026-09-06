@@ -9,16 +9,24 @@ namespace DungeonChessBattle.Battle.Entities.Requests;
 /// </summary>
 public struct CastSkillRequest : INetSerializable {
     /// <summary>技能配置键。</summary>
-    public string SkillKey;
+    public string SkillKey {
+        get; set;
+    }
 
     /// <summary>目标单位网络 ID，位置型技能为 0。</summary>
-    public ushort TargetNetId;
+    public ushort TargetNetId {
+        get; set;
+    }
 
     /// <summary>位置目标 X，范围伤害技能使用，世界坐标。</summary>
-    public float TargetPosX;
+    public float TargetPosX {
+        get; set;
+    }
 
     /// <summary>位置目标 Z，范围伤害技能使用，世界坐标。</summary>
-    public float TargetPosZ;
+    public float TargetPosZ {
+        get; set;
+    }
 
     /// <inheritdoc />
     public readonly void Serialize(NetDataWriter writer) {

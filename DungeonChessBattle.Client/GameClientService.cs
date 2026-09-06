@@ -66,9 +66,6 @@ public sealed partial class GameClientService {
     /// <summary>当前所在的房间 ID，用于断线重连。</summary>
     private string? _cachedRoomId;
 
-    /// <summary>当前房间端口，用于断线重连。</summary>
-    private int _cachedRoomPort;
-
     /// <summary>当前房间密码，用于重连验证。</summary>
     private string? _cachedRoomPassword;
 
@@ -301,7 +298,6 @@ public sealed partial class GameClientService {
     /// <summary>清空断线重连所需的本房间缓存：房间 ID、端口与密码。</summary>
     private void ClearRoomReconnectCache() {
         _cachedRoomId = null;
-        _cachedRoomPort = 0;
         _cachedRoomPassword = null;
     }
 

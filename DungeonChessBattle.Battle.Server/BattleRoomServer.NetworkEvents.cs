@@ -82,7 +82,7 @@ public partial class BattleRoomServer {
         // 无任何活跃连接且已完成首帧初始化 → 通知大厅销毁房间
         // 断线玩家实体保留：房间仍在、玩家可凭 Store 成员身份重连；
         // 全部活跃连接断开后房间失去存在意义，由大厅线程移除
-        if (HasActiveConnections == false && _initialized.IsSet)
+        if (!HasActiveConnections && _initialized.IsSet)
             RoomEmpty?.Invoke(RoomId);
     }
 
@@ -92,10 +92,8 @@ public partial class BattleRoomServer {
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
         var data = reader.GetRemainingBytes();
-        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader) {
-            if (peer.Tag is LiteNetLibNetPeer lesPeer)
-                EntityManager.Deserialize(lesPeer, data);
-        }
+        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader && peer.Tag is LiteNetLibNetPeer lesPeer)
+            EntityManager.Deserialize(lesPeer, data);
         // 房间端口不处理 JSON 自定义包，所有逻辑走 LES RPC
     }
 

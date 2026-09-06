@@ -262,7 +262,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             log.Deserialize(body);
         }
         catch (Exception ex) when (ex is InvalidDataException or ArgumentOutOfRangeException) {
-            _logger.LogWarning("Discard malformed reliable battle event log: {Reason}", ex.Message);
+            _logger.LogWarning(ex, "Discard malformed reliable battle event log: {Reason}", ex.Message);
             return;
         }
         if (log.Events is not { Length: > 0 })
@@ -312,9 +312,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
 
     /// <summary>对端断开时清理房间会话状态。</summary>
     /// <param name="peer">断开的对端。</param>
-    /// <param name="info">断开信息。</param>
-    protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo info) {
-        base.OnPeerDisconnectedInternal(peer, info);
+    /// <param name="disconnectInfo">断开信息。</param>
+    protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo disconnectInfo) {
+        base.OnPeerDisconnectedInternal(peer, disconnectInfo);
         ClearRoomSessionState();
     }
 

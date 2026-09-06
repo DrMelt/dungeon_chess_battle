@@ -48,7 +48,9 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>战斗完成回调（Finished 阶段触发），由 MainScene 注入应用级退出流程。</summary>
-    public Action? OnBattleFinished;
+    public Action? OnBattleFinished {
+        get; set;
+    }
 
     /// <summary>
     /// 确保战斗环境实例与会话副本键一致：键为 null（实体未同步）或键变化的首次装配，

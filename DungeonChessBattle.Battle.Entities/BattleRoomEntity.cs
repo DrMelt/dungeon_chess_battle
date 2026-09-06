@@ -13,6 +13,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 战斗事件日志经传输层可靠通道外送，本实体不再承载事件 RPC。
 /// </summary>
 public partial class BattleRoomEntity : EntityLogic {
+    // 本类同步字段直接作为 public 字段供 LiteEntitySystem 反射发现，禁止改为属性
+#pragma warning disable S1104 // LES 反射 GetFields 读取同步字段
     /// <summary>
     /// 初始化战斗房间实体。
     /// </summary>
@@ -30,5 +32,6 @@ public partial class BattleRoomEntity : EntityLogic {
 
     /// <summary>房间选中的副本键，服务端权威，客户端据此呈现对应环境场景。</summary>
     public readonly SyncString DungeonKey = new();
+#pragma warning restore S1104
 }
 

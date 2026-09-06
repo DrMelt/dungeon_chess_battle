@@ -93,12 +93,8 @@ public sealed class BehaviorCatalog : IModRuntime {
         if (sourceHasBoss || targetHasBoss)
             return CampRelationEnum.Enemy;
 
-        foreach (var camp in sourceCamps) {
-            foreach (var other in targetCamps) {
-                if (camp == other)
-                    return CampRelationEnum.Friendly;
-            }
-        }
+        if (sourceCamps.Any(camp => targetCamps.Contains(camp)))
+            return CampRelationEnum.Friendly;
         return CampRelationEnum.Unknown;
     }
 }

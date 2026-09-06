@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Mod;
@@ -63,10 +64,8 @@ public partial class UnitShowManager : Node {
             show.Visible = !unit.IsDead;
         }
 
-        foreach (var unit in source.Units) {
-            if (!_unitShows.ContainsKey(unit.UnitId))
-                SpawnUnit(unit);
-        }
+        foreach (var unit in source.Units.Where(u => !_unitShows.ContainsKey(u.UnitId)))
+            SpawnUnit(unit);
     }
 
     /// <summary>实例化单位视图并登记；可见性不在此决定，由首帧对齐按死亡状态收敛。</summary>

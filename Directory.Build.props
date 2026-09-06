@@ -3,4 +3,8 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SonarAnalyzer.CSharp" />
+  </ItemGroup>
 </Project>

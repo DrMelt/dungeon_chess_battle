@@ -73,14 +73,14 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
             var chunk = new byte[ChunkSize];
             int read;
             while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0) {
-                buffer.Write(chunk, 0, read);
+                await buffer.WriteAsync(chunk, 0, read, cancellationToken);
                 progress?.Report(new ReplayDownloadProgress(buffer.Length, total));
             }
             return (ReplayTransportStatus.Success, buffer.ToArray());
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested) {
             // HttpClient 超时走此分支；用户取消时令牌已置位，继续上抛
-            logger.LogWarning("回放请求超时: {Url}", url);
+            logger.LogWarning(ex, "回放请求超时: {Url}", url);
             return (ReplayTransportStatus.NetworkError, null);
         }
         catch (HttpRequestException ex) {

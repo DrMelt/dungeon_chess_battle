@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -55,10 +56,10 @@ public partial class ReplayPanel : BaseGamePanel {
     private static void Refresh() => ServiceLocator.ReplayService.RefreshList();
 
     /// <summary>刷新按钮回调。</summary>
-    private void OnRefreshPressed() => Refresh();
+    private static void OnRefreshPressed() => Refresh();
 
     /// <summary>下载按钮回调：可下载与否由服务层裁决，本面板只上报房间 ID。</summary>
-    private void OnRowActionPressed(string roomId) => ServiceLocator.ReplayService.RequestFetch(roomId);
+    private static void OnRowActionPressed(string roomId) => ServiceLocator.ReplayService.RequestFetch(roomId);
 
     /// <summary>播放按钮回调：服务层取可重放记录，成功即交主场景装配回放场景启动并返回大厅。</summary>
     private void OnPlayPressed(string roomId) {
@@ -83,9 +84,8 @@ public partial class ReplayPanel : BaseGamePanel {
             currentRoomIds.Add(view.RoomId);
 
         var stale = new List<string>();
-        foreach (var roomId in _rows.Keys)
-            if (!currentRoomIds.Contains(roomId))
-                stale.Add(roomId);
+        foreach (var roomId in _rows.Keys.Where(roomId => !currentRoomIds.Contains(roomId)))
+            stale.Add(roomId);
         foreach (var roomId in stale) {
             if (!_rows.Remove(roomId, out var row))
                 continue;

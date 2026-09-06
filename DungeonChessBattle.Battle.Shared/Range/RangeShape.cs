@@ -6,18 +6,18 @@ namespace DungeonChessBattle.Battle.Shared.Range;
 /// <summary>
 /// 几何范围形状，纯几何判定，不依赖战斗实体。使用 XZ 平面俯视坐标。
 /// </summary>
-public abstract class RangeShape {
+public interface IRangeShape {
     /// <summary>判断检测点是否处于以锚点为基准、给定朝向的范围内。</summary>
-    public abstract bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius);
+    bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius);
 
     /// <summary>该形状沿朝向的最远有效判定距离，供 AI 逼近决策读取。</summary>
-    public abstract float FarReach {
+    float FarReach {
         get;
     }
 }
 
 /// <summary>扇形环形范围，以锚点为圆心、沿朝向的角度与半径区间。</summary>
-public sealed class SectorShape : RangeShape {
+public sealed class SectorShape : IRangeShape {
     /// <summary>近端半径。</summary>
     public required float NearClamp {
         get; init;
@@ -35,10 +35,10 @@ public sealed class SectorShape : RangeShape {
     public float RadianTo { get; init; } = MathF.PI;
 
     /// <inheritdoc />
-    public override float FarReach => FarClamp;
+    public float FarReach => FarClamp;
 
     /// <inheritdoc />
-    public override bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
+    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
         direction = Vector2.Normalize(direction);
         Vector2 toCheck = point - anchor;
         float d = toCheck.Length();
@@ -90,7 +90,7 @@ public sealed class SectorShape : RangeShape {
 }
 
 /// <summary>矩形范围：以锚点为近端起点、沿朝向向前延伸的矩形。</summary>
-public sealed class RectShape : RangeShape {
+public sealed class RectShape : IRangeShape {
     /// <summary>近端沿朝向的边界。</summary>
     public required float NearClamp {
         get; init;
@@ -108,10 +108,10 @@ public sealed class RectShape : RangeShape {
     public float ToRight { get; init; } = 1.0f;
 
     /// <inheritdoc />
-    public override float FarReach => FarClamp;
+    public float FarReach => FarClamp;
 
     /// <inheritdoc />
-    public override bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
+    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
         direction = Vector2.Normalize(direction);
         Vector2 toCheck = point - anchor;
 

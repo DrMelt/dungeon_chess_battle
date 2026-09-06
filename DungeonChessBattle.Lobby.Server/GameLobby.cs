@@ -81,9 +81,9 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         string playerId = req.PlayerId;
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
 
-        GameRoom config;
+        GameRoom roomConfig;
         if (req.Config != null) {
-            config = new GameRoom(roomId) {
+            roomConfig = new GameRoom(roomId) {
                 DungeonKey = ResolveDungeonKey(req.Config.DungeonKey),
                 Description = req.Config.Description,
                 HostName = hostDisplayName,
@@ -93,7 +93,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         }
         else {
             // 启用默认值填充房间，无配置直接进入战斗：副本键经同一解析路径回落默认副本
-            config = new GameRoom(roomId) {
+            roomConfig = new GameRoom(roomId) {
                 DungeonKey = ResolveDungeonKey(null),
                 HostName = hostDisplayName,
                 MaxPlayers = 2,
@@ -102,10 +102,10 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         }
 
         // 房间携带服务端当前内容指纹，客户端不一致拒绝加入，保证内容同源
-        config.ContentFingerprint = GameContentHost.Registry.DataRevision;
+        roomConfig.ContentFingerprint = GameContentHost.Registry.DataRevision;
 
         // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + 连接归属 + playerId
-        if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, config,
+        if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, roomConfig,
                 hostDisplayName, playerId, connectionId))
             return new LobbyResult(roomId, false, "Failed to register room.");
 
@@ -292,21 +292,21 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 客户端以该快照为唯一权威视图，无需自行组装。
     /// </summary>
     public async Task BroadcastRoomSnapshotAsync(string roomId) {
-        var config = _stateStore.GetRoomConfig(roomId);
+        var roomConfig = _stateStore.GetRoomConfig(roomId);
         var state = _stateStore.GetRoomState(roomId);
         var units = _stateStore.GetPrepareUnits(roomId);
 
         var snapshot = new RoomSnapshot(
             roomId,
-            config?.Description ?? string.Empty,
-            config?.MaxPlayers ?? 2,
-            config?.Status ?? RoomStatus.Waiting,
+            roomConfig?.Description ?? string.Empty,
+            roomConfig?.MaxPlayers ?? 2,
+            roomConfig?.Status ?? RoomStatus.Waiting,
             state.HostName,
             ResolveDungeonKey(state.DungeonKey),
-            config?.CurrentPlayers ?? state.Players.Count,
+            roomConfig?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))],
-            config?.ContentFingerprint ?? string.Empty);
+            roomConfig?.ContentFingerprint ?? string.Empty);
 
         await _broadcaster.SendToRoomAsync(roomId, HubMethods.OnRoomSnapshot, snapshot);
 

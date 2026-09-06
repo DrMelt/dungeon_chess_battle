@@ -116,7 +116,7 @@ public partial class ReplayInputPanel : Control {
         int last = Math.Min(entries.Count - 1, index + AfterLines);
         var text = new StringBuilder();
         for (int i = first; i <= last; i++) {
-            string color = i < index ? PastColor : i == index ? CurrentColor : FutureColor;
+            string color = ColorFor(i, index);
             string marker = i == index ? CurrentMarker : "  ";
             text.Append($"[color={color}]{marker}{Line(engine, entries[i])}[/color]\n");
         }
@@ -127,6 +127,13 @@ public partial class ReplayInputPanel : Control {
         }
         if (_refs?.CounterLabel is { } counter)
             counter.Text = $"{index + 1}/{entries.Count}";
+    }
+
+    /// <summary>条目按与当前帧的先后着色。</summary>
+    private static string ColorFor(int index, int currentIndex) {
+        if (index < currentIndex)
+            return PastColor;
+        return index == currentIndex ? CurrentColor : FutureColor;
     }
 
     /// <summary>条目文本行：相对秒数、玩家名与按类型展开的输入内容。</summary>

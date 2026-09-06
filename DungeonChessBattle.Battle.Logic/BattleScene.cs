@@ -112,10 +112,8 @@ public sealed partial class BattleScene(
     /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
     private void ClearHateEntries(BattleUnit deadUnit) {
         deadUnit.RuntimeState.Hates.Clear();
-        foreach (var unit in _units) {
-            if (unit != deadUnit)
-                unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitId);
-        }
+        foreach (var unit in _units.Where(u => u != deadUnit))
+            unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitId);
     }
 
     /// <summary>
@@ -505,14 +503,10 @@ public sealed partial class BattleScene(
 
     /// <summary>领域事件副作用统一应用：伤害/治疗落到目标生命值，单位已移除则忽略；新副作用在此扩展。</summary>
     private void ApplyEventEffect(IBattleEvent evt) {
-        if (evt is DamageOccurred dmg) {
-            if (_unitById.TryGetValue(dmg.TargetUnitId, out var unit))
-                ApplyHealthDelta(unit, -dmg.AppliedDamage);
-        }
-        else if (evt is HealOccurred heal) {
-            if (_unitById.TryGetValue(heal.TargetUnitId, out var unit))
-                ApplyHealthDelta(unit, heal.ActualHeal);
-        }
+        if (evt is DamageOccurred dmg && _unitById.TryGetValue(dmg.TargetUnitId, out var unit))
+            ApplyHealthDelta(unit, -dmg.AppliedDamage);
+        else if (evt is HealOccurred heal && _unitById.TryGetValue(heal.TargetUnitId, out unit))
+            ApplyHealthDelta(unit, heal.ActualHeal);
     }
 
     /// <summary>施加 Buff 到目标：叠加或新建运行时实例，产出 BuffApplied 事件。</summary>

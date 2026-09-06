@@ -35,23 +35,13 @@ public static class CampConstants {
         if (camps == null || camps.Count == 0 || camps.Count > MaxCampsPerUnit)
             return false;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var camp in camps) {
-            if (!IsValidCamp(camp) || !seen.Add(camp))
-                return false;
-        }
-        return true;
+        return camps.All(camp => IsValidCamp(camp) && seen.Add(camp));
     }
 
     /// <summary>判断两个阵营列表是否存在共同阵营；null 或空视为无交集。</summary>
     public static bool HasAnyCamp(IReadOnlyList<string>? a, IReadOnlyList<string>? b) {
         if (a == null || b == null || a.Count == 0 || b.Count == 0)
             return false;
-        foreach (var camp in a) {
-            foreach (var other in b) {
-                if (camp == other)
-                    return true;
-            }
-        }
-        return false;
+        return a.Any(camp => b.Contains(camp));
     }
 }

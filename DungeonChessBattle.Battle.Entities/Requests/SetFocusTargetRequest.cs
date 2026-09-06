@@ -8,7 +8,9 @@ namespace DungeonChessBattle.Battle.Entities.Requests;
 /// </summary>
 public struct SetFocusTargetRequest : INetSerializable {
     /// <summary>目标单位网络 ID，0 表示清除聚焦目标。</summary>
-    public ushort TargetNetId;
+    public ushort TargetNetId {
+        get; set;
+    }
 
     /// <inheritdoc />
     public readonly void Serialize(NetDataWriter writer) => writer.Put(TargetNetId);

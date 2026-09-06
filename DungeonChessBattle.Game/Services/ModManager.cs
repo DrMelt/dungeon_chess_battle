@@ -15,7 +15,10 @@ namespace DungeonChessBattle.Game.Services;
 /// </summary>
 public static class ModManager {
     /// <summary>mods 根目录的 Godot 路径挂载点，mod 自带场景经它寻址。</summary>
+    // Godot user:// 虚拟路径，非文件系统绝对路径，S1075 误报
+#pragma warning disable S1075
     public const string ModsRootGodotPath = "user://mods";
+#pragma warning restore S1075
 
     /// <summary>mods 根目录绝对路径。</summary>
     public static string ModsRootPath => ProjectSettings.GlobalizePath(ModsRootGodotPath);

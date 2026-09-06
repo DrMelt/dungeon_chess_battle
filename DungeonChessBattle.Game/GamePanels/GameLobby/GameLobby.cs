@@ -239,10 +239,13 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 刷新房间列表：请求服务端房间列表。
     /// </summary>
+    // Godot CallDeferred 按方法名调用，须保持实例方法（非 static）
+#pragma warning disable S2325
     private void OnRefreshRooms() {
         // 通过招募板协议请求服务端房间列表
         ServiceLocator.ClientService.RequestListRooms();
     }
+#pragma warning restore S2325
 
     /// <summary>
     /// 订阅大厅客户端的房间列表推送事件。

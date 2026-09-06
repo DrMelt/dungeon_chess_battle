@@ -71,7 +71,10 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
                 Port = config.LobbyPort;
 
                 var builder = WebApplication.CreateBuilder();
+                // 局域网游戏服务器，开发环境不启用 TLS
+#pragma warning disable S5332
                 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+#pragma warning restore S5332
                 builder.Logging.AddSimpleConsole(options => {
                     options.SingleLine = true;
                     options.TimestampFormat = "HH:mm:ss.fff ";
@@ -104,7 +107,7 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
 
                 // 空房间清理后台循环，替代原大厅轮询线程
                 _cts = new CancellationTokenSource();
-                _cleanupLoop = Task.Run(() => CleanupLoopAsync(_cts.Token));
+                _cleanupLoop = Task.Run(() => CleanupLoopAsync(_cts.Token), _cts.Token);
 
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("服务器已启动，监听端口 {Port}", port);
@@ -148,9 +151,10 @@ public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactor
 
             try {
                 _cts?.Cancel();
-                _cleanupLoop?.Wait(TimeSpan.FromSeconds(3));
+                // _cts.Token 此刻已取消，传入 Wait/StopAsync 会立刻抛 OperationCanceledException，显式 None 声明无需取消
+                _cleanupLoop?.Wait(TimeSpan.FromSeconds(3), CancellationToken.None);
                 _battleRoomManager?.StopAll();
-                _app?.StopAsync().GetAwaiter().GetResult();
+                _app?.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
                 _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _logger.LogInformation("服务器已停止");
             }

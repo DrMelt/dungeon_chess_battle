@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" />
     <PackageVersion Include="Aether.Physics2D" Version="2.2.0" />
     <PackageVersion Include="LiteNetLib" Version="2.1.4" />
     <PackageVersion Include="LiteEntitySystem" Version="1.2.2" />

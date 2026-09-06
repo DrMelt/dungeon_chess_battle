@@ -16,16 +16,24 @@ public struct SyncCampsData : ISpanSerializable {
     public const int MaxCampBytes = 32;
 
     /// <summary>实际阵营数量。</summary>
-    public byte Count;
+    public byte Count {
+        get; set;
+    }
 
     /// <summary>第一个阵营标识。</summary>
-    public string? Camp0;
+    public string? Camp0 {
+        get; set;
+    }
 
     /// <summary>第二个阵营标识。</summary>
-    public string? Camp1;
+    public string? Camp1 {
+        get; set;
+    }
 
     /// <summary>第三个阵营标识。</summary>
-    public string? Camp2;
+    public string? Camp2 {
+        get; set;
+    }
 
     /// <summary>序列化后的最大字节数。</summary>
     public readonly int MaxSize => 1 + MaxCamps * (2 + MaxCampBytes); // 103 bytes

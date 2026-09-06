@@ -11,7 +11,9 @@ public struct ReliableBattleEventLog : INetSerializable {
     public const int MaxEventsPerFrame = 4096;
 
     /// <summary>整帧战斗事件日志，编码结构与 BattleEventCoder 一致。</summary>
-    public SyncBattleEvent[] Events;
+    public SyncBattleEvent[] Events {
+        get; set;
+    }
 
     /// <inheritdoc />
     public readonly void Serialize(NetDataWriter writer) {

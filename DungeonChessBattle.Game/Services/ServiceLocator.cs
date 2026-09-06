@@ -46,7 +46,7 @@ public static class ServiceLocator {
     public static readonly IServerHost ServerService = new ServerProcessHost(
         LoggerFactoryInstance.CreateLogger<ServerProcessHost>(),
         new ServerProcessConfig {
-            ModDirectory = ProjectSettings.GlobalizePath("user://mods"),
+            ModDirectory = ProjectSettings.GlobalizePath(ModManager.ModsRootGodotPath),
         });
 
     /// <summary>游戏客户端服务单例。</summary>
@@ -54,6 +54,11 @@ public static class ServiceLocator {
         LoggerFactoryInstance);
 
     private static ReplayService? _replayService;
+
+    // Godot user:// 虚拟路径，非文件系统绝对路径，S1075 误报
+#pragma warning disable S1075
+    private const string ReplaysRootGodotPath = "user://replays";
+#pragma warning restore S1075
 
     /// <summary>
     /// 回放浏览服务单例：托管会话状态与取数编排（获取、缓存、解码、门控、并集）。
@@ -63,9 +68,12 @@ public static class ServiceLocator {
     /// </summary>
     public static ReplayService ReplayService => _replayService ??= new ReplayService(
         new ReplayClient(
+            // 局域网回放服务，与大厅同宿主，不启用 TLS
+#pragma warning disable S5332
             static () => new Uri($"http://{ClientService.Host}:{ClientService.LobbyPort}"),
+#pragma warning restore S5332
             static () => ClientService.SessionToken,
             LoggerFactoryInstance.CreateLogger<ReplayClient>()),
-        new ReplayCache(ProjectSettings.GlobalizePath("user://replays")),
+        new ReplayCache(ProjectSettings.GlobalizePath(ReplaysRootGodotPath)),
         LoggerFactoryInstance.CreateLogger<ReplayService>());
 }

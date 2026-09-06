@@ -117,7 +117,7 @@ public sealed class ServerProcessHost : IServerHost {
 
                 bool isDll = exe.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
                 if (isDll) {
-                    psi.FileName = "dotnet";
+                    psi.FileName = ResolveDotnetExecutablePath();
                     psi.ArgumentList.Add(exe);
                 }
                 else {
@@ -345,5 +345,16 @@ public sealed class ServerProcessHost : IServerHost {
         string outDir = Path.Combine(projectDir, "..", "DungeonChessBattle.Server.Host", "bin", "Debug", "net10.0");
         string exe = Path.Combine(outDir, "DungeonChessBattle.Server.Host.exe");
         return File.Exists(exe) ? exe : Path.Combine(outDir, "DungeonChessBattle.Server.Host.dll");
+    }
+
+    /// <summary>解析 dotnet 可执行文件绝对路径：优先 DOTNET_ROOT 下的 dotnet.exe，兜底按 PATH 名解析。</summary>
+    private static string ResolveDotnetExecutablePath() {
+        string? dotnetRoot = System.Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        if (!string.IsNullOrEmpty(dotnetRoot)) {
+            string candidate = Path.Combine(dotnetRoot, "dotnet.exe");
+            if (File.Exists(candidate))
+                return candidate;
+        }
+        return "dotnet";
     }
 }

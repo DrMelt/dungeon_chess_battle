@@ -7,20 +7,32 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// </summary>
 public struct SyncBattleEvent {
     /// <summary>事件类型 tag，对应 BattleEventCoder.Type* 常量。</summary>
-    public byte Type;
+    public byte Type {
+        get; set;
+    }
 
     /// <summary>语义随 Type：来源/目标/持有者/施法者/单位网络 ID。</summary>
-    public ushort A;
+    public ushort A {
+        get; set;
+    }
 
     /// <summary>语义随 Type：目标/Buff 类型/操作码。</summary>
-    public ushort B;
+    public ushort B {
+        get; set;
+    }
 
     /// <summary>语义随 Type：伤害类型/仇恨操作/叠加层数/施法目标，0 表示无。</summary>
-    public ushort C;
+    public ushort C {
+        get; set;
+    }
 
     /// <summary>数值槽位：伤害量/治疗量/仇恨值。</summary>
-    public float Value;
+    public float Value {
+        get; set;
+    }
 
     /// <summary>技能事件专用的字符串技能键，非技能事件为空字符串。</summary>
-    public string SkillKey;
+    public string SkillKey {
+        get; set;
+    }
 }

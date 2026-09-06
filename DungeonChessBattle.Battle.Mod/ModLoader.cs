@@ -83,10 +83,12 @@ public static class ModLoader {
     private static List<LoadedMod> OrderByDependency(
         IReadOnlyList<LoadedMod> mods, List<string> errors, IReadOnlyList<LoadedMod> disabled,
         List<UnloadedMod> unloaded) {
-        foreach (var bad in mods.Where(m => string.IsNullOrEmpty(m.Manifest.Id))) {
+        foreach (string badDirectory in mods
+                 .Where(m => string.IsNullOrEmpty(m.Manifest.Id))
+                 .Select(m => m.DirectoryPath)) {
             string reason = "manifest.Id 不能为空";
-            errors.Add($"{Path.GetFileName(bad.DirectoryPath)}: {reason}");
-            unloaded.Add(new UnloadedMod { DirectoryPath = bad.DirectoryPath, Reason = reason });
+            errors.Add($"{Path.GetFileName(badDirectory)}: {reason}");
+            unloaded.Add(new UnloadedMod { DirectoryPath = badDirectory, Reason = reason });
         }
 
         var unique = mods.Where(m => !string.IsNullOrEmpty(m.Manifest.Id)).ToList();
@@ -107,10 +109,8 @@ public static class ModLoader {
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var rejected = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var mod in byId.Values.OrderBy(m => m.Manifest.Priority).ThenBy(m => m.Manifest.Id, StringComparer.Ordinal)) {
-            if (!Visit(mod, new Stack<string>()))
-                continue;
-        }
+        foreach (var mod in byId.Values.OrderBy(m => m.Manifest.Priority).ThenBy(m => m.Manifest.Id, StringComparer.Ordinal))
+            Visit(mod, new Stack<string>());
         return result;
 
         bool Visit(LoadedMod mod, Stack<string> stack) {

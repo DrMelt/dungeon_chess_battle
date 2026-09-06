@@ -30,7 +30,7 @@ public static class SkillCastValidator {
         if (!IsStateReady(caster, skill.SkillId))
             return false;
         if (skill.NeedUnitTarget)
-            return target != null
+            return target is not null
                 && SkillTargetValidator.CanAffect(caster, target, skill.TargetPolicy, relations)
                 && IsUnitTargetInRange(caster, target, skill);
         if (skill.NeedPosTarget)

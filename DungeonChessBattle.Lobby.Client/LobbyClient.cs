@@ -108,9 +108,11 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     /// 构建 HubConnection 并注册广播回调与连接状态事件。
     /// </summary>
     private HubConnection CreateConnection(string host, int port) {
+#pragma warning disable S5332 // 局域网大厅信令，开发环境不需要 TLS
         var hub = new HubConnectionBuilder()
             .WithUrl($"http://{host}:{port}/lobby")
             .Build();
+#pragma warning restore S5332
 
         hub.On<RoomSnapshot>(HubMethods.OnRoomSnapshot, HandleRoomSnapshot);
         hub.On<RoomRedirect>(HubMethods.OnPrepareBattleRedirect, r => OnPrepareBattleRedirect?.Invoke(r.RoomId, r.Port));

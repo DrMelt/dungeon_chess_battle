@@ -159,14 +159,14 @@ public partial class UnitPawn {
 
         while (BuffsList.Count > 0)
             BuffsList.RemoveAt(BuffsList.Count - 1);
-        foreach (var buff in buffs)
+        foreach (var instance in buffs.Select(b => b.Instance))
             BuffsList.Add(new SyncBuffData {
-                BuffTypeId = buff.Instance.BuffTypeId,
-                EndServerTick = SyncTickHelper.EndTick(EntityManager, (float)buff.Instance.Remaining),
-                StackCount = (ushort)buff.Instance.Stacks,
-                MaxStackCount = (ushort)Math.Max(1, buff.Instance.MaxStacks),
-                SourceNetId = buff.Instance.SourceUnitId,
-                DamageType = (byte)buff.Instance.DamageType,
+                BuffTypeId = instance.BuffTypeId,
+                EndServerTick = SyncTickHelper.EndTick(EntityManager, (float)instance.Remaining),
+                StackCount = (ushort)instance.Stacks,
+                MaxStackCount = (ushort)Math.Max(1, instance.MaxStacks),
+                SourceNetId = instance.SourceUnitId,
+                DamageType = (byte)instance.DamageType,
             });
     }
 
@@ -178,7 +178,7 @@ public partial class UnitPawn {
             for (int i = 0; i < hates.Count; i++) {
                 var existing = HatesList[i];
                 if (existing.TargetNetId != hates[i].TargetUnitId
-                    || existing.HateValue != hates[i].Value) {
+                    || MathF.Abs(existing.HateValue - hates[i].Value) > 1e-5f) {
                     changed = true;
                     break;
                 }
