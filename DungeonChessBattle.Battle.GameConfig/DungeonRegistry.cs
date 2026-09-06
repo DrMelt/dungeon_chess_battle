@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Movement;
-using DungeonChessBattle.Battle.GameConfig.Models;
+using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 
@@ -19,7 +19,7 @@ public sealed class DungeonRegistry(ContentSetRegistry registry) : IDungeonRegis
     public static void Rebind(ContentSetRegistry registry) => Instance = new DungeonRegistry(registry);
 
     /// <summary>默认副本键，内容侧定义经登记点暴露。</summary>
-    public string DefaultDungeonKey => _registry.Content.DefaultDungeonKey ?? BuiltInContent.DefaultDungeonKey;
+    public string DefaultDungeonKey => _registry.DefaultDungeonKey;
 
     /// <summary>全部副本配置。</summary>
     public IReadOnlyCollection<DungeonConfig> All => _registry.Dungeons;

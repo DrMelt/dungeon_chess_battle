@@ -56,11 +56,18 @@ public partial class MainScene : Node {
     #endregion
 
     /// <summary>
-    /// 节点就绪：装配 mod 内容、校验导出引用、订阅战斗服务事件、构造屏幕状态机。
-    /// mod 装配必须先于任何面板与资源表访问，主场景是最早的装配时机。
+    /// 进入场景树：装配 mod 内容。
+    /// `_Ready` 自底向上触发，子面板的 `_Ready` 早于主场景的 `_Ready` 取数（GameLobby 就在其 `_Ready`
+    /// 里填副本下拉），故装配必须挂在 `_EnterTree`——父节点先于全部子节点进入场景树，这才真是最早时机。
+    /// </summary>
+    public override void _EnterTree() {
+        ModManager.EnsureInitialized();
+    }
+
+    /// <summary>
+    /// 节点就绪：校验导出引用、订阅战斗服务事件、构造屏幕状态机。
     /// </summary>
     public override void _Ready() {
-        ModManager.EnsureInitialized();
         ValidateExports();
 
         // 订阅战斗启动事件（服务层事实源，GameLobby 为纯显示层不桥接）

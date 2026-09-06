@@ -12,8 +12,8 @@
     <ProjectReference Include="..\DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod\DungeonChessBattle.Battle.Mod.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod\DungeonChessBattle.Game.Mod.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Client\DungeonChessBattle.Battle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />

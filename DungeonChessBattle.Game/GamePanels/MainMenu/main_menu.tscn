@@ -65,12 +65,13 @@ mouse_filter = 1
 theme = ExtResource("1_8vrlr")
 script = ExtResource("1_main")
 
-[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871 node_paths=PackedStringArray("HostInput", "PortInput", "ConnectButton", "ServerManageButton", "StatusLabel", "UserNameInput", "PasswordInput")]
+[node name="MainMenuInterRefs" type="Node" parent="." unique_id=1296575871 node_paths=PackedStringArray("HostInput", "PortInput", "ConnectButton", "ServerManageButton", "ModManageButton", "StatusLabel", "UserNameInput", "PasswordInput")]
 script = ExtResource("2_irfs")
 HostInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer/HostInput")
 PortInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer2/PortInput")
 ConnectButton = NodePath("../CenterContainer/VBoxContainer/ConnectButton")
 ServerManageButton = NodePath("../CenterContainer/VBoxContainer/ServerManageButton")
+ModManageButton = NodePath("../CenterContainer/VBoxContainer/ModManageButton")
 StatusLabel = NodePath("../CenterContainer/VBoxContainer/StatusLabel")
 UserNameInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer3/UserNameInput")
 PasswordInput = NodePath("../CenterContainer/VBoxContainer/HBoxContainer3/PasswordInput")
@@ -201,3 +202,14 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_server_manage_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "服务器管理"
+
+[node name="ModManageButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_server_manage_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "Mod 管理"

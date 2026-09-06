@@ -1,4 +1,5 @@
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -67,9 +68,9 @@ public partial class SkillInfoPanel : Control {
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon { BindingBuffData: { } buffData }) {
-                var buffRes = ResourceTables.Buffs.GetResourceByBuffTypeId(buffData.BuffTypeId);
-                skillNameLabel?.Text = buffRes?.BuffName ?? $"Buff({buffData.BuffTypeId})";
-                skillDescriptionLabel?.Text = buffRes?.BuffDescription ?? string.Empty;
+                var buffView = ModAssets.Buff(buffData.BuffTypeId);
+                skillNameLabel?.Text = buffView?.Name ?? $"Buff({buffData.BuffTypeId})";
+                skillDescriptionLabel?.Text = buffView?.Description ?? string.Empty;
                 isShow = true;
             }
         }

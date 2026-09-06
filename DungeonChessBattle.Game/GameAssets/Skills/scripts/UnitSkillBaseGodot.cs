@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Game.Shared;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -6,9 +7,10 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// <summary>
 /// Godot 技能基类资源。仅承载展示所需数据（图标/名称/描述）与技能定义引用，
 /// 施法/冷却由服务端权威结算，客户端仅据 Pawn 同步数据渲染。
+/// 实现 <see cref="ISkillView"/>，与 mod 技能视图同经 <c>ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
-public partial class UnitSkillBaseGodot : Resource {
+public partial class UnitSkillBaseGodot : Resource, ISkillView {
     /// <summary>
     /// 子类重写此属性，直接返回 GameConfigDB 中的领域技能定义（类型安全，编译期检查）。
     /// </summary>
@@ -21,6 +23,11 @@ public partial class UnitSkillBaseGodot : Resource {
 
     /// <summary>技能强类型 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
     public SkillKeyId SkillId => Config?.SkillId ?? default;
+
+    // ISkillView 用字符串键与通用成员名，本类用领域强类型键与前缀成员名，在此对齐
+    string ISkillView.Id => SkillId.Id;
+    string ISkillView.Name => SkillName;
+    string ISkillView.Description => SkillDescription;
 
     /// <summary>技能图标。</summary>
     [Export]
@@ -46,15 +53,22 @@ public partial class UnitSkillBaseGodot : Resource {
         get; private set;
     }
 
-    /// <summary>由 mod 资源装配运行时填充展示字段（图标/名称/描述/特效与提示场景），内部调用。</summary>
+    /// <summary>
+    /// 由 mod 资源装配运行时填充展示字段；null 或空串的成员保持模板原值，内部调用。
+    /// </summary>
     internal void ApplyViewData(
-        Texture2D? icon, string name, string description,
+        Texture2D? icon, string? name, string? description,
         PackedScene? applyEffectScene, PackedScene? rangeHintScene) {
-        Icon = icon;
-        SkillName = name;
-        SkillDescription = description;
-        ApplyEffectScene = applyEffectScene;
-        RangeHintScene = rangeHintScene;
+        if (icon is not null)
+            Icon = icon;
+        if (!string.IsNullOrEmpty(name))
+            SkillName = name!;
+        if (!string.IsNullOrEmpty(description))
+            SkillDescription = description!;
+        if (applyEffectScene is not null)
+            ApplyEffectScene = applyEffectScene;
+        if (rangeHintScene is not null)
+            RangeHintScene = rangeHintScene;
     }
 
     /// <summary>

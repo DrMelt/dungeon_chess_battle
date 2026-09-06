@@ -3,6 +3,7 @@ using Godot;
 using System;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
@@ -74,8 +75,8 @@ public partial class BuffChangeInfo : FadeInfo {
             _ => throw new NotImplementedException(),
         };
 
-        // 图标按 BuffTypeId 从资源表匹配；未注册时留空
-        textureRectRef.Texture = ResourceTables.Buffs.GetResourceByBuffTypeId(buffData.BuffTypeId)?.Icon;
+        // 图标按 BuffTypeId 从展示索引取；内置与 mod 同源，未注册时留空
+        textureRectRef.Texture = ModAssets.Buff(buffData.BuffTypeId)?.Icon;
     }
 
     /// <summary>

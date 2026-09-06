@@ -3,7 +3,7 @@ using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
-namespace DungeonChessBattle.Battle.GameConfig.Models;
+namespace DungeonChessBattle.Battle.Shared.Content;
 
 /// <summary>
 /// 单位配置，仅包含策划配表参数，不含运行时状态。

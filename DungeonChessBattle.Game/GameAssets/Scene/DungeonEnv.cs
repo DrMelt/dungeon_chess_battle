@@ -1,3 +1,4 @@
+using DungeonChessBattle.Game.Mod;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -30,18 +31,17 @@ public partial class DungeonEnv : Node3D {
     private DirectionalLight3D? _sunLight;
 
     /// <summary>
-    /// 按副本键应用环境主题：经副本资源表取副本资源的主题参数。
-    /// 键为空、副本未注册或资源未映射时回退默认林地主题（与默认副本 goblin_camp 同源）。
+    /// 按副本键应用环境主题：经展示索引取副本视图的主题参数。
+    /// 键为空、副本未注册或视图未声明主题色时逐项回退默认林地主题（与默认副本 goblin_camp 同源）。
     /// 由 BattleCoordinator 在进入战斗与 Running 阶段各调用一次，覆盖实体同步前后的时序差异。
     /// </summary>
     /// <param name="dungeonKey">房间选中的副本键，实体未同步或未注册时为 null。</param>
     public void ApplyDungeonTheme(string? dungeonKey) {
-        var resource = ResourceTables.Dungeons.GetResource(dungeonKey);
-        if (resource == null) {
-            ApplyTheme(DefaultGroundColor, DefaultSkyColor, DefaultLightColor);
-            return;
-        }
-        ApplyTheme(resource.GroundColor, resource.SkyColor, resource.LightColor);
+        var view = ModAssets.Dungeon(dungeonKey);
+        ApplyTheme(
+            view?.GroundColor ?? DefaultGroundColor,
+            view?.SkyColor ?? DefaultSkyColor,
+            view?.LightColor ?? DefaultLightColor);
     }
 
     /// <summary>应用主题：地面材质、天空背景与补光颜色。</summary>

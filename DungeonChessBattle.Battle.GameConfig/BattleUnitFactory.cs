@@ -1,6 +1,6 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.GameConfig.Models;
+using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 

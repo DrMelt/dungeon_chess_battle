@@ -4,13 +4,13 @@ using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = DungeonChessBattle.Battle.GameConfig.Models.DungeonConfig;
+using DungeonConfigDef = DungeonChessBattle.Battle.Shared.Content.DungeonConfig;
 
 /// <summary>
 /// 副本资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
 /// 在 Godot 编辑器中通过 [Export] 拖拽所有副本 .tres 资源到 DungeonResources 数组，
 /// 运行时通过每个资源的 Config 属性（返回 GameConfigDB 中的唯一静态副本定义实例）
-/// 自动构建查找字典，客户端据副本键映射显示名与描述，无需任何字符串 ID。
+/// 自动构建查找字典，供环境场景模板实例化；副本显示名与描述经 <c>ModAssets</c> 展示索引取。
 /// 表实例由 ResourceTables 组合根加载并调用 Initialize，本类不持有加载入口。
 /// 新增副本时只需在 res_dungeon_resource_table.tres 中拖入对应的 .tres 资源即可。
 /// </summary>
@@ -44,23 +44,24 @@ public partial class DungeonResourceTable : Resource {
             _lookup[config] = resource;
     }
 
-    /// <summary>
-    /// 按副本键获取副本资源；副本未注册或资源未在资源表映射时返回 null。
-    /// 环境主题、显示名等展示数据统一经此入口装配。
-    /// </summary>
-    public DungeonResourceBaseGodot? GetResource(string? dungeonKey) {
+    /// <summary>已注册的全部副本资源，含编辑器拖入与运行时 mod 构造。</summary>
+    public IReadOnlyCollection<DungeonResourceBaseGodot> AllResources => _lookup.Values;
+
+    /// <summary>该副本定义是否已有展示资源；有则 mod 以内置资源为模板覆盖展示字段。</summary>
+    internal bool TryGetResource(DungeonConfigDef config, out DungeonResourceBaseGodot? resource) {
+        bool found = _lookup.TryGetValue(config, out var template);
+        resource = template;
+        return found;
+    }
+
+    /// <summary>按副本键取副本资源；副本未注册或资源未映射时返回 null。</summary>
+    private DungeonResourceBaseGodot? GetResource(string? dungeonKey) {
         Initialize();
         var config = DungeonRegistry.Instance.GetByKey(dungeonKey);
         if (config != null && _lookup.TryGetValue(config, out var res))
             return res;
         return null;
     }
-
-    /// <summary>按副本键获取客户端显示名；副本或资源未注册返回 null。</summary>
-    public string? GetDisplayName(string? dungeonKey) => GetResource(dungeonKey)?.DisplayName;
-
-    /// <summary>按副本键获取客户端描述；副本或资源未注册返回 null。</summary>
-    public string? GetDescription(string? dungeonKey) => GetResource(dungeonKey)?.Description;
 
     /// <summary>
     /// 按副本键实例化环境表现场景；副本未注册或资源未配置环境场景返回 null。

@@ -8,6 +8,7 @@
   <Folder Name="/Godot/">
     <Project Path="DungeonChessBattle.Game\DungeonChessBattle.Game.csproj" />
     <Project Path="DungeonChessBattle.Game.Mod\DungeonChessBattle.Game.Mod.csproj" />
+    <Project Path="DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
   </Folder>
 
   <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />

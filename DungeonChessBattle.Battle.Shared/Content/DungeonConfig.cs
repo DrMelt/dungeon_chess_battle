@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Movement;
 
-namespace DungeonChessBattle.Battle.GameConfig.Models;
+namespace DungeonChessBattle.Battle.Shared.Content;
 
 /// <summary>
 /// 敌人阵容条目：单位配置引用与出生点参数。

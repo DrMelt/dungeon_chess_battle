@@ -5,7 +5,8 @@
 ## 装配根与子进程
 
 - `ServiceLocator` 是静态组合根，全程无 DI 容器：创建 `ILoggerFactory`（`GodotLoggerProvider` 接入 Godot 控制台）、安装 LES 框架日志转接、装配 `GameClientService`、`ServerProcessHost` 与回放浏览服务，静态字段即组合根。
-- `ResourceTables` 是展示资源表组合根：技能/Buff/副本三表唯一加载入口与唯一 `res://` 路径持有者，面板与表现层经静态属性取表，不触碰路径字符串。
+- 展示资源的 `res://` 路径只在本工程两处出现：`ResourceTables` 持有三张资源表，`BuiltinDisplayAssets` 持有 mod 可引用的引擎预置场景（以资源名登记进展示注册表）。面板与表现层经静态属性取表、经 `ModAssets` 取视图，不碰路径字符串。
+- mod 内容装配挂在 `MainScene._EnterTree` 而不是 `_Ready`：Godot 的 `_Ready` 自底向上触发，子面板在自身 `_Ready` 里就开始取数（GameLobby 就在其中填副本下拉），装配挂在主场景 `_Ready` 会晚一步，mod 内容整片看不见。
 - 服务器是独立子进程：`ServerProcessHost` 解析服务器可执行路径，以 `--port` 传端口、环境变量 `DCB_SERVER_PASSWORD` 传密码、`DCB_SERVER_PARENT_PID` 传父 PID，就绪经 TCP 端口探测判定（握手时序见 `flow/connection-reconnect`）。
 - 子进程状态为查询式：后台线程只更新加锁保护的内部字段，UI 主线程轮询 `Status`，从根上避免跨线程触碰 Godot 节点。
 

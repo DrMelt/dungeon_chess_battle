@@ -3,11 +3,12 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.Battle.GameConfig.Models;
+using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -142,7 +143,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
         string? dungeonKey = Client.CurrentRoomSnapshot?.DungeonKey;
-        Battle.GameConfig.Models.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        Battle.Shared.Content.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
         IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
         string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
 
@@ -257,7 +258,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void UpdateRoomInfoLabels(string hostName, string dungeonKey, int currentPlayers, int maxPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(hostName) ? "房主: --" : $"房主: {hostName}";
-        string dungeonText = ResourceTables.Dungeons.GetDisplayName(dungeonKey) ?? dungeonKey;
+        string dungeonText = ModAssets.Dungeon(dungeonKey)?.DisplayName ?? dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
             InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)

@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -71,8 +72,8 @@ public partial class TextureRectBuffIcon : TextureRect {
         durationLabelRef.LabelSettings.FontColor =
             buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
-        // 图标按 BuffTypeId 从资源表匹配；未注册时留空
-        Texture = ResourceTables.Buffs.GetResourceByBuffTypeId(buff.BuffTypeId)?.Icon;
+        // 图标按 BuffTypeId 从展示索引取；内置与 mod 同源，未注册时留空
+        Texture = ModAssets.Buff(buff.BuffTypeId)?.Icon;
     }
 
     /// <summary>仅比较决定图标外观的稳定字段；剩余时间经 _Process 每帧刷新，不纳入短路判定。</summary>

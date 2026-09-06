@@ -29,6 +29,10 @@ public partial class MainMenu : BaseGamePanel {
     [Export]
     private ServerManagementPanel? _serverMgmtPanel;
 
+    /// <summary>mod 管理面板引用。</summary>
+    [Export]
+    private ModManagementPanel? _modPanel;
+
     /// <summary>导出引用集合节点。</summary>
     public MainMenuInterRefs? InterRefs {
         get; private set;
@@ -52,6 +56,7 @@ public partial class MainMenu : BaseGamePanel {
         // 连接按钮
         InterRefs?.ConnectButton?.Pressed += OnConnectPressed;
         InterRefs?.ServerManageButton?.Pressed += OnServerManagePressed;
+        InterRefs?.ModManageButton?.Pressed += OnModManagePressed;
 
         _logger.LogInformation("MainMenu ready");
 
@@ -124,6 +129,13 @@ public partial class MainMenu : BaseGamePanel {
         NavigateTo(_serverMgmtPanel);
     }
 
+    /// <summary>
+    /// 点击 mod 管理按钮，切换到 mod 管理面板。
+    /// </summary>
+    private void OnModManagePressed() {
+        NavigateTo(_modPanel);
+    }
+
     #endregion
 
     #region Service Event Handlers
@@ -176,6 +188,9 @@ public partial class MainMenu : BaseGamePanel {
         }
         if (_serverMgmtPanel == null) {
             _logger.LogError("_serverMgmtPanel is not assigned!");
+        }
+        if (_modPanel == null) {
+            _logger.LogError("_modPanel is not assigned!");
         }
     }
 

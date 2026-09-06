@@ -1,11 +1,10 @@
 using DungeonChessBattle.Battle.Mod;
-using DungeonChessBattle.Battle.Mod.Content;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>
-/// 内容装配根：内置基座与启用 mod 合并后构建 <see cref="ContentSetRegistry"/> 的唯一入口。
-/// 两次装配幂等：第二次以新内容集整体替换旧注册表，重复键已由 ContentMerge 后写覆盖，无需显式清理。
+/// 内容装配根：内置基座先注册，mod 内容在 <see cref="ContentBootstrapper"/> 装载数据代码入口时注册。
+/// 两次装配幂等：第二次以新注册表整体替换旧注册表，键覆盖已由注册顺序保证。
 /// </summary>
 public static class GameContentHost {
     private static readonly Lock Sync = new();
@@ -16,11 +15,11 @@ public static class GameContentHost {
     public static ContentSetRegistry Registry {
         get {
             lock (Sync)
-                return _registry ??= Build(BuiltInContent.Create(), "");
+                return _registry ??= CreateRegistry("");
         }
     }
 
-    /// <summary>当前行为目录；内容编译与 mod 代码注册共享同一目录实例。</summary>
+    /// <summary>当前行为目录；内容构造与 mod 代码注册共享同一目录实例。</summary>
     public static BehaviorCatalog Behaviors {
         get {
             lock (Sync)
@@ -29,25 +28,14 @@ public static class GameContentHost {
     }
 
     /// <summary>
-    /// 装配内容：以内置基座为底，把按优先级排序的 mod 内容依次合并，再整体编译。
-    /// mod 代码入口已在本次装配前经 <see cref="Behaviors"/> 注册。
+    /// 创建并发布内容注册表：内置基座先注册全部内置内容，随后由调用方把 mod 经引导上下文注册进来。
+    /// 调用方须在把注册表交回前完成全部 mod 注册；失败时用内置内容重建并回退。
     /// </summary>
-    public static void Configure(IReadOnlyList<LoadedMod> mods) {
-        var contents = new List<ModContentJson> { BuiltInContent.Create() };
-        contents.AddRange(mods.Select(m => m.Content));
-        var merged = ContentMerge.Merge(contents);
-        string fingerprint = ContentFingerprint.Compute(mods);
-
+    public static ContentSetRegistry CreateRegistry(string fingerprint) {
         lock (Sync) {
-            _registry = Build(merged, fingerprint);
+            var registry = new ContentSetRegistry(BuiltInContent.BuiltInRevision, fingerprint);
+            BuiltInContent.Register(registry, Behaviors);
+            return _registry = registry;
         }
-    }
-
-    /// <summary>以纯内置内容装配，等价于无 mod 启动。</summary>
-    public static void ConfigureBuiltInOnly() => Configure([]);
-
-    private static ContentSetRegistry Build(ModContentJson merged, string fingerprint) {
-        var catalog = Behaviors;
-        return new ContentSetRegistry(merged, BuiltInContent.BuiltInRevision, fingerprint, catalog);
     }
 }

@@ -4,6 +4,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
@@ -105,7 +106,7 @@ public partial class GameLobby : BaseGamePanel {
         select.Clear();
         var dungeons = DungeonRegistry.Instance.All.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
-            select.AddItem(ResourceTables.Dungeons.GetDisplayName(dungeons[i].DungeonKey) ?? dungeons[i].DungeonKey, i);
+            select.AddItem(ModAssets.Dungeon(dungeons[i].DungeonKey)?.DisplayName ?? dungeons[i].DungeonKey, i);
             select.SetItemMetadata(i, dungeons[i].DungeonKey);
         }
         if (dungeons.Count > 0) {
@@ -145,7 +146,7 @@ public partial class GameLobby : BaseGamePanel {
         var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
             DungeonKey: dungeon?.DungeonKey ?? DefaultDungeonKey,
-            Description: ResourceTables.Dungeons.GetDescription(_selectedDungeonKey) ?? string.Empty,
+            Description: ModAssets.Dungeon(_selectedDungeonKey)?.Description ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config: config);
     }

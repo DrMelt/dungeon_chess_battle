@@ -1,108 +1,100 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.Battle.Mod;
 using DungeonChessBattle.Game.Mod;
-using Godot;
+using DungeonChessBattle.Game.Services;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.GameAssets.Mods;
 
 /// <summary>
-/// mod 展示资源装配：把各 mod 的 godot_assets.json + images 目录
-/// 构造成运行时展示资源（ModSkillResource / ModBuffResource / ModDungeonResource），注册进三张资源表。
-/// 必须在内容装配（GameContentHost 重建注册表）之后、任何资源表消费之前调用一次。
+/// mod 展示数据到三张资源表的装配桥：把被 mod 声明过的条目落成运行时资源对象注册进表。
+/// 表内已有内置资源时以它为模板复制，只改写 mod 声明了的字段，其余成员原样保留；
+/// 表内缺失的领域条目一律补一个运行时资源，保证「内容里有、展示里没有」不再让客户端自检崩。
 /// </summary>
+/// <remarks>
+/// 必须在内容装配（<c>GameContentHost</c> 重建注册表）与内置展示注册之后调用：表的查找字典以领域定义实例为键。
+/// 字段取自展示注册表的合并视图，落地后把资源对象回注注册表，
+/// 使「走资源表的渲染」与「走索引的 UI」看到同一份展示真相，缺省名回退也只在资源对象上算一次。
+/// </remarks>
 public static class ModAssetsMapper {
     private static readonly ILogger Logger = ServiceLocator.CreateLogger(nameof(ModAssetsMapper));
 
-    /// <summary>
-    /// 装配全部 mod 展示资源；无资源数据的 mod 自动跳过。
-    /// 图标从 images 目录运行时加载，引用引擎预置场景经 <see cref="EngineAssetCatalog"/> 解析。
-    /// </summary>
-    public static void Apply(ContentSetRegistry registry, IReadOnlyList<LoadedMod> mods) {
-        // 先触发三张表加载并 Initialize，RegisterModResource 要求表已初始化
+    /// <summary>把 mod 声明过的条目落地成资源对象，并为缺失条目补占位。</summary>
+    public static void Apply(ContentSetRegistry registry, ModDisplayRuntime declared, DisplayRegistry display) {
+        // 先触发三张表加载并 Initialize，RegisterModResource 与 TryGetResource 都要求表已初始化
         var skills = ResourceTables.Skills;
         var buffs = ResourceTables.Buffs;
         var dungeons = ResourceTables.Dungeons;
+        var synthesized = new List<string>();
 
-        foreach (var mod in mods) {
-            ModAssetsPackage? package;
-            try {
-                package = ModAssetsLoader.Load(mod.DirectoryPath);
-            }
-            catch (InvalidOperationException ex) {
-                // 展示数据解析失败只影响该 mod 的展示装配，不拖累数据面与其他 mod
-                Logger.LogWarning("mod {ModId} 展示资源装配失败，跳过: {Message}", mod.Manifest.Id, ex.Message);
+        foreach (var config in registry.Skills) {
+            bool overridden = declared.Skills.Contains(config.SkillId.Id);
+            bool hasTemplate = skills.TryGetResource(config, out var template);
+            if (!overridden) {
+                // mod 无话可说：表里有内置资源即完事，没有则补一个只带缺省名的占位资源
+                if (!hasTemplate) {
+                    var placeholder = new ModSkillResource(config);
+                    skills.RegisterModResource(placeholder);
+                    display.RegisterSkill(placeholder);
+                    synthesized.Add($"技能 {config.SkillId.Id}");
+                }
                 continue;
             }
-            if (package is null)
-                continue;
 
-            var assets = package.Assets;
-            string? imagesRootPath = package.ImagesRootPath;
-
-            foreach (var entry in assets.Skills) {
-                var config = registry.GetSkill(new SkillKeyId(entry.Id));
-                if (config is null)
-                    continue;
-                var resource = new ModSkillResource(config);
-                resource.ApplyViewData(
-                    LoadIcon(imagesRootPath, entry.Icon),
-                    entry.Name,
-                    entry.Description,
-                    EngineAssetCatalog.LoadPackedScene(entry.ApplyEffect),
-                    EngineAssetCatalog.LoadPackedScene(entry.RangeHint));
-                skills.RegisterModResource(resource);
-            }
-
-            foreach (var entry in assets.Buffs) {
-                var config = registry.GetBuffByKey(entry.Id);
-                if (config is null)
-                    continue;
-                var resource = new ModBuffResource(config);
-                resource.ApplyViewData(LoadIcon(imagesRootPath, entry.Icon), entry.Name, entry.Description);
-                buffs.RegisterModResource(resource);
-            }
-
-            foreach (var entry in assets.Dungeons) {
-                var config = registry.GetDungeon(entry.Key);
-                if (config is null)
-                    continue;
-                var resource = new ModDungeonResource(config);
-                resource.ApplyViewData(
-                    ParseColor(entry.GroundColor, new Color(0.28f, 0.38f, 0.24f, 1f)),
-                    ParseColor(entry.SkyColor, new Color(0.60f, 0.78f, 0.72f, 1f)),
-                    ParseColor(entry.LightColor, new Color(1.00f, 0.95f, 0.85f, 1f)),
-                    EngineAssetCatalog.LoadPackedScene(entry.EnvScene),
-                    entry.DisplayName,
-                    entry.Description);
-                dungeons.RegisterModResource(resource);
-            }
+            var view = display.GetSkill(config.SkillId.Id)!;
+            var resource = hasTemplate ? (UnitSkillBaseGodot)template!.Duplicate() : new ModSkillResource(config);
+            resource.ApplyViewData(
+                view.Icon, view.Name, view.Description, view.ApplyEffectScene, view.RangeHintScene);
+            skills.RegisterModResource(resource);
+            display.RegisterSkill(resource);
         }
-    }
 
-    /// <summary>从 mod images 目录加载图标；未配置或文件缺失返回 null。</summary>
-    private static ImageTexture? LoadIcon(string? imagesRootPath, string? iconName) {
-        if (string.IsNullOrEmpty(iconName) || imagesRootPath is null)
-            return null;
-        string path = System.IO.Path.Combine(imagesRootPath, iconName);
-        if (!System.IO.File.Exists(path))
-            return null;
-        var image = Image.LoadFromFile(path);
-        return image is null ? null : ImageTexture.CreateFromImage(image);
-    }
+        foreach (var config in registry.Buffs) {
+            bool overridden = declared.Buffs.Contains(config.BuffTypeId);
+            bool hasTemplate = buffs.TryGetResource(config.BuffTypeId, out var template);
+            if (!overridden) {
+                if (!hasTemplate) {
+                    var placeholder = new ModBuffResource(config);
+                    buffs.RegisterModResource(placeholder);
+                    display.RegisterBuff(placeholder);
+                    synthesized.Add($"Buff {config.BuffTypeId}");
+                }
+                continue;
+            }
 
-    /// <summary>解析 CSS 十六进制颜色（#RRGGBB / #RRGGBBAA）；解析失败回退默认值。</summary>
-    private static Color ParseColor(string? text, Color fallback) {
-        if (string.IsNullOrEmpty(text))
-            return fallback;
-        string hex = text.TrimStart('#');
-        if (hex.Length is not (6 or 8) || !uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _))
-            return fallback;
-        return new Color(text);
+            var view = display.GetBuff(config.BuffTypeId)!;
+            var resource = hasTemplate ? (BuffBaseGodot)template!.Duplicate() : new ModBuffResource(config);
+            resource.ApplyViewData(view.Icon, view.Name, view.Description);
+            buffs.RegisterModResource(resource);
+            display.RegisterBuff(resource);
+        }
+
+        foreach (var config in registry.Dungeons) {
+            bool overridden = declared.Dungeons.Contains(config.DungeonKey);
+            bool hasTemplate = dungeons.TryGetResource(config, out var template);
+            if (!overridden) {
+                if (!hasTemplate) {
+                    var placeholder = new ModDungeonResource(config);
+                    dungeons.RegisterModResource(placeholder);
+                    display.RegisterDungeon(placeholder);
+                    synthesized.Add($"副本 {config.DungeonKey}");
+                }
+                continue;
+            }
+
+            var view = display.GetDungeon(config.DungeonKey)!;
+            var resource = hasTemplate
+                ? (DungeonResourceBaseGodot)template!.Duplicate()
+                : new ModDungeonResource(config);
+            resource.ApplyViewData(
+                view.GroundColor, view.SkyColor, view.LightColor,
+                view.EnvScene, view.DisplayName, view.Description);
+            dungeons.RegisterModResource(resource);
+            display.RegisterDungeon(resource);
+        }
+
+        if (synthesized.Count > 0 && Logger.IsEnabled(LogLevel.Warning))
+            Logger.LogWarning(
+                "以下条目缺展示数据，已按占位展示装配：{Entries}", string.Join("、", synthesized));
     }
 }

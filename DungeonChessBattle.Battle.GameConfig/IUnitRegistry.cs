@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.GameConfig.Models;
+using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 

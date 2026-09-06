@@ -31,6 +31,11 @@ public partial class MainMenuInterRefs : Node {
     public Button? ServerManageButton {
         get; private set;
     }
+    /// <summary>打开 mod 管理面板按钮。</summary>
+    [Export]
+    public Button? ModManageButton {
+        get; private set;
+    }
     /// <summary>连接状态提示标签。</summary>
     [Export]
     public Label? StatusLabel {
@@ -59,6 +64,8 @@ public partial class MainMenuInterRefs : Node {
             _logger.LogError("ConnectButton is not assigned!");
         if (ServerManageButton == null)
             _logger.LogError("ServerManageButton is not assigned!");
+        if (ModManageButton == null)
+            _logger.LogError("ModManageButton is not assigned!");
         if (StatusLabel == null)
             _logger.LogError("StatusLabel is not assigned!");
         if (UserNameInput == null)

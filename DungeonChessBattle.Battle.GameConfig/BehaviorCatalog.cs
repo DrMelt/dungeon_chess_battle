@@ -2,6 +2,7 @@ using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Enums;
+using CampRelationEnum = DungeonChessBattle.Battle.Shared.Enums.CampRelation;
 using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.GameConfig.Buffs;
 using DungeonChessBattle.Battle.GameConfig.Intelligence;
@@ -40,19 +41,19 @@ public sealed class BehaviorCatalog : IModRuntime {
     public void RegisterCampRelation(string id, CampRelationResolver resolver) => _campRelations[id] = resolver;
 
     /// <summary>按 ID 取技能效果实现；未知 ID 抛异常，杜绝静默回退。</summary>
-    public ISkillEffect GetSkillEffect(string id) => Require(_skillEffects, id)();
+    public ISkillEffect SkillEffect(string id) => Require(_skillEffects, id)();
 
     /// <summary>按 ID 取 Buff 持续效果实现；未知 ID 抛异常。</summary>
-    public IBuffEffect GetBuffEffect(string id) => Require(_buffEffects, id)();
+    public IBuffEffect BuffEffect(string id) => Require(_buffEffects, id)();
 
     /// <summary>按 ID 取敌人决策实现；未知 ID 抛异常。</summary>
-    public IUnitIntelligence GetIntelligence(string id) => Require(_intelligences, id)();
+    public IUnitIntelligence Intelligence(string id) => Require(_intelligences, id)();
 
     /// <summary>按 ID 取仇恨规则实现；未知 ID 抛异常。</summary>
-    public IHateRule GetHateRule(string id) => Require(_hateRules, id)();
+    public IHateRule HateRule(string id) => Require(_hateRules, id)();
 
     /// <summary>按 ID 取阵营关系函数；未知 ID 抛异常。</summary>
-    public CampRelationResolver GetCampRelation(string id) {
+    public CampRelationResolver CampRelation(string id) {
         if (_campRelations.TryGetValue(id, out var relation))
             return relation;
         throw new InvalidOperationException($"未注册阵营关系行为: {id}");
@@ -82,22 +83,22 @@ public sealed class BehaviorCatalog : IModRuntime {
     }
 
     /// <summary>PvE 阵营关系：双方均含 Boss 阵营为友；任一方含 Boss 阵营即敌对；存在共同阵营为友；其余返回 Unknown。</summary>
-    private static CampRelation CampRelationsPve(
+    private static CampRelationEnum CampRelationsPve(
         IReadOnlyList<string> sourceCamps, IReadOnlyList<string> targetCamps) {
         bool sourceHasBoss = sourceCamps.Contains(CampConstants.CampBoss);
         bool targetHasBoss = targetCamps.Contains(CampConstants.CampBoss);
 
         if (sourceHasBoss && targetHasBoss)
-            return CampRelation.Friendly;
+            return CampRelationEnum.Friendly;
         if (sourceHasBoss || targetHasBoss)
-            return CampRelation.Enemy;
+            return CampRelationEnum.Enemy;
 
         foreach (var camp in sourceCamps) {
             foreach (var other in targetCamps) {
                 if (camp == other)
-                    return CampRelation.Friendly;
+                    return CampRelationEnum.Friendly;
             }
         }
-        return CampRelation.Unknown;
+        return CampRelationEnum.Unknown;
     }
 }

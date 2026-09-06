@@ -1,5 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Game.GameAssets;
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -81,7 +82,7 @@ public partial class RoomInfo : Container {
     /// <param name="room">房间列表条目。</param>
     public void UpdateListing(RoomListing room) {
         RoomId = room.RoomId;
-        _dungeonText = ResourceTables.Dungeons.GetDisplayName(room.DungeonKey) ?? room.DungeonKey;
+        _dungeonText = ModAssets.Dungeon(room.DungeonKey)?.DisplayName ?? room.DungeonKey;
         _passwordText = room.HasPassword ? "🔒" : "";
         _statusText = GetStatusText(room.Status);
         _hostText = $"房主: {room.HostName}";

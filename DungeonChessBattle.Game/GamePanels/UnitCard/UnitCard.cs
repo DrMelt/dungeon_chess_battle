@@ -1,3 +1,4 @@
+using DungeonChessBattle.Game.Mod;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -61,13 +62,14 @@ public partial class UnitCard : Control {
 
     /// <summary>
     /// 设置卡片显示的单位信息。可在节点进入场景树前调用，进入后自动生效。
-    /// 职业名直接使用配置键。HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
+    /// 职业名取展示视图的显示名，未声明展示数据时回退配置键。
+    /// HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
     /// </summary>
-    /// <param name="configKey">单位配置键，亦是显示名。</param>
+    /// <param name="configKey">单位配置键。</param>
     /// <param name="maxHealth">最大生命值。</param>
     public void SetupUnit(string configKey, float maxHealth) {
         UnitConfigKey = configKey;
-        _nameText = configKey;
+        _nameText = ModAssets.Unit(configKey)?.DisplayName ?? configKey;
         _hpValueText = maxHealth.ToString("F0");
         ApplyTexts();
     }

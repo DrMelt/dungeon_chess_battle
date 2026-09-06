@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -46,13 +47,13 @@ public partial class BuffResourceTable : Resource {
             _lookup[resource.BuffTypeId] = resource;
     }
 
-    /// <summary>
-    /// 通过 Buff 类型 ID 查找对应的 Buff 资源实例。
-    /// </summary>
-    /// <param name="buffTypeId">Buff 配置 ID。</param>
-    /// <returns>Buff 资源实例；未注册返回 null。</returns>
-    public BuffBaseGodot? GetResourceByBuffTypeId(ushort buffTypeId) {
-        Initialize();
-        return _lookup.TryGetValue(buffTypeId, out var template) ? template : null;
+    /// <summary>已注册的全部 Buff 资源，含编辑器拖入与运行时 mod 构造。</summary>
+    public IReadOnlyCollection<BuffBaseGodot> AllResources => _lookup.Values;
+
+    /// <summary>该 BuffTypeId 是否已有展示资源；有则 mod 以内置资源为模板覆盖展示字段。</summary>
+    internal bool TryGetResource(ushort buffTypeId, out BuffBaseGodot? resource) {
+        bool found = _lookup.TryGetValue(buffTypeId, out var template);
+        resource = template;
+        return found;
     }
 }

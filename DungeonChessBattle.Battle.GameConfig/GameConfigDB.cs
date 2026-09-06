@@ -1,6 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.GameConfig.Models;
+using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 
@@ -55,8 +55,7 @@ public static class GameConfigDB {
     public static UnitConfig UnitGoblinBoss => Registry.GetUnit("GoblinBoss")!;
 
     /// <summary>默认副本键，创建房间未指定副本时使用；读合并后内容，mod 可覆盖。消费方一律经 <see cref="IDungeonRegistry.DefaultDungeonKey"/> 取用。</summary>
-    public static string DefaultDungeonKey =>
-        Registry.Content.DefaultDungeonKey ?? BuiltInContent.DefaultDungeonKey;
+    public static string DefaultDungeonKey => Registry.DefaultDungeonKey;
 
     /// <summary>副本一：哥布林营地。</summary>
     public static DungeonConfig DungeonGoblinCamp => Registry.GetDungeon("goblin_camp")!;

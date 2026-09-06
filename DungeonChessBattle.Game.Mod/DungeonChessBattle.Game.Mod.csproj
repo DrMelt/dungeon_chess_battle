@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Godot.NET.Sdk/4.7.1">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -6,5 +6,14 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <!-- mod 管理、资源加载与展示装配都产出真实 Godot 对象，故与主工程同用 Godot.NET.Sdk。
+       本库不定义 GodotObject 子类：可被 .tres/.tscn 引用的脚本类必须留在 Godot 工程目录内。
+       引 GameConfig 仅为展示装配期校验引用完整性与渲染 Buff 键身份，不承载数据面逻辑。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod\DungeonChessBattle.Battle.Mod.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
+  </ItemGroup>
 
 </Project>

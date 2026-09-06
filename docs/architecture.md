@@ -12,7 +12,8 @@
 graph TD
     subgraph DGodot["godot：主工程装配与表现"]
         Godot["Game（Godot）<br>场景 / UI / 资源装配"]
-        GameMod["Game.Mod<br>godot_assets 展示 schema / 目录解析"]
+        GameMod["Game.Mod<br>mod 管理 / 展示装配 / 资源加载与入口"]
+        GameShared["Game.Shared<br>展示层共享契约（视图 / 加载端口 / 索引）"]
     end
 
     subgraph DClient["client：客户端装配与契约"]
@@ -25,7 +26,7 @@ graph TD
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
-        BattleMod["Battle.Mod<br>mod 内容契约 / 装载合并 / 行为注册"]
+        BattleMod["Battle.Mod<br>mod 内容契约 / 目录装载与指纹 / 接口注册"]
         BattleClient["Battle.Client<br>LES 房间客户端"]
         BattleSrv["Battle.Server<br>战斗房间服务"]
     end
@@ -68,12 +69,15 @@ graph TD
     Godot --> ReplayShared
     Godot --> ReplayProtocol
     Godot --> ReplayCli
-    Godot --> BattleMod
     Godot --> GameMod
+    Godot --> GameShared
 
-    %% mod 契约：数据面由 Game/GameConfig 消费，表现面零依赖，行为端口在 Shared
+    %% mod 契约：数据面由 GameConfig 与 Game.Mod 各自消费，行为端口在 Shared
     BattleMod --> Shared
     GameConfig --> BattleMod
+    GameMod --> BattleMod
+    GameMod --> GameConfig
+    GameMod --> GameShared
 
     %% client 域：门面组装两端，只给上层抽象
     Client --> LobbyClient
@@ -154,8 +158,9 @@ graph TD
 | `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑      | [07-battle-logic](functional_boundary/07-battle-logic.md)                       | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                     | [08-battle-entities](functional_boundary/08-battle-entities.md)                 | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.GameConfig`        | 单位 / 副本配置与内容侧逻辑实现：效果、公式、敌人决策        | [09-gameconfig](functional_boundary/09-gameconfig.md)                           | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Mod`              | mod 内容装载契约：清单 / schema / 装载器 / 行为注册接口      | [24-battle-mod](functional_boundary/24-battle-mod.md)                          | [mod](overview/mod.md)                 |
-| `DungeonChessBattle.Game.Mod`                | mod 展示资源契约：godot_assets schema / 目录解析            | [25-game-mod](functional_boundary/25-game-mod.md)                              | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Battle.Mod`              | mod 内容装载契约：清单 / schema / 装载与启用集 / 行为注册接口 | [24-battle-mod](functional_boundary/24-battle-mod.md)                          | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Mod`                | mod 管理、展示数据装配、资源加载与统一获取入口               | [25-game-mod](functional_boundary/25-game-mod.md)                              | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Shared`             | 展示层共享契约：视图 / 加载端口 / 统一索引                   | [26-game-shared](functional_boundary/26-game-shared.md)                        | [mod](overview/mod.md)                 |
 | `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                            | [04-battle-client](functional_boundary/04-battle-client.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                       | [13-battle-server](functional_boundary/13-battle-server.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Lobby.Shared`            | 大厅共享值类型：房间状态枚举                                 | [17-lobby-shared](functional_boundary/17-lobby-shared.md)                       | [lobby](overview/lobby.md)             |

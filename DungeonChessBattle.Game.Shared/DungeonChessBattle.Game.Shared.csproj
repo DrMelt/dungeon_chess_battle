@@ -1,0 +1,13 @@
+<Project Sdk="Godot.NET.Sdk/4.7.1">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- 与主工程同用 Godot.NET.Sdk：GodotSharp 由 SDK 隐式提供，版本天然对齐，中央包管理不再声明 GodotSharp。
+       本库只以 Godot 类型作契约成员，不定义 GodotObject 子类，故不产生脚本注册需求。 -->
+
+</Project>

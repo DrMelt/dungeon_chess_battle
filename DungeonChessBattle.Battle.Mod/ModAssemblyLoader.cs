@@ -5,7 +5,8 @@ namespace DungeonChessBattle.Battle.Mod;
 
 /// <summary>
 /// mod 代码程序集加载器：以可卸载的 AssemblyLoadContext 装载 mod DLL，
-/// 找到 IModEntry 实现后实例化并交由调用方初始化。只做装载边界，不承担业务。
+/// 找到指定入口接口实现后实例化并交由调用方初始化。只做装载边界，不承担业务。
+/// 入口接口经泛型指定：数据入口在 Battle.Mod 定义，展示入口在 Game.Shared 定义，本类不感知。
 /// </summary>
 public sealed class ModAssemblyLoader : IDisposable {
     private readonly AssemblyLoadContext _alc;
@@ -17,8 +18,8 @@ public sealed class ModAssemblyLoader : IDisposable {
         _alc.Resolving += ResolveFallback;
     }
 
-    /// <summary>装载目标 DLL 并返回其首个 IModEntry 实现；DLL 不含入口实现返回 null。</summary>
-    public IModEntry? LoadEntry(string dllAbsolutePath) {
+    /// <summary>装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现返回 null。</summary>
+    public TEntry? LoadEntry<TEntry>(string dllAbsolutePath) where TEntry : class {
         if (_loaded)
             throw new InvalidOperationException("该装载上下文已使用，一个上下文只装载一个 mod 程序集");
         _loaded = true;
@@ -33,8 +34,8 @@ public sealed class ModAssemblyLoader : IDisposable {
         }
 
         Type? entryType = types
-            .FirstOrDefault(t => !t.IsInterface && !t.IsAbstract && typeof(IModEntry).IsAssignableFrom(t));
-        return entryType is null ? null : (IModEntry)Activator.CreateInstance(entryType)!;
+            .FirstOrDefault(t => !t.IsInterface && !t.IsAbstract && typeof(TEntry).IsAssignableFrom(t));
+        return entryType is null ? null : (TEntry)Activator.CreateInstance(entryType)!;
     }
 
     /// <inheritdoc/>

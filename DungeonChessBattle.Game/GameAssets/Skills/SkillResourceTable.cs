@@ -52,6 +52,16 @@ public partial class SkillResourceTable : Resource {
             _lookup[config] = resource;
     }
 
+    /// <summary>已注册的全部技能资源，含编辑器拖入与运行时 mod 构造。</summary>
+    public IReadOnlyCollection<UnitSkillBaseGodot> AllResources => _lookup.Values;
+
+    /// <summary>该技能定义是否已有展示资源；有则 mod 以内置资源为模板覆盖展示字段。</summary>
+    internal bool TryGetResource(SkillDefinition config, out UnitSkillBaseGodot? resource) {
+        bool found = _lookup.TryGetValue(config, out var template);
+        resource = template;
+        return found;
+    }
+
     /// <summary>
     /// 通过技能定义查找并创建对应的 Godot 技能资源实例。
     /// </summary>

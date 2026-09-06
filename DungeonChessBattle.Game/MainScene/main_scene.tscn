@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://djjfnpqpouub" path="res://MainScene/MainScene.cs" id="1_2n8vo"]
 [ext_resource type="Script" uid="uid://rr4mpyfdgbxj" path="res://Services/GameClientDriver.cs" id="3_m78bw"]
 [ext_resource type="PackedScene" uid="uid://bhsb7emplg5s" path="res://GamePanels/MainMenu/main_menu.tscn" id="27_kkbek"]
+[ext_resource type="PackedScene" uid="uid://m2m8eagmbqhi" path="res://GamePanels/ModManagement/mod_management_panel.tscn" id="28_modmgmt"]
 [ext_resource type="PackedScene" uid="uid://duxpr0xqbx" path="res://GamePanels/ServerManagement/server_management_panel.tscn" id="28_prmww"]
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="29_7jnwl"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="30_1hpbe"]
@@ -17,9 +18,9 @@ bg_color = Color(0, 0, 0, 1)
 
 [node name="MainScene" type="Node" unique_id=46433431 node_paths=PackedStringArray("_frontUI")]
 script = ExtResource("1_2n8vo")
+_frontUI = NodePath("FrontUI")
 _battleAssembleScene = ExtResource("45_battle_assemble")
 _replayAssembleScene = ExtResource("46_replay_assemble")
-_frontUI = NodePath("FrontUI")
 
 [node name="GameClientDriver" type="Node" parent="." unique_id=64894980]
 script = ExtResource("3_m78bw")
@@ -50,12 +51,17 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_42c4a")
 
-[node name="MainMenu" parent="FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel") instance=ExtResource("27_kkbek")]
+[node name="MainMenu" parent="FrontUI" unique_id=1482847413 node_paths=PackedStringArray("_gameLobby", "_serverMgmtPanel", "_modPanel") instance=ExtResource("27_kkbek")]
 layout_mode = 1
 _gameLobby = NodePath("../GameLobby")
 _serverMgmtPanel = NodePath("../ServerManagementPanel")
+_modPanel = NodePath("../ModManagementPanel")
 
 [node name="ServerManagementPanel" parent="FrontUI" unique_id=-355691268 instance=ExtResource("28_prmww")]
+visible = false
+layout_mode = 1
+
+[node name="ModManagementPanel" parent="FrontUI" unique_id=184837363 instance=ExtResource("28_modmgmt")]
 visible = false
 layout_mode = 1
 
