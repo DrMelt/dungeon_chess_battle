@@ -110,7 +110,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
     private HubConnection CreateConnection(string host, int port) {
 #pragma warning disable S5332 // 局域网大厅信令，开发环境不需要 TLS
         var hub = new HubConnectionBuilder()
-            .WithUrl($"http://{host}:{port}/lobby")
+            .WithUrl($"http://{host}:{port}{HubPaths.Lobby}")
             .Build();
 #pragma warning restore S5332
 

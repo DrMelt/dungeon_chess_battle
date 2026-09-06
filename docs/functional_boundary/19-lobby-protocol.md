@@ -4,7 +4,7 @@
 
 ## 职责
 
-- 网络契约常量：大厅 SignalR Hub 方法名 `HubMethods`。
+- 网络契约常量：大厅 SignalR Hub 端点路径 `HubPaths` 与方法名 `HubMethods`。
 - 网络 DTO：大厅请求与结果、招募板条目、房间快照。
 - `LoginResult.SessionToken`：登录成功后服务端签发的连接级会话凭证，供服务端 HTTP 端点自证身份；属大厅身份体系，不属任何业务分组。
 

@@ -23,6 +23,6 @@
 
 ## 大厅客户端
 
-- 构建 `HubConnection` 连 `http://{host}:{port}/lobby`，注册服务端广播回调（房间快照、准备→战斗重定向）。请求模式统一：`RunHubCall` 检查连接状态后 fire-and-forget `InvokeAsync`，成功/失败结果经事件回调返回。回调全部发生在 SignalR 后台线程，转主线程由门面负责。
+- 构建 `HubConnection` 连 `http://{host}:{port}{HubPaths.Lobby}`，注册服务端广播回调（房间快照、准备→战斗重定向）。请求模式统一：`RunHubCall` 检查连接状态后 fire-and-forget `InvokeAsync`，成功/失败结果经事件回调返回。回调全部发生在 SignalR 后台线程，转主线程由门面负责。
 - 连接代际 `_connectionVersion`：每次 `Connect` 递增，`StartAsync` 异步完成后检查代际是否过期，隔离旧连接的迟到回调干扰新连接。重连先清快照缓存再重建。
 - 缓存每个房间最近一次完整快照（`ConcurrentDictionary`），进房初始化经 `TryGetRoomSnapshot` 读取；断开与重连时清空。服务端签发的会话凭证也留存在本层，经 `SessionToken` 透传给上层。

@@ -1,211 +1,150 @@
 ﻿using DungeonChessBattle.Server.Abstractions;
-using DungeonChessBattle.Battle.Server;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;
-using DungeonChessBattle.Server.DataStore;
-using DungeonChessBattle.Server.DataStore.Shared;
 
 namespace DungeonChessBattle.Server.Host;
 
 /// <summary>
-/// 游戏服务器宿主，ASP.NET Core、Kestrel 与 SignalR。
-/// 负责任命名的 Kestrel 宿主、SignalR Hub 注册、依赖装配，
-/// 以及空房间清理后台循环。提供 Start/Stop 操作与状态事件通知。
-/// 服务器配置由 <see cref="ServerConfig"/> 唯一来源注入。
+/// 游戏服务器宿主：负责 Kestrel 宿主、SignalR Hub 注册与生命周期编排。
+/// DI 装配归 <see cref="ServerHostServiceExtensions"/>，空房间清理循环归 <see cref="RoomCleanupLoop"/>，
+/// 配置由 <see cref="ServerConfig"/> 唯一来源注入。提供 Start/Stop/RunAsync 操作。
 /// </summary>
-public sealed class GameServerHost(ILogger<GameServerHost> logger, ILoggerFactory loggerFactory) {
-    private readonly ILogger<GameServerHost> _logger = logger;
-    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config) {
+    private readonly ILogger<GameServerHost> _logger = loggerFactory.CreateLogger<GameServerHost>();
     private readonly Lock _lock = new();
+    private readonly ServerConfig _config = config;
     private WebApplication? _app;
-    private bool _running;
+    private IHostApplicationLifetime? _lifetime;
     private IBattleRoomManager? _battleRoomManager;
-    private CancellationTokenSource? _cts;
-    private Task? _cleanupLoop;
+    private RoomCleanupLoop? _cleanupLoop;
+    private bool _running;
 
-    /// <summary>默认大厅端口。</summary>
-    public const int DefaultPort = ServerConfig.DefaultPort;
-
-    /// <summary>服务器是否正在运行。</summary>
-    public bool IsRunning {
-        get {
-            lock (_lock)
-                return _running;
-        }
-    }
-
-    /// <summary>当前监听端口。</summary>
-    public int Port {
-        get;
-        private set;
-    }
-
-    /// <summary>当前 Kestrel 宿主实例，运行中可用。</summary>
-    public WebApplication? App {
-        get {
-            lock (_lock)
-                return _app;
-        }
-    }
-
-    /// <summary>服务器状态变化事件。参数：是否运行、端口。</summary>
-    public event Action<bool, int>? StatusChanged;
-
-    /// <summary>
-    /// 启动服务器，Kestrel 与 SignalR，监听大厅端口。
-    /// </summary>
-    /// <param name="port">大厅监听端口。</param>
-    /// <param name="serverPassword">服务器访问密码；为空表示不启用。</param>
-    public void Start(int port = DefaultPort, string? serverPassword = null) {
+    /// <summary>启动服务器：构建 Kestrel/SignalR 宿主并进入运行态。配置由构造注入。</summary>
+    /// <returns>是否启动成功；失败时已清理已构建宿主。</returns>
+    public bool Start() {
         lock (_lock) {
             if (_running) {
                 _logger.LogWarning("服务器已在运行中");
-                return;
+                return true;
             }
 
             try {
-                var config = ServerConfig.FromEnvironment(serverPassword) with {
-                    LobbyPort = port
-                };
-                Port = config.LobbyPort;
-
                 var builder = WebApplication.CreateBuilder();
                 // 局域网游戏服务器，开发环境不启用 TLS
 #pragma warning disable S5332
-                builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+                builder.WebHost.UseUrls($"http://0.0.0.0:{_config.LobbyPort}");
 #pragma warning restore S5332
-                builder.Logging.AddSimpleConsole(options => {
-                    options.SingleLine = true;
-                    options.TimestampFormat = "HH:mm:ss.fff ";
-                });
-                builder.Services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(_loggerFactory));
-                builder.Services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
-                builder.Services.AddSingleton<IPlayerIdentityResolver>(sp =>
-                    new PlayerIdentityResolver(sp.GetRequiredService<IGameStateStore>()));
-                builder.Services.AddSingleton<IUnitRegistry>(UnitRegistry.Instance);
-                builder.Services.AddSingleton<IDungeonRegistry>(DungeonRegistry.Instance);
-                builder.Services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
-                builder.Services.AddBattleServer(new BattleServerConfig {
-                    ConnectionKey = config.ServerPassword ?? config.ConnectionKey,
-                    FirstRoomPort = config.FirstRoomPort,
-                });
-                builder.Services.AddReplayServer();
-                builder.Services.AddSignalR();
+                builder.Logging.ConfigureConsole();
+                // Ctrl+C/SIGTERM 经宿主生命周期转为停止信号；.NET 10 中 ConsoleLifetime 已 internal，统一经扩展显式启用
+                builder.Host.UseConsoleLifetime();
+                builder.Services.AddServerHost(_config, loggerFactory);
 
                 var app = builder.Build();
-                app.MapHub<LobbyHub>("/lobby");
+                // 先行登记宿主实例与生命周期：后续任一步失败可在 catch 完整释放
+                _app = app;
+                _lifetime = app.Lifetime;
+                // 停止信号统一由宿主生命周期承载，业务清理挂 ApplicationStopping
+                _lifetime.ApplicationStopping.Register(OnApplicationStopping);
+
+                app.MapHub<LobbyHub>(HubPaths.Lobby);
                 // 回放 HTTP 端点：列表与字节流下载，路由与凭证鉴权由回放服务端提供
                 app.MapReplayEndpoints();
                 app.Start();
 
-                _app = app;
                 // 解析大厅应用契约校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
-                _ = app.Services.GetRequiredService<GameServer>();
+                _ = app.Services.GetRequiredService<ILobbyApplication>();
                 _battleRoomManager = app.Services.GetRequiredService<IBattleRoomManager>();
+
+                _cleanupLoop = new RoomCleanupLoop(_battleRoomManager,
+                    loggerFactory.CreateLogger<RoomCleanupLoop>());
+                _cleanupLoop.Start();
                 _running = true;
 
-                // 空房间清理后台循环，替代原大厅轮询线程
-                _cts = new CancellationTokenSource();
-                _cleanupLoop = Task.Run(() => CleanupLoopAsync(_cts.Token), _cts.Token);
-
                 if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("服务器已启动，监听端口 {Port}", port);
-                StatusChanged?.Invoke(true, port);
+                    _logger.LogInformation("服务器已启动，监听端口 {Port}", _config.LobbyPort);
+                return true;
             }
             catch (Exception ex) {
+                _cleanupLoop?.Stop(TimeSpan.FromSeconds(3));
+                _cleanupLoop = null;
+                _battleRoomManager?.StopAll();
+                _battleRoomManager = null;
                 _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _app = null;
+                _lifetime = null;
                 _running = false;
-                Port = 0;
                 _logger.LogError(ex, "服务器启动失败");
-                StatusChanged?.Invoke(false, 0);
+                return false;
             }
         }
     }
 
     /// <summary>
-    /// 空房间清理循环：周期消费 <see cref="IBattleRoomManager.ProcessPendingRoomCleanups"/>。
-    /// </summary>
-    private async Task CleanupLoopAsync(CancellationToken ct) {
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(50));
-        try {
-            while (await timer.WaitForNextTickAsync(ct)) {
-                _battleRoomManager?.ProcessPendingRoomCleanups();
-            }
-        }
-        catch (OperationCanceledException) {
-            // 正常停止
-        }
-    }
-
-    /// <summary>
-    /// 停止服务器并触发状态通知。
+    /// 停止服务器：发出停止信号，触发宿主生命周期 ApplicationStopping 清理流程，
+    /// 宿主收尾与进程退出由 <see cref="RunAsync"/> 完成。幂等。
     /// </summary>
     public void Stop() {
+        IHostApplicationLifetime? lifetime;
         lock (_lock) {
-            if (!_running) {
-                _logger.LogWarning("服务器未在运行");
+            if (!_running)
                 return;
-            }
+            lifetime = _lifetime;
+        }
+        lifetime?.StopApplication();
+    }
+
+    /// <summary>
+    /// 宿主停止阶段的业务清理：先停清理循环再停全部房间，保证房间线程退出后无并发协调。
+    /// 由 ApplicationStopping 触发，与宿主停止流程同序；不触碰 _app，宿主收尾归 <see cref="RunAsync"/>。
+    /// </summary>
+    private void OnApplicationStopping() {
+        lock (_lock) {
+            if (!_running)
+                return;
 
             try {
-                _cts?.Cancel();
-                // _cts.Token 此刻已取消，传入 Wait/StopAsync 会立刻抛 OperationCanceledException，显式 None 声明无需取消
-                _cleanupLoop?.Wait(TimeSpan.FromSeconds(3), CancellationToken.None);
+                _cleanupLoop?.Stop(TimeSpan.FromSeconds(3));
                 _battleRoomManager?.StopAll();
-                _app?.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
-                _app?.DisposeAsync().AsTask().GetAwaiter().GetResult();
-                _logger.LogInformation("服务器已停止");
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("服务器已停止");
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "服务器停止失败");
             }
             finally {
-                _cts?.Dispose();
-                _cts = null;
                 _cleanupLoop = null;
-                _app = null;
-                _running = false;
                 _battleRoomManager = null;
-                Port = 0;
-                StatusChanged?.Invoke(false, 0);
+                _running = false;
             }
         }
     }
 
     /// <summary>
-    /// 运行控制台交互循环，支持 help / status / rooms / exit 命令。
-    /// 归位到宿主层，不再属于大厅或战斗领域；当前版本不自动启动，由调用方按需启用。
+    /// 阻塞直至停止请求后完成宿主收尾；入口在 Start 后调用，替代手动 Thread.Sleep 保活。
+    /// 停止信号来源：Ctrl+C/SIGTERM（宿主 ConsoleLifetime）或 <see cref="Stop"/>（父进程看护）。
     /// </summary>
-    /// <param name="getPeerCount">获取当前在线人数委托。</param>
-    /// <param name="getUptime">获取服务运行时长委托。</param>
-    public void RunConsoleLoop(Func<int> getPeerCount, Func<TimeSpan> getUptime) {
-        while (true) {
-            Console.Write("> ");
-            var line = Console.ReadLine();
-            if (line == null)
-                break;
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
+    public async Task RunAsync(CancellationToken cancellationToken = default) {
+        WebApplication? app;
+        lock (_lock) {
+            if (!_running)
+                return;
+            app = _app;
+        }
 
-            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            switch (parts[0].ToLowerInvariant()) {
-                case "help":
-                    Console.WriteLine("  rooms  |  status  |  exit");
-                    break;
-                case "status":
-                    Console.WriteLine($"  Uptime: {getUptime():hh\\:mm\\:ss}, Clients: {getPeerCount()}");
-                    break;
-                case "rooms":
-                    _battleRoomManager?.ListRooms();
-                    break;
-                case "exit":
-                case "quit":
-                    return;
-                default:
-                    Console.WriteLine($"Unknown: {parts[0]}");
-                    break;
+        if (app == null)
+            return;
+
+        try {
+            // 等待停止信号（ApplicationStopping 触发后返回），再同步完成宿主停止
+            await app.WaitForShutdownAsync(cancellationToken);
+            await app.StopAsync(CancellationToken.None);
+        }
+        finally {
+            await app.DisposeAsync();
+            lock (_lock) {
+                _app = null;
+                _lifetime = null;
             }
         }
     }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using DungeonChessBattle.Battle.Entities;
 
 namespace DungeonChessBattle.Server.Host;
 
@@ -8,10 +7,10 @@ namespace DungeonChessBattle.Server.Host;
 /// 解决问题：客户端被强杀或崩溃时，仅靠其托管事件 AppDomain.ProcessExit 无法清理子进程，
 /// 导致服务器成为孤儿进程继续运行。
 /// 采用独立组件：探测函数与退出动作均为注入点，便于单元测试与替换宿主实现。
-/// 未配置父 PID，即服务器独立手动运行时，不启用，不影响正常启动。
+/// 未配置父 PID，即服务器独立手动运行时，不启用。
 /// </summary>
 public sealed class ParentProcessWatcher {
-    /// <summary>父进程 PID 环境变量名，见 <see cref="ServerProcessEnv.ParentPid"/>。</summary>
+    /// <summary>父进程 PID 探测周期。</summary>
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(1);
 
     private readonly Func<int, DateTime?> _getStartTime;
@@ -34,38 +33,36 @@ public sealed class ParentProcessWatcher {
     }
 
     /// <summary>
-    /// 从环境变量装配看护器。
-    /// 未配置父 PID 返回 null，独立运行模式；配置无效则容忍并按独立运行处理。
-    /// 配置了父 PID 但父进程已不存在 → 服务器不应继续运行，直接优雅退出并返回 null。
+    /// 预检父进程是否早已消失。配置了父 PID 且进程已不存在时返回 true，
+    /// 服务器不应继续启动；由入口在装配宿主前调用。
     /// </summary>
+    public static bool IsParentGone(ServerConfig config) =>
+        config.ParentPid is { } parentPid && TryGetStartTime(parentPid) == null;
+
+    /// <summary>
+    /// 从配置装配看护器。未配置父 PID 返回 null，独立运行模式。
+    /// 装配应在宿主启动后执行；发现父进程已消失时发出停止信号，收尾归入口 RunAsync。
+    /// </summary>
+    /// <param name="config">服务器装配配置。</param>
     /// <param name="host">服务器宿主，优雅退出动作的目标。</param>
     /// <param name="logger">日志记录器。</param>
     /// <param name="interval">看护间隔；为空使用默认值。</param>
-    public static ParentProcessWatcher? FromEnvironment(GameServerHost host, ILogger logger,
+    public static ParentProcessWatcher? Create(ServerConfig config, GameServerHost host, ILogger logger,
         TimeSpan? interval = null) {
-        string? pidStr = Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid);
-        if (string.IsNullOrEmpty(pidStr))
+        if (config.ParentPid is not { } parentPid)
             return null;
-
-        if (!int.TryParse(pidStr, out int parentPid) || parentPid <= 0) {
-            logger.LogWarning("父 PID 环境变量无效: {Value}，按独立运行模式启动。", pidStr);
-            return null;
-        }
 
         DateTime? startTime = TryGetStartTime(parentPid);
         if (startTime == null) {
-            // 配置了父 PID 但父进程已消失：服务器继续运行将成孤儿，直接优雅退出
-            logger.LogWarning("父进程 {Pid} 已不存在，服务器自动退出。", parentPid);
+            // 竞态窗口：入口预检通过后宿主构建期间父进程消失，服务器不应继续运行
+            logger.LogWarning("父进程 {Pid} 已不存在，服务器自动停止。", parentPid);
             host.Stop();
-            Environment.Exit(0);
             return null;
         }
 
+        // 看护期间父进程消失：发出停止信号，由入口 RunAsync 完成优雅收尾与进程退出
         return new ParentProcessWatcher(parentPid, startTime.Value, interval ?? DefaultInterval,
-            TryGetStartTime, () => {
-                host.Stop();
-                Environment.Exit(0);
-            }, logger);
+            TryGetStartTime, host.Stop, logger);
     }
 
     /// <summary>启动看护后台线程，幂等。</summary>
