@@ -49,7 +49,7 @@ ModAssets.Assemble(catalog, content, registerBuiltin, applyResources, modsRoot) 
 - 约束：无数据 mod 时指纹为空串，`DataRevision` 恒等于基座修订号——装配路径与懒初始化路径必须同值，否则无 mod 客户端进不了无 mod 房间。
 - 回放门控沿用双修订号：`DataRevision` 负责内容与布局侧，`BattleLogicRevision` 负责结算时序侧。
 - 房间携带 `ContentFingerprint`，客户端进房比对本地 `DataRevision`，不一致拒绝加入——联机双方必须同源内容。
-- BuffTypeId 段位：引擎段 1~999，mod 段 1000+，显式声明、越段拒载。
+- BuffTypeId 段位契约（引擎段 1~999、mod 段 1000+）在 `mod-development.md` 对外声明。
 - 约束：段校验只在 mod 注册时生效，内置注册走内部口不经校验，否则基座自己会被判越段。
 - 展示代码与展示资源（图片与场景）不进指纹：展示字段不参与结算，两端展示不同不破坏确定性。别把它们加进门控。
 

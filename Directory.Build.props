@@ -2,9 +2,18 @@
   <PropertyGroup>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
+    <Version>0.1.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+
+    <IsPackable>false</IsPackable>
+    <Authors>dungeon-chess-battle</Authors>
+    <RepositoryUrl>https://github.com/DrMelt/dungeon_chess_battle</RepositoryUrl>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SonarAnalyzer.CSharp" />
+    <!-- 分析器仅供构建期使用，不得作为依赖进入 nuspec。 -->
+    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
   </ItemGroup>
 </Project>

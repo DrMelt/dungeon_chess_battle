@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <IsPackable>true</IsPackable>
+    <Description>mod 数据代码的引用锚点：入口契约 IModEntry，数据 mod 只引本程序集。</Description>
   </PropertyGroup>
 
   <ItemGroup>

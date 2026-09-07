@@ -5,7 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <RootNamespace>DungeonChessBattle.Game.Mod.Shared</RootNamespace>
+
+    <IsPackable>true</IsPackable>
+    <Description>展示注册器定义层：写面、读面、包内资源加载端口与装配上下文，宿主实现、mod 调用。</Description>
   </PropertyGroup>
 
   <!-- 展示注册器定义层：写面、读面、包内资源加载端口与装配上下文，全部由宿主实现、由 mod 调用。

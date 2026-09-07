@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <IsPackable>true</IsPackable>
+    <Description>数据面注册面定义层：行为注册、内容注册与引导上下文，宿主实现、mod 调用。</Description>
   </PropertyGroup>
 
   <!-- 数据面注册面定义层：宿主实现、mod 调用的口——行为注册面 IModRuntime、内容注册面 IModContentRuntime 与合成 IModBootstrapContext。

@@ -5,7 +5,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <RootNamespace>DungeonChessBattle.Battle.Shared</RootNamespace>
+
+        <IsPackable>true</IsPackable>
+        <Description>mod 与宿主共用的战斗领域形状：内容定义、行为接口与行为 ID 常量。</Description>
     </PropertyGroup>
 
     <!-- 领域单位的写面只授战斗逻辑实现层：Shared 内的 internal 成员即「Battle.Logic 可写、其余程序集不可写」。

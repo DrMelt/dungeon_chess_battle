@@ -3,6 +3,7 @@
     <BuildType Name="Debug" />
     <BuildType Name="ExportDebug" />
     <BuildType Name="ExportRelease" />
+    <BuildType Name="Release" />
   </Configurations>
 
   <Folder Name="/Godot/">
