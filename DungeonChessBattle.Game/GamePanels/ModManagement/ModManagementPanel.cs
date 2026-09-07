@@ -1,6 +1,6 @@
 using System.Linq;
 using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Game.Mod;
+using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -129,10 +129,10 @@ public partial class ModManagementPanel : BaseGamePanel {
     private static string CompositionOf(ModPackage mod) =>
         $"代码 {(mod.HasCode ? "有" : "—")}\u3000展示 {(mod.HasDisplayCode ? "有" : "—")}\u3000优先级 {mod.Priority}";
 
-    /// <summary>问题列：优先显示该 mod 的装载错误，其次显示其依赖关系。</summary>
+    /// <summary>问题列：优先显示该 mod 的装载原因，其次显示其依赖关系。归属已由行身份表达，不再重复 mod ID。</summary>
     private static string ProblemOf(ModPackage mod) {
         if (mod.Errors.Count > 0)
-            return string.Join("；", mod.Errors);
+            return string.Join("；", mod.Errors.Select(error => error.Message));
         return mod.Dependencies.Count > 0 ? $"依赖 {string.Join("、", mod.Dependencies)}" : "";
     }
 

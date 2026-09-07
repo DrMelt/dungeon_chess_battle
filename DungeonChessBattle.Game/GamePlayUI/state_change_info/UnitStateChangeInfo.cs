@@ -8,6 +8,7 @@ using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DamageType = DungeonChessBattle.Battle.Shared.Combat.DamageType;
+using DungeonChessBattle.Game.GamePlayUI.state_info;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 
@@ -154,8 +155,8 @@ public partial class UnitStateChangeInfo : Node {
         ApplyPopupScale(buffChangeInfo);
         var buffData = new SyncBuffData { BuffTypeId = buffTypeId };
         buffChangeInfo.Init(buffData, added
-            ? BuffChangeInfo.Enum_BuffChangeType.Added
-            : BuffChangeInfo.Enum_BuffChangeType.Removed);
+            ? BuffChangeType.Added
+            : BuffChangeType.Removed);
         PopupAtUnit(buffChangeInfo, unit);
     }
 

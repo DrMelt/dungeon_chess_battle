@@ -12,8 +12,10 @@
 graph TD
     subgraph DGodot["godot：主工程装配与表现"]
         Godot["Game（Godot）<br>场景 / UI / 资源装配"]
-        GameMod["Game.Mod<br>mod 管理 / 展示装配 / 资源加载与入口"]
-        GameShared["Game.Shared<br>展示层共享契约（视图 / 加载端口 / 索引）"]
+        GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配 / 注册表实现 / 资源加载"]
+        GameIface["Game.Mod.Interface<br>mod 开发锚点：要实现的入口契约"]
+        GameModShared["Game.Mod.Shared<br>展示注册器定义：写面 / 读面 / 加载端口 / 装配上下文"]
+        GameShared["Game.Shared<br>mod 与宿主共用的展示形状：展示数据 / 资源名"]
     end
 
     subgraph DClient["client：客户端装配与契约"]
@@ -22,11 +24,13 @@ graph TD
     end
 
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
-        Shared["Battle.Shared<br>契约与数据结构（战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策）"]
+        Shared["Battle.Shared<br>契约与数据结构（战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策 / 行为 ID）"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>LES 网络实体"]
         GameConfig["GameConfig<br>单位 / 副本配置"]
-        BattleMod["Battle.Mod<br>mod 内容契约 / 目录装载与指纹 / 接口注册"]
+        BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / ALC"]
+        BattleModIface["Battle.Mod.Interface<br>mod 入口契约：要实现 IModEntry"]
+        BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：行为注册 / 内容注册 / 合成口"]
         BattleClient["Battle.Client<br>LES 房间客户端"]
         BattleSrv["Battle.Server<br>战斗房间服务"]
     end
@@ -70,14 +74,22 @@ graph TD
     Godot --> ReplayProtocol
     Godot --> ReplayCli
     Godot --> GameMod
+    Godot --> GameModShared
     Godot --> GameShared
 
-    %% mod 契约：数据面由 GameConfig 与 Game.Mod 各自消费，行为端口在 Shared
-    BattleMod --> Shared
+    %% mod 契约：mod 只见 Interface 与传递可见的注册面定义，宿主实现全在 Manager
+    BattleModIface --> BattleModShared
+    BattleModShared --> Shared
     GameConfig --> BattleMod
+    GameConfig --> BattleModIface
+    GameConfig --> BattleModShared
     GameMod --> BattleMod
-    GameMod --> GameConfig
+    GameMod --> Shared
+    GameMod --> GameIface
+    GameMod --> GameModShared
     GameMod --> GameShared
+    GameIface --> GameModShared
+    GameModShared --> GameShared
 
     %% client 域：门面组装两端，只给上层抽象
     Client --> LobbyClient
@@ -145,36 +157,40 @@ graph TD
 
 ## 项目文档索引
 
-文档分层与维护规则见 [00-index](00-index.md)：`functional_boundary/` 一模块一篇写边界，`overview/` 一域一篇写机制，`flow/` 一链一篇写跨模块时序。
+文档分层与维护规则见 [docs-rules](docs-rules.md)：`functional_boundary/` 一模块一篇写边界，`overview/` 一域一篇写机制，`flow/` 一链一篇写跨模块时序。
 
-`functional_boundary` 的文件名 slug 为 `编号-项目名小写`，编号即模块身份；跨文档引用只写编号路径（如 `functional_boundary/04`），不写 slug，改 slug 无需动正文。
+`functional_boundary` 的文件名 slug 为 `项目名小写`（如 `battle-logic`），文件名即模块身份；跨文档引用与 `overview`/`flow` 一致，只写目录与文件名，不写锚点、不拆编号。
 
 | 项目                                         | 职责                                                         | 边界描述                                                                        | 域机制                                 |
 | -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------- |
-| `DungeonChessBattle.Game`                    | Godot 主工程：场景、UI、资源装配与网络驱动                   | [01-game](functional_boundary/01-game.md)                                       | [godot](overview/godot.md)             |
-| `DungeonChessBattle.Client`                  | 网络客户端门面 `GameClientService` 与连接状态机              | [02-client](functional_boundary/02-client.md)                                   | [client](overview/client.md)           |
-| `DungeonChessBattle.Client.Shared`           | 客户端连接契约：`IClientConnection` 最小连接抽象             | [20-client-shared](functional_boundary/20-client-shared.md)                     | [client](overview/client.md)           |
-| `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策 | [06-battle-shared](functional_boundary/06-battle-shared.md)                     | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑      | [07-battle-logic](functional_boundary/07-battle-logic.md)                       | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                     | [08-battle-entities](functional_boundary/08-battle-entities.md)                 | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.GameConfig`        | 单位 / 副本配置与内容侧逻辑实现：效果、公式、敌人决策        | [09-gameconfig](functional_boundary/09-gameconfig.md)                           | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Mod`              | mod 内容装载契约：清单 / schema / 装载与启用集 / 行为注册接口 | [24-battle-mod](functional_boundary/24-battle-mod.md)                          | [mod](overview/mod.md)                 |
-| `DungeonChessBattle.Game.Mod`                | mod 管理、展示数据装配、资源加载与统一获取入口               | [25-game-mod](functional_boundary/25-game-mod.md)                              | [mod](overview/mod.md)                 |
-| `DungeonChessBattle.Game.Shared`             | 展示层共享契约：视图 / 加载端口 / 统一索引                   | [26-game-shared](functional_boundary/26-game-shared.md)                        | [mod](overview/mod.md)                 |
-| `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                            | [04-battle-client](functional_boundary/04-battle-client.md)                     | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                       | [13-battle-server](functional_boundary/13-battle-server.md)                     | [battle](overview/battle.md)           |
-| `DungeonChessBattle.Lobby.Shared`            | 大厅共享值类型：房间状态枚举                                 | [17-lobby-shared](functional_boundary/17-lobby-shared.md)                       | [lobby](overview/lobby.md)             |
-| `DungeonChessBattle.Lobby.Protocol`          | 大厅网络契约：Hub 端点路径 `HubPaths`、方法名与大厅 DTO    | [19-lobby-protocol](functional_boundary/19-lobby-protocol.md)                   | [lobby](overview/lobby.md)             |
-| `DungeonChessBattle.Lobby.Client`            | SignalR 大厅客户端 `LobbyClient`                             | [03-lobby-client](functional_boundary/03-lobby-client.md)                       | [lobby](overview/lobby.md)             |
-| `DungeonChessBattle.Lobby.Server`            | 大厅服务器：Hub 端点、业务与协调                             | [12-lobby-server](functional_boundary/12-lobby-server.md)                       | [lobby](overview/lobby.md)             |
-| `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型                                       | [10-server-datastore-shared](functional_boundary/10-server-datastore-shared.md) | [datastore](overview/datastore.md)     |
-| `DungeonChessBattle.Server.DataStore`        | 内存数据存储实现                                             | [11-server-datastore](functional_boundary/11-server-datastore.md)               | [datastore](overview/datastore.md)     |
-| `DungeonChessBattle.Replay.Shared`           | 回放记录格式契约：记录模型、编解码与分块容器读写             | [18-replay-shared](functional_boundary/18-replay-shared.md)                     | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Replay.Protocol`         | 回放 HTTP 契约：DTO、路由与序列化约定                        | [23-replay-protocol](functional_boundary/23-replay-protocol.md)                 | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Replay`                  | 回放引擎 `ReplayEngine`，回放子系统重放端                    | [16-replay](functional_boundary/16-replay.md)                                   | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Replay.Client`           | 回放获取侧：HTTP 传输，缓存/解码/门控/并集在 Game 层浏览服务 | [22-replay-client](functional_boundary/22-replay-client.md)                     | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Replay.Server`           | 回放服务侧：列表与下载的 HTTP 端点、会话凭证鉴权             | [21-replay-server](functional_boundary/21-replay-server.md)                     | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Server.Abstractions`     | 服务端抽象契约：房间生命周期与广播端口                       | [15-server-abstractions](functional_boundary/15-server-abstractions.md)         | [server](overview/server.md)           |
-| `DungeonChessBattle.Server.Host`             | Kestrel + SignalR 装配与进程入口                             | [14-server-host](functional_boundary/14-server-host.md)                         | [server](overview/server.md)           |
+| `DungeonChessBattle.Game`                    | Godot 主工程：场景、UI、资源装配与网络驱动                   | [game](functional_boundary/game.md)                                       | [godot](overview/godot.md)             |
+| `DungeonChessBattle.Client`                  | 网络客户端门面 `GameClientService` 与连接状态机              | [client](functional_boundary/client.md)                                   | [client](overview/client.md)           |
+| `DungeonChessBattle.Client.Shared`           | 客户端连接契约：`IClientConnection` 最小连接抽象             | [client-shared](functional_boundary/client-shared.md)                     | [client](overview/client.md)           |
+| `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策、行为 ID | [battle-shared](functional_boundary/battle-shared.md)                     | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑      | [battle-logic](functional_boundary/battle-logic.md)                       | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                     | [battle-entities](functional_boundary/battle-entities.md)                 | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.GameConfig`       | 单位 / 副本配置与内容侧逻辑实现：效果、公式、敌人决策        | [gameconfig](functional_boundary/gameconfig.md)                           | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Mod.Manager`      | mod 包管理：包布局 / 清单与启用集 / 目录装载与排序 / 内容指纹 / 入口装载器 | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Battle.Mod.Interface`    | mod 入口契约：mod 要实现 `IModEntry`                           | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Battle.Mod.Shared`       | 数据面注册面定义：行为注册 / 内容注册 / 合成口                 | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Mod.Manager`        | mod 管理、展示装配全过程、注册表实现与统一获取入口               | [game-mod-manager](functional_boundary/game-mod-manager.md)               | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Mod.Interface`      | mod 开发锚点：只放 mod 要实现的入口 `IModDisplayEntry`        | [game-mod-interface](functional_boundary/game-mod-interface.md)           | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Mod.Shared`         | 展示注册器定义：写面 / 读面 / 加载端口 / 装配上下文              | [game-mod-shared](functional_boundary/game-mod-shared.md)                 | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Game.Shared`             | mod 与宿主共用的展示形状：四表展示数据 / 资源名                 | [game-shared](functional_boundary/game-shared.md)                         | [mod](overview/mod.md)                 |
+| `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                            | [battle-client](functional_boundary/battle-client.md)                     | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                       | [battle-server](functional_boundary/battle-server.md)                     | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Lobby.Shared`            | 大厅共享值类型：房间状态枚举                                 | [lobby-shared](functional_boundary/lobby-shared.md)                       | [lobby](overview/lobby.md)             |
+| `DungeonChessBattle.Lobby.Protocol`          | 大厅网络契约：Hub 端点路径 `HubPaths`、方法名与大厅 DTO    | [lobby-protocol](functional_boundary/lobby-protocol.md)                   | [lobby](overview/lobby.md)             |
+| `DungeonChessBattle.Lobby.Client`            | SignalR 大厅客户端 `LobbyClient`                             | [lobby-client](functional_boundary/lobby-client.md)                       | [lobby](overview/lobby.md)             |
+| `DungeonChessBattle.Lobby.Server`            | 大厅服务器：Hub 端点、业务与协调                             | [lobby-server](functional_boundary/lobby-server.md)                       | [lobby](overview/lobby.md)             |
+| `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型                                       | [server-datastore-shared](functional_boundary/server-datastore-shared.md) | [datastore](overview/datastore.md)     |
+| `DungeonChessBattle.Server.DataStore`        | 内存数据存储实现                                             | [server-datastore](functional_boundary/server-datastore.md)               | [datastore](overview/datastore.md)     |
+| `DungeonChessBattle.Replay.Shared`           | 回放记录格式契约：记录模型、编解码与分块容器读写             | [replay-shared](functional_boundary/replay-shared.md)                     | [replay](overview/replay.md)           |
+| `DungeonChessBattle.Replay.Protocol`         | 回放 HTTP 契约：DTO、路由与序列化约定                        | [replay-protocol](functional_boundary/replay-protocol.md)                 | [replay](overview/replay.md)           |
+| `DungeonChessBattle.Replay`                  | 回放引擎 `ReplayEngine`，回放子系统重放端                    | [replay](functional_boundary/replay.md)                                   | [replay](overview/replay.md)           |
+| `DungeonChessBattle.Replay.Client`           | 回放获取侧：HTTP 传输，缓存/解码/门控/并集在 Game 层浏览服务 | [replay-client](functional_boundary/replay-client.md)                     | [replay](overview/replay.md)           |
+| `DungeonChessBattle.Replay.Server`           | 回放服务侧：列表与下载的 HTTP 端点、会话凭证鉴权             | [replay-server](functional_boundary/replay-server.md)                     | [replay](overview/replay.md)           |
+| `DungeonChessBattle.Server.Abstractions`     | 服务端抽象契约：房间生命周期与广播端口                       | [server-abstractions](functional_boundary/server-abstractions.md)         | [server](overview/server.md)           |
+| `DungeonChessBattle.Server.Host`             | Kestrel + SignalR 装配与进程入口                             | [server-host](functional_boundary/server-host.md)                         | [server](overview/server.md)           |
 
 

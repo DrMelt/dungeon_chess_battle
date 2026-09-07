@@ -1,7 +1,7 @@
 using System;
 using Godot;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Game.Shared;
+using DungeonChessBattle.Game.Shared.Display;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
@@ -30,8 +30,8 @@ public partial class UnitGameShow : Node3D {
     /// 声明配色时对生效网格统一覆写材质；未声明任一字段即保持内置模板原样。
     /// 纯客户端展示数据，不参与内容指纹与结算；须在挂入场景树后调用（AddChild 已触发 _Ready）。
     /// </summary>
-    /// <param name="view">单位展示视图，未注册时为 null。</param>
-    public void ApplyUnitDisplay(IUnitView? view) {
+    /// <param name="view">单位展示数据，未注册时为 null。</param>
+    public void ApplyUnitDisplay(UnitDisplay? view) {
         if (view == null)
             return;
 

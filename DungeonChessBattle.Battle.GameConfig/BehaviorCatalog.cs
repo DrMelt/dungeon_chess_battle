@@ -7,12 +7,13 @@ using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.GameConfig.Buffs;
 using DungeonChessBattle.Battle.GameConfig.Intelligence;
 using DungeonChessBattle.Battle.GameConfig.Skills;
-using DungeonChessBattle.Battle.Mod;
+using DungeonChessBattle.Battle.Mod.Shared;
+using DungeonChessBattle.Battle.Shared;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>
-/// 行为目录：行为 ID ↔ 无状态行为实例工厂，是 content.json 行为字段（effect / ai / hateRule / relations）的唯一解析口。
+/// 行为目录：行为 ID ↔ 无状态行为实例工厂，是 mod 注册面 <see cref="IModRuntime"/> 的实现。
 /// 内置行为先注册，mod 代码程序集后注册可覆盖同名 ID。行为实例必须无状态，可多单位、多房间共享。
 /// </summary>
 public sealed class BehaviorCatalog : IModRuntime {

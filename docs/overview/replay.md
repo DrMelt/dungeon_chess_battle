@@ -1,6 +1,8 @@
 # 回放域内部机制
 
-覆盖 `Replay.Shared`、`Replay.Protocol`、`Replay.Server`、`Replay.Client` 与 `Replay` 引擎。获取链路与确定性契约见 `flow/replay-design`，Godot 侧表现归属见 `overview/godot`；模块边界见 `functional_boundary/18`、`23`、`21`、`22`、`16`。
+覆盖 `Replay.Shared`、`Replay.Protocol`、`Replay.Server`、`Replay.Client` 与 `Replay` 引擎。
+
+获取链路与确定性契约见 `flow/replay-design`，Godot 侧表现归属见 `overview/godot`；模块边界见 `functional_boundary/replay-shared`、`replay-protocol`、`replay-server`、`replay-client`、`replay`。
 
 ## 容器格式
 
@@ -12,29 +14,37 @@ chunk*  : u16 Type | u8 Codec | u32 StoredLen | u32 RawLen | u32 Crc32 | payload
 "DCBR"(4)
 ```
 
-- 首块恒为不压缩的 `Meta`：只读前缀即可拿摘要，`TryReadMeta` 因此能在不整档解码的前提下列出本地缓存。入参恒为自归档第 0 字节起的前缀，不是某一段块体——前缀不足时回 `NeedMoreData` 并给出绝对长度 `RequiredBytes`，在同一缓冲里续读两轮即够。
+- 首块恒为不压缩的 `Meta`：只读前缀即可拿摘要，`TryReadMeta` 因此能在不整档解码的前提下列出本地缓存。
+- 入参恒为自归档第 0 字节起的前缀，不是某一段块体——前缀不足时回 `NeedMoreData` 并给出绝对长度 `RequiredBytes`，在同一缓冲里续读两轮即够。
 - 块负载一律 MessagePack 显式 Key 模型，字段重命名与顺序调整不破坏兼容；重复字符串由块级 Deflate 吃掉，不设字符串表。
 - 校验和算在存储字节上，覆盖压缩与传输两段；尾部魔数是完整性判据。截断、位翻转、外部文件与版本不认在解码前就分家，`Malformed` 不再等于「抛了个异常」。
 - 未知块跳过：新增块只升 `MinorVersion`，旧读侧照常重放其余部分；改既有块语义才升 `FormatVersion`（当前 6，v5 及更早的单包数组不再可读）。
-- 已知块每类至多一个由写侧保证、读侧断言，重复即判 `Malformed`——累加会造出同 ID 双单位或整条轨道被后到的吃掉。未知类型不受该断言约束，多块语义由未来的块自己定义。`Keyframe` 块只占号，待战斗世界状态序列化落地。
+- 已知块每类至多一个由写侧保证、读侧断言，重复即判 `Malformed`——累加会造出同 ID 双单位或整条轨道被后到的吃掉。
+- 未知类型不受该断言约束，多块语义由未来的块自己定义；`Keyframe` 块只占号，待战斗世界状态序列化落地。
 - 本层不做内容门控，只保证容器合规。
 
 ## 内容模型与条目映射
 
 - 五块：`Meta`（房间、帧轴 `StartTick`/`EndTick`、两项修订号、玩家表）、`UnitInit`（全部单位的 NetId、配置键、阵营、出生点）、`MoveTrack`（按玩家分轨的方向意图段）、`Cast`、`Focus`。玩家身份不在 `UnitInit`，由玩家表的 NetId 判定——一份事实不留两个落点。
 - 时间轴取 `Meta.EndTick`，不由最后一条输入倒推：战斗打完之后的收尾段也在进度条上。
-- `ReplayCommands` 是玩家命令与归档条目双向映射的唯一权威，段折叠判据、账本骨架与轨道成型同在此：帧连续且方向位相同即续段，读侧展开为逐帧重投，`Tick` 末作废的意图契约不变——折叠只改存储不改语义；分量 bit-exact，量化会让确定性斜坡换一条。录制端只持时间轴与三本账，两项修订号由调用方读好供给。玩家数上限 `ReplayMoveTrack.MaxPlayers`（256）只定这一处。命令持 `UnitId`、条目持玩家表序号与 `ushort` 目标 ID，ID 升降级只在这组映射里发生。
+- `ReplayCommands` 是玩家命令与归档条目双向映射的唯一权威，段折叠判据、账本骨架与轨道成型同在此。
+- 帧连续且方向位相同即续段，读侧展开为逐帧重投，`Tick` 末作废的意图契约不变——折叠只改存储不改语义；分量 bit-exact，量化会让确定性斜坡换一条。
+- 录制端只持时间轴与三本账，两项修订号由调用方读好供给；玩家数上限 `ReplayMoveTrack.MaxPlayers`（256）只定这一处。命令持 `UnitId`、条目持玩家表序号与 `ushort` 目标 ID，ID 升降级只在这组映射里发生。
 - 移动段收拢把条目数从「每人每 tick 一条」降到「每次变化一条」，不设条目上限；三类条目共享同一帧轴，首条 tick 锚定绝对逻辑帧以规避 ushort 回绕。
 - 双修订号：`DataVersion` 是录制端 `GameContentHost.Registry.DataRevision`（配置与布局），`LogicVersion` 是录制端 `BattleLogicRevision.Value`（结算时序与事件顺序），由重放端校验，任一不符拒绝重放。
-- 编码端 `BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘——命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。`BattleRoomManager` 归档时 `Encode` 成字节流写 `IReplayStore`，参与者记录主键随归档一并入库供归属检索；摘要不另存。
+- 编码端 `BattleReplayRecorder` 在提交输入门面的同一处收下玩家命令并旁路落盘——命令即记录载荷，二者不可能分叉；网络 ID → 玩家序号的反查在录制器内。
+- `BattleRoomManager` 归档时 `Encode` 成字节流写 `IReplayStore`，参与者记录主键随归档一并入库供归属检索；摘要不另存。
 
 ## 重放引擎
 
-- 与在线同形的部分只有一处值得记：每帧顺序为门面 `PrepareTick` → 注入本帧条目 → `Tick`，注入内部按施法 → 移动 → 聚焦与服务端落点同序。施法与移动都只登记意图、裁定在 `Tick` 内单点完成，故注入先后不影响结果；施法排队后的落地时刻一并复现。
+- 与在线同形的部分只有一处值得记：每帧顺序为门面 `PrepareTick` → 注入本帧条目 → `Tick`，注入内部按施法 → 移动 → 聚焦与服务端落点同序。
+- 施法与移动都只登记意图、裁定在 `Tick` 内单点完成，故注入先后不影响结果；施法排队后的落地时刻一并复现。
 - `Accepted=false` 的条目直接跳过，以服务端结论为准；接管后仍被门内规则拒绝的（如聚焦目标已死亡）同样落空。
 - 移动轨道逐玩家持一个游标：方向意图段覆盖本帧即重投该段方向，段尽或帧未覆盖则不投——与在线「输入源逐 tick 重投、`Tick` 末作废」同构。
-- 单位重建照 `UnitInit` 表：ID、阵营与出生点取记录值，属性按配置键取当前配置，玩家单位不挂 AI——不再从「实体 ID 连续分配」这类运行期前提推演敌人。引用了表外单位的条目在门内解析落空，与在线端一样按无效目标处理，不另设报错通道。
-- 拖动：`SeekTo` 目标帧早于当前帧时重建战斗世界并从首帧快进，重建同时清空预输入缓冲与各移动游标——在架意图持旧单位引用。
+- 单位重建照 `UnitInit` 表：ID、阵营与出生点取记录值，属性按配置键取当前配置，玩家单位不挂 AI——不再从「实体 ID 连续分配」这类运行期前提推演敌人。
+- 引用了表外单位的条目在门内解析落空，与在线端一样按无效目标处理，不另设报错通道。
+- 拖动：`SeekTo` 目标帧早于当前帧时重建战斗世界并从首帧快进。
+- 约束：重建同时清空预输入缓冲与各移动游标——在架意图持旧单位引用。
 - 输入时间轴 `ReplayInputTimeline`：构造期把三类条目按帧混排成一份只读投影，供 UI 定位当前帧前后的输入。同帧落序为 施法 → 移动 → 聚焦，由稳定排序保持追加序，与注入序同源；帧号与归档同数轴，相对时间由读侧减 `StartTick` 换算。不进注入路径，注入游标与它无关。
 - 引擎不充当表现层数据源：`Units`/`FindUnit` 与副本键、开始时刻、帧轴时钟只是装配读数，在线与回放在 Game 层收敛成同一展示契约（见 `overview/godot`）。
 - 引擎不信任输入：构造期再校验一遍两项修订号，解码与门控在 Game 层浏览服务已完成。
@@ -50,8 +60,10 @@ chunk*  : u16 Type | u8 Codec | u32 StoredLen | u32 RawLen | u32 Crc32 | payload
 ## 获取侧与契约层
 
 - 获取侧只做「从服务端拿事实」：不解码、不门控、不缓存、不并集，这些都归 Game 层浏览服务 `ReplayService` + `ReplayCache`。结果形状只含传输语义（`ReplayTransportStatus` / `ReplayDownloadResult`）。
-- 注入两样：`Func<Uri>` 服务器根地址、`Func<string?>` 会话凭证，每次请求现取——凭证随重登换发，缓存下来就会用到已作废的值。
-- 服务端侧不可用（未连接、未登录、401、断网、404）以状态返回或降级为空列表，不上抛异常；只有用户取消抛 `OperationCanceledException`，`HttpClient` 超时归网络错误。零 Godot 依赖，全 async，抛任意线程都安全。
+- 注入两样：`Func<Uri>` 服务器根地址、`Func<string?>` 会话凭证，每次请求现取。
+- 约束：凭证随重登换发，缓存下来就会用到已作废的值。
+- 服务端侧不可用（未连接、未登录、401、断网、404）以状态返回或降级为空列表，不上抛异常；只有用户取消抛 `OperationCanceledException`，`HttpClient` 超时归网络错误。
+- 零 Godot 依赖，全 async，抛任意线程都安全。
 - `ReplayJson` 不是便利品：序列化不经 SignalR，两端各配一份选项就会出「字段静默为 null、日志里查不到原因」的故障，唯一来源是必需的。
 - `ReplaySummaryDto.From` 同理，只是原因换了方向：同一份归档元数据有两条路上线（服务端读归档现投、客户端读本地副本自投），字段清单写两遍加一个字段就会漏一半，症状是同一行卡片换个来源就少个值、且只有那半边路径发作。两条路径合流于 `From` 之后，来源差异只剩 `FromServer` 一个布尔。
 - 不上线的东西不进 DTO：`ReplayMeta` 的 `StartTick`/`EndTick` 折成 `DurationTicks`，玩家表 `NetId` 不列，归属用的玩家记录主键只活在服务端索引里。归档可以演化，wire 形状不必跟着抖。

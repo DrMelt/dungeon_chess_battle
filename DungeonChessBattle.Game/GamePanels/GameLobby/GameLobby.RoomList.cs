@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.Mod;
+using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Game.GamePanels;

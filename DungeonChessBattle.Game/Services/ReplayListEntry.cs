@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
 /// 回放列表静态摘要快照：服务端归档与本地缓存合并后的内部形状，含两项修订号用于可用性裁决。
-/// 面板不直接消费——<see cref="ReplayService"/> 据此快照产出 <see cref="ReplayRowView"/> 行视图。
+/// 面板不直接消费——<c>ReplayService</c> 据此快照产出 <see cref="ReplayRowView"/> 行视图。
 /// 服务端条目与本地条目均由归档元数据块投影而来，同一字段不随来源改变语义。
 /// </summary>
 /// <param name="RoomId">房间 ID，回放主键，也是本地副本文件名。</param>

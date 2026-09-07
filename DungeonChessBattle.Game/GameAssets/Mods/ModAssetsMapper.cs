@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Game.Mod;
+using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Microsoft.Extensions.Logging;
 
@@ -14,14 +14,14 @@ namespace DungeonChessBattle.Game.GameAssets.Mods;
 /// </summary>
 /// <remarks>
 /// 必须在内容装配（<c>GameContentHost</c> 重建注册表）与内置展示注册之后调用：表的查找字典以领域定义实例为键。
-/// 字段取自展示注册表的合并视图，落地后把资源对象回注注册表，
+/// 字段取自展示注册表的合并数据，落地后把资源对象的数据回注注册表，
 /// 使「走资源表的渲染」与「走索引的 UI」看到同一份展示真相，缺省名回退也只在资源对象上算一次。
 /// </remarks>
 public static class ModAssetsMapper {
     private static readonly ILogger Logger = ServiceLocator.CreateLogger(nameof(ModAssetsMapper));
 
     /// <summary>把 mod 声明过的条目落地成资源对象，并为缺失条目补占位。</summary>
-    public static void Apply(ContentSetRegistry registry, ModDisplayRuntime declared, DisplayRegistry display) {
+    public static void Apply(ContentSetRegistry registry, ModDeclaration declared, DisplayRegistry display) {
         // 先触发三张表加载并 Initialize，RegisterModResource 与 TryGetResource 都要求表已初始化
         var skills = ResourceTables.Skills;
         var buffs = ResourceTables.Buffs;
@@ -36,21 +36,21 @@ public static class ModAssetsMapper {
                 if (!hasTemplate) {
                     var placeholder = new ModSkillResource(config);
                     skills.RegisterModResource(placeholder);
-                    display.RegisterSkill(placeholder);
+                    display.RegisterSkill(placeholder.ToDisplay());
                     synthesized.Add($"技能 {config.SkillId.Id}");
                 }
                 continue;
             }
 
-            var view = display.GetSkill(config.SkillId.Id)
-                ?? throw new InvalidOperationException($"技能 '{config.SkillId.Id}' 已声明覆盖但展示视图缺失。");
+            var data = display.GetSkill(config.SkillId.Id)
+                ?? throw new InvalidOperationException($"技能 '{config.SkillId.Id}' 已声明覆盖但展示数据缺失。");
             var resource = hasTemplate && template is { } t
                 ? (UnitSkillBaseGodot)t.Duplicate()
                 : new ModSkillResource(config);
             resource.ApplyViewData(
-                view.Icon, view.Name, view.Description, view.ApplyEffectScene, view.RangeHintScene);
+                data.Icon, data.Name, data.Description, data.ApplyEffectScene, data.RangeHintScene);
             skills.RegisterModResource(resource);
-            display.RegisterSkill(resource);
+            display.RegisterSkill(resource.ToDisplay());
         }
 
         foreach (var config in registry.Buffs) {
@@ -60,20 +60,20 @@ public static class ModAssetsMapper {
                 if (!hasTemplate) {
                     var placeholder = new ModBuffResource(config);
                     buffs.RegisterModResource(placeholder);
-                    display.RegisterBuff(placeholder);
+                    display.RegisterBuff(placeholder.ToDisplay());
                     synthesized.Add($"Buff {config.BuffTypeId}");
                 }
                 continue;
             }
 
-            var view = display.GetBuff(config.BuffTypeId)
-                ?? throw new InvalidOperationException($"Buff {config.BuffTypeId} 已声明覆盖但展示视图缺失。");
+            var data = display.GetBuff(config.BuffTypeId)
+                ?? throw new InvalidOperationException($"Buff {config.BuffTypeId} 已声明覆盖但展示数据缺失。");
             var resource = hasTemplate && template is { } t
                 ? (BuffBaseGodot)t.Duplicate()
                 : new ModBuffResource(config);
-            resource.ApplyViewData(view.Icon, view.Name, view.Description);
+            resource.ApplyViewData(data.Icon, data.Name, data.Description);
             buffs.RegisterModResource(resource);
-            display.RegisterBuff(resource);
+            display.RegisterBuff(resource.ToDisplay());
         }
 
         foreach (var config in registry.Dungeons) {
@@ -83,20 +83,20 @@ public static class ModAssetsMapper {
                 if (!hasTemplate) {
                     var placeholder = new ModDungeonResource(config);
                     dungeons.RegisterModResource(placeholder);
-                    display.RegisterDungeon(placeholder);
+                    display.RegisterDungeon(placeholder.ToDisplay());
                     synthesized.Add($"副本 {config.DungeonKey}");
                 }
                 continue;
             }
 
-            var view = display.GetDungeon(config.DungeonKey)
-                ?? throw new InvalidOperationException($"副本 '{config.DungeonKey}' 已声明覆盖但展示视图缺失。");
+            var data = display.GetDungeon(config.DungeonKey)
+                ?? throw new InvalidOperationException($"副本 '{config.DungeonKey}' 已声明覆盖但展示数据缺失。");
             var resource = hasTemplate && template is { } t
                 ? (DungeonResourceBaseGodot)t.Duplicate()
                 : new ModDungeonResource(config);
-            resource.ApplyViewData(view.EnvScene, view.DisplayName, view.Description);
+            resource.ApplyViewData(data.EnvScene, data.DisplayName, data.Description);
             dungeons.RegisterModResource(resource);
-            display.RegisterDungeon(resource);
+            display.RegisterDungeon(resource.ToDisplay());
         }
 
         if (synthesized.Count > 0 && Logger.IsEnabled(LogLevel.Warning))

@@ -9,7 +9,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod\DungeonChessBattle.Battle.Mod.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Interface\DungeonChessBattle.Battle.Mod.Interface.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Shared\DungeonChessBattle.Battle.Mod.Shared.csproj" />
   </ItemGroup>
 
 </Project>

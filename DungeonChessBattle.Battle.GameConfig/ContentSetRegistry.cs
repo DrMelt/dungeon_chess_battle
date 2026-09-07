@@ -2,7 +2,6 @@ using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Mod;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 
@@ -12,7 +11,7 @@ namespace DungeonChessBattle.Battle.GameConfig;
 /// 引用以对象图成立：单位持技能定义引用、技能持 Buff 定义引用，注册期不解析字符串。
 /// </summary>
 /// <remarks>建造空注册表；内置内容与 mod 内容随后按注册顺序填充。</remarks>
-public sealed partial class ContentSetRegistry(string builtInRevision, string modFingerprint) {
+public sealed partial class ContentSetRegistry(string builtInRevision, string modFingerprint) : IContentRegistryView {
     private readonly Dictionary<string, SkillDefinition> _skillsByKey = new(StringComparer.Ordinal);
     private readonly Dictionary<ushort, BuffDefinition> _buffsByTypeId = [];
     private readonly Dictionary<UnitConfigKey, UnitConfig> _unitsByKey = [];
@@ -43,33 +42,33 @@ public sealed partial class ContentSetRegistry(string builtInRevision, string mo
     public IReadOnlyCollection<DungeonConfig> Dungeons => _dungeonsByKey.Values;
 
     /// <summary>按技能键取定义；不存在返回 null。</summary>
-    public SkillDefinition? GetSkill(SkillKeyId key) => _skillsByKey.GetValueOrDefault(key.Id);
+    public SkillDefinition? GetSkill(SkillKeyId skillKey) => _skillsByKey.GetValueOrDefault(skillKey.Id);
 
     /// <summary>按技能键取定义；不存在抛异常，装配期与内置内容消费方必得。</summary>
-    public SkillDefinition GetRequiredSkill(SkillKeyId key) =>
-        GetSkill(key) ?? throw new InvalidOperationException($"技能 '{key.Id}' 未注册。");
+    public SkillDefinition GetRequiredSkill(SkillKeyId skillKey) =>
+        GetSkill(skillKey) ?? throw new InvalidOperationException($"技能 '{skillKey.Id}' 未注册。");
 
     /// <summary>按 BuffTypeId 取定义；不存在返回 null。</summary>
-    public BuffDefinition? GetBuff(ushort typeId) => _buffsByTypeId.GetValueOrDefault(typeId);
+    public BuffDefinition? GetBuff(ushort buffTypeId) => _buffsByTypeId.GetValueOrDefault(buffTypeId);
 
     /// <summary>按 BuffTypeId 取定义；不存在抛异常，装配期与内置内容消费方必得。</summary>
-    public BuffDefinition GetRequiredBuff(ushort typeId) =>
-        GetBuff(typeId) ?? throw new InvalidOperationException($"Buff {typeId} 未注册。");
+    public BuffDefinition GetRequiredBuff(ushort buffTypeId) =>
+        GetBuff(buffTypeId) ?? throw new InvalidOperationException($"Buff {buffTypeId} 未注册。");
 
     /// <summary>按单位配置键取配置；不存在返回 null。</summary>
-    public UnitConfig? GetUnit(UnitConfigKey key) => _unitsByKey.GetValueOrDefault(key);
+    public UnitConfig? GetUnit(UnitConfigKey configKey) => _unitsByKey.GetValueOrDefault(configKey);
 
     /// <summary>按单位配置键取配置；不存在抛异常，装配期与内置内容消费方必得。</summary>
-    public UnitConfig GetRequiredUnit(UnitConfigKey key) =>
-        GetUnit(key) ?? throw new InvalidOperationException($"单位 '{key.Value}' 未注册。");
+    public UnitConfig GetRequiredUnit(UnitConfigKey configKey) =>
+        GetUnit(configKey) ?? throw new InvalidOperationException($"单位 '{configKey.Value}' 未注册。");
 
     /// <summary>按副本键取配置；不存在返回 null。</summary>
-    public DungeonConfig? GetDungeon(string? key) =>
-        string.IsNullOrWhiteSpace(key) ? null : _dungeonsByKey.GetValueOrDefault(key);
+    public DungeonConfig? GetDungeon(string? dungeonKey) =>
+        string.IsNullOrWhiteSpace(dungeonKey) ? null : _dungeonsByKey.GetValueOrDefault(dungeonKey);
 
     /// <summary>按副本键取配置；不存在抛异常，装配期与内置内容消费方必得。</summary>
-    public DungeonConfig GetRequiredDungeon(string key) =>
-        GetDungeon(key) ?? throw new InvalidOperationException($"副本 '{key}' 未注册。");
+    public DungeonConfig GetRequiredDungeon(string dungeonKey) =>
+        GetDungeon(dungeonKey) ?? throw new InvalidOperationException($"副本 '{dungeonKey}' 未注册。");
 
     internal void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
 

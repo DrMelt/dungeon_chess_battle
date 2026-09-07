@@ -73,7 +73,7 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
             var chunk = new byte[ChunkSize];
             int read;
             while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0) {
-                await buffer.WriteAsync(chunk, 0, read, cancellationToken);
+                await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken);
                 progress?.Report(new ReplayDownloadProgress(buffer.Length, total));
             }
             return (ReplayTransportStatus.Success, buffer.ToArray());

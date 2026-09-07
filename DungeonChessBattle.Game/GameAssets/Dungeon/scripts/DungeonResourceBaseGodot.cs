@@ -3,15 +3,15 @@ using Godot;
 namespace DungeonChessBattle.Game.GameAssets;
 
 using DungeonConfigDef = DungeonChessBattle.Battle.Shared.Content.DungeonConfig;
-using DungeonChessBattle.Game.Shared;
+using DungeonChessBattle.Game.Shared.Display;
 
 /// <summary>
 /// Godot 副本资源基类。仅承载展示所需数据（显示名/描述）与领域副本定义引用，
 /// 敌人生成与战场布局由服务端依据共享配置权威结算，客户端据此映射展示。
-/// 实现 <see cref="IDungeonView"/>，与 mod 副本视图同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="DungeonDisplay"/>，与 mod 副本展示数据同经 <c>ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
-public abstract partial class DungeonResourceBaseGodot : Resource, IDungeonView {
+public abstract partial class DungeonResourceBaseGodot : Resource {
     /// <summary>
     /// 子类重写此属性，直接返回内容注册表中的领域副本定义（类型安全，编译期检查）。
     /// </summary>
@@ -23,8 +23,8 @@ public abstract partial class DungeonResourceBaseGodot : Resource, IDungeonView 
     /// <summary>副本键，来自领域配置。</summary>
     public string DungeonKey => Config?.DungeonKey ?? "";
 
-    /// <summary>IDungeonView 以 Key 暴露副本键。</summary>
-    string IDungeonView.Key => DungeonKey;
+    /// <summary>产出注册表用的展示数据。</summary>
+    internal DungeonDisplay ToDisplay() => new(DungeonKey, DisplayName, Description, EnvScene);
 
     /// <summary>环境表现场景模板，主题已在场景内固化，未配置为 null。</summary>
     [Export]

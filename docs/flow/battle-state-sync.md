@@ -1,8 +1,36 @@
 # 战斗状态同步
 
-战斗权威状态从服务端到屏幕的端到端链：领域 → 投影 → 网络 → 领域回填 → UI，回放以同一展示契约消费。本文跨 `Battle.Logic`、`Battle.Entities`、`Battle.Client`、`Battle.Server`、`Replay`，只写这条链按什么次序走、错了出什么现象。
+战斗权威状态从服务端到屏幕的端到端链，回放以同一展示契约消费。本文跨 `Battle.Logic`、`Battle.Entities`、`Battle.Client`、`Battle.Server`、`Replay`，只写这条链按什么次序走、错了出什么现象；链路顺序与术语见「链路总览」。
 
 单模块机制不在本文：搬运规则、截止 tick 换算、视图契约分层、每帧处理、收包分流与事件日志仓库见 `overview/battle`；UI 侧取数装配见 `overview/godot`；LES 自身时序见 `libraries/lite-entity-system-update`；在线端预测的框架调查与缺陷编号（D5–D11）见 [client-prediction](client-prediction.md)。
+
+## 链路总览
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Scene as BattleScene（服务端领域）
+    participant Sync as BattleStateSynchronizer
+    participant Net as LES / 网络
+    participant Client as RoomBattleClient
+    participant UI as IUnitUiView 消费方
+
+    Scene->>Scene: Tick 结算，权威状态落在 BattleUnit
+    Loop BattleLoop.LateUpdate 每帧
+        Sync->>Net: SyncFrom 写 SyncVar，倒计时落截止 tick
+        Client->>Client: 可靠事件帧与 LES diff 分流
+        Client->>UI: SyncInto 回填领域单位，经统一数据源供表现层取数
+    end
+```
+
+术语在本文的含义：
+
+| 词 | 含义 |
+|---|---|
+| 领域 | `BattleScene` / `BattleUnit`，权威状态所在，服务端、在线与回放同一实现 |
+| 投影 | `UnitPawn`，只搬运状态的 LES 网络载体 |
+| 回填 | `SyncInto`，把下行读数写回本地领域单位 |
+| BaselineSync | 断线重连时按全量状态重建视图 |
 
 ## 单一真相源
 
@@ -31,29 +59,18 @@
 
 ## 领域单位到 UI
 
-`RoomBattleClient.Units`（`BattleScene.BattleUnits`，`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）经 `IClientBattleSession` 由门面 `RoomSession` 交出，包成在线装配 `OnlineBattleViewSource` 注入统一数据源 `BattleSessionContext`；同一处另给 `LocalUnit` 与 `LocalFocus`。回放侧改由 `ReplayBattleViewSource` 把 `ReplayEngine` 的世界读数注入同一节点，两路在表现层无差别。UI 与表现组件直持该节点引用，每帧读 `IUnitUiView` 字段，判定视图不进这条取数路径（见 `overview/battle` 的视图契约）。
+在线取数链四步：
+
+1. `RoomBattleClient.Units` 读回填后的 `BattleScene.BattleUnits`（`IReadOnlyList<IUnitUiView>`，仅枚举、主线程更新）。
+2. 经 `IClientBattleSession` 由门面 `RoomSession` 交出，包成在线装配 `OnlineBattleViewSource` 注入统一数据源 `BattleSessionContext`；同一处另给 `LocalUnit` 与 `LocalFocus`。
+3. UI 与表现组件直持该节点引用，每帧读 `IUnitUiView` 字段；判定视图不进这条取数路径（见 `overview/battle` 的视图契约）。
+4. 回放侧由 `ReplayBattleViewSource` 把 `ReplayEngine` 的世界读数注入同一节点，两路在表现层无差别。
 
 ## 回放链与两链收敛
 
 `ReplayEngine` 构建 `BattleScene`（不投影）每帧确定性重跑，移动与施法意图经同一个输入门面 `BattleIntentHub` 注入，与服务端走同一条 `BattleScene.Tick` 路径，无网络与投影层。引擎侧条目注入与游标见 `overview/replay`。
 
 在线经「服务端领域 → `BattleUnit` → `UnitPawn.SyncFrom` → SyncVar → 网络 → `UnitPawn.SyncInto` 回填本地 `BattleScene` → UI」，回放经「服务端领域 → `BattleUnit` → 输入重放 → 本地结算 → UI」，最终都收敛到 `IUnitUiView`/`IBuffUiView`：差别在回放每帧本地结算，在线直接显示下行读数。
-
-```mermaid
-sequenceDiagram
-    participant Scene as BattleScene
-    participant Sync as BattleStateSynchronizer
-    participant Net as LES/网络
-    participant Client as RoomBattleClient
-    participant UI as IUnitUiView 消费方
-
-    Scene->>Scene: Tick() 结算移动/推进并返回事件
-    Loop BattleLoop.LateUpdate 每帧
-        Sync->>Net: pawn.SyncFrom 写 SyncVar，倒计时落截止 tick
-        Client->>Client: 收到事件与 SyncVar 增量
-        Client->>UI: pawn.SyncInto 回填领域单位，经统一数据源供表现层取数
-    end
-```
 
 ## 断线期间的链
 

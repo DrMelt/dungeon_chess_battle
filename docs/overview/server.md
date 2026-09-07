@@ -1,10 +1,11 @@
 # 服务端装配域内部机制
 
-覆盖 `Server.Host` 与 `Server.Abstractions`。跨进程握手见 `flow/connection-reconnect`；模块边界见 `functional_boundary/14`、`15`。
+覆盖 `Server.Host` 与 `Server.Abstractions`。跨进程握手见 `flow/connection-reconnect`；模块边界见 `functional_boundary/server-host`、`server-abstractions`。
 
 ## 入口与组合根
 
-- `Program` 从 `ServerConfig.Load(args)` 一次解析 `--port`（默认 10170）、`--mod-dir` 与三个进程契约环境变量，再按日志、LES、内容装配顺序推进，`LesNetworkLogger.Install` 把 LES 日志接入统一日志体系——须早于任何 EntityManager 创建，否则框架日志丢失转接。
+- `Program` 从 `ServerConfig.Load(args)` 一次解析 `--port`（默认 10170）、`--mod-dir` 与三个进程契约环境变量，再按日志、LES、内容装配顺序推进；`LesNetworkLogger.Install` 把 LES 日志接入统一日志体系。
+- 约束：LES 日志转接须早于任何 EntityManager 创建，否则框架日志丢失转接。
 - `GameServerHost.Start` 构建 `WebApplication`，DI 装配经 `AddServerHost(config)` 扩展：映射模块配置切片 `LobbyServerConfig` 只拿密码、`BattleServerConfig` 只拿连接密钥——模块不读全量环境，也不感知入口参数形态。
 - 注册内存存储、回放存储、`IPlayerIdentityResolver`（适配器包 `IGameStateStore`）、`AddLobbyServer`、`AddBattleServer`、`AddReplayServer`，绑定 `IBattleRoomManager` 到 `BattleRoomManager`。
 - `MapHub<LobbyHub>(HubPaths.Lobby)` 只承载大厅端点；回放有自己的 HTTP 端点，与 SignalR 无关。
@@ -12,8 +13,10 @@
 
 ## 后台循环与退出
 
-- 空房清理循环：`RoomCleanupLoop` 以 `PeriodicTimer` 50ms 周期消费 `ProcessPendingRoomCleanups`，驱动房间线程投递的空房销毁。清理权力在宿主，房间只投递不自行销毁。
-- `Stop` 顺序：取消清理循环 → `StopAll`（停全部房间并归档回放）→ 停止 Kestrel。归档发生在 Kestrel 停止之前，否则最后一段归档写不进去。
+- 空房清理循环：`RoomCleanupLoop` 以 `PeriodicTimer` 50ms 周期消费 `ProcessPendingRoomCleanups`，驱动房间线程投递的空房销毁。
+- 约束：清理权力在宿主，房间只投递不自行销毁。
+- `Stop` 顺序：取消清理循环 → `StopAll`（停全部房间并归档回放）→ 停止 Kestrel。
+- 约束：归档必须在 Kestrel 停止前完成，否则最后一段归档写不进去。
 - `ParentProcessWatcher`：1 秒周期探测父进程启动时间，父进程消失或 PID 被系统复用（启动时间不一致）触发优雅退出；未配置父 PID 的独立运行模式不启用。
 
 ## 契约层四类端口

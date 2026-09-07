@@ -1,6 +1,8 @@
 # 大厅域内部机制
 
-覆盖 `Lobby.Server`、`Lobby.Client`、`Lobby.Protocol` 与 `Lobby.Shared`。连接与重连的跨域时序见 `flow/connection-reconnect`；模块边界见 `functional_boundary/12`、`03`、`19`、`17`。门面的主线程模型与连接状态机不在本域，见 `overview/client`；房间状态、会话凭证与回放归档的存储机制不在本域，见 `overview/datastore`。
+覆盖 `Lobby.Server`、`Lobby.Client`、`Lobby.Protocol` 与 `Lobby.Shared`。
+
+模块边界见 `functional_boundary/lobby-server`、`lobby-client`、`lobby-protocol`、`lobby-shared`；连接与重连的跨域时序见 `flow/connection-reconnect`。门面的主线程模型与连接状态机见 `overview/client`；房间状态、会话凭证与回放归档的存储机制见 `overview/datastore`。
 
 ## 调用链与身份
 
@@ -11,7 +13,8 @@
 ## 快照与准备阶段
 
 - 任何准备阶段状态变更 → `BroadcastRoomSnapshotAsync` 从 Store 组装完整 `RoomSnapshot`（配置 + 玩家准备状态 + 单位）→ `ILobbyBroadcaster` → SignalR Group 单发。客户端以该快照为唯一权威视图，不做本地增量。
-- 开始战斗三重校验：发起者是房主、除房主外全员就绪、全员已选单位 → `StartRoomBattle`（等待房间线程首帧初始化完成才返回端口）→ 广播 `OnPrepareBattleRedirect` 给全房间（含端口）。
+- 开始战斗三重校验：发起者是房主、除房主外全员就绪、全员已选单位。
+- 通过后 `StartRoomBattle`（等待房间线程首帧初始化完成才返回端口）→ 广播 `OnPrepareBattleRedirect` 给全房间（含端口）。
 - 重连登记：登录会话反查身份 → 校验房间密码 → `TryGetRoomPort` → `RegisterPlayer` → 返回端口。`RegisterPlayer` 仅当房间已有同名会话才允许。
 - `RoomStatus`（Waiting / InProgress / Finished）在存储模型与协议 DTO 间共用同一类型，避免跨层枚举映射；结束状态由战斗阶段推导。
 
@@ -23,6 +26,7 @@
 
 ## 大厅客户端
 
-- 构建 `HubConnection` 连 `http://{host}:{port}{HubPaths.Lobby}`，注册服务端广播回调（房间快照、准备→战斗重定向）。请求模式统一：`RunHubCall` 检查连接状态后 fire-and-forget `InvokeAsync`，成功/失败结果经事件回调返回。回调全部发生在 SignalR 后台线程，转主线程由门面负责。
+- 构建 `HubConnection` 连 `http://{host}:{port}{HubPaths.Lobby}`，注册服务端广播回调（房间快照、准备→战斗重定向）。
+- 请求模式统一：`RunHubCall` 检查连接状态后 fire-and-forget `InvokeAsync`，成功/失败结果经事件回调返回。回调全部发生在 SignalR 后台线程，转主线程由门面负责。
 - 连接代际 `_connectionVersion`：每次 `Connect` 递增，`StartAsync` 异步完成后检查代际是否过期，隔离旧连接的迟到回调干扰新连接。重连先清快照缓存再重建。
 - 缓存每个房间最近一次完整快照（`ConcurrentDictionary`），进房初始化经 `TryGetRoomSnapshot` 读取；断开与重连时清空。服务端签发的会话凭证也留存在本层，经 `SessionToken` 透传给上层。

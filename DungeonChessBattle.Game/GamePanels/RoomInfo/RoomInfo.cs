@@ -1,6 +1,6 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.Mod;
+using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 using Godot;

@@ -1,0 +1,22 @@
+<Project Sdk="Godot.NET.Sdk/4.7.1">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- mod 管理、资源加载与展示装配都产出真实 Godot 对象，故与主工程同用 Godot.NET.Sdk。
+       本库不定义 GodotObject 子类：可被 .tres/.tscn 引用的脚本类必须留在 Godot 工程目录内。
+       引 Game.Mod.Interface 为装载展示代码入口，引 Battle.Shared 为展示装配期经内容只读视图校验引用完整性，
+       不再依赖数据面装配根 GameConfig。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Interface\DungeonChessBattle.Game.Mod.Interface.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

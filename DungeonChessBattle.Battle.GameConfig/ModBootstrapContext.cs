@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Intelligence;
-using DungeonChessBattle.Battle.Mod;
+using DungeonChessBattle.Battle.Mod.Shared;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 

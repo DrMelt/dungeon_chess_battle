@@ -2,10 +2,8 @@ using System;
 
 namespace DungeonChessBattle.Game.Services;
 
-/// <summary>
-/// 服务器子进程启动配置。所有字段均有合理默认值，可在创建
-/// <see cref="ServerProcessHost"/> 时通过构造参数覆盖。
-/// </summary>
+/// <summary>服务器子进程启动配置。所有字段均有合理默认值，可在创建
+/// <c>ServerProcessHost</c> 时通过构造参数覆盖。</summary>
 public sealed record ServerProcessConfig {
     /// <summary>子进程工作目录；为空时使用可执行文件所在目录。</summary>
     public string? WorkingDirectory {

@@ -3,8 +3,9 @@ using Godot;
 using System;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.Mod;
+using DungeonChessBattle.Game.Mod.Manager;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Game.GamePlayUI.state_info;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 
@@ -14,14 +15,6 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 public partial class BuffChangeInfo : FadeInfo {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BuffChangeInfo> _logger = ServiceLocator.GetLogger<BuffChangeInfo>();
-
-    /// <summary>Buff 变化类型。</summary>
-    public enum Enum_BuffChangeType {
-        /// <summary>Buff 被添加。</summary>
-        Added,
-        /// <summary>Buff 被移除。</summary>
-        Removed,
-    }
 
     /// <summary>变化符号标签（+ / -）。</summary>
     [ExportGroup("Internal")]
@@ -47,13 +40,13 @@ public partial class BuffChangeInfo : FadeInfo {
     /// </summary>
     /// <param name="buffBase">要展示的 Buff。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(BuffBaseGodot buffBase, Enum_BuffChangeType changeType) {
+    public void Init(BuffBaseGodot buffBase, BuffChangeType changeType) {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
         label_ChangeRef.Text = changeType switch {
-            Enum_BuffChangeType.Added => "+",
-            Enum_BuffChangeType.Removed => "-",
+            BuffChangeType.Added => "+",
+            BuffChangeType.Removed => "-",
             _ => throw new NotImplementedException(),
         };
 
@@ -65,13 +58,13 @@ public partial class BuffChangeInfo : FadeInfo {
     /// </summary>
     /// <param name="buffData">要展示的同步 Buff 数据。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(SyncBuffData buffData, Enum_BuffChangeType changeType) {
+    public void Init(SyncBuffData buffData, BuffChangeType changeType) {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
         label_ChangeRef.Text = changeType switch {
-            Enum_BuffChangeType.Added => "+",
-            Enum_BuffChangeType.Removed => "-",
+            BuffChangeType.Added => "+",
+            BuffChangeType.Removed => "-",
             _ => throw new NotImplementedException(),
         };
 

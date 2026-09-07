@@ -3,7 +3,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Movement;
 using DungeonChessBattle.Battle.Shared.Range;
-using DungeonChessBattle.Battle.Mod;
+using DungeonChessBattle.Battle.Shared;
 
 namespace DungeonChessBattle.Battle.GameConfig;
 

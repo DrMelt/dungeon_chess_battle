@@ -7,7 +7,9 @@
 
   <Folder Name="/Godot/">
     <Project Path="DungeonChessBattle.Game\DungeonChessBattle.Game.csproj" />
-    <Project Path="DungeonChessBattle.Game.Mod\DungeonChessBattle.Game.Mod.csproj" />
+    <Project Path="DungeonChessBattle.Game.Mod.Manager\DungeonChessBattle.Game.Mod.Manager.csproj" />
+    <Project Path="DungeonChessBattle.Game.Mod.Interface\DungeonChessBattle.Game.Mod.Interface.csproj" />
+    <Project Path="DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
     <Project Path="DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
   </Folder>
 
@@ -22,7 +24,9 @@
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   <Project Path="DungeonChessBattle.Client.Shared\DungeonChessBattle.Client.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
-  <Project Path="DungeonChessBattle.Battle.Mod\DungeonChessBattle.Battle.Mod.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Mod.Interface\DungeonChessBattle.Battle.Mod.Interface.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Mod.Shared\DungeonChessBattle.Battle.Mod.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />

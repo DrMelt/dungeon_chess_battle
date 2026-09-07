@@ -15,13 +15,19 @@ public sealed record ServerConfig {
     public int LobbyPort { get; init; } = DefaultPort;
 
     /// <summary>服务器访问密码；为空表示不启用。</summary>
-    public string? ServerPassword { get; init; }
+    public string? ServerPassword {
+        get; init;
+    }
 
     /// <summary>mods 根目录绝对路径；为空表示纯内置内容。</summary>
-    public string? ModDir { get; init; }
+    public string? ModDir {
+        get; init;
+    }
 
     /// <summary>父进程 PID；为空表示独立运行模式。</summary>
-    public int? ParentPid { get; init; }
+    public int? ParentPid {
+        get; init;
+    }
 
     /// <summary>
     /// 从命令行参数与环境变量构建服务器装配配置。

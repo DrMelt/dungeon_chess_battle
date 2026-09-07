@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Game.Shared;
+using DungeonChessBattle.Game.Shared.Display;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -7,10 +7,10 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// <summary>
 /// Godot 技能基类资源。仅承载展示所需数据（图标/名称/描述）与技能定义引用，
 /// 施法/冷却由服务端权威结算，客户端仅据 Pawn 同步数据渲染。
-/// 实现 <see cref="ISkillView"/>，与 mod 技能视图同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="SkillDisplay"/>，与 mod 技能展示数据同经 <c>ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
-public partial class UnitSkillBaseGodot : Resource, ISkillView {
+public partial class UnitSkillBaseGodot : Resource {
     /// <summary>
     /// 子类重写此属性，直接返回内容注册表中的领域技能定义（类型安全，编译期检查）。
     /// </summary>
@@ -24,10 +24,9 @@ public partial class UnitSkillBaseGodot : Resource, ISkillView {
     /// <summary>技能强类型 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
     public SkillKeyId SkillId => Config?.SkillId ?? default;
 
-    // ISkillView 用字符串键与通用成员名，本类用领域强类型键与前缀成员名，在此对齐
-    string ISkillView.Id => SkillId.Id;
-    string ISkillView.Name => SkillName;
-    string ISkillView.Description => SkillDescription;
+    /// <summary>产出注册表用的展示数据；本类成员带前缀，键与通用成员名在此对齐一次。</summary>
+    internal SkillDisplay ToDisplay() =>
+        new(SkillId.Id, SkillName, SkillDescription, Icon, ApplyEffectScene, RangeHintScene);
 
     /// <summary>技能图标。</summary>
     [Export]

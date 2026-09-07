@@ -1,5 +1,3 @@
-using DungeonChessBattle.Battle.Mod;
-
 namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>

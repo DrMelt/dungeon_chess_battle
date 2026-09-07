@@ -18,16 +18,25 @@ LES 自身时序与实体钩子可达性见 [lite-entity-system-update](../libra
 
 一个渲染帧内的实际次序：
 
-| 次序 | 位置 | 内容 |
-|---|---|---|
-| 1 | `BattleCoordinator._Process` | `process_priority = -1` 使其先于网络驱动：采集移动输入并写 pending（`UnitController.SubmitInput` → `ModifyPendingInput`） |
-| 2 | `GameClientDriver._Process` | 驱动 `ClientService.Update` |
-| 3 | `NetworkClientBase.Update` | `PollEvents` → `OnNetworkReceiveInternal` → `ClientEntityManager.Deserialize`，下行状态入插值缓冲 |
-| 4a | `EntityManager.Update` 开头 | 单例 `ClientBattleLoop.VisualUpdate`：`UnitPawn.SyncInto` 读全体载体的 `Value` 覆写领域 `BattleUnit`，本帧下行 diff 尚未应用 |
-| 4b | `EntityManager.Update` 累加器内 | 单例 `ClientBattleLoop.Update`/`LateUpdate` 均为空实现；`OnLogicTick` 存输入头并跑本地控制实体的 `entity.Update`，`UnitPawn` 未覆写该钩子 |
-| 4c | `ClientEntityManager.Update` 后段 | 补发输入 → `GoToNextState` 回滚重放 → 下行 diff 写进实体字段 → 推进 `_remoteLerpFactor` |
-| 4d | `ClientEntityManager.Update` 末尾 | 逐实体 `VisualUpdate`；`UnitPawn` 未标 `UpdateOnClient`，`AliveEntities` 内只有本地控制实体 |
-| 5 | `UnitGameShow._Process` | 直读 `BattleUnit.Position`、`Direction` 写 transform，无二次平滑 |
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as BattleCoordinator._Process
+    participant D as GameClientDriver._Process
+    participant N as NetworkClientBase.Update
+    participant E as EntityManager.Update
+    participant S as UnitGameShow._Process
+
+    C->>C: process_priority=-1 先于网络驱动，采集移动输入并写 pending
+    D->>D: 驱动 ClientService.Update
+    N->>N: PollEvents → OnNetworkReceiveInternal → Deserialize，下行状态入插值缓冲
+    Note over E: 开头：SyncInto 读全体载体 Value 覆写领域 BattleUnit，本帧下行 diff 尚未应用 D10
+    Note over E: 累加器内：Update/LateUpdate 空实现，OnLogicTick 存输入头并跑本地控制实体 entity.Update
+    E->>E: 补发输入 → GoToNextState 回滚重放 → 下行 diff 写实体字段 → 推进插值节拍
+    E->>E: 末尾逐实体 VisualUpdate
+    S->>S: 直读 BattleUnit.Position/Direction 写 transform，无二次平滑
+    Note over E,S: UnitPawn 未标 UpdateOnClient，AliveEntities 内只有本地控制实体
+```
 
 在线端当前不存在预测模拟：客户端不跑输入门面的 `PrepareTick` 与整场景 `Tick`，同步通道只有投影与回填两个方向、无本地回写，本地 `BattleScene` 只作展示回填容器，主控与他人的位移一律由服务端下行的 `Value` 决定。下行节奏是 `sendRate = ServerSendRate.EqualToFPS`，每 tick 一个状态，128 Hz 高于常见渲染帧率，直读 `Value` 不产生可见阶跃。
 
@@ -35,12 +44,12 @@ LES 自身时序与实体钩子可达性见 [lite-entity-system-update](../libra
 |---|---|---|---|
 | D5 | 主控单位无本地步进，位移全等下行 | 操作响应至少滞后 RTT/2 加缓冲水位，本端没有可被纠正的预测位移 | — |
 | D9 | `UnitPawn` 全项目不带 `SyncVarFlags`，`SyncFlags.Interpolated` 未标注 | `EntityClassData` 的 flags 只取自字段或所在类上的该特性，默认 `None`；未标注则框架不写 `_interpValue`，`InterpolatedValue` 对远端实体退化，展示只能读 `Value` | — |
-| D10 | 回填落在 `EntityManager.Update` 开头，早于 4c 的下行写回 | 展示读数恒比本端已收到的权威值旧一个渲染帧 | I3 |
+| D10 | 回填落在 `EntityManager.Update` 开头，早于同一次 `Update` 后段的下行写回 | 展示读数恒比本端已收到的权威值旧一个渲染帧 | I3 |
 | D11 | 移动输入无时效：服务端输入队列排空的 tick 仍转发 `CurrentInput` 末值 | 连接在而客户端卡发送时单位按末值持续位移。领域侧已改为按帧作废的输入，转发一停即静止，但 `PawnLogic.Update` 每 tick 无条件转发末值，卡发送未被覆盖——时效缺在转发层，不在字段生命周期 | — |
 
 已关闭：D1（本地结算结果回写他人 `Value`，回写通道已删除）、D2（回填对插值进度的依赖，改读 `Value` 后不存在，代价转入 D9）、D3（客户端 `Tick` 用渲染帧 dt）、D4（客户端重跑敌方 AI 与整场景结算）、D7（房间线程 `Thread.Sleep(1)` 控制轮询节奏，现为 `Thread.Yield()`）。
 
-输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行，队列深度由客户端按 jitter 与缓冲水位自适应调节生成速率维持。本项目未覆写 `GetDefaultInput`，而 `GetDefaultInput` 只在控制器构造与客户端 pending 复位处取值：服务端输入队列排空的 tick 根本不调 `ApplyIncomingInput`，`CurrentInput` 保持上一 tick 值——空档期是**末值保持**而非回落静止。代价是输入流停摆（客户端卡发送但未断开）时单位按末值持续位移：`PawnLogic.Update` 每 tick 无条件把 `CurrentInput` 转给战斗世界，领域侧的按帧作废管不到这一层，缺的是转发时效，不是输入复位。
+输入侧的框架约束：pending 输入每渲染帧改写一次，`SendBufferedInput` 只在 tick 前进时把未确认输入整批上行，队列深度由客户端按 jitter 与缓冲水位自适应调节生成速率维持。本项目未覆写 `GetDefaultInput`，而 `GetDefaultInput` 只在控制器构造与客户端 pending 复位处取值：服务端输入队列排空的 tick 根本不调 `ApplyIncomingInput`，`CurrentInput` 保持上一 tick 值——空档期是**末值保持**而非回落静止。D11 的根因就在这一层：`PawnLogic.Update` 每 tick 无条件把 `CurrentInput` 转给战斗世界，做不了按帧作废，缺的是转发时效，不是输入复位。
 
 D6（缓冲水位）。`RoomBattleClient.BufferLowestSeconds/BufferHighestSeconds` 把 `PreferredBufferTimeLowest/Highest` 重设为 0.002/0.006 秒。LES 用同一水位同时约束下行插值缓冲与服务端输入队列，下界实算 `NetworkJitter × 1.5 + Lowest`；框架默认 0.025 在 128 Hz 下折成 3.2 tick，本地回环里 `TickLag` 的 `debt` 与 `queue` 两段几乎全由它撑起。该水位只够本地链路，公网须按 RTT 与抖动分档。
 
@@ -96,14 +105,38 @@ D8（输入顺序）。`battle_assemble.tscn` 给 `BattleCoordinator` 设 `proce
 
 ## 观测与读数
 
-读数含义与边界来自框架实现，与是否实施预测无关。观测入口用门面透出的 `GameClientService.RoomNetworkStatus`（源为 `RoomBattleClient.NetworkStatus`）与 `NetworkDebugOverlay`：`LerpBufferCount` 稳态为 1，长期 0 才是插值饥饿；`Spread` 跳到 2 以上说明水位压过头导致缺号，缺号不可逆，必须回退一档；`StoredCommands` 持续增长说明服务端消化不动或未发送输入。
+读数含义与边界来自框架实现，与是否实施预测无关。
 
-`BattleEntityMetrics` 只装 `ClientEntityManager` 的直读原始值，三段分解与单位换算由该类型自带的只读属性给出：生产侧不加工，消费侧不计算，新消费方拿原始值可自行复算。`AckLagTicks` 即 `LocalTick` 减 `SrvAckTick`，拆为 `UplinkTicks`（上行在途）与 `ServerQueueTicks`（服务端已收未消化）；`TickMs` 给出单 tick 宽度，本房间 7.8 ms。`AckLag` 与 `RTT` 的差额即服务端排队与缓冲代价，由 `RoomBattleClient` 的缓冲水位与房间线程的发包相位共同决定。`Loss` 是自连接起的累计丢包率，`OutRelQ` 是本端等待服务端确认的出站可靠包数；可靠事件日志那条独立延迟发生在服务端出站队列，客户端读不到。
+### 观测入口
 
-读数约束：tick 有两套起点，`LocalTick`/`SrvAckTick`/`SrvRecvTick` 随客户端计数（服务端只回显后两者），`ServerTick`/`SrvStateTickA`/`B` 随服务端计数，跨套相减无意义；`ServerTick` 还是 A/B 间的插值读数且量化到整 tick。回显的两个 tick 只随 diff 状态下发、baseline 不带，而 `ServerStateData.Reset` 不清这三个字段、状态对象又来自对象池，故每次重同步后可能读到上一段会话的残值——`TickLagTrusted` 为假时三段与净回环都不给读数。`Loss` 只计本端发送侧，下行 unreliable 丢包在屏上不可见；单向下行耗时也不可测——LES 下行包头无时间戳、LiteNetLib 2.1.4 无对表接口，`one-way` 只是 RTT 半值估计。
+门面透出 `GameClientService.RoomNetworkStatus`（源为 `RoomBattleClient.NetworkStatus`），配合 `NetworkDebugOverlay` 看三个原始指标：
 
-下行状态流健康看 `Spread`：它是正在播的 A 与目标 B 的服务端 tick 差，正常恒为 1。LES 的插值节拍 `_remoteInterpolationTotalTime` 与该差成正比，一旦跳到 n，消费速率跌到 tickrate/n，低于服务端产出速率，`LerpBuf` 开始积压，直到 30（`MaxSavedStateDiff`）才靠强制快进止血。跳号的来源是 `Deserialize` 把晚到的状态按 `tickDifference <= 0` 整包丢弃，号就此永久缺。追赶能力别高估：`GetSpeedMultiplier` 的 `InvLerp` 带 clamp，缓冲再长也只加 10% 节拍。
+- `LerpBufferCount`：稳态为 1，长期 0 才是插值饥饿。
+- `Spread`：跳到 2 以上说明水位压过头导致缺号，缺号不可逆，必须回退一档。
+- `StoredCommands`：持续增长说明服务端消化不动或未发送输入。
 
-`TickLag` 偏高先拆两半：`net` 是上行与服务端耗时，`debt` 是画面落后自己已收到数据的时长（`LerpBuf × state every`）。三段读数取自 state A 的回显，A 一旦积压就整体抬高它们，所以 loopback 下 `RTT 0` 而 `AckLag` 仍大，几乎必然是 `debt` 撑起来的，不是网络。
+### 延迟分解
+
+`BattleEntityMetrics` 只装 `ClientEntityManager` 的直读原始值，三段分解与单位换算由该类型自带的只读属性给出：生产侧不加工，消费侧不计算，新消费方拿原始值可自行复算。
+
+- `AckLagTicks` 即 `LocalTick` 减 `SrvAckTick`，拆为 `UplinkTicks`（上行在途）与 `ServerQueueTicks`（服务端已收未消化）。
+- `TickMs` 给出单 tick 宽度，本房间 7.8 ms。
+- `AckLag` 与 `RTT` 的差额即服务端排队与缓冲代价，由缓冲水位与房间线程的发包相位共同决定。
+- `Loss` 是自连接起的累计丢包率；`OutRelQ` 是本端等待服务端确认的出站可靠包数。可靠事件日志那条独立延迟发生在服务端出站队列，客户端读不到。
+- `TickLag` 偏高先拆两半：`net` 是上行与服务端耗时，`debt` 是画面落后自己已收到数据的时长（`LerpBuf × state every`）。三段读数取自 state A 的回显，A 一旦积压就整体抬高它们，所以 loopback 下 `RTT 0` 而 `AckLag` 仍大，几乎必然是 `debt` 撑起来的，不是网络。
+
+### 下行状态流健康
+
+`Spread` 是正在播的 A 与目标 B 的服务端 tick 差，正常恒为 1，LES 的插值节拍 `_remoteInterpolationTotalTime` 与该差成正比。一旦跳到 n，消费速率跌到 tickrate/n，低于服务端产出速率，`LerpBuf` 开始积压，直到 30（`MaxSavedStateDiff`）才靠强制快进止血。
+
+跳号来源：`Deserialize` 把晚到的状态按 `tickDifference <= 0` 整包丢弃，号就此永久缺。
+
+追赶能力别高估：`GetSpeedMultiplier` 的 `InvLerp` 带 clamp，缓冲再长也只加 10% 节拍。
+
+### 读时约束
+
+- tick 有两套起点：`LocalTick`/`SrvAckTick`/`SrvRecvTick` 随客户端计数（服务端只回显后两者），`ServerTick`/`SrvStateTickA`/`B` 随服务端计数，跨套相减无意义；`ServerTick` 还是 A/B 间的插值读数且量化到整 tick。
+- 回显的两个 tick 只随 diff 状态下发、baseline 不带，而 `ServerStateData.Reset` 不清这三个字段、状态对象又来自对象池，故每次重同步后可能读到上一段会话的残值——`TickLagTrusted` 为假时三段与净回环都不给读数。
+- `Loss` 只计本端发送侧，下行 unreliable 丢包在屏上不可见；单向下行耗时也不可测——LES 下行包头无时间戳、LiteNetLib 2.1.4 无对表接口，`one-way` 只是 RTT 半值估计。
 
 本文时序与缺陷表随代码同步维护。同一条链路的机制各有归属：帧处理、收包分流、同步通道与搬运规则在 `overview/battle`，端到端次序在 `flow/battle-state-sync`。本文只保留预测视角的判据与缺陷编号，不复述他处机制。

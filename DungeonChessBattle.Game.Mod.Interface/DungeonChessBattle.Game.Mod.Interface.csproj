@@ -1,0 +1,18 @@
+<Project Sdk="Godot.NET.Sdk/4.7.1">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- 与主工程同用 Godot.NET.Sdk：GodotSharp 由 SDK 隐式提供，版本天然对齐，中央包管理不再声明 GodotSharp。
+       本库是 mod 展示代码的唯一引用锚点，只放 mod 要实现的入口契约，不定义 GodotObject 子类，故不产生脚本注册需求。
+       注册器定义在 Game.Mod.Shared、共用展示形状在 Game.Shared，经本库引用链对 mod 传递可见。 -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Mod.Manager;
 using DungeonChessBattle.Server.Host;
 
 // 进程级日志与 ASP.NET Core 宿主日志共用同一套配置
@@ -16,11 +17,15 @@ if (Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid) is { Length: 
 // 让 LES 网络框架日志进入统一日志体系 Console，并早于任何 EntityManager 创建
 LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
-// 装配 mod 内容：代码 mod 行为注册 → 数据合并 → 注册表重建，必须在任何房间创建前完成。
-var boot = ContentBootstrapper.Load(config.ModDir);
+// 装配 mod 内容：扫描与装配分开做——扫描归 Battle.Mod.Manager，内容装配由 GameConfig 执行。
+// 必须在任何房间创建前完成。
+var scan = ModLoader.LoadDirectory(config.ModDir ?? "");
+var boot = ContentBootstrapper.Load(scan);
 var modLogger = loggerFactory.CreateLogger("Mod");
+foreach (var error in scan.Errors)
+    modLogger.LogError("mod 扫描失败: {Error}", error);
 foreach (var error in boot.Errors)
-    modLogger.LogError("mod 装载失败: {Error}", error);
+    modLogger.LogError("mod 装配失败: {Error}", error);
 if (modLogger.IsEnabled(LogLevel.Information))
     modLogger.LogInformation("内容装配完成：mods={Count} fingerprint={Fingerprint}", boot.Mods.Count, boot.Fingerprint);
 Console.WriteLine($"  Content fingerprint: {boot.Fingerprint}");

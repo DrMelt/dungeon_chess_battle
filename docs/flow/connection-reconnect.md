@@ -4,6 +4,36 @@
 
 各模块内部机制不在本文：门面的主线程模型见 `overview/client`，登录会话与身份反查见 `overview/lobby`，凭证换发与房间状态的存储口径见 `overview/datastore`，房间侧会话与载体（服务端与在线端）见 `overview/battle`，子进程状态查询见 `overview/godot`，宿主装配与看护见 `overview/server`。
 
+## 链路总览
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as Game（UI）
+    participant CS as Client 门面（状态机）
+    participant LC as LobbyClient
+    participant RC as RoomBattleClient
+    participant LS as Server.Host（大厅）
+    participant BS as Battle.Server（房间）
+
+    UI->>LS: ServerProcessHost 以 --port / 环境变量拉起子进程，就绪仅 TCP 端口探测
+    CS->>LC: 连接大厅 /lobby 并 Login
+    LC->>LS: SignalR 登录，签发会话凭证
+    CS->>CS: 进入 InLobby
+    Note over CS,BS: 三条进房路径共用同一次 ReconnectToRoom，pending 键定语义
+    CS->>RC: 连接房间端口
+    RC->>BS: OnConnectionRequest 按 PlayerId 查白名单，同 ID 关旧迎新
+    BS-->>RC: RegisterPlayer 只恢复既有同名会话
+    RC-->>UI: OnRoomJoined → 准备界面 / OnBattleStarted → 进入战斗
+    Note over CS,RC: 房间意外断开 → Reconnecting
+    CS->>LC: 重连大厅 → 重新 Login
+    LC->>LS: RequestReconnectRoom：会话反查身份 + 房间密码校验，返回端口
+    CS->>RC: 重定向回房间端口，按 PlayerId 恢复会话
+    RC-->>UI: BaselineSync 全量重建视图，事件日志不补发
+    Note over CS,UI: 收敛点 ResetToNonRoomState：清缓存 / 复位状态机 / OnBattleSessionLost
+    UI->>UI: 据 OnBattleSessionLost 退出战斗
+```
+
 ## 握手
 
 - 客户端 `ServerProcessHost` 以 `--port` 传端口、`DCB_SERVER_PASSWORD` 传密码、`DCB_SERVER_PARENT_PID` 传父 PID 拉起子进程；就绪判定只有 TCP 端口探测一条依据，进程活着不等于能连。
@@ -12,9 +42,26 @@
 
 ## 状态机
 
-`ClientConnectionState`：Idle → ConnectingLobby → InLobby → ConnectingRoom → InRoom → Reconnecting。
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> ConnectingLobby: 连接大厅
+    ConnectingLobby --> InLobby: 登录成功
+    InLobby --> ConnectingRoom: 进房 / 战斗重定向
+    ConnectingRoom --> InRoom: 房间端口连上
+    InRoom --> Reconnecting: 房间意外断开
+    Reconnecting --> ConnectingRoom: 重连步 4：重定向回房间端口
+    ConnectingLobby --> Idle: 10 秒超时
+    ConnectingRoom --> InLobby: 10 秒超时
+    Reconnecting --> InLobby: 超时 / 重连失败
+    InRoom --> InLobby: LeaveRoom / 收敛复位
+    InRoom --> Idle: 无大厅连接断开
+    note right of InRoom
+        复位统一走 ResetToNonRoomState：有大厅连接回 InLobby，否则回 Idle
+    end note
+```
 
-- `SetState` 是唯一转换入口，同时记录状态起始时间戳，超时判定只看它。
+`SetState` 是唯一转换入口，同时记录状态起始时间戳，超时判定只看它。
 - 超时兜底 `HandleConnectTimeout`：对 ConnectingLobby / ConnectingRoom / Reconnecting 三个进行中状态计时 10 秒，超时断开活动客户端并复位。「进行中」状态若无上界，一次丢包的握手就把会话永久悬住。
 - `IsConnected` 恒等于 InLobby 或 InRoom，不给中间态。
 

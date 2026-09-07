@@ -1,15 +1,15 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Game.Shared;
+using DungeonChessBattle.Game.Shared.Display;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
 /// Godot Buff 基类资源，承载 BuffDefinition 引用与展示属性（图标/名称/描述）。
-/// 实现 <see cref="IBuffView"/>，与 mod Buff 视图同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="BuffDisplay"/>，与 mod Buff 展示数据同经 <c>ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
-public partial class BuffBaseGodot : Resource, IBuffView {
+public partial class BuffBaseGodot : Resource {
     /// <summary>
     /// 子类重写此属性，直接返回内容注册表中的领域 Buff 定义（类型安全，编译期检查）。
     /// </summary>
@@ -24,9 +24,8 @@ public partial class BuffBaseGodot : Resource, IBuffView {
     /// <summary>Buff 全局唯一 ID（对应配置表与 SyncBuffData.BuffTypeId）。</summary>
     public ushort BuffTypeId => Config?.BuffTypeId ?? 0;
 
-    // IBuffView 用通用成员名，本类成员带 Buff 前缀，在此对齐
-    string IBuffView.Name => BuffName;
-    string IBuffView.Description => BuffDescription;
+    /// <summary>产出注册表用的展示数据；本类成员带 Buff 前缀，通用成员名在此对齐一次。</summary>
+    internal BuffDisplay ToDisplay() => new(BuffTypeId, BuffName, BuffDescription, Icon);
 
     /// <summary>Buff 名称。</summary>
     [Export]
