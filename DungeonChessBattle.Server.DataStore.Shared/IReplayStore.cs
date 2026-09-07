@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 回放归档存储契约：战斗房间销毁时归档容器字节流与参与者记录主键，回放服务据此查询与下载。

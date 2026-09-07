@@ -10,7 +10,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Server.Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Replay.Server\DungeonChessBattle.Replay.Server.csproj" />

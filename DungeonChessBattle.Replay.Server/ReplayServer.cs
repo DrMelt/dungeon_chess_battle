@@ -1,6 +1,6 @@
 using DungeonChessBattle.Replay.Protocol.Dtos;
 using DungeonChessBattle.Replay.Shared;
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 
 namespace DungeonChessBattle.Replay.Server;
 

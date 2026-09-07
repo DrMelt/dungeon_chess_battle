@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Abstractions;
+namespace DungeonChessBattle.Server.DataStore.Shared;
 
 /// <summary>
 /// 会话凭证到玩家记录主键的解析端口。

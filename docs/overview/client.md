@@ -1,6 +1,6 @@
 # 客户端装配与契约域内部机制
 
-覆盖 `DungeonChessBattle.Client` 门面；`Client.Shared` 只有边界描述，无域内机制，边界见 `functional_boundary/client`、`client-shared`。
+覆盖 `DungeonChessBattle.Client` 门面。
 
 两端客户端的传输机制随各自业务域记录：大厅客户端见 `overview/lobby`，房间客户端与在线端回填见 `overview/battle`；连接状态机与下行同步的跨域链路见 `flow/connection-reconnect`、`flow/battle-state-sync`。
 

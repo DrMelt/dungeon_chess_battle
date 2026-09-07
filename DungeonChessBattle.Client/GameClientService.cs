@@ -3,7 +3,6 @@ using DungeonChessBattle.Battle.Client.Diagnostics;
 using DungeonChessBattle.Lobby.Client;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Client.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -42,9 +41,6 @@ public sealed partial class GameClientService {
     // 取代散落的 _connected/_reconnecting 布尔与 _connectStartTimestamp 字段。
     private ClientConnectionState _state = ClientConnectionState.Idle;
     private long _stateStartTimestamp;
-
-    // 当前活跃的客户端引用，由状态机维护
-    private IClientConnection? _activeClient;
 
     // SignalR 后台线程投递、需在主线程 Update 消费的动作队列。
     // LiteNetLib NetManager 非线程安全，所有对房间客户端的操作必须收敛到主线程，
@@ -175,10 +171,8 @@ public sealed partial class GameClientService {
             _lobbyClient.Connect(host, port);
 
             SetState(ClientConnectionState.ConnectingLobby);
-            _activeClient = _lobbyClient;
         }
         catch (Exception ex) {
-            _activeClient = null;
             SetState(ClientConnectionState.Idle);
             _logger.LogError(ex, "连接失败");
             ConnectionChanged?.Invoke(host, port, false);
@@ -258,7 +252,6 @@ public sealed partial class GameClientService {
             _logger.LogDebug(ex, "房间客户端断开异常");
         }
 
-        _activeClient = null;
         ClearRoomReconnectCache();
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;
@@ -283,7 +276,6 @@ public sealed partial class GameClientService {
             _logger.LogDebug(ex, "房间客户端断开异常");
         }
 
-        _activeClient = null;
         ClearRoomReconnectCache();
         _pendingJoinRoomId = null;
         _pendingBattleRoomId = null;

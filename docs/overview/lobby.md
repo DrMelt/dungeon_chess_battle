@@ -6,13 +6,13 @@
 
 ## 调用链与身份
 
-- `LobbyHub`（`[HubMethodName(HubMethods.Xxx)]` 绑定 `Lobby.Protocol` 常量，与客户端 `InvokeAsync` 同一常量，方法名编译期对齐）→ `ILobbyApplication`（`GameServer` 协调门面）→ `GameLobby` 大厅业务 / `IBattleRoomManager` 战斗编排；广播经 `ILobbyBroadcaster` 端口注入，实现 `SignalRBroadcaster` 映射到 SignalR Group（进房/退房/发房）。
+- `LobbyHub`（`[HubMethodName(HubMethods.Xxx)]` 绑定 `Lobby.Protocol` 常量，与客户端 `InvokeAsync` 同一常量，方法名编译期对齐）→ `ILobbyApplication`（`GameServer` 协调门面）→ `GameLobby` 大厅业务 / `IBattleRoomManager` 战斗编排；广播经 `SignalRBroadcaster` 映射到 SignalR Group（进房/退房/发房）。
 - 身份只从登录会话反查：连接建立后客户端必须先 `Login` 登记 connectionId → 登录名，房间创建/加入/准备/重连一律据此取权威玩家名，不信任客户端自报。DTO 层同调——房间 ID 与玩家名一律服务端权威，客户端不提交也不反查。
 - 连接断开 `ConnectionLostAsync`：先清登录会话，再按连接归属清理房间成员并广播最新快照。
 
 ## 快照与准备阶段
 
-- 任何准备阶段状态变更 → `BroadcastRoomSnapshotAsync` 从 Store 组装完整 `RoomSnapshot`（配置 + 玩家准备状态 + 单位）→ `ILobbyBroadcaster` → SignalR Group 单发。客户端以该快照为唯一权威视图，不做本地增量。
+- 任何准备阶段状态变更 → `BroadcastRoomSnapshotAsync` 从 Store 组装完整 `RoomSnapshot`（配置 + 玩家准备状态 + 单位）→ `SignalRBroadcaster` → SignalR Group 单发。客户端以该快照为唯一权威视图，不做本地增量。
 - 开始战斗三重校验：发起者是房主、除房主外全员就绪、全员已选单位。
 - 通过后 `StartRoomBattle`（等待房间线程首帧初始化完成才返回端口）→ 广播 `OnPrepareBattleRedirect` 给全房间（含端口）。
 - 重连登记：登录会话反查身份 → 校验房间密码 → `TryGetRoomPort` → `RegisterPlayer` → 返回端口。`RegisterPlayer` 仅当房间已有同名会话才允许。

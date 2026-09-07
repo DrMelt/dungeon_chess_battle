@@ -1,4 +1,4 @@
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 
 namespace DungeonChessBattle.Server.DataStore;
 

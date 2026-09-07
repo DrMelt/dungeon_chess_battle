@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Server.Abstractions;
+namespace DungeonChessBattle.Battle.Server.Shared;
 
 /// <summary>
 /// 战斗房间服务器生命周期契约，协调抽象。

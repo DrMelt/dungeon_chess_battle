@@ -23,7 +23,6 @@
   <Project Path="DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
 
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
-  <Project Path="DungeonChessBattle.Client.Shared\DungeonChessBattle.Client.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
   <Project Path="DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
   <Project Path="DungeonChessBattle.Battle.Mod.Interface\DungeonChessBattle.Battle.Mod.Interface.csproj" />
@@ -33,11 +32,11 @@
   <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />
   <Project Path="DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
   <Project Path="DungeonChessBattle.Replay.Protocol\DungeonChessBattle.Replay.Protocol.csproj" />
-  <Project Path="DungeonChessBattle.Server.Abstractions\DungeonChessBattle.Server.Abstractions.csproj" />
   <Project Path="DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
   <Project Path="DungeonChessBattle.Server.DataStore\DungeonChessBattle.Server.DataStore.csproj" />
   <Project Path="DungeonChessBattle.Lobby.Server\DungeonChessBattle.Lobby.Server.csproj" />
   <Project Path="DungeonChessBattle.Battle.Server\DungeonChessBattle.Battle.Server.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Server.Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
   <Project Path="DungeonChessBattle.Replay.Server\DungeonChessBattle.Replay.Server.csproj" />
   <Project Path="DungeonChessBattle.Server.Host\DungeonChessBattle.Server.Host.csproj" />
 

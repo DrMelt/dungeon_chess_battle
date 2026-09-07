@@ -13,8 +13,8 @@
 - 不包含战斗房间客户端与 LES 实体系统。
 - 不含回放：回放的请求、下载与缓存全在回放获取侧（`Replay.Client` 出网、Game 层浏览服务编排），本层只交出一个连接级凭证，不认识它被谁消费。
 - 不在回调线程触碰客户端状态，消费方负责转主线程。
-- 不定义协议契约，Hub 方法与大厅 DTO 归 Lobby.Protocol，连接契约归 Client.Shared。
+- 不定义协议契约，Hub 方法与大厅 DTO 归 Lobby.Protocol。
 
 ## 依赖
 
-- Client.Shared、Lobby.Protocol。
+- Lobby.Protocol。

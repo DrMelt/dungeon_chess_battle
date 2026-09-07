@@ -1,5 +1,5 @@
 using DungeonChessBattle.Replay.Protocol;
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

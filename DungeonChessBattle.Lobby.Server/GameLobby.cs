@@ -3,7 +3,7 @@ using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 包括创建/加入房间、招募板列表、准备单位增删、准备状态设置与房间快照广播。
 /// 所有大厅级状态数据，房间配置、密码、玩家准备状态与准备单位等，统一由
 /// <see cref="IGameStateStore"/> 持有，本类不存储业务状态。
-/// 向客户端广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现，不依赖具体传输。
+/// 向客户端广播经 <see cref="SignalRBroadcaster"/> 注入实现，不依赖具体传输。
 /// 战斗房间服务器的生命周期管理由协调层经 <see cref="IBattleRoomManager"/> 契约编排，
 /// 本类不触碰战斗房间。
 /// </summary>
@@ -25,11 +25,11 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
 /// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
-    ILobbyBroadcaster broadcaster, LobbyServerConfig config,
+    SignalRBroadcaster broadcaster, LobbyServerConfig config,
     IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
-    private readonly ILobbyBroadcaster _broadcaster = broadcaster;
+    private readonly SignalRBroadcaster _broadcaster = broadcaster;
     private readonly LobbyServerConfig _config = config;
     private readonly IUnitRegistry _unitRegistry = unitRegistry;
     private readonly IDungeonRegistry _dungeonRegistry = dungeonRegistry;

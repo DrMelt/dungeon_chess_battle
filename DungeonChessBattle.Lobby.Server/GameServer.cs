@@ -1,6 +1,6 @@
 ﻿using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 游戏服务端业务协调器，大厅服务器门面。
 /// 大厅端口由 SignalR Hub <see cref="LobbyHub"/> 承载，本类负责各请求的业务处理、
 /// 房间生命周期协调与房间内广播。
-/// 业务层不依赖具体传输：广播经 <see cref="ILobbyBroadcaster"/> 端口注入实现，由传输层提供。
+/// 广播经 <see cref="SignalRBroadcaster"/> 具体实现注入；传输层与消费方同居本域，不设跨模块契约。
 /// 配置由装配层映射后的职责切片 <see cref="LobbyServerConfig"/> 注入；
 /// 战斗房间域名只经 <see cref="IBattleRoomManager"/> 契约编排，不感知实现；
 /// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有，各 Handle* 处理见 GameServer.MessageHandlers。
@@ -25,7 +25,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="stateStore">大厅级状态存储，存储引擎由装配层注入，可替换。</param>
 /// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
 /// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
-public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster broadcaster,
+public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster broadcaster,
     LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore,
     IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) : ILobbyApplication {
     private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig,
@@ -33,7 +33,7 @@ public partial class GameServer(ILoggerFactory loggerFactory, ILobbyBroadcaster 
     private readonly IBattleRoomManager _battleRoomManager = battleRoomManager;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly ILogger<GameServer> _logger = loggerFactory.CreateLogger<GameServer>();
-    private readonly ILobbyBroadcaster _broadcaster = broadcaster;
+    private readonly SignalRBroadcaster _broadcaster = broadcaster;
 
     /// <summary>
     /// 向房间内所有成员连接广播消息。

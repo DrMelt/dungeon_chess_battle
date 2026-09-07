@@ -1,6 +1,5 @@
 ﻿using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
-using DungeonChessBattle.Server.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DungeonChessBattle.Lobby.Server;
@@ -8,7 +7,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <summary>
 /// 大厅 SignalR Hub，ASP.NET Core 网络端点。
 /// 每个 Hub 方法对应一个请求，一律委托给 <see cref="ILobbyApplication"/>：
-/// Hub 只做端点与身份透传，不含业务；服务端 → 客户端的广播由业务层经 <see cref="ILobbyBroadcaster"/> 端口推送。
+/// Hub 只做端点与身份透传，不含业务；服务端 → 客户端的广播由业务层经广播实现推送。
 /// 方法名经 <see cref="HubMethodNameAttribute"/> 绑定协议常量，与客户端调用名编译期对齐。
 /// 回放不在本 Hub：它自带 HTTP 端点，身份由登录时签发的会话凭证承载，与大厅连接无关。
 /// </summary>

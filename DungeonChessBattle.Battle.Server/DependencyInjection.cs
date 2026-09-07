@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

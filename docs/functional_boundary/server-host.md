@@ -12,8 +12,8 @@
 
 - 不实现业务逻辑：大厅、战斗、回放、存储全部委托下层；回放下载端点只调用回放侧的映射扩展。
 - 不含子进程管理：拉起/停止由 Godot 端承担，本侧只响应父进程看护契约。
-- 不定义服务端抽象契约：房间管理与广播契约在 Server.Abstractions。
+- 不定义服务端领域契约：房间生命周期契约在 Battle.Server.Shared，存储契约在 Server.DataStore.Shared。
 
 ## 依赖
 
-- Lobby.Server、Battle.Server、Replay.Server、Server.Abstractions、Server.DataStore、Server.DataStore.Shared 与共享层契约（Battle.Entities）。
+- Lobby.Server、Battle.Server、Replay.Server、Battle.Server.Shared、Server.DataStore、Server.DataStore.Shared 与共享层契约（Battle.Entities）。

@@ -1,6 +1,6 @@
 # 服务端装配域内部机制
 
-覆盖 `Server.Host` 与 `Server.Abstractions`。跨进程握手见 `flow/connection-reconnect`；模块边界见 `functional_boundary/server-host`、`server-abstractions`。
+覆盖 `Server.Host`。跨进程握手见 `flow/connection-reconnect`；模块边界见 `functional_boundary/server-host`。服务端领域契约归各域共享库：战斗域房间生命周期契约在 `Battle.Server.Shared`，存储域契约在 `Server.DataStore.Shared`。
 
 ## 入口与组合根
 
@@ -19,16 +19,18 @@
 - 约束：归档必须在 Kestrel 停止前完成，否则最后一段归档写不进去。
 - `ParentProcessWatcher`：1 秒周期探测父进程启动时间，父进程消失或 PID 被系统复用（启动时间不一致）触发优雅退出；未配置父 PID 的独立运行模式不启用。
 
-## 契约层四类端口
+## 服务端领域契约
 
-| 端口 | 实现 | 消费 |
-|---|---|---|
-| `IBattleRoomManager` 房间生命周期原语 | Battle.Server `BattleRoomManager` | Lobby.Server 协调、Host 清理循环与关服 |
-| `ILobbyBroadcaster` 房间内广播 | Lobby.Server `SignalRBroadcaster` | Lobby.Server 业务 |
-| `IPlayerIdentityResolver` 凭证 → 玩家记录主键 | Server.DataStore `PlayerIdentityResolver` | Replay.Server 端点 |
-| `IReplayStore` 归档读写与按主键检索 | Server.DataStore `InMemoryReplayStore` | 写 Battle.Server、读 Replay.Server |
+服务端跨模块协作端口按**所属域**归位到各域的共享契约库，其中仅 `IBattleRoomManager` 是真正的跨模块契约（实现与消费分属不同域）：
+
+| 契约 | 所属域 | 实现 | 消费 |
+|---|---|---|---|
+| `IBattleRoomManager` 房间生命周期原语 | Battle.Server.Shared | Battle.Server `BattleRoomManager` | Lobby.Server 协调、Host 清理循环与关服 |
+| `IPlayerIdentityResolver` 凭证 → 玩家记录主键 | Server.DataStore.Shared | Server.DataStore `PlayerIdentityResolver` | Replay.Server 端点 |
+| `IReplayStore` 归档读写与按主键检索 | Server.DataStore.Shared | Server.DataStore `InMemoryReplayStore` | 写 Battle.Server、读 Replay.Server |
 
 - 入参与返回值限原生类型、字符串与纯原语 DTO；零依赖契约库，供服务端各库与宿主共享，实现与调用方互不感知。
+- 各端口只归一个域，却能被其它域消费：这正是"端口"语义——接口归持有能力语义的域，边界不随实现走。广播不再是契约：`SignalRBroadcaster` 与消费方同住 Lobby.Server，业务层直接注入实现，无跨模块需求。
 - 后两个端口的实现都落在状态存储域，凭证换发与归档淘汰的机制见 `overview/datastore`。
 - 只映射不签发：凭证由大厅登录换发、随连接作废；解析不出主键就等于「这串凭证不代表任何人」，调用方据此拒绝。
 - 摘要模型不在本层：归档字节流自身的元数据块是唯一真相，本端口只认字节与主键。回放记录格式契约在 `Replay.Shared`，HTTP 契约在 `Replay.Protocol`。

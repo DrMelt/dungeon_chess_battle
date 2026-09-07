@@ -12,7 +12,7 @@
 ## 边界外
 
 - 不含业务实现与运行时逻辑：只有一条纯字段投影，无 I/O、无状态；本库自身不触序列化，经 Replay.Shared 间接带上 MessagePack。
-- 不含回放记录格式与容器编解码，归 Replay.Shared——引用它只为取 `ReplayMeta` 这个源形状；不含回放归档存储契约，归 Server.Abstractions。
+- 不含回放记录格式与容器编解码，归 Replay.Shared——引用它只为取 `ReplayMeta` 这个源形状；不含回放归档存储契约，归 Server.DataStore.Shared。
 - 不定义跨库协作接口：回放两端之间只有 HTTP 报文，大厅连接不参与。
 
 ## 依赖

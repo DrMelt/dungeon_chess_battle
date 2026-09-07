@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Server.Abstractions;
+﻿using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;

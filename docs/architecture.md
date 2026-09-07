@@ -6,7 +6,7 @@
 
 ## 解决方案划分
 
-`A --> B` 表示 A 依赖 B，边与实际 `ProjectReference` 一一对应。分组维度是域，与项目名前缀无关：`Server.DataStore` 归 datastore，`Server.Abstractions` 与 `Server.Host` 归 server，`Battle.Client` 归 battle，`Lobby.Client` 归 lobby。
+`A --> B` 表示 A 依赖 B，边与实际 `ProjectReference` 一一对应。分组维度是域，与项目名前缀无关：`Server.DataStore` 归 datastore，`Server.Host` 归 server，`Battle.Client` 归 battle，`Lobby.Client` 归 lobby。
 
 ```mermaid
 graph TD
@@ -20,7 +20,6 @@ graph TD
 
     subgraph DClient["client：客户端装配与契约"]
         Client["Client<br>门面与连接状态机"]
-        ClientShared["Client.Shared<br>客户端连接契约"]
     end
 
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
@@ -33,6 +32,7 @@ graph TD
         BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：行为注册 / 内容注册 / 合成口"]
         BattleClient["Battle.Client<br>LES 房间客户端"]
         BattleSrv["Battle.Server<br>战斗房间服务"]
+        BattleSrvShared["Battle.Server.Shared<br>战斗域服务端契约"]
     end
 
     subgraph DLobby["lobby：大厅与大厅客户端"]
@@ -56,7 +56,6 @@ graph TD
     end
 
     subgraph DServer["server：服务端装配与契约"]
-        ServerAbst["Server.Abstractions<br>服务端抽象契约"]
         Host["Server.Host<br>Kestrel + SignalR 装配"]
     end
 
@@ -94,12 +93,10 @@ graph TD
     %% client 域：门面组装两端，只给上层抽象
     Client --> LobbyClient
     Client --> BattleClient
-    Client --> ClientShared
     Client --> Entities
     Client --> LobbyProtocol
 
     %% battle 域：在线端与服务端共用领域与配置
-    BattleClient --> ClientShared
     BattleClient --> Logic
     BattleClient --> Entities
     BattleClient --> GameConfig
@@ -110,19 +107,18 @@ graph TD
     BattleSrv --> Logic
     BattleSrv --> Entities
     BattleSrv --> GameConfig
-    BattleSrv --> ServerAbst
+    BattleSrv --> BattleSrvShared
     BattleSrv --> StoreAbst
     BattleSrv --> ReplayShared
 
     %% lobby 域：大厅客户端与业务
-    LobbyClient --> ClientShared
     LobbyClient --> LobbyProtocol
     LobbyProtocol --> LobbyShared
     LobbySrv --> LobbyShared
     LobbySrv --> LobbyProtocol
     LobbySrv --> Shared
     LobbySrv --> GameConfig
-    LobbySrv --> ServerAbst
+    LobbySrv --> BattleSrvShared
     LobbySrv --> StoreAbst
 
     %% datastore 域：契约只依赖大厅值类型，实现再依赖领域常量与契约层
@@ -130,7 +126,6 @@ graph TD
     Store --> LobbyShared
     Store --> Shared
     Store --> GameConfig
-    Store --> ServerAbst
     Store --> StoreAbst
 
     %% replay 域
@@ -143,10 +138,10 @@ graph TD
     Replay --> ReplayShared
     ReplaySrv --> ReplayProtocol
     ReplaySrv --> ReplayShared
-    ReplaySrv --> ServerAbst
+    ReplaySrv --> StoreAbst
 
     %% server 域：Host 是装配根，向下依赖各域实现
-    Host --> ServerAbst
+    Host --> BattleSrvShared
     Host --> Entities
     Host --> LobbySrv
     Host --> BattleSrv
@@ -165,7 +160,6 @@ graph TD
 | -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------- |
 | `DungeonChessBattle.Game`                    | Godot 主工程：场景、UI、资源装配与网络驱动                   | [game](functional_boundary/game.md)                                       | [godot](overview/godot.md)             |
 | `DungeonChessBattle.Client`                  | 网络客户端门面 `GameClientService` 与连接状态机              | [client](functional_boundary/client.md)                                   | [client](overview/client.md)           |
-| `DungeonChessBattle.Client.Shared`           | 客户端连接契约：`IClientConnection` 最小连接抽象             | [client-shared](functional_boundary/client-shared.md)                     | [client](overview/client.md)           |
 | `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策、行为 ID | [battle-shared](functional_boundary/battle-shared.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑      | [battle-logic](functional_boundary/battle-logic.md)                       | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                     | [battle-entities](functional_boundary/battle-entities.md)                 | [battle](overview/battle.md)           |
@@ -179,18 +173,18 @@ graph TD
 | `DungeonChessBattle.Game.Shared`             | mod 与宿主共用的展示形状：四表展示数据 / 资源名                 | [game-shared](functional_boundary/game-shared.md)                         | [mod](overview/mod.md)                 |
 | `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                            | [battle-client](functional_boundary/battle-client.md)                     | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                       | [battle-server](functional_boundary/battle-server.md)                     | [battle](overview/battle.md)           |
+| `DungeonChessBattle.Battle.Server.Shared`    | 战斗域服务端契约：房间生命周期管理端口                       | [battle-server-shared](functional_boundary/battle-server-shared.md)       | [battle](overview/battle.md)           |
 | `DungeonChessBattle.Lobby.Shared`            | 大厅共享值类型：房间状态枚举                                 | [lobby-shared](functional_boundary/lobby-shared.md)                       | [lobby](overview/lobby.md)             |
 | `DungeonChessBattle.Lobby.Protocol`          | 大厅网络契约：Hub 端点路径 `HubPaths`、方法名与大厅 DTO    | [lobby-protocol](functional_boundary/lobby-protocol.md)                   | [lobby](overview/lobby.md)             |
 | `DungeonChessBattle.Lobby.Client`            | SignalR 大厅客户端 `LobbyClient`                             | [lobby-client](functional_boundary/lobby-client.md)                       | [lobby](overview/lobby.md)             |
 | `DungeonChessBattle.Lobby.Server`            | 大厅服务器：Hub 端点、业务与协调                             | [lobby-server](functional_boundary/lobby-server.md)                       | [lobby](overview/lobby.md)             |
-| `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型                                       | [server-datastore-shared](functional_boundary/server-datastore-shared.md) | [datastore](overview/datastore.md)     |
+| `DungeonChessBattle.Server.DataStore.Shared` | 数据存储接口与快照模型、回放归档与身份解析端口               | [server-datastore-shared](functional_boundary/server-datastore-shared.md) | [datastore](overview/datastore.md)     |
 | `DungeonChessBattle.Server.DataStore`        | 内存数据存储实现                                             | [server-datastore](functional_boundary/server-datastore.md)               | [datastore](overview/datastore.md)     |
 | `DungeonChessBattle.Replay.Shared`           | 回放记录格式契约：记录模型、编解码与分块容器读写             | [replay-shared](functional_boundary/replay-shared.md)                     | [replay](overview/replay.md)           |
 | `DungeonChessBattle.Replay.Protocol`         | 回放 HTTP 契约：DTO、路由与序列化约定                        | [replay-protocol](functional_boundary/replay-protocol.md)                 | [replay](overview/replay.md)           |
 | `DungeonChessBattle.Replay`                  | 回放引擎 `ReplayEngine`，回放子系统重放端                    | [replay](functional_boundary/replay.md)                                   | [replay](overview/replay.md)           |
 | `DungeonChessBattle.Replay.Client`           | 回放获取侧：HTTP 传输，缓存/解码/门控/并集在 Game 层浏览服务 | [replay-client](functional_boundary/replay-client.md)                     | [replay](overview/replay.md)           |
 | `DungeonChessBattle.Replay.Server`           | 回放服务侧：列表与下载的 HTTP 端点、会话凭证鉴权             | [replay-server](functional_boundary/replay-server.md)                     | [replay](overview/replay.md)           |
-| `DungeonChessBattle.Server.Abstractions`     | 服务端抽象契约：房间生命周期与广播端口                       | [server-abstractions](functional_boundary/server-abstractions.md)         | [server](overview/server.md)           |
 | `DungeonChessBattle.Server.Host`             | Kestrel + SignalR 装配与进程入口                             | [server-host](functional_boundary/server-host.md)                         | [server](overview/server.md)           |
 
 

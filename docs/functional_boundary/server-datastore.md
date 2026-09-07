@@ -16,4 +16,4 @@
 
 ## 依赖
 
-- Server.DataStore.Shared（存储门面契约）、Server.Abstractions（`IReplayStore` 归档与 `IPlayerIdentityResolver` 身份解析端口）、Battle.Shared（字段长度常量）、GameConfig（默认副本键）、Lobby.Shared（房间状态枚举）。
+- Server.DataStore.Shared（存储门面契约与回放归档、身份解析端口）、Battle.Shared（字段长度常量）、GameConfig（默认副本键）、Lobby.Shared（房间状态枚举）。

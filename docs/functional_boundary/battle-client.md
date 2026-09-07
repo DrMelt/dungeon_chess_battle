@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Client.Shared、Battle.Entities、Battle.Logic、GameConfig。
+- Battle.Entities、Battle.Logic、GameConfig。

@@ -17,5 +17,5 @@
 
 ## 依赖
 
-- Replay.Protocol（DTO、路由与序列化约定）、Replay.Shared（归档元数据块读取）、Server.Abstractions（身份解析与归档存储端口）。
+- Replay.Protocol（DTO、路由与序列化约定）、Replay.Shared（归档元数据块读取）、Server.DataStore.Shared（身份解析与归档存储端口）。
 - ASP.NET Core 共享框架 Microsoft.AspNetCore.App，仅用于端点映射。

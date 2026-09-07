@@ -2,13 +2,13 @@
 
 覆盖 `Server.DataStore.Shared`（存储契约与快照模型）与 `Server.DataStore`（进程内实现，当前唯一，基于 `ConcurrentDictionary`）。
 
-跨域：身份从登录会话反查见 `overview/lobby` 的身份一节，归档录制与查询两端见 `flow/replay-design`，对外端口契约在 `Server.Abstractions`，见 `overview/server`；模块边界见 `functional_boundary/server-datastore-shared`、`server-datastore`。
+跨域：身份从登录会话反查见 `overview/lobby` 的身份一节，归档录制与查询两端见 `flow/replay-design`，对外端口契约在 `Server.DataStore.Shared`，见 `overview/server`；模块边界见 `functional_boundary/server-datastore-shared`、`server-datastore`。
 
 ## 契约与所有权
 
 - 门面 `IGameStateStore` 组合 `IRoomStateStore`（房间级）与 `IPlayerStateStore`（玩家级）；业务层只面向门面，存储引擎在装配层替换。
 - 约束：并发语义写在契约上——任何线程都可调用，同房间读改写由实现保证原子；换实现必须兑现同一句话。
-- 三份实现同居本层：房间与玩家状态 `InMemoryGameStateStore`、回放归档 `InMemoryReplayStore`、身份解析 `PlayerIdentityResolver`（适配器，包在门面之上）。归档与身份解析的契约不进 `DataStore.Shared`——大厅不认识回放与 HTTP 端点，这两个端口只由服务端契约层承担。
+- 三份实现同居本层：房间与玩家状态 `InMemoryGameStateStore`、回放归档 `InMemoryReplayStore`、身份解析 `PlayerIdentityResolver`（适配器，包在门面之上）。三者契约同居 `Server.DataStore.Shared`——大厅不认识回放与 HTTP 端点，这两个端口只供服务端侧消费，仍由 datastore 域独立持有。
 - 校验落在存储而非业务：已准备不可改单位、未选单位不可准备、房主不参与准备判定、登录名空或超 `PlayerName.MaxLength` 直接拒绝，不降级——降级会让身份名与显示名漂移。
 - 约束：调用方重复实现同一判据就是分叉的开始。
 - 全员就绪判定的兜底方向是更严：无房主记录时 `IsAllOthersReady` 退化为全部成员都需就绪，而不是全部放行。

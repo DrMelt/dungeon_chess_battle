@@ -15,7 +15,7 @@
 - 不含录制逻辑，录制在 Battle.Server.Replay。
 - 不含回放重跑逻辑，重跑在 Replay 引擎。
 - 不含归档的查询、凭证与下载，归 Replay.Server 与 Replay.Client。
-- 不含回放归档存储契约，归 Server.Abstractions；不持有摘要模型，摘要即元数据块。
+- 不含回放归档存储契约，归 Server.DataStore.Shared；不持有摘要模型，摘要即元数据块。
 - 不依赖网络栈，格式独立于传输通道。
 
 ## 依赖

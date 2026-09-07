@@ -79,13 +79,11 @@ public sealed partial class GameClientService {
         }
 
         SetState(ClientConnectionState.ConnectingRoom);
-        _activeClient = _roomClient;
         try {
             // 使用客户端持久 _playerId 作为连接密钥，服务端白名单验证
             _roomClient.Reconnect(host, roomPort, PlayerId);
         }
         catch (Exception ex) {
-            _activeClient = null;
             SetState(ClientConnectionState.Idle);
             _logger.LogError(ex, "重连至房间端口失败");
             ConnectionChanged?.Invoke(host, roomPort, false);
@@ -111,7 +109,6 @@ public sealed partial class GameClientService {
             _logger.LogInformation("尝试重连到房间 '{RoomId}' (playerId={PlayerId})...", _cachedRoomId, PlayerId);
 
         SetState(ClientConnectionState.Reconnecting);
-        _activeClient = _lobbyClient;
 
         if (!_lobbyClient.IsConnected) {
             // 事件驱动：大厅连接建立后自动登录，登录结果回调再发送重连请求，避免竞态
@@ -177,7 +174,7 @@ public sealed partial class GameClientService {
     #region Update
 
     /// <summary>
-    /// 连接超时兜底：断开活动客户端并终结房间会话，清缓存、复位状态、按需通知退出战斗。
+    /// 连接超时兜底：依当前连接期断开对应客户端并终结房间会话，清缓存、复位状态、按需通知退出战斗。
     /// 覆盖 连接大厅/连接房间/自动重连 三个进行中状态，杜绝卡死。
     /// </summary>
     private void HandleConnectTimeout() {
@@ -192,24 +189,29 @@ public sealed partial class GameClientService {
 
         _logger.LogWarning("连接超时 ({State}，{Elapsed}s)", _state, (int)elapsed);
         try {
-            _activeClient?.Disconnect();
+            if (_state == ClientConnectionState.ConnectingRoom) {
+                _roomClient.Disconnect();
+            }
+            else {
+                // ConnectingLobby 与 Reconnecting 均处于大厅连接期，超时断开大厅
+                _lobbyClient.Disconnect();
+            }
         }
         catch (Exception ex) {
             _logger.LogDebug(ex, "断开连接异常");
         }
-        _activeClient = null;
         ResetToNonRoomState();
         ConnectionChanged?.Invoke(Host, Port, false);
     }
 
     /// <summary>
-    /// 每帧驱动大厅与房间客户端的网络轮询与 LES 实体更新，并监测连接超时。
+    /// 每帧驱动房间客户端网络轮询与 LES 实体更新，并监测连接超时。
     /// 由 Godot 主线程 GameClientDriver 节点在 _Process 中调用，
     /// 顺序位于 MainScene 输入采集之前，ProcessPriority 保证。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public void Update(float delta) {
-        // 先消费 SignalR 后台线程投递的动作，再驱动网络轮询。
+        // 先消费 SignalR 后台线程投递的动作，再驱动房间客户端网络轮询。
         // 保证所有对房间客户端的操作都在主线程执行。
         while (_mainThreadActions.TryDequeue(out var action)) {
             try {
@@ -218,13 +220,6 @@ public sealed partial class GameClientService {
             catch (Exception ex) {
                 _logger.LogWarning(ex, "主线程动作执行异常");
             }
-        }
-
-        try {
-            _lobbyClient.Update(delta);
-        }
-        catch (Exception ex) {
-            _logger.LogWarning(ex, "大厅客户端更新异常");
         }
 
         try {

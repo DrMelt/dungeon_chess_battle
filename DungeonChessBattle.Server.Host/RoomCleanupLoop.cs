@@ -1,4 +1,4 @@
-using DungeonChessBattle.Server.Abstractions;
+using DungeonChessBattle.Battle.Server.Shared;
 
 namespace DungeonChessBattle.Server.Host;
 

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
-using DungeonChessBattle.Client.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +14,7 @@ namespace DungeonChessBattle.Lobby.Client;
 /// 服务端 HTTP 端点，本类不认识它的消费方是谁，回放等业务据此与大厅连接解耦。
 /// 不包含 LES Entity 系统。
 /// </summary>
-public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
+public class LobbyClient(ILogger<LobbyClient> logger) {
     private readonly ILogger<LobbyClient> _logger = logger;
     private readonly ConcurrentDictionary<string, RoomSnapshot> _roomSnapshots = new();
     private HubConnection? _hub;
@@ -98,10 +97,6 @@ public class LobbyClient(ILogger<LobbyClient> logger) : IClientConnection {
             _ = hub.DisposeAsync().AsTask();
         }
         OnFullyDisconnected?.Invoke();
-    }
-
-    /// <summary>SignalR 无需逐帧轮询；保留空实现以对齐旧驱动接口。</summary>
-    public void Update(float delta) {
     }
 
     /// <summary>
