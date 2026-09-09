@@ -26,8 +26,8 @@ graph TD
         Shared["Battle.Shared<br>契约与数据结构（战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策 / 行为 ID）"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>LES 网络实体"]
-        GameConfig["GameConfig<br>单位 / 副本配置"]
-        BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / ALC"]
+        GameConfig["GameConfig<br>内容注册表 / 行为目录 / 登记点"]
+        BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / ALC / 内容装配"]
         BattleModIface["Battle.Mod.Interface<br>mod 入口契约：要实现 IModEntry"]
         BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：行为注册 / 内容注册 / 合成口"]
         BattleClient["Battle.Client<br>LES 房间客户端"]
@@ -76,13 +76,12 @@ graph TD
     Godot --> GameModShared
     Godot --> GameShared
 
-    %% mod 契约：mod 只见 Interface 与传递可见的注册面定义，宿主实现全在 Manager
+    %% mod 契约：mod 只见 Interface，注册面定义经其传递可见
     BattleModIface --> BattleModShared
     BattleModShared --> Shared
-    GameConfig --> BattleMod
-    GameConfig --> BattleModIface
-    GameConfig --> BattleModShared
     GameMod --> BattleMod
+    BattleMod --> GameConfig
+    BattleMod --> BattleModIface
     GameMod --> Shared
     GameMod --> GameIface
     GameMod --> GameModShared
@@ -140,6 +139,7 @@ graph TD
     ReplaySrv --> StoreAbst
 
     %% server 域：Host 是装配根，向下依赖各域实现
+    Host --> BattleMod
     Host --> BattleSrvShared
     Host --> Entities
     Host --> LobbySrv
@@ -151,7 +151,7 @@ graph TD
 
 ## 项目文档索引
 
-文档分层与维护规则见 [docs-rules](docs-rules.md)：`functional_boundary/` 一模块一篇写边界，`overview/` 一域一篇写机制，`flow/` 一链一篇写跨模块时序。
+文档分层与维护规则见 [docs-rules](../docs-rules.md)：`functional_boundary/` 一模块一篇写边界，`overview/` 一域一篇写机制，`flow/` 一链一篇写跨模块时序。
 
 `functional_boundary` 的文件名 slug 为 `项目名小写`（如 `battle-logic`），文件名即模块身份；跨文档引用与 `overview`/`flow` 一致，只写目录与文件名，不写锚点、不拆编号。
 
@@ -162,8 +162,8 @@ graph TD
 | `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策、行为 ID      | [battle-shared](functional_boundary/battle-shared.md)                     |
 | `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑                   | [battle-logic](functional_boundary/battle-logic.md)                       |
 | `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                                   | [battle-entities](functional_boundary/battle-entities.md)                 |
-| `DungeonChessBattle.Battle.GameConfig`       | 单位 / 副本配置与内容侧逻辑实现：效果、公式、敌人决策                      | [gameconfig](functional_boundary/gameconfig.md)                           |
-| `DungeonChessBattle.Battle.Mod.Manager`      | mod 包管理：包布局 / 清单与启用集 / 目录装载与排序 / 内容指纹 / 入口装载器 | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
+| `DungeonChessBattle.Battle.GameConfig`       | 内容配置：定义注册表 / 行为目录 / 单位与副本登记点 / 战斗单位装配          | [gameconfig](functional_boundary/gameconfig.md)                           |
+| `DungeonChessBattle.Battle.Mod.Manager`      | mod 包管理与数据面装配：包布局 / 清单与启用集 / 装载排序 / 指纹 / 装配引导 | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
 | `DungeonChessBattle.Battle.Mod.Interface`    | mod 入口契约：mod 要实现 `IModEntry`                                       | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       |
 | `DungeonChessBattle.Battle.Mod.Shared`       | 数据面注册面定义：行为注册 / 内容注册 / 合成口                             | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |
 | `DungeonChessBattle.Game.Mod.Manager`        | mod 管理、展示装配全过程、注册表实现与统一获取入口                         | [game-mod-manager](functional_boundary/game-mod-manager.md)               |

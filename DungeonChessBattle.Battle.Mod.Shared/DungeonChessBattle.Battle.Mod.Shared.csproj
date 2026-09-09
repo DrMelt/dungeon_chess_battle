@@ -10,9 +10,6 @@
     <Description>数据面注册面定义层：行为注册、内容注册与引导上下文，宿主实现、mod 调用。</Description>
   </PropertyGroup>
 
-  <!-- 数据面注册面定义层：宿主实现、mod 调用的口——行为注册面 IModRuntime、内容注册面 IModContentRuntime 与合成 IModBootstrapContext。
-       参考方向单向向下：Battle.Mod.Interface（mod 要实现的入口）引用本库，本库引用 Battle.Shared。 -->
-
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
   </ItemGroup>

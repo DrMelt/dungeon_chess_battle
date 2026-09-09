@@ -7,7 +7,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <!-- mod 包管理面：目录扫描、启用集读写、内容指纹与 ALC 装载，只用 BCL。
-       不引 Battle.Mod.Interface：装载机制不感知注册协议，mod 代码也看不到本库。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Interface\DungeonChessBattle.Battle.Mod.Interface.csproj" />
+  </ItemGroup>
 
 </Project>

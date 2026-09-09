@@ -118,7 +118,7 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     /// 非同步字段，不进 <c>UnitPawn.SyncFrom/SyncInto</c> 清单，在线端恒零。
     /// </summary>
     public Vector2 MoveInput {
-        get; internal set;
+        get; set;
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     /// 一帧一份，后写覆盖先写。非同步字段，裁定通过后才转为读条状态并投影。
     /// </summary>
     public CastIntent? CastInput {
-        get; internal set;
+        get; set;
     }
 
     /// <summary>

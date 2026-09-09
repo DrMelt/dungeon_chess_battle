@@ -1,7 +1,7 @@
+using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Mod.Interface;
-using DungeonChessBattle.Battle.Mod.Manager;
 
-namespace DungeonChessBattle.Battle.GameConfig;
+namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>内容装配结果：可用的 mod 与装配期错误，装配不因个别 mod 失败而中止。</summary>
 public sealed class ContentBootResult {
@@ -22,9 +22,10 @@ public sealed class ContentBootResult {
 }
 
 /// <summary>
-/// 内容引导装配：逐 mod 装载数据代码入口（ALC） → Initialize 把行为与内容定义注册进引导上下文。
+/// 数据面内容装配引导：逐 mod 装载数据代码入口（ALC） → Initialize 把行为与内容定义注册进引导上下文。
 /// 引擎无内置内容，注册表自空开始，mod 按装载顺序同键覆盖。服务器进程与 Godot 客户端共用本装配，两端内容与行为目录同源。
-/// 目录扫描、启用集裁决与依赖排序不在本库，见 <c>Battle.Mod.Manager</c>；本类只消费扫描结果，不自行扫描。
+/// 流程由本类钉死，环节各归其位：扫描与入口装载用本库 <see cref="ModLoader"/> 与 <see cref="ModEntryLoader"/>，
+/// 注册表与行为目录归 Battle.GameConfig。
 /// </summary>
 public static class ContentBootstrapper {
     /// <summary>

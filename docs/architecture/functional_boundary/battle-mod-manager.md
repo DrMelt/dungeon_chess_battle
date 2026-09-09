@@ -1,6 +1,6 @@
 # DungeonChessBattle.Battle.Mod.Manager
 
-mod 包管理面：包布局、清单与启用集、目录装载、入口装载与内容指纹。纯 .NET 类库，零项目引用，被 GameConfig 与 Game.Mod.Manager 引用。
+mod 包管理面与数据面内容装配：包布局、清单与启用集、目录装载、入口装载、内容指纹与内容装配引导。纯 .NET 类库，被 Server.Host 与 Game.Mod.Manager 引用。
 
 ## 职责
 
@@ -12,15 +12,16 @@ mod 包管理面：包布局、清单与启用集、目录装载、入口装载�
 - 入口装载：逐 mod 以独立上下文装载入口程序集并实例化；装载与入口执行分阶段。
 - 内容指纹：按数据面解析范围计算，展示代码与展示资源不入指纹。
 - 错误归属：错误带归属 mod 与原因。
+- 内容装配引导：以扫描结果发布新注册表，逐 mod 装载数据入口并把行为与内容定义写入注册表，mod 写入校验 BuffTypeId 保留段；单个 mod 失败不中止其余。
 
 ## 边界外
 
-- 不定义注册协议：入口契约在 Battle.Mod.Interface，注册面在 Battle.Mod.Shared，行为 ID 常量在 Battle.Shared；本库只装载代码并调它入口。
-- 不把内容映射为领域对象：注册表与行为目录在 GameConfig，内容由 mod 经入口注册。
+- 不定义注册协议：入口契约在 Battle.Mod.Interface，注册面在 Battle.Mod.Shared，行为 ID 常量在 Battle.Shared；本库实现注册面并调 mod 入口。
+- 不持有注册表与行为目录：实现在 Battle.GameConfig，本库经其内容宿主发布注册表并往里写入。
 - 不感知展示面语义：只提供默认目录与通用装载机制，注册进什么表由 Game.Mod.Manager 决定。
-- 不编排装配流程：只产出装载结果，装配由 GameConfig 发起。
 - 不做战斗与网络，不与 Godot 交互。
 
 ## 依赖
 
-- 零项目引用，只用 BCL；不依赖 `Battle.Mod.Interface`，mod 代码看不到本库。
+- Battle.GameConfig（注册表与行为目录）与 Battle.Mod.Interface（数据入口契约，注册面定义随之传递可见）。
+- 通用装载机制只用 BCL：装配引导是本库唯一接触注册协议的部分。

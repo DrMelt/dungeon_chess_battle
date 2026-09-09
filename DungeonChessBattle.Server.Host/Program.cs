@@ -1,5 +1,4 @@
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Mod.Manager;
 using DungeonChessBattle.Server.Host;
 
@@ -17,7 +16,7 @@ if (Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid) is { Length: 
 // 让 LES 网络框架日志进入统一日志体系 Console，并早于任何 EntityManager 创建
 LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
-// 装配 mod 内容：扫描与装配分开做——扫描归 Battle.Mod.Manager，内容装配由 GameConfig 执行。
+// 装配 mod 内容：扫描与装配同归 Battle.Mod.Manager，注册表与行为目录由 Battle.GameConfig 承载。
 // 必须在任何房间创建前完成。
 var scan = ModLoader.LoadDirectory(config.ModDir ?? "");
 var boot = ContentBootstrapper.Load(scan);

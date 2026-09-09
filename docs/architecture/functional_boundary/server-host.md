@@ -5,6 +5,7 @@
 ## 职责
 
 - 入口装配：解析命令行与环境变量并启动宿主。
+- 内容装配：进程启动时扫描 mod 目录并执行数据面装配，先于任何房间创建。
 - 依赖装配：模块配置、数据存储、广播端口与房间管理绑定、协调器与 Hub 注册。
 - 进程看护：父进程消失或 PID 复用触发优雅退出。
 
@@ -16,4 +17,4 @@
 
 ## 依赖
 
-- Lobby.Server、Battle.Server、Replay.Server、Battle.Server.Shared、Server.DataStore、Server.DataStore.Shared 与共享层契约（Battle.Entities）。
+- Lobby.Server、Battle.Server、Replay.Server、Battle.Mod.Manager、Battle.Server.Shared、Server.DataStore、Server.DataStore.Shared 与共享层契约（Battle.Entities）。

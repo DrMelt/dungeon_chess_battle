@@ -12,7 +12,7 @@
 
 - 不含 mod 要实现的接口：入口契约 `IModEntry` 在 Battle.Mod.Interface，本库不引用它。
 - 不含行为 ID 常量：归 Battle.Shared。
-- 不含实现：装配上下文、行为目录与内容注册表实现在 Battle.GameConfig。
+- 不含实现：行为目录与内容注册表在 Battle.GameConfig，装配上下文实现与装配引导在 Battle.Mod.Manager。
 - 不含装载与管理：扫描、清单、依赖排序与程序集装载在 Battle.Mod.Manager。
 
 ## 依赖

@@ -7,24 +7,24 @@ namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>
 /// 内容注册表：领域定义对象（SkillDefinition / BuffDefinition / UnitConfig / DungeonConfig）
-/// 的唯一注册与索引面，全部内容由 mod 注册，同键后写覆盖。
+/// 的唯一注册与索引面，内容由装配方写入，同键后写覆盖。
 /// 引用以对象图成立：单位持技能定义引用、技能持 Buff 定义引用，注册期不解析字符串。
 /// </summary>
-/// <remarks>建造空注册表；mod 内容随后按装载顺序填充。</remarks>
-public sealed partial class ContentSetRegistry(string engineRevision, string modFingerprint) : IContentRegistryView {
+/// <remarks>注册表自空开始，内容按写入顺序覆盖。</remarks>
+public sealed partial class ContentSetRegistry(string engineRevision, string contentFingerprint) : IContentRegistryView {
     private readonly Dictionary<string, SkillDefinition> _skillsByKey = new(StringComparer.Ordinal);
     private readonly Dictionary<ushort, BuffDefinition> _buffsByTypeId = [];
     private readonly Dictionary<UnitConfigKey, UnitConfig> _unitsByKey = [];
     private readonly Dictionary<string, DungeonConfig> _dungeonsByKey = new(StringComparer.Ordinal);
 
-    /// <summary>内容修订：引擎内容修订号 + 启用 mod 指纹，内容与布局任何变化都会改变值。</summary>
+    /// <summary>内容修订：引擎内容修订号 + 装配方传入的内容指纹，内容与布局任何变化都会改变值。</summary>
     public string DataRevision {
         get;
-    } = string.IsNullOrEmpty(modFingerprint)
+    } = string.IsNullOrEmpty(contentFingerprint)
             ? engineRevision
-            : $"{engineRevision}+{modFingerprint}";
+            : $"{engineRevision}+{contentFingerprint}";
 
-    /// <summary>当前默认副本键；mod 经 SetDefaultDungeonKey 设置，未设置时为空。</summary>
+    /// <summary>当前默认副本键；由装配方经 <see cref="SetDefaultDungeonKey"/> 设置，未设置时为空。</summary>
     public string DefaultDungeonKey {
         get; private set;
     } = "";
@@ -70,35 +70,22 @@ public sealed partial class ContentSetRegistry(string engineRevision, string mod
     public DungeonConfig GetRequiredDungeon(string dungeonKey) =>
         GetDungeon(dungeonKey) ?? throw new InvalidOperationException($"副本 '{dungeonKey}' 未注册。");
 
-    internal void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
+    /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
+    public void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
 
-    /// <summary>
-    /// 注册 Buff 定义：BuffTypeId 同键覆盖，零 ID 拒绝。
-    /// mod 声明路径经 <see cref="RegisterModBuff"/> 做段位校验后落本入口。
-    /// </summary>
-    internal void RegisterBuff(BuffDefinition buff) {
+    /// <summary>注册 Buff 定义：同 BuffTypeId 覆盖，零 ID 拒绝。</summary>
+    public void RegisterBuff(BuffDefinition buff) {
         if (buff.BuffTypeId == 0)
             throw new InvalidOperationException("Buff 必须声明非零 BuffTypeId");
         _buffsByTypeId[buff.BuffTypeId] = buff;
     }
 
-    /// <summary>
-    /// 注册 mod 声明的 Buff 定义：引擎保留段（1~<see cref="ModBuffTypeIdMin"/>-1）不接收，
-    /// mod 必须声明 <see cref="ModBuffTypeIdMin"/> 及以上，越段拒载。
-    /// </summary>
-    internal void RegisterModBuff(BuffDefinition buff) {
-        if (buff.BuffTypeId < ModBuffTypeIdMin)
-            throw new InvalidOperationException(
-                $"mod Buff '{buff.GetType().Name}' 的 BuffTypeId {buff.BuffTypeId} 落在引擎保留段（1~{ModBuffTypeIdMin - 1}），mod 必须声明 {ModBuffTypeIdMin} 及以上");
-        RegisterBuff(buff);
-    }
+    /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>
+    public void RegisterUnit(UnitConfig unit) => _unitsByKey[unit.ConfigKey] = unit;
 
-    /// <summary>mod 允许的最小 BuffTypeId；引擎保留段为 1~(<see cref="ModBuffTypeIdMin"/> - 1)。</summary>
-    public const ushort ModBuffTypeIdMin = 1000;
+    /// <summary>注册副本配置，同 DungeonKey 覆盖。</summary>
+    public void RegisterDungeon(DungeonConfig dungeon) => _dungeonsByKey[dungeon.DungeonKey] = dungeon;
 
-    internal void RegisterUnit(UnitConfig unit) => _unitsByKey[unit.ConfigKey] = unit;
-
-    internal void RegisterDungeon(DungeonConfig dungeon) => _dungeonsByKey[dungeon.DungeonKey] = dungeon;
-
-    internal void SetDefaultDungeonKey(string key) => DefaultDungeonKey = key;
+    /// <summary>设置默认副本键，后写覆盖。</summary>
+    public void SetDefaultDungeonKey(string key) => DefaultDungeonKey = key;
 }
