@@ -4,7 +4,7 @@
 [ext_resource type="Curve" uid="uid://dv8q0bcq2sbx0" path="res://GamePlayUI/state_info/fade_curve.tres" id="2_cn61m"]
 [ext_resource type="LabelSettings" uid="uid://kv5p22ydotk2" path="res://GamePlayUI/state_info/label_setting.tres" id="3_b3say"]
 
-[node name="TookDamage_Info" type="Control" node_paths=PackedStringArray("damageLabel")]
+[node name="TookDamage_Info" type="Control" unique_id=1918317014 node_paths=PackedStringArray("damageLabel")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -13,7 +13,7 @@ script = ExtResource("1_6ldsr")
 damageLabel = NodePath("DamageValue")
 fadeCurve = ExtResource("2_cn61m")
 
-[node name="DamageValue" type="Label" parent="."]
+[node name="DamageValue" type="Label" parent="." unique_id=1142050139]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0

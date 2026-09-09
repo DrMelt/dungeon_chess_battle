@@ -12,7 +12,7 @@ public sealed class ModAssemblyLoader : IDisposable {
     private readonly AssemblyLoadContext _alc;
     private bool _loaded;
 
-    /// <summary>装配装载上下文；mod 依赖解析先查默认上下文（契约程序集在其中），再回退 mod 同目录 DLL。</summary>
+    /// <summary>装配装载上下文；mod 依赖解析先查宿主上下文（契约程序集已加载处），再回退 mod 同目录 DLL。</summary>
     public ModAssemblyLoader(string? name = null) {
         _alc = new AssemblyLoadContext(name ?? $"mod_{Guid.NewGuid():N}", isCollectible: true);
         _alc.Resolving += ResolveFallback;
@@ -30,7 +30,13 @@ public sealed class ModAssemblyLoader : IDisposable {
             types = assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException ex) {
-            types = [.. ex.Types.OfType<Type>()];
+            // 依赖解析失败会成批出现：把每个失败的依赖名/原因带出，便于定位 Godot 端默认上下文缺哪些契约程序集
+            string reason = string.Join(" | ",
+                ex.LoaderExceptions
+                    .Select(e => e is null ? "<null>" : e.Message)
+                    .Distinct()
+                    .Take(5));
+            throw new InvalidOperationException($"程序集类型加载失败：{reason}", ex);
         }
 
         Type? entryType = types
@@ -44,11 +50,13 @@ public sealed class ModAssemblyLoader : IDisposable {
     public void Dispose() => _alc.Unload();
 
     private Assembly? ResolveFallback(AssemblyLoadContext context, AssemblyName name) {
-        // mod 与主程序共引的契约程序集已加载于默认上下文，直出主副本避免重复类型
-        Assembly? fromDefault = AssemblyLoadContext.Default.Assemblies
+        // mod 与主程序共引的契约程序集与 GodotSharp 由 Godot 运行时加载，可能分布在默认上下文与
+        // 工程专用 ALC；按程序集全名匹配进程内已加载副本，避免重复类型。仅 Resolving 兜底路径调用，
+        // 命中一次即被运行时缓存，无性能热点。
+        Assembly? fromLoaded = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => string.Equals(a.GetName().FullName, name.FullName, StringComparison.Ordinal));
-        if (fromDefault is not null)
-            return fromDefault;
+        if (fromLoaded is not null)
+            return fromLoaded;
 
         // 契约之外的 mod 自带依赖，尝试在 mod 目录（已注册的目录）查找
         return ResolveFromDirectory(context, name);

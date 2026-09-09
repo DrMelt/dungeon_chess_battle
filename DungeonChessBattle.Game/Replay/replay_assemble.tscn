@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://d0xwy2djp8quy"]
 
 [ext_resource type="Script" uid="uid://b8shyx6hpxkjm" path="res://Replay/ReplayCoordinator.cs" id="1_coord"]
-[ext_resource type="PackedScene" path="res://BattleScene/battle_world.tscn" id="2_world"]
+[ext_resource type="PackedScene" uid="uid://cbefmmi22rp07" path="res://BattleScene/battle_world.tscn" id="2_world"]
 [ext_resource type="PackedScene" uid="uid://baidpltv52ny4" path="res://Replay/ReplayHud/replay_hud.tscn" id="3_hud"]
 [ext_resource type="PackedScene" uid="uid://4nw5r5gseln" path="res://Replay/ReplayInputPanel/replay_input_panel.tscn" id="4_inputpanel"]
 

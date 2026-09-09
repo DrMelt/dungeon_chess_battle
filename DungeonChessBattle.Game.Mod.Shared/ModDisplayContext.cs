@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// </summary>
 /// <param name="ModId">mod 唯一 ID，即 mods 根目录下的目录名，ModAssetKey 寻址前缀。</param>
 /// <param name="Resources">把包内相对路径解析为 Godot 图片/场景的加载器，仅限本 mod 目录。</param>
-/// <param name="Registry">展示注册表的只读查询面，含内置与已注册 mod 的条目。</param>
+/// <param name="Registry">展示注册表的只读查询面，含引擎预置条目与先装载 mod 的条目。</param>
 public readonly record struct ModDisplayContext(
     string ModId,
     IModResourceLoader Resources,

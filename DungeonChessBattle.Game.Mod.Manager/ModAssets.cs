@@ -26,22 +26,26 @@ public static class ModAssets {
     } = "";
 
     /// <summary>
-    /// 展示装配全过程，顺序由本方法保证：建注册表 → 内置先入表 → 逐 mod 装载展示代码入同表 →
-    /// 宿主把 mod 声明落地成资源对象并回注 → 表就绪后对外可查。
+    /// 展示装配全过程，顺序由本方法保证：建注册表 → 引擎侧先入表 → 装载展示代码 → 挂载展示资源包 →
+    /// 逐 mod 执行入口把声明注册进同表 → 宿主把 mod 声明落地成资源对象并回注 → 表就绪后对外可查。
     /// </summary>
     /// <remarks>
-    /// 内置注册与 mod 条目落地两步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与
+    /// 引擎侧注册、资源包挂载与 mod 条目落地三步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与
     /// <c>res://</c> 路径只能留在 Godot 主工程，本库不认识它们，只负责把顺序钉死在这里。
+    /// 装载先于挂载、入口执行后于挂载：入口 Initialize 要经 <c>res://mods/{id}/</c> 读包内资源，
+    /// 而契约程序集必须宿主已装载（引擎侧注册已保证）。
     /// </remarks>
     /// <param name="catalog">已扫描的 mod 管理根，提供参与装配的启用 mod 与错误落点。</param>
     /// <param name="content">内容注册表只读视图，展示键完整性校验对它做。</param>
-    /// <param name="registerBuiltin">把内置展示数据注册进注册表，必须先于 mod 声明。</param>
+    /// <param name="registerBuiltin">把引擎预置场景名与单位外观占位注册进注册表，必须先于 mod 声明。</param>
+    /// <param name="mountResourcePacks">逐 mod 挂载它声明的展示资源包，必须介于展示代码装载与入口执行之间。</param>
     /// <param name="applyModResources">把 mod 声明过的条目落地成宿主资源对象，收 mod 声明集与注册表。</param>
-    /// <param name="modsRootGodotPath">mods 根目录在 Godot 路径体系下的挂载点，null 即不支持 mod 自带场景。</param>
+    /// <param name="modsRootGodotPath">mods 根目录在 Godot 路径体系下的挂载点，null 即读不到包内 PCK 资源。</param>
     public static void Assemble(
         ModCatalog catalog,
         IContentRegistryView content,
         Action<IModDisplayRuntime> registerBuiltin,
+        Action<IReadOnlyList<LoadedMod>> mountResourcePacks,
         Action<ModDeclaration, DisplayRegistry> applyModResources,
         string? modsRootGodotPath = null) {
         var registry = new DisplayRegistry();
@@ -50,12 +54,18 @@ public static class ModAssets {
         var runtimeErrors = new List<ModError>();
         var declared = new ModDeclaration();
         var loader = new ModResourceLoader(catalog.ModsRootPath, modsRootGodotPath);
-        var loadErrors = ModEntryLoader.LoadEntries<IModDisplayEntry>(
-            catalog.EnabledMods, ModLayout.DisplayCodeDirectoryName, "mod_display_", "展示代码入口装载失败",
+
+        // 装载展示代码不执行入口，ALC 由 loaded 持有到入口统一执行完成
+        using var loaded = ModEntryLoader.Load<IModDisplayEntry>(
+            catalog.EnabledMods, ModCodeKind.Display, "mod_display_", "展示代码入口装载失败");
+
+        mountResourcePacks(catalog.EnabledMods);
+
+        var initErrors = ModEntryLoader.Initialize(loaded, "展示代码入口执行失败",
             (entry, mod) => entry.Initialize(
                 new ModDisplayRuntime(registry, content, runtimeErrors, mod.Manifest.Id, declared),
                 new ModDisplayContext(mod.Manifest.Id, loader, registry)));
-        catalog.RecordDisplayErrors([.. runtimeErrors, .. loadErrors]);
+        catalog.RecordDisplayErrors([.. loaded.Errors, .. runtimeErrors, .. initErrors]);
 
         applyModResources(declared, registry);
 

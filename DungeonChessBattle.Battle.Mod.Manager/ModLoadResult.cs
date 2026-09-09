@@ -1,7 +1,10 @@
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// 已加载的单个 mod：清单、目录、代码摘要。内容不在此——内容以领域对象在引导装配期注册，无中间文件。</summary>
+/// 已加载的单个 mod：清单、目录、已定位的产物路径与代码摘要。
+/// 路径由 <see cref="ModLoader"/> 在扫描期一次性从 manifest 的相对声明解析而来，下游不再拼路径。
+/// 内容不在此——内容以领域对象在引导装配期注册，无中间文件。
+/// </summary>
 public sealed class LoadedMod {
     /// <summary>manifest.json 校验后的清单。</summary>
     public required ModManifest Manifest {
@@ -13,7 +16,35 @@ public sealed class LoadedMod {
         get; init;
     }
 
-    /// <summary>code 目录全部 DLL 的稳定摘要；无代码目录为空串。代码 mod 重新编译即指纹变化。</summary>
+    /// <summary>数据入口 DLL 绝对路径，顺序即装载顺序；空表示该 mod 不贡献数据代码。</summary>
+    public required IReadOnlyList<string> CodeEntries {
+        get; init;
+    }
+
+    /// <summary>数据面依赖探测目录绝对路径，含各入口自身所在目录。</summary>
+    public required IReadOnlyList<string> CodeLibraries {
+        get; init;
+    }
+
+    /// <summary>展示入口 DLL 绝对路径，仅客户端装载，不进内容指纹。</summary>
+    public required IReadOnlyList<string> DisplayEntries {
+        get; init;
+    }
+
+    /// <summary>展示面依赖探测目录绝对路径，含各入口自身所在目录。</summary>
+    public required IReadOnlyList<string> DisplayLibraries {
+        get; init;
+    }
+
+    /// <summary>待挂载的展示资源包绝对路径，仅客户端使用，不进内容指纹。</summary>
+    public required IReadOnlyList<string> Packages {
+        get; init;
+    }
+
+    /// <summary>
+    /// 数据入口与其探测目录内全部 DLL 的稳定摘要；无任何 DLL 时为空串。
+    /// 覆盖范围与数据面解析范围同源，代码 mod 重新编译即指纹变化。
+    /// </summary>
     public string CodeHash {
         get; init;
     } = "";

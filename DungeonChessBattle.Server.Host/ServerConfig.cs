@@ -19,7 +19,7 @@ public sealed record ServerConfig {
         get; init;
     }
 
-    /// <summary>mods 根目录绝对路径；为空表示纯内置内容。</summary>
+    /// <summary>mods 根目录绝对路径；为空表示无 mod 内容。</summary>
     public string? ModDir {
         get; init;
     }

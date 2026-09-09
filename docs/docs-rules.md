@@ -14,7 +14,6 @@
 | `overview/<域>.md`                | 一个域             | 域内机制、破坏即出缺陷的域内约束           | 跨域才成立的链路     |
 | `flow/<链>.md`                    | 一条端到端链       | 跨了哪些模块、按什么次序、错了什么现象     | 单模块内部机制       |
 | `libraries/<库>.md`               | 一个第三方库       | 库自身的行为与时序                         | 本项目的用法         |
-| `mod-development.md`（外部指南）   | mod 开发者         | 包与源、工程要求、manifest 契约、注册面用法、版本纪律 | 装配机制与实现细节   |
 
 ## 域与链
 
@@ -44,7 +43,7 @@
 
 ## 命名与引用
 
-- 命名：`functional_boundary` 用 slug（`battle-logic`），`overview` 用域名，`flow` 用链域名；文件名即模块身份。外部指南放 docs 根目录，文件名即面向对象（`mod-development`）。
+- 命名：`functional_boundary` 用 slug（`battle-logic`），`overview` 用域名，`flow` 用链域名；文件名即模块身份。面向本项目之外读者的指南放 docs 根目录，文件名即面向对象。
 - 跨文档引用：只写目录与文件名（`functional_boundary/battle-logic`、`overview/battle`、`flow/battle-state-sync`），不写锚点，改标题不断链。
 - 指向某一节：用文字「的某节」，不用 `#`。
 - 同一文件内不写这种跳转，约束就地写全。

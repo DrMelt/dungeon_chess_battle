@@ -26,7 +26,7 @@ public sealed class NoOpBuffEffect : IBuffEffect {
     public static readonly NoOpBuffEffect Instance = new();
 
     /// <inheritdoc />
-    public System.Collections.Generic.IEnumerable<IBattleEvent> Tick(
+    public IEnumerable<IBattleEvent> Tick(
         BuffDefinition definition, double accumulatedSeconds, BuffInstance instance, UnitSnapshot target) =>
         [];
 }

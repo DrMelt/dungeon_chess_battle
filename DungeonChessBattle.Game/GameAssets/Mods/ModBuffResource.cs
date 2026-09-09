@@ -9,7 +9,11 @@ namespace DungeonChessBattle.Game.GameAssets;
 public sealed partial class ModBuffResource : BuffBaseGodot {
     private readonly BuffDefinition? _config;
 
-    /// <remarks>无内置模板可继承，显示名先回退到 BuffTypeId，mod 声明后由 ApplyViewData 覆盖。</remarks>
+    /// <summary>Godot 由脚本类创建资源实例与 <c>Duplicate</c> 都需要无参构造；Config 为 null 时资源仅承载展示数据。</summary>
+    public ModBuffResource() {
+    }
+
+    /// <remarks>无模板可继承，显示名先回退到 BuffTypeId，mod 声明后由 ApplyViewData 覆盖。</remarks>
     public ModBuffResource(BuffDefinition? config) {
         _config = config;
         if (config is not null)

@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
 /// mod 侧声明过的展示键全集，跨 mod 汇总。宿主据此判定条目是否被 mod 覆盖、
-/// 该以内置资源为模板改写还是直接补占位。
+/// 该以已落地的资源为模板改写还是直接补占位。
 /// </summary>
 public sealed class ModDeclaration {
     /// <summary>被 mod 声明过的技能键。</summary>

@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// <summary>
 /// 展示注册表：<see cref="IModDisplayRuntime"/> 写面与 <see cref="IDisplayRegistry"/> 读面的实现。
 /// 资源以取供器登记、首次查询时才解析并缓存结果，令跨 mod 引用不受包注册次序影响；
-/// 条目数据同键后写覆盖，且未声明字段沿用被覆盖者，因此 mod 只换图标不会把内置名称一并清空。
+/// 条目数据同键后写覆盖，且未声明字段沿用被覆盖者，因此后到的注册者只换图标不会清空先到的名称。
 /// 装配在启动期单线程完成，之后只读查询，无锁。
 /// </summary>
 public sealed class DisplayRegistry : IModDisplayRuntime, IDisplayRegistry {

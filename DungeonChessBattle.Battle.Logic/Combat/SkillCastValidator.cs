@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Battle.Logic.Combat;
 
 /// <summary>
 /// 技能施放静态判定唯一来源。三处判据共用同一实现：服务端权威校验、施法预输入缓冲的重试、
-/// 战斗世界应答内容侧的 <see cref="DungeonChessBattle.Battle.Shared.IBattleSceneView.CanCast"/> 问答。
+/// 战斗世界应答内容侧的 <see cref="Shared.IBattleSceneView.CanCast"/> 问答。
 /// 基于施法单位状态、技能定义与已解析的目标/位置判断，不接触技能仓库。
 /// 在线端不做任何本地施法判定：按键即上行，可否施放由本判定在权威侧裁定。
 /// </summary>

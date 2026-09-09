@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Game.Shared.Display;
 
 /// <summary>
-/// 宿主登记的展示资源名：引擎预置场景与内置条目在展示注册表里的键。
+/// 宿主登记的展示资源名：引擎预置场景在展示注册表里的键。
 /// mod 展示代码以此名引用宿主对象，不必硬编码字符串；<c>res://</c> 路径映射留在主工程
 /// <c>BuiltinDisplayAssets</c>，本类只是名，不含路径。
 /// </summary>
@@ -17,4 +17,7 @@ public static class DisplayAssetIds {
 
     /// <summary>默认林地环境。</summary>
     public const string EnvForest = "env_forest";
+
+    /// <summary>深邃洞窟环境。</summary>
+    public const string EnvCave = "env_cave";
 }

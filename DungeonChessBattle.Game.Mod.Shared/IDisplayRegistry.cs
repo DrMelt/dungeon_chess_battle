@@ -4,9 +4,9 @@ using Godot;
 namespace DungeonChessBattle.Game.Mod.Shared;
 
 /// <summary>
-/// 展示注册器读面：内置资源与 mod 注册进来的展示数据汇在同一张表里，消费方按身份键取数据。
+/// 展示注册器读面：引擎预置资源名与各 mod 注册进来的展示数据汇在同一张表里，消费方按身份键取数据。
 /// 写经 <see cref="IModDisplayRuntime"/>，本接口只读；注册次序由装配方保证，同键后注册者覆盖先注册者。
-/// 装配期读到的内容取决于已完成的注册，宿主在内置注册之后才把本口递给 mod。
+/// 装配期读到的内容取决于已完成的注册，宿主在引擎侧注册之后才把本口递给 mod。
 /// </summary>
 public interface IDisplayRegistry {
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>

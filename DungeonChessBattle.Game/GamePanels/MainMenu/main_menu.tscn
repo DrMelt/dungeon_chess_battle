@@ -203,7 +203,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 text = "服务器管理"
 
-[node name="ModManageButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="ModManageButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=412758746]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_horizontal = 4

@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene format=3 uid="uid://cbefmmi22rp07"]
 
 [ext_resource type="PackedScene" uid="uid://chdi1enunki0s" path="res://GameAssets/Unit/unit_game_show.tscn" id="2_blw6q"]
 [ext_resource type="Script" uid="uid://coab1v74bi3y6" path="res://GameAssets/Scene/UserCamera3D.cs" id="5_sxf1u"]
@@ -221,4 +221,3 @@ grow_vertical = 0
 _sessionRef = NodePath("../../BattleSessionContext")
 
 [editable path="BattleGamePlayUI/StateBar2d_LocalPlayer"]
-

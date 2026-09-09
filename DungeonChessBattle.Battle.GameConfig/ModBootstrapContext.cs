@@ -10,7 +10,7 @@ namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>
 /// mod 引导上下文实现：行为注册与取用转发 <see cref="BehaviorCatalog"/>，内容注册转发 <see cref="ContentSetRegistry"/>。
-/// mod 数据代码入口经本上下文既登记行为又把领域定义对象写进注册表，内置内容先注册故 mod 后注册可覆盖。
+/// mod 数据代码入口经本上下文既登记行为又把领域定义对象写进注册表，内容全部来自 mod。
 /// </summary>
 public sealed class ModBootstrapContext(BehaviorCatalog behaviors, ContentSetRegistry registry) : IModBootstrapContext {
     /// <inheritdoc/>

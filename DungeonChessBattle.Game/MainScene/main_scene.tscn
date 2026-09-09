@@ -10,7 +10,7 @@
 [ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
 [ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="42_cxaww"]
 [ext_resource type="PackedScene" uid="uid://ck5ahdfwjheaw" path="res://Replay/ReplayPanel/replay_panel.tscn" id="42_replay"]
-[ext_resource type="PackedScene" path="res://BattleScene/battle_assemble.tscn" id="45_battle_assemble"]
+[ext_resource type="PackedScene" uid="uid://dyerv0mdh12tu" path="res://BattleScene/battle_assemble.tscn" id="45_battle_assemble"]
 [ext_resource type="PackedScene" uid="uid://d0xwy2djp8quy" path="res://Replay/replay_assemble.tscn" id="46_replay_assemble"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_42c4a"]

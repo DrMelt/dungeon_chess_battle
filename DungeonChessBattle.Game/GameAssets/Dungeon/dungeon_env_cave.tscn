@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://dw0roqtrm4e8m"]
 
 [ext_resource type="Script" uid="uid://br23r02mlsw7q" path="res://GameAssets/Scene/DungeonEnv.cs" id="1_env"]
 
@@ -41,15 +41,15 @@ background_color = Color(0.1, 0.12, 0.22, 1)
 background_energy_multiplier = 1.61
 sky = SubResource("Sky_uq67j")
 
-[node name="DungeonEnv" type="Node3D"]
+[node name="DungeonEnv" type="Node3D" unique_id=976004119]
 script = ExtResource("1_env")
 
-[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D_Plan" type="MeshInstance3D" parent="." unique_id=1131786899]
 transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
 mesh = SubResource("PlaneMesh_kkwdv")
 surface_material_override/0 = SubResource("StandardMaterial3D_tsefa")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1504713647]
 transform = Transform3D(0.230754, -0.842042, -0.487563, -0.0826356, -0.516235, 0.852451, -0.969497, -0.156416, -0.188706, 0, 4.45318, 0)
 light_color = Color(0.6, 0.65, 1, 1)
 light_cull_mask = 4293919745
@@ -57,5 +57,5 @@ shadow_enabled = true
 shadow_caster_mask = 4293919745
 sky_mode = 1
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2105260534]
 environment = SubResource("Environment_r6hb3")

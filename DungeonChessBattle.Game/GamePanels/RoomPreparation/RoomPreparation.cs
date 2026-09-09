@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
@@ -143,7 +142,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
         string? dungeonKey = Client.CurrentRoomSnapshot?.DungeonKey;
-        Battle.Shared.Content.DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
         IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
         string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
 

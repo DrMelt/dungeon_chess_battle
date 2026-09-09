@@ -53,7 +53,7 @@ public interface IModContentRuntime {
     /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
     void RegisterSkill(SkillDefinition skill);
 
-    /// <summary>注册 Buff 定义，同 BuffTypeId 覆盖或冲突校验；越引擎段（>999）由宿主校验。</summary>
+    /// <summary>注册 Buff 定义，同 BuffTypeId 覆盖；落引擎保留段（1~999）由宿主拒载。</summary>
     void RegisterBuff(BuffDefinition buff);
 
     /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>
@@ -62,7 +62,7 @@ public interface IModContentRuntime {
     /// <summary>注册副本配置，同 DungeonKey 覆盖。</summary>
     void RegisterDungeon(DungeonConfig dungeon);
 
-    /// <summary>覆盖默认副本键；未声明沿用基座。</summary>
+    /// <summary>覆盖默认副本键；无 mod 设置时为空串。</summary>
     void SetDefaultDungeonKey(string key);
 }
 

@@ -7,7 +7,7 @@
 ## 装配根与子进程
 
 - `ServiceLocator` 是静态组合根，全程无 DI 容器：创建 `ILoggerFactory`（`GodotLoggerProvider` 接入 Godot 控制台）、安装 LES 框架日志转接、装配 `GameClientService`、`ServerProcessHost` 与回放浏览服务，静态字段即组合根。
-- 展示资源的 `res://` 路径只在本工程两处出现：`ResourceTables` 持有三张资源表，`BuiltinDisplayAssets` 持有 mod 可引用的引擎预置场景（以 `Game.Shared` 里 `DisplayAssetIds` 的资源名登记进展示注册表）。
+- 展示面的数据资源已全部随内容 mod 打包分发：图标、展示数据 `.tres`（技能/Buff/副本的名称/描述/图标与场景资源名）与资源脚本进 `assets/*.pck`，定位见 `overview/mod`。主工程保留的是引擎预置展示资源：`ResourceTables` 三张资源表（运行时空表，由展示装配填充）与 `BuiltinDisplayAssets` 登记的引擎预置场景（以 `Game.Shared` 里 `DisplayAssetIds` 的资源名登记进展示注册表）。
 - 面板与表现层经静态属性取表、经 `ModAssets` 取展示数据，不碰路径字符串。
 - mod 内容装配挂在 `MainScene._EnterTree` 而不是 `_Ready`。
 - 原因：Godot 的 `_Ready` 自底向上触发，子面板在自身 `_Ready` 里就开始取数（GameLobby 就在其中填副本下拉）；挂在主场景 `_Ready` 会晚一步，mod 内容整片看不见。

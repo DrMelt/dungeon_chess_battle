@@ -3,7 +3,6 @@ using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;

@@ -11,7 +11,7 @@ public static class ContentFingerprint {
     /// 内容即代码：CodeHash 入摘要，改数值必须重编译数据 DLL，逃不过门控。
     /// 展示 DLL 不进指纹：展示字段不参与结算，两端展示不同不破坏确定性。
     /// </summary>
-    /// <remarks>无 mod 返回空串：使 <c>DataRevision</c> 在无 mod 时恒等于基座修订号，与懒装配路径同值。</remarks>
+    /// <remarks>无 mod 返回空串：使 <c>DataRevision</c> 在无 mod 时恒等于引擎内容修订号，与懒装配路径同值。</remarks>
     public static string Compute(IReadOnlyList<LoadedMod> mods) {
         if (mods.Count == 0)
             return "";
@@ -39,23 +39,28 @@ public static class ContentFingerprint {
     }
 
     /// <summary>
-    /// 计算代码目录内全部 DLL 的稳定摘要：按文件名序拼「文件名|字节摘要」再整体摘要。
-    /// 目录不存在返回空串，与「无代码 mod」同值。
+    /// 计算 mod 数据面指纹：入口文件与各探测目录顶层 DLL 取并集，按「文件名|字节摘要」Ordinal 排序去重后整体摘要。
+    /// 传入的集合必须与装载侧解析到的同一份集合，否则改了未被哈希到的 DLL 就绕过了门控。
+    /// 排序键不含目录，故重排包内布局不改指纹；文件内容一改即变。无 DLL 时返回空串，与「无代码 mod」同值。
     /// </summary>
-    public static string HashCodeDirectory(string codeDirectory) {
-        if (!Directory.Exists(codeDirectory))
-            return "";
+    public static string HashCodeFiles(
+        IReadOnlyList<string> entryFiles, IReadOnlyList<string> probeDirectories) {
+        var digests = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string file in entryFiles.Where(File.Exists))
+            digests.Add($"{Path.GetFileName(file)}|{HashFile(file)}");
 
-        var builder = new StringBuilder();
-        foreach (string dll in Directory.GetFiles(codeDirectory, "*.dll", SearchOption.TopDirectoryOnly)
-                     .OrderBy(Path.GetFileName, StringComparer.Ordinal)) {
-            builder.Append(Path.GetFileName(dll));
-            builder.Append('|');
-            builder.Append(HashFile(dll));
-            builder.Append('\n');
+        foreach (string directory in probeDirectories) {
+            if (!Directory.Exists(directory))
+                continue;
+            foreach (string dll in Directory.GetFiles(directory, "*.dll", SearchOption.TopDirectoryOnly))
+                digests.Add($"{Path.GetFileName(dll)}|{HashFile(dll)}");
         }
 
-        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()));
+        if (digests.Count == 0)
+            return "";
+
+        byte[] hash = SHA256.HashData(
+            Encoding.UTF8.GetBytes(string.Join('\n', digests.Order(StringComparer.Ordinal))));
         return Convert.ToHexString(hash);
     }
 }

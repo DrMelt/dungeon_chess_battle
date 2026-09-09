@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// <summary>
 /// mod 与宿主两侧展示资源的统一加载面：把展示数据声明的图标与场景引用解析成 Godot 对象。
 /// 契约在本库，实现在 Game.Mod.Manager；解析失败一律返回 null，由消费方按无展示数据处理。
-/// 宿主内置资源不经本接口——按资源名经 <see cref="IDisplayRegistry"/> 查询，与 mod 资源同一命名空间。
+/// 宿主引擎预置资源不经本接口——按资源名经 <see cref="IDisplayRegistry"/> 查询，与 mod 资源同一命名空间。
 /// </summary>
 public interface IModResourceLoader {
     /// <summary>加载 mod 包内图片为纹理；文件缺失或解码失败返回 null。实现侧缓存。</summary>
@@ -13,4 +13,7 @@ public interface IModResourceLoader {
 
     /// <summary>加载 mod 包内场景为模板；文件缺失或解析失败返回 null。实现侧缓存。</summary>
     PackedScene? LoadScene(in ModAssetKey key);
+
+    /// <summary>加载 mod 包内的资源文件（如 .tres 展示数据）为指定资源类型；文件缺失或解析失败返回 null。实现侧缓存。</summary>
+    T? LoadResource<T>(in ModAssetKey key) where T : Resource;
 }

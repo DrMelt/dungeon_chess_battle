@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
 /// 同键展示数据的字段级合并：后写者声明了什么就改什么，未声明字段沿用被覆盖者。
-/// mod 只提供图标时不会把内置的名称与描述一并抹掉，这是「mod 改写内置展示」的应有形状。
+/// 合并起点是先到该键的注册者——单位是引擎补的外观占位，其余是先前装载的 mod。
 /// 空串与 null 即未声明，与 <c>Game.Shared</c> 的展示数据语义同一套。
 /// </summary>
 internal static class DisplayMerge {

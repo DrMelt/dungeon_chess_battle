@@ -92,7 +92,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
 theme_override_font_sizes/font_size = 12
-text = "每个 mod 是 mods 目录下的一个子目录，内含 manifest.json 与 content.json，可选 code/、images/ 与 godot_assets.json。停用只改启用集，改动需重启进程生效。"
+text = "每个 mod 是 mods 目录下的一个子目录，内含 manifest.json、数据代码 code/、可选展示代码 code_display/ 与展示资源包 assets/。停用只改启用集，改动需重启进程生效。"
 
 [node name="Separator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1015825161]
 layout_mode = 2

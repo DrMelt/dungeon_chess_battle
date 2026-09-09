@@ -7,55 +7,27 @@ using Godot;
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
-/// 技能资源强类型映射表（基于 .tres 资源文件 + 类型驱动匹配）。
-///
-/// 在 Godot 编辑器中通过 [Export] 拖拽所有技能 .tres 资源到 SkillResources 数组。
-/// 运行时通过每个资源的 Config 属性（返回内容注册表中的唯一静态技能定义实例）
-/// 自动构建反向查找字典，以技能定义对象为键，查询不依赖技能键字符串。
-///
-/// 新增技能时只需在 res_skill_resource_table.tres 中拖入对应的 .tres 资源即可。
-/// 表实例由 ResourceTables 组合根加载并调用 Initialize，本类不持有加载入口。
+/// 技能资源强类型映射表（运行时构造 + 类型驱动匹配）。
+/// 表不依赖任何 <c>res://</c> 资源文件：内容全部来自 mod，条目由 <c>ModAssetsMapper</c>
+/// 以 <see cref="ModSkillResource"/> 运行时构造并注册。以 Config（内容注册表中的静态技能定义实例）
+/// 为键构建反查字典，查询不依赖技能键字符串。
+/// 表实例由 ResourceTables 组合根构造，本类不持有加载入口。
 /// </summary>
 [GlobalClass]
 public partial class SkillResourceTable : Resource {
-    /// <summary>在 Godot 编辑器中拖拽的全部技能资源。</summary>
-    [Export]
-    public Godot.Collections.Array<UnitSkillBaseGodot> SkillResources { get; set; } = [];
-
     /// <summary>运行时查找字典：SkillDefinition → 技能资源副本。</summary>
     private readonly Dictionary<SkillDefinition, UnitSkillBaseGodot> _lookup = [];
-    private bool _initialized;
 
-    /// <summary>
-    /// 初始化查找字典。每个技能资源的 Config 属性返回内容注册表中的
-    /// 唯一静态技能定义实例，因此可以用 Config 作为 Key 精准匹配。
-    /// 由 ResourceTables 加载后调用，幂等。
-    /// </summary>
-    internal void Initialize() {
-        if (_initialized)
-            return;
-
-        foreach (var res in SkillResources) {
-            // 直接以原始资源为模板（只读访问 Config，不修改原始资源）
-            var config = res.InternalConfig;
-            if (config != null) {
-                _lookup[config] = res;
-            }
-        }
-
-        _initialized = true;
-    }
-
-    /// <summary>追加运行时 mod 技能资源；同 Config 覆盖已有条目。必须在 Initialize 后调用。</summary>
+    /// <summary>追加运行时 mod 技能资源；同 Config 覆盖已有条目。</summary>
     internal void RegisterModResource(UnitSkillBaseGodot resource) {
         if (resource.InternalConfig is { } config)
             _lookup[config] = resource;
     }
 
-    /// <summary>已注册的全部技能资源，含编辑器拖入与运行时 mod 构造。</summary>
+    /// <summary>已注册的全部技能资源，均由 <c>ModAssetsMapper</c> 运行时构造。</summary>
     public IReadOnlyCollection<UnitSkillBaseGodot> AllResources => _lookup.Values;
 
-    /// <summary>该技能定义是否已有展示资源；有则 mod 以内置资源为模板覆盖展示字段。</summary>
+    /// <summary>该技能定义是否已有展示资源；有则以其为模板改写 mod 声明了的字段。</summary>
     internal bool TryGetResource(SkillDefinition config, out UnitSkillBaseGodot? resource) {
         bool found = _lookup.TryGetValue(config, out var template);
         resource = template;
@@ -68,15 +40,15 @@ public partial class SkillResourceTable : Resource {
     /// <param name="config">内容注册表中的技能定义</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本</returns>
     /// <exception cref="KeyNotFoundException">
-    /// 定义未在资源表 .tres 中注册时抛出。
+    /// 定义未装配到客户端技能资源表时抛出。
     /// </exception>
     public UnitSkillBaseGodot LoadResource(SkillDefinition config) {
         if (_lookup.TryGetValue(config, out var template))
             return (UnitSkillBaseGodot)template.Duplicate();
 
         throw new KeyNotFoundException(
-            $"SkillDefinition '{config.GetType().Name}' 未在 res_skill_resource_table.tres 中注册。" +
-            " 请在 Godot 编辑器中打开该文件，将对应的技能 .tres 资源拖入 SkillResources 数组。");
+            $"SkillDefinition '{config.GetType().Name}' 未装配到客户端技能资源表。" +
+            " 请检查该技能的展示数据是否已由对应 mod 注册。");
     }
 
     /// <summary>
@@ -107,7 +79,7 @@ public partial class SkillResourceTable : Resource {
                     continue;
                 throw new InvalidOperationException(
                     $"自检失败：单位 '{unit.ConfigKey}' 引用的技能 SkillId={skill.SkillId.Id} " +
-                    $"({skill.GetType().Name}) 未在 res_skill_resource_table.tres 的 SkillResources 中注册。");
+                    $"({skill.GetType().Name}) 未装配到客户端技能资源表。");
             }
         }
     }

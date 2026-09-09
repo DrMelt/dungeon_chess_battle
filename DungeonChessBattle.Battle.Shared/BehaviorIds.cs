@@ -1,8 +1,8 @@
 namespace DungeonChessBattle.Battle.Shared;
 
 /// <summary>
-/// 行为注册表 ID 常量：宿主登记内置行为所用，mod 以相同 ID 覆盖或新 ID 扩展。
-/// 行为实现本身经 <c>GameConfig.BehaviorCatalog</c> 注册，此处只建模，不含实现。
+/// 行为注册表 ID 常量：mod 以相同 ID 覆盖或新 ID 扩展。引擎不内置行为，实现由内容 mod 经 <c>IModRuntime</c> 注册。
+/// 此处只建模，不含实现。
 /// </summary>
 public static class BehaviorIds {
     /// <summary>技能效果行为。</summary>

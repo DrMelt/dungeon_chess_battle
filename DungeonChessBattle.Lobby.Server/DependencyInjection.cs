@@ -15,7 +15,7 @@ public static class LobbyServiceCollectionExtensions {
     /// <summary>注册大厅服务器：配置切片、SignalR 广播实现与协调器。</summary>
     public static IServiceCollection AddLobbyServer(this IServiceCollection services, LobbyServerConfig lobbyConfig) {
         services.AddSingleton(lobbyConfig);
-        services.AddSingleton<SignalRBroadcaster>(sp =>
+        services.AddSingleton(sp =>
             new SignalRBroadcaster(sp.GetRequiredService<IHubContext<LobbyHub>>()));
         services.AddSingleton(sp => new GameServer(
             sp.GetRequiredService<ILoggerFactory>(),

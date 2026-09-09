@@ -39,12 +39,12 @@ public sealed class ModPackage {
         get; init;
     }
 
-    /// <summary>是否含数据代码子目录。</summary>
+    /// <summary>是否声明了数据入口 DLL。</summary>
     public required bool HasCode {
         get; init;
     }
 
-    /// <summary>是否含展示代码子目录。</summary>
+    /// <summary>是否声明了展示入口 DLL。</summary>
     public required bool HasDisplayCode {
         get; init;
     }
@@ -166,8 +166,8 @@ public sealed class ModCatalog {
         IsEnabled = enabled,
         DirectoryPath = mod.DirectoryPath,
         Dependencies = mod.Manifest.Dependencies,
-        HasCode = mod.CodeHash.Length > 0,
-        HasDisplayCode = Directory.Exists(ModLayout.DisplayCodeDirectoryOf(mod.DirectoryPath)),
+        HasCode = mod.Manifest.Code.Count > 0,
+        HasDisplayCode = mod.Manifest.CodeDisplay.Count > 0,
         Errors = [.. _load.Errors.Where(error => error.ModId == mod.Manifest.Id)],
     };
 
@@ -187,8 +187,8 @@ public sealed class ModCatalog {
             IsEnabled = false,
             DirectoryPath = mod.DirectoryPath,
             Dependencies = mod.Manifest?.Dependencies ?? [],
-            HasCode = Directory.Exists(ModLayout.CodeDirectoryOf(mod.DirectoryPath)),
-            HasDisplayCode = Directory.Exists(ModLayout.DisplayCodeDirectoryOf(mod.DirectoryPath)),
+            HasCode = mod.Manifest?.Code.Count > 0,
+            HasDisplayCode = mod.Manifest?.CodeDisplay.Count > 0,
             Errors = [error],
             Reason = mod.Reason,
         };
