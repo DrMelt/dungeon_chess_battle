@@ -77,8 +77,8 @@ public static class ModAssets {
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>
     public static SkillDisplay? Skill(string skillKey) => _registry.GetSkill(skillKey);
 
-    /// <summary>按 BuffTypeId 取展示数据；未注册返回 null。</summary>
-    public static BuffDisplay? Buff(ushort buffTypeId) => _registry.GetBuff(buffTypeId);
+    /// <summary>按 Buff 键取展示数据；未注册返回 null。</summary>
+    public static BuffDisplay? Buff(string buffKey) => _registry.GetBuff(buffKey);
 
     /// <summary>按副本键取展示数据；未注册返回 null。</summary>
     public static DungeonDisplay? Dungeon(string? dungeonKey) => _registry.GetDungeon(dungeonKey);

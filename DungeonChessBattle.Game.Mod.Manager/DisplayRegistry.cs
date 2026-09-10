@@ -16,7 +16,7 @@ public sealed class DisplayRegistry : IModDisplayRuntime, IDisplayRegistry {
     private readonly Dictionary<string, Texture2D?> _textures = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PackedScene?> _scenes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SkillDisplay> _skills = new(StringComparer.Ordinal);
-    private readonly Dictionary<ushort, BuffDisplay> _buffs = [];
+    private readonly Dictionary<string, BuffDisplay> _buffs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UnitDisplay> _units = new(StringComparer.Ordinal);
     private readonly Dictionary<string, DungeonDisplay> _dungeons = new(StringComparer.Ordinal);
 
@@ -32,7 +32,7 @@ public sealed class DisplayRegistry : IModDisplayRuntime, IDisplayRegistry {
 
     /// <inheritdoc/>
     public void RegisterBuff(BuffDisplay display) {
-        if (display.BuffTypeId == 0)
+        if (string.IsNullOrEmpty(display.BuffTypeId))
             return;
         _buffs[display.BuffTypeId] = _buffs.TryGetValue(display.BuffTypeId, out var prev)
             ? prev.Merge(display)
@@ -55,7 +55,7 @@ public sealed class DisplayRegistry : IModDisplayRuntime, IDisplayRegistry {
     public SkillDisplay? GetSkill(string skillKey) => _skills.GetValueOrDefault(skillKey);
 
     /// <inheritdoc/>
-    public BuffDisplay? GetBuff(ushort buffTypeId) => _buffs.GetValueOrDefault(buffTypeId);
+    public BuffDisplay? GetBuff(string buffKey) => _buffs.GetValueOrDefault(buffKey);
 
     /// <inheritdoc/>
     public DungeonDisplay? GetDungeon(string? dungeonKey) =>

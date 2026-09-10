@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Events;
 
@@ -19,10 +20,10 @@ public readonly record struct HealOccurred(UnitId SourceUnitId, UnitId TargetUni
 public readonly record struct HateRequested(UnitId HolderUnitId, UnitId SourceUnitId, HateEffectOp Op, float Value) : IBattleEvent;
 
 /// <summary>单位获得 Buff。</summary>
-public readonly record struct BuffApplied(UnitId TargetUnitId, ushort BuffTypeId, int StackCount) : IBattleEvent;
+public readonly record struct BuffApplied(UnitId TargetUnitId, BuffTypeId BuffTypeId, int StackCount) : IBattleEvent;
 
 /// <summary>单位失去 Buff。</summary>
-public readonly record struct BuffExpired(UnitId TargetUnitId, ushort BuffTypeId) : IBattleEvent;
+public readonly record struct BuffExpired(UnitId TargetUnitId, BuffTypeId BuffTypeId) : IBattleEvent;
 
 /// <summary>技能读条完成并完成结算。</summary>
 public readonly record struct CastCompleted(UnitId CasterUnitId, SkillKeyId SkillId, UnitId? TargetUnitId) : IBattleEvent;

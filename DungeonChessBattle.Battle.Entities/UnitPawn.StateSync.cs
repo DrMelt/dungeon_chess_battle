@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using LiteEntitySystem.Extensions;
 
@@ -135,39 +136,43 @@ public partial class UnitPawn {
         Gcds.Value = snapshot;
     }
 
-    /// <summary>Buff 全量投影，内容一致时跳过；剩余秒数落为截止 tick。</summary>
+    /// <summary>Buff 整包投影，内容一致时跳过，避免每帧重建产生网络流量；剩余秒数落为截止 tick。</summary>
     private void ProjectBuffs(BattleUnit unit) {
         var buffs = unit.Buffs;
-        bool changed = BuffsList.Count != buffs.Count;
-        if (!changed) {
-            for (int i = 0; i < buffs.Count; i++) {
-                var existing = BuffsList[i];
-                var b = buffs[i].Instance;
-                if (existing.BuffTypeId != b.BuffTypeId
-                    || existing.EndServerTick != SyncTickHelper.EndTick(EntityManager, (float)b.Remaining)
-                    || existing.StackCount != b.Stacks
-                    || existing.MaxStackCount != b.MaxStacks
-                    || existing.SourceNetId != b.SourceUnitId
-                    || existing.DamageType != (byte)b.DamageType) {
-                    changed = true;
-                    break;
+        var entries = new SyncBuffSnapshot.Entry[buffs.Count];
+        for (int i = 0; i < buffs.Count; i++) {
+            var b = buffs[i].Instance;
+            entries[i] = new SyncBuffSnapshot.Entry(
+                b.BuffTypeId.Value,
+                SyncTickHelper.EndTick(EntityManager, (float)b.Remaining),
+                (ushort)b.Stacks,
+                (ushort)Math.Max(1, b.MaxStacks),
+                b.SourceUnitId,
+                (byte)b.DamageType);
+        }
+
+        var current = Buffs.Value;
+        bool changed;
+        if (current == null) {
+            changed = true;
+        }
+        else {
+            changed = current.Entries.Count != entries.Length;
+            if (!changed) {
+                for (int i = 0; i < entries.Length; i++) {
+                    if (current.Entries[i] != entries[i]) {
+                        changed = true;
+                        break;
+                    }
                 }
             }
         }
         if (!changed)
             return;
 
-        while (BuffsList.Count > 0)
-            BuffsList.RemoveAt(BuffsList.Count - 1);
-        foreach (var instance in buffs.Select(b => b.Instance))
-            BuffsList.Add(new SyncBuffData {
-                BuffTypeId = instance.BuffTypeId,
-                EndServerTick = SyncTickHelper.EndTick(EntityManager, (float)instance.Remaining),
-                StackCount = (ushort)instance.Stacks,
-                MaxStackCount = (ushort)Math.Max(1, instance.MaxStacks),
-                SourceNetId = instance.SourceUnitId,
-                DamageType = (byte)instance.DamageType,
-            });
+        var snapshot = new SyncBuffSnapshot();
+        snapshot.Set(entries);
+        Buffs.Value = snapshot;
     }
 
     /// <summary>仇恨全量投影，内容一致时跳过。在线端只下行不消费。</summary>
@@ -245,48 +250,48 @@ public partial class UnitPawn {
     }
 
     /// <summary>
-    /// Buff 列表还原为 <see cref="ActiveBuff"/> 展示壳：指纹变化才重建，指纹未变只原地刷新剩余秒。
+    /// Buff 整包还原为 <see cref="ActiveBuff"/> 展示壳：指纹变化才重建，指纹未变只原地刷新剩余秒。
     /// 在线端不推进 Buff，到期条目随服务端下行增删。
     /// </summary>
     private void ApplyBuffs(BattleUnit unit) {
+        var snapshot = Buffs.Value;
         var buffs = unit.RuntimeState.Buffs;
-        int stamp = BuffStamp(BuffsList);
+        int stamp = BuffStamp(snapshot);
         // 同 ApplyCooldowns：截止时间是常量、剩余秒是派生值，跳过重建不等于跳过刷新
-        if (stamp == _buffStamp && buffs.Count == BuffsList.Count) {
-            for (int i = 0; i < buffs.Count; i++)
-                buffs[i].Instance.Remaining = SyncTickHelper.RemainingSeconds(EntityManager, BuffsList[i].EndServerTick);
+        if (stamp == _buffStamp && buffs.Count == (snapshot?.Entries.Count ?? 0)) {
+            if (snapshot != null)
+                for (int i = 0; i < buffs.Count; i++)
+                    buffs[i].Instance.Remaining = SyncTickHelper.RemainingSeconds(EntityManager, snapshot.Entries[i].EndServerTick);
             return;
         }
         _buffStamp = stamp;
 
         buffs.Clear();
-        foreach (var data in BuffsList)
+        if (snapshot == null)
+            return;
+        foreach (var entry in snapshot.Entries)
             buffs.Add(new ActiveBuff(
                 new BuffInstance {
-                    BuffTypeId = data.BuffTypeId,
+                    BuffTypeId = new BuffTypeId(entry.BuffKey),
                     TargetUnitId = unit.UnitId,
-                    SourceUnitId = data.SourceNetId,
-                    Stacks = data.StackCount,
-                    MaxStacks = data.MaxStackCount,
-                    DamageType = (DamageType)data.DamageType,
-                    Remaining = SyncTickHelper.RemainingSeconds(EntityManager, data.EndServerTick),
+                    SourceUnitId = entry.SourceNetId,
+                    Stacks = entry.StackCount,
+                    MaxStacks = entry.MaxStackCount,
+                    DamageType = (DamageType)entry.DamageType,
+                    Remaining = SyncTickHelper.RemainingSeconds(EntityManager, entry.EndServerTick),
                 },
                 NetworkBuffDefinition.Instance,
                 NoOpBuffEffect.Instance));
     }
 
-    /// <summary>Buff 列表内容指纹，覆盖全部展示字段。</summary>
-    private static int BuffStamp(SyncList<SyncBuffData> buffs) {
+    /// <summary>Buff 整包内容指纹，含空快照；条目是记录结构，逐字段相等即指纹相等。</summary>
+    private static int BuffStamp(SyncBuffSnapshot? snapshot) {
         var hash = new HashCode();
-        hash.Add(buffs.Count);
-        foreach (var b in buffs) {
-            hash.Add(b.BuffTypeId);
-            hash.Add(b.EndServerTick);
-            hash.Add(b.StackCount);
-            hash.Add(b.MaxStackCount);
-            hash.Add(b.SourceNetId);
-            hash.Add(b.DamageType);
-        }
+        if (snapshot == null)
+            return hash.ToHashCode();
+        hash.Add(snapshot.Entries.Count);
+        foreach (var entry in snapshot.Entries)
+            hash.Add(entry);
         return hash.ToHashCode();
     }
 

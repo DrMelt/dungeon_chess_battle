@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Entities.SyncData;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -147,14 +147,13 @@ public partial class UnitStateChangeInfo : Node {
     }
 
     /// <summary>
-    /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 BuffTypeId 从资源表匹配。
+    /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 Buff 键从展示索引匹配。
     /// </summary>
-    private void ShowBuffPopup(IUnitUiView unit, ushort buffTypeId, bool added) {
+    private void ShowBuffPopup(IUnitUiView unit, BuffTypeId buffTypeId, bool added) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         _effects_root?.AddChild(buffChangeInfo);
         ApplyPopupScale(buffChangeInfo);
-        var buffData = new SyncBuffData { BuffTypeId = buffTypeId };
-        buffChangeInfo.Init(buffData, added
+        buffChangeInfo.Init(buffTypeId.Value, added
             ? BuffChangeType.Added
             : BuffChangeType.Removed);
         PopupAtUnit(buffChangeInfo, unit);

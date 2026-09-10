@@ -47,13 +47,13 @@ public interface IModRuntime {
 /// <summary>
 /// mod 内容注册面：把领域定义对象（技能/Buff/单位/副本）直接注册进内容注册表。
 /// 定义对象是运行时强类型，非字符串 schema——mod 必先构造对象图再注册。
-/// 同键后写覆盖；Buff 以 <see cref="BuffDefinition.BuffTypeId"/> 为同步身份，冲突即异常。
+/// 同键后写覆盖；Buff 以 <see cref="BuffDefinition.BuffTypeId"/> 字符串键为同步身份。
 /// </summary>
 public interface IModContentRuntime {
     /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
     void RegisterSkill(SkillDefinition skill);
 
-    /// <summary>注册 Buff 定义，同 BuffTypeId 覆盖；落引擎保留段（1~999）由宿主拒载。</summary>
+    /// <summary>注册 Buff 定义，同 BuffTypeId 覆盖。</summary>
     void RegisterBuff(BuffDefinition buff);
 
     /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>

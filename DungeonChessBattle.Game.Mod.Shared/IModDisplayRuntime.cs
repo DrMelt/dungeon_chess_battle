@@ -20,7 +20,7 @@ public interface IModDisplayRuntime {
     /// <summary>注册技能展示数据，同 Id 覆盖。</summary>
     void RegisterSkill(SkillDisplay display);
 
-    /// <summary>注册 Buff 展示数据，同 BuffTypeId 覆盖；类型 ID 为 0 的数据不参与注册。</summary>
+    /// <summary>注册 Buff 展示数据，同 BuffTypeId 覆盖；键为空串的数据不参与注册。</summary>
     void RegisterBuff(BuffDisplay display);
 
     /// <summary>注册单位展示数据，同 ConfigKey 覆盖。</summary>

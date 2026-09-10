@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
 /// Buff 图标控件，展示单个 Buff 的图标、持续时间与层数，并区分来源颜色。
-/// 数据源为同步 Buff 数据（SyncBuffData），图标按 BuffTypeId 从 BuffResourceTable 匹配。
+/// 数据源为 Buff 展示视图（<see cref="IBuffUiView"/>），图标按 Buff 键从展示索引匹配。
 /// </summary>
 public partial class TextureRectBuffIcon : TextureRect {
     /// <summary>日志记录器。</summary>
@@ -71,8 +71,8 @@ public partial class TextureRectBuffIcon : TextureRect {
         durationLabelRef.LabelSettings.FontColor =
             buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
-        // 图标按 BuffTypeId 从展示索引取；内置与 mod 同源，未注册时留空
-        Texture = ModAssets.Buff(buff.BuffTypeId)?.Icon;
+        // 图标按 Buff 键从展示索引取；内置与 mod 同源，未注册时留空
+        Texture = ModAssets.Buff(buff.BuffTypeId.Value)?.Icon;
     }
 
     /// <summary>仅比较决定图标外观的稳定字段；剩余时间经 _Process 每帧刷新，不纳入短路判定。</summary>

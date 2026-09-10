@@ -16,8 +16,8 @@ public sealed class ModDeclaration {
     /// <summary>被 mod 声明过的技能键。</summary>
     public HashSet<string> Skills { get; } = new(StringComparer.Ordinal);
 
-    /// <summary>被 mod 声明过的 BuffTypeId。</summary>
-    public HashSet<ushort> Buffs { get; } = [];
+    /// <summary>被 mod 声明过的 Buff 键。</summary>
+    public HashSet<string> Buffs { get; } = new(StringComparer.Ordinal);
 
     /// <summary>被 mod 声明过的单位配置键。</summary>
     public HashSet<string> Units { get; } = new(StringComparer.Ordinal);
@@ -53,10 +53,15 @@ public sealed class ModDisplayRuntime(
 
     /// <inheritdoc/>
     public void RegisterBuff(BuffDisplay display) {
-        if (display.BuffTypeId == 0)
+        if (string.IsNullOrEmpty(display.BuffTypeId))
             return;
-        if (content.GetBuff(display.BuffTypeId) is null)
-            errors.Add(new ModError(modId, $"展示引用未知 Buff（BuffTypeId）'{display.BuffTypeId}'"));
+        if (display.BuffTypeId.Length > BuffTypeId.MaxLength) {
+            errors.Add(new ModError(modId,
+                $"Buff 键 '{display.BuffTypeId}' 超过长度上限 {BuffTypeId.MaxLength}，展示数据丢弃"));
+            return;
+        }
+        if (content.GetBuff(new BuffTypeId(display.BuffTypeId)) is null)
+            errors.Add(new ModError(modId, $"展示引用未知 Buff '{display.BuffTypeId}'"));
         registry.RegisterBuff(display);
         declared.Buffs.Add(display.BuffTypeId);
     }

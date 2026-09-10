@@ -21,8 +21,8 @@ public partial class BuffBaseGodot : Resource {
         get; private set;
     }
 
-    /// <summary>Buff 全局唯一 ID（对应配置表与 SyncBuffData.BuffTypeId）。</summary>
-    public ushort BuffTypeId => Config?.BuffTypeId ?? 0;
+    /// <summary>Buff 键，与内容注册表里的 Buff 身份对齐；未绑定定义为空串。</summary>
+    public string BuffTypeId => Config?.BuffTypeId.Value ?? "";
 
     /// <summary>产出注册表用的展示数据；本类成员带 Buff 前缀，通用成员名在此对齐一次。</summary>
     internal BuffDisplay ToDisplay() => new(BuffTypeId, BuffName, BuffDescription, Icon);

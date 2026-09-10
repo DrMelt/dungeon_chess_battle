@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Buffs;
 
@@ -8,9 +9,9 @@ namespace DungeonChessBattle.Battle.Shared.Buffs;
 /// 在线端把 UnitPawn 同步的 Buff 还原为 <see cref="ActiveBuff"/> 壳，供 UI 经 <see cref="IBuffUiView"/> 只读取数。
 /// </summary>
 public sealed class NetworkBuffDefinition : BuffDefinition {
-    /// <summary>共享单例：BuffTypeId 等展示值来自 <see cref="BuffInstance"/>，本定义仅作结构占位。</summary>
+    /// <summary>共享单例：Buff 键等展示值来自 <see cref="BuffInstance"/>，本定义仅作结构占位。</summary>
     public static readonly NetworkBuffDefinition Instance = new() {
-        BuffTypeId = 0,
+        BuffTypeId = BuffTypeId.None,
         Duration = 0,
         MaxStacks = 1,
         Effect = NoOpBuffEffect.Instance,

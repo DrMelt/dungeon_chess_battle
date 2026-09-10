@@ -13,7 +13,7 @@ namespace DungeonChessBattle.Game.GameAssets.Mods;
 /// 表内缺失的领域条目一律补一个运行时资源，保证「内容里有、展示里没有」不再让客户端自检崩。
 /// </summary>
 /// <remarks>
-/// 必须在内容装配（<c>GameContentHost</c> 重建注册表）与引擎侧展示注册之后调用：表的查找字典以领域定义实例为键。
+/// 必须在内容装配（<c>GameContentHost</c> 重建注册表）与引擎侧展示注册之后调用：表的查找以刚注册的领域定义或其键为身份。
 /// 引擎不提供任何条目，故模板只可能是本方法此前已落地的资源。
 /// 字段取自展示注册表的合并数据，落地后把资源对象的数据回注注册表，
 /// 使「走资源表的渲染」与「走索引的 UI」看到同一份展示真相，缺省名回退也只在资源对象上算一次。
@@ -55,20 +55,21 @@ public static class ModAssetsMapper {
         }
 
         foreach (var config in registry.Buffs) {
-            bool overridden = declared.Buffs.Contains(config.BuffTypeId);
-            bool hasTemplate = buffs.TryGetResource(config.BuffTypeId, out var template);
+            string buffKey = config.BuffTypeId.Value;
+            bool overridden = declared.Buffs.Contains(buffKey);
+            bool hasTemplate = buffs.TryGetResource(buffKey, out var template);
             if (!overridden) {
                 if (!hasTemplate) {
                     var placeholder = new ModBuffResource(config);
                     buffs.RegisterModResource(placeholder);
                     display.RegisterBuff(placeholder.ToDisplay());
-                    synthesized.Add($"Buff {config.BuffTypeId}");
+                    synthesized.Add($"Buff {buffKey}");
                 }
                 continue;
             }
 
-            var data = display.GetBuff(config.BuffTypeId)
-                ?? throw new InvalidOperationException($"Buff {config.BuffTypeId} 已声明覆盖但展示数据缺失。");
+            var data = display.GetBuff(buffKey)
+                ?? throw new InvalidOperationException($"Buff {buffKey} 已声明覆盖但展示数据缺失。");
             var resource = hasTemplate && template is { } t
                 ? (BuffBaseGodot)t.Duplicate()
                 : new ModBuffResource(config);

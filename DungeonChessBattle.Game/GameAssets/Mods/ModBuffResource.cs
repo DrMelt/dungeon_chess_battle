@@ -13,11 +13,11 @@ public sealed partial class ModBuffResource : BuffBaseGodot {
     public ModBuffResource() {
     }
 
-    /// <remarks>无模板可继承，显示名先回退到 BuffTypeId，mod 声明后由 ApplyViewData 覆盖。</remarks>
+    /// <remarks>无模板可继承，显示名先回退到 Buff 键，mod 声明后由 ApplyViewData 覆盖。</remarks>
     public ModBuffResource(BuffDefinition? config) {
         _config = config;
         if (config is not null)
-            ApplyViewData(null, $"Buff {config.BuffTypeId}", null);
+            ApplyViewData(null, $"Buff {config.BuffTypeId.Value}", null);
     }
 
     /// <inheritdoc />

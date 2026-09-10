@@ -15,8 +15,8 @@ public static class BattleEventLogTextFormatter {
     /// <summary>按技能强类型 ID 解析显示名。</summary>
     public delegate string SkillNameResolver(SkillKeyId skillId);
 
-    /// <summary>按 Buff 类型 ID 解析显示名。</summary>
-    public delegate string BuffNameResolver(ushort buffTypeId);
+    /// <summary>按 Buff 键解析显示名。</summary>
+    public delegate string BuffNameResolver(string buffKey);
 
     /// <summary>把日志条目格式化为事件文本，不含时间前缀。</summary>
     public static string Format(BattleEventLogEntry entry,

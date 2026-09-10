@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// Buff 图标容器，同步单位展示视图的 Buff 列表到图标视图。
 /// 数据源为 <see cref="IUnitUiView.Buffs"/>（在线来自领域 BattleUnit，回放来自 BattleUnit），复用 CacheSynchronizer：
-/// 键为 BuffTypeId，仅在列表增删时建/删图标，内容变化由 update 回调刷新对应图标，
+/// 键为 Buff 键，仅在列表增删时建/删图标，内容变化由 update 回调刷新对应图标，
 /// 剩余时间由图标每帧按本地 Buff 剩余时间刷新。
 /// </summary>
 public partial class ContainerBuffs : Control {
@@ -18,8 +18,8 @@ public partial class ContainerBuffs : Control {
         get; private set;
     }
 
-    /// <summary>Buff 图标缓存，键为 BuffTypeId，源列表因 AddBuff 按类型合并而唯一。</summary>
-    private readonly CacheSynchronizer<ushort, IBuffUiView, TextureRectBuffIcon> _icons;
+    /// <summary>Buff 图标缓存，键为 Buff 键，源列表因 AddBuff 按类型合并而唯一。</summary>
+    private readonly CacheSynchronizer<string, IBuffUiView, TextureRectBuffIcon> _icons;
 
     /// <summary>当前绑定单位展示视图，update 回调用于来源着色与剩余时间推算。</summary>
     private IUnitUiView? _focusUnit;
@@ -48,8 +48,8 @@ public partial class ContainerBuffs : Control {
         _icons.Sync(source);
     }
 
-    /// <summary>提取 Buff 类型 ID 作为图标键。</summary>
-    private static ushort GetKey(IBuffUiView buff) => buff.BuffTypeId;
+    /// <summary>提取 Buff 键作为图标键。</summary>
+    private static string GetKey(IBuffUiView buff) => buff.BuffTypeId.Value;
 
     /// <summary>创建 Buff 图标并挂载到容器。</summary>
     private TextureRectBuffIcon CreateIcon() {

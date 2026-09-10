@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Buffs;
 
@@ -7,8 +8,8 @@ namespace DungeonChessBattle.Battle.Shared.Buffs;
 /// 效果策略经 <see cref="Effect"/> 引用注入，规则实现归属内容层。
 /// </summary>
 public abstract class BuffDefinition {
-    /// <summary>Buff 全局唯一 ID。</summary>
-    public required ushort BuffTypeId {
+    /// <summary>Buff 全局唯一键，跨端同步身份。</summary>
+    public required BuffTypeId BuffTypeId {
         get; init;
     }
 

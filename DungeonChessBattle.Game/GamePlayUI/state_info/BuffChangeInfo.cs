@@ -1,7 +1,6 @@
 using DungeonChessBattle.Game.Services;
 using Godot;
 using System;
-using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Mod.Manager;
 using Microsoft.Extensions.Logging;
@@ -54,11 +53,11 @@ public partial class BuffChangeInfo : FadeInfo {
     }
 
     /// <summary>
-    /// 初始化提示内容（同步 Buff 数据版本）：设置变化符号，图标按 BuffTypeId 从资源表匹配。
+    /// 初始化提示内容（按 Buff 键版本）：设置变化符号，图标按 Buff 键从展示索引匹配。
     /// </summary>
-    /// <param name="buffData">要展示的同步 Buff 数据。</param>
+    /// <param name="buffKey">要展示的 Buff 键。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(SyncBuffData buffData, BuffChangeType changeType) {
+    public void Init(string buffKey, BuffChangeType changeType) {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
@@ -68,8 +67,8 @@ public partial class BuffChangeInfo : FadeInfo {
             _ => throw new NotImplementedException(),
         };
 
-        // 图标按 BuffTypeId 从展示索引取；内置与 mod 同源，未注册时留空
-        textureRectRef.Texture = ModAssets.Buff(buffData.BuffTypeId)?.Icon;
+        // 图标按 Buff 键从展示索引取；内置与 mod 同源，未注册时留空
+        textureRectRef.Texture = ModAssets.Buff(buffKey)?.Icon;
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Entities.SyncData;
 
@@ -49,37 +50,43 @@ public static class BattleEventCoder {
                 C = (byte)hr.Op, Value = hr.Value,
             },
             BuffApplied ba => new SyncBattleEvent {
-                Type = TypeBuffApplied, A = ba.TargetUnitId, B = ba.BuffTypeId, C = (ushort)ba.StackCount,
+                Type = TypeBuffApplied, A = ba.TargetUnitId, C = (ushort)ba.StackCount, Key = ba.BuffTypeId.Value,
             },
-            BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetUnitId, B = be.BuffTypeId },
+            BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetUnitId, Key = be.BuffTypeId.Value },
             CastCompleted cc => new SyncBattleEvent {
-                Type = TypeCastCompleted, A = cc.CasterUnitId, C = cc.TargetUnitId?.Value ?? 0, SkillKey = cc.SkillId.Id,
+                Type = TypeCastCompleted, A = cc.CasterUnitId, C = cc.TargetUnitId?.Value ?? 0, Key = cc.SkillId.Id,
             },
             CastStarted cs => new SyncBattleEvent {
-                Type = TypeCastStarted, A = cs.CasterUnitId, C = cs.TargetUnitId?.Value ?? 0, SkillKey = cs.SkillId.Id,
+                Type = TypeCastStarted, A = cs.CasterUnitId, C = cs.TargetUnitId?.Value ?? 0, Key = cs.SkillId.Id,
             },
             CastCanceled ccl => new SyncBattleEvent {
-                Type = TypeCastCanceled, A = ccl.CasterUnitId, SkillKey = ccl.SkillId.Id,
+                Type = TypeCastCanceled, A = ccl.CasterUnitId, Key = ccl.SkillId.Id,
             },
             _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
         };
     }
 
-    /// <summary>解码单个同步事件为领域事件；未知 tag 或技能键非法返回 null，由调用方按丢弃处理。</summary>
+    /// <summary>解码单个同步事件为领域事件；未知 tag 或字符串身份键非法返回 null，由调用方按丢弃处理。</summary>
     public static IBattleEvent? Decode(SyncBattleEvent e) {
         if ((e.Type is TypeCastStarted or TypeCastCompleted or TypeCastCanceled)
-            && (string.IsNullOrEmpty(e.SkillKey) || e.SkillKey.Length > SkillKeyId.MaxKeyLength))
+            && !IsUsableKey(e.Key, SkillKeyId.MaxKeyLength))
+            return null;
+        if (e.Type is TypeBuffApplied or TypeBuffExpired && !IsUsableKey(e.Key, BuffTypeId.MaxLength))
             return null;
         return e.Type switch {
             TypeDamage => new DamageOccurred(e.A, e.B, e.Value, (DamageType)e.C),
             TypeHeal => new HealOccurred(e.A, e.B, e.Value),
             TypeHateRequested => new HateRequested(e.A, e.B, (HateEffectOp)e.C, e.Value),
-            TypeBuffApplied => new BuffApplied(e.A, e.B, e.C),
-            TypeBuffExpired => new BuffExpired(e.A, e.B),
-            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : new UnitId(e.C)),
-            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.SkillKey), e.C == 0 ? null : new UnitId(e.C)),
-            TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.SkillKey)),
+            TypeBuffApplied => new BuffApplied(e.A, new BuffTypeId(e.Key), e.C),
+            TypeBuffExpired => new BuffExpired(e.A, new BuffTypeId(e.Key)),
+            TypeCastCompleted => new CastCompleted(e.A, new SkillKeyId(e.Key), e.C == 0 ? null : new UnitId(e.C)),
+            TypeCastStarted => new CastStarted(e.A, new SkillKeyId(e.Key), e.C == 0 ? null : new UnitId(e.C)),
+            TypeCastCanceled => new CastCanceled(e.A, new SkillKeyId(e.Key)),
             _ => null,
         };
     }
+
+    /// <summary>字符串身份键是否可用：非空且长度不超该类型键的上限。</summary>
+    private static bool IsUsableKey(string? key, ushort maxLength) =>
+        !string.IsNullOrEmpty(key) && key.Length <= maxLength;
 }

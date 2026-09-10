@@ -52,8 +52,8 @@ public partial class UnitPawn : PawnLogic {
     /// <summary>当前施法剩余读条时间，秒。</summary>
     public SyncVar<float> SkillCastRemaining;
 
-    /// <summary>单位当前持有的 Buff 列表。</summary>
-    public readonly SyncList<SyncBuffData> BuffsList = [];
+    /// <summary>单位当前持有的 Buff 整包快照，服务端权威回写。</summary>
+    public readonly SyncNetSerializable<SyncBuffSnapshot> Buffs = new(() => new SyncBuffSnapshot());
 
     /// <summary>单位拥有的技能定义列表，引用共享单位配置，装配期写入后只读，不参与网络同步。</summary>
     public IReadOnlyList<SkillDefinition> Skills {

@@ -13,7 +13,7 @@ namespace DungeonChessBattle.Battle.GameConfig;
 /// <remarks>注册表自空开始，内容按写入顺序覆盖。</remarks>
 public sealed partial class ContentSetRegistry(string engineRevision, string contentFingerprint) : IContentRegistryView {
     private readonly Dictionary<string, SkillDefinition> _skillsByKey = new(StringComparer.Ordinal);
-    private readonly Dictionary<ushort, BuffDefinition> _buffsByTypeId = [];
+    private readonly Dictionary<string, BuffDefinition> _buffsByKey = new(StringComparer.Ordinal);
     private readonly Dictionary<UnitConfigKey, UnitConfig> _unitsByKey = [];
     private readonly Dictionary<string, DungeonConfig> _dungeonsByKey = new(StringComparer.Ordinal);
 
@@ -33,7 +33,7 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     public IReadOnlyCollection<SkillDefinition> Skills => _skillsByKey.Values;
 
     /// <summary>全部 Buff 定义。</summary>
-    public IReadOnlyCollection<BuffDefinition> Buffs => _buffsByTypeId.Values;
+    public IReadOnlyCollection<BuffDefinition> Buffs => _buffsByKey.Values;
 
     /// <summary>全部单位配置。</summary>
     public IReadOnlyCollection<UnitConfig> Units => _unitsByKey.Values;
@@ -48,12 +48,12 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     public SkillDefinition GetRequiredSkill(SkillKeyId skillKey) =>
         GetSkill(skillKey) ?? throw new InvalidOperationException($"技能 '{skillKey.Id}' 未注册。");
 
-    /// <summary>按 BuffTypeId 取定义；不存在返回 null。</summary>
-    public BuffDefinition? GetBuff(ushort buffTypeId) => _buffsByTypeId.GetValueOrDefault(buffTypeId);
+    /// <summary>按 Buff 键取定义；不存在返回 null。</summary>
+    public BuffDefinition? GetBuff(BuffTypeId buffTypeId) => _buffsByKey.GetValueOrDefault(buffTypeId.Value);
 
-    /// <summary>按 BuffTypeId 取定义；不存在抛异常，装配期与内容消费方必得。</summary>
-    public BuffDefinition GetRequiredBuff(ushort buffTypeId) =>
-        GetBuff(buffTypeId) ?? throw new InvalidOperationException($"Buff {buffTypeId} 未注册。");
+    /// <summary>按 Buff 键取定义；不存在抛异常，装配期与内容消费方必得。</summary>
+    public BuffDefinition GetRequiredBuff(BuffTypeId buffTypeId) =>
+        GetBuff(buffTypeId) ?? throw new InvalidOperationException($"Buff '{buffTypeId.Value}' 未注册。");
 
     /// <summary>按单位配置键取配置；不存在返回 null。</summary>
     public UnitConfig? GetUnit(UnitConfigKey configKey) => _unitsByKey.GetValueOrDefault(configKey);
@@ -73,11 +73,11 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
     public void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
 
-    /// <summary>注册 Buff 定义：同 BuffTypeId 覆盖，零 ID 拒绝。</summary>
+    /// <summary>注册 Buff 定义：同键覆盖，空键拒绝。</summary>
     public void RegisterBuff(BuffDefinition buff) {
-        if (buff.BuffTypeId == 0)
-            throw new InvalidOperationException("Buff 必须声明非零 BuffTypeId");
-        _buffsByTypeId[buff.BuffTypeId] = buff;
+        if (buff.BuffTypeId.IsDefault)
+            throw new InvalidOperationException("Buff 必须声明 Buff 键");
+        _buffsByKey[buff.BuffTypeId.Value] = buff;
     }
 
     /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>

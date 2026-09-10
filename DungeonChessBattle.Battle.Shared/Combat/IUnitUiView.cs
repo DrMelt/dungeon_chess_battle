@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
@@ -6,8 +7,8 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// Buff 展示只读视图：在线战斗世界与回放重放共用，仅暴露 UI 展示所需字段。
 /// </summary>
 public interface IBuffUiView {
-    /// <summary>Buff 类型 ID。</summary>
-    ushort BuffTypeId {
+    /// <summary>Buff 键。</summary>
+    BuffTypeId BuffTypeId {
         get;
     }
 

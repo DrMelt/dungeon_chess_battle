@@ -24,7 +24,7 @@ public struct ReliableBattleEventLog : INetSerializable {
             writer.Put(e.B);
             writer.Put(e.C);
             writer.Put(e.Value);
-            writer.Put(e.SkillKey);
+            writer.Put(e.Key);
         }
     }
 
@@ -41,7 +41,7 @@ public struct ReliableBattleEventLog : INetSerializable {
                 B = reader.GetUShort(),
                 C = reader.GetUShort(),
                 Value = reader.GetFloat(),
-                SkillKey = reader.GetString(),
+                Key = reader.GetString(),
             };
         }
         Events = events;

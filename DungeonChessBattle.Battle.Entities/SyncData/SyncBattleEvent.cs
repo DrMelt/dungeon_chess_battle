@@ -3,7 +3,7 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// <summary>
 /// 战斗事件日志的扁平化同步结构。整帧事件日志编码为 SyncBattleEvent 数组经传输层可靠通道外送，
 /// 帧内顺序即服务端产出顺序。Type 为事件类型 tag，A/B/C 为 ushort 槽位，Value 为 float 槽位，
-/// SkillKey 为技能事件专用字符串槽位；槽位语义由 BattleEventCoder 集中映射。
+/// Key 为带字符串身份的事件专用槽位；槽位语义由 BattleEventCoder 集中映射。
 /// </summary>
 public struct SyncBattleEvent {
     /// <summary>事件类型 tag，对应 BattleEventCoder.Type* 常量。</summary>
@@ -16,7 +16,7 @@ public struct SyncBattleEvent {
         get; set;
     }
 
-    /// <summary>语义随 Type：目标/Buff 类型/操作码。</summary>
+    /// <summary>语义随 Type：目标/操作码。</summary>
     public ushort B {
         get; set;
     }
@@ -31,8 +31,8 @@ public struct SyncBattleEvent {
         get; set;
     }
 
-    /// <summary>技能事件专用的字符串技能键，非技能事件为空字符串。</summary>
-    public string SkillKey {
+    /// <summary>字符串身份槽位：技能事件的技能键、Buff 事件的 Buff 键，其余事件为空字符串。</summary>
+    public string Key {
         get; set;
     }
 }

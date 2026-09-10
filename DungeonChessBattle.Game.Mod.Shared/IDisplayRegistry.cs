@@ -12,8 +12,8 @@ public interface IDisplayRegistry {
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>
     SkillDisplay? GetSkill(string skillKey);
 
-    /// <summary>按 BuffTypeId 取展示数据；未注册返回 null。</summary>
-    BuffDisplay? GetBuff(ushort buffTypeId);
+    /// <summary>按 Buff 键取展示数据；未注册返回 null。</summary>
+    BuffDisplay? GetBuff(string buffKey);
 
     /// <summary>按副本键取展示数据；键为空或未注册返回 null。</summary>
     DungeonDisplay? GetDungeon(string? dungeonKey);

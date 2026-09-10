@@ -12,8 +12,8 @@ public interface IContentRegistryView {
     /// <summary>按技能键取定义；不存在返回 null。</summary>
     SkillDefinition? GetSkill(SkillKeyId skillKey);
 
-    /// <summary>按 BuffTypeId 取定义；不存在返回 null。</summary>
-    BuffDefinition? GetBuff(ushort buffTypeId);
+    /// <summary>按 Buff 键取定义；不存在返回 null。</summary>
+    BuffDefinition? GetBuff(BuffTypeId buffTypeId);
 
     /// <summary>按单位配置键取定义；不存在返回 null。</summary>
     UnitConfig? GetUnit(UnitConfigKey configKey);

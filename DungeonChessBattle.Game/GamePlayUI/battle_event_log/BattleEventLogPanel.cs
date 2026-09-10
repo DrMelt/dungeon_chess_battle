@@ -146,7 +146,7 @@ public partial class BattleEventLogPanel : Control {
     private static string ResolveSkillName(SkillKeyId skillId)
         => ModAssets.Skill(skillId.Id)?.Name ?? $"技能 {skillId.Id}";
 
-    /// <summary>按 Buff 类型 ID 解析 Buff 名；展示索引未注册回退为裸 ID。</summary>
-    private static string ResolveBuffName(ushort buffTypeId)
-        => ModAssets.Buff(buffTypeId)?.Name ?? $"Buff {buffTypeId}";
+    /// <summary>按 Buff 键解析 Buff 名；展示索引未注册回退为裸键。</summary>
+    private static string ResolveBuffName(string buffKey)
+        => ModAssets.Buff(buffKey)?.Name ?? $"Buff {buffKey}";
 }

@@ -1,12 +1,13 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Buffs;
 
 /// <summary>运行时 Buff 实例：携带来源单位快照、持续计时与叠加层数。</summary>
 public sealed class BuffInstance {
-    /// <summary>Buff 配置 ID。</summary>
-    public required ushort BuffTypeId {
+    /// <summary>Buff 键，取自定义。</summary>
+    public required BuffTypeId BuffTypeId {
         get; init;
     }
 
