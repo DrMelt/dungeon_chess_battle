@@ -3,8 +3,10 @@
 [ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_8vrlr"]
 [ext_resource type="Script" uid="uid://dew7gu087f7ol" path="res://GamePanels/MainMenu/MainMenu.cs" id="1_main"]
 [ext_resource type="Script" uid="uid://cp5a5hvpo2jyt" path="res://GamePanels/MainMenu/MainMenuInterRefs.cs" id="2_irfs"]
-[ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="3_bg"]
 [ext_resource type="FontFile" uid="uid://doe462v0rgu8g" path="res://fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf" id="5_xoykb"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hnx2m"]
+bg_color = Color(0.73300546, 0.73300546, 0.7330052, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_connect_button"]
 bg_color = Color(0.15, 0.45, 0.65, 0.85)
@@ -84,7 +86,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-theme_override_styles/panel = ExtResource("3_bg")
+theme_override_styles/panel = SubResource("StyleBoxFlat_hnx2m")
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=811588583]
 layout_mode = 1

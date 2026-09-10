@@ -9,43 +9,36 @@ namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
 /// mod 管理面板：列出 mods 目录下的 mod、切换启用集、呈现装载错误与内容修订号。
-/// 本面板只读不判：mod 的解析、排序、启停落盘与错误汇总全在 <see cref="ModCatalog"/>，
-/// 这里只做一行一控件的呈现。启停改的是磁盘上的启用集，内容装配是一次性的，故变更需重启进程。
+/// 本面板只读不判：mod 的解析、排序、启停落盘与错误汇总全在 <see cref="ModCatalog"/>。
+/// 类内分两层——措辞是只进不出的纯函数，渲染只把文本与条目交给标签和 <see cref="ModRowList"/>；
+/// 列宽、配色与换行都在场景里，这里不碰。
+/// 启停改的是磁盘上的启用集，内容装配是一次性的，故变更需重启进程。
 /// </summary>
 public partial class ModManagementPanel : BaseGamePanel {
-    /// <summary>mod 名列宽度。</summary>
-    private const float NameWidth = 240f;
-    /// <summary>mod ID 列宽度。</summary>
-    private const float IdWidth = 170f;
-    /// <summary>构成列宽度。</summary>
-    private const float CompositionWidth = 190f;
-
-    private static readonly Color DimColor = new(0.62f, 0.62f, 0.62f, 1f);
-    private static readonly Color ErrorColor = new(0.9f, 0.42f, 0.36f, 1f);
-
-    private readonly ILogger<ModManagementPanel> _logger = ServiceLocator.GetLogger<ModManagementPanel>();
+    /// <summary>日志记录器。</summary>
+    private static readonly ILogger<ModManagementPanel> _logger = ServiceLocator.GetLogger<ModManagementPanel>();
 
     /// <summary>导出引用集合节点。</summary>
-    public ModManagementPanelInterRefs? InterRefs {
-        get; private set;
-    }
+    private ModManagementPanelInterRefs? _refs;
 
     /// <summary>一次操作后附加在状态行之后的提示，null 表示无。</summary>
     private string? _notice;
 
     /// <summary>
     /// 节点就绪：绑定按钮。列表不在此构建——面板隐藏期目录可能已被用户改动，取数只发生在打开时。
+    /// 某个按钮引用缺失只是那一个动作没有入口，不中断其余绑定，故逐条可空。
     /// </summary>
     public override void _Ready() {
-        InterRefs = GetNode<ModManagementPanelInterRefs>("ModManagementPanelInterRefs");
-        if (InterRefs is null) {
+        _refs = GetNode<ModManagementPanelInterRefs>("ModManagementPanelInterRefs");
+        if (_refs is null) {
             _logger.LogError("ModManagementPanelInterRefs node not found.");
             return;
         }
 
-        InterRefs?.RescanButton?.Pressed += OnRescanPressed;
-        InterRefs?.OpenFolderButton?.Pressed += OnOpenFolderPressed;
-        InterRefs?.CloseButton?.Pressed += GoBack;
+        _refs.ModRowList?.ToggleRequested += OnToggleRequested;
+        _refs.RescanButton?.Pressed += OnRescanPressed;
+        _refs.OpenFolderButton?.Pressed += OnOpenFolderPressed;
+        _refs.CloseButton?.Pressed += GoBack;
     }
 
     /// <summary>面板打开：重扫 mods 目录并刷新列表，反映用户在两次打开之间的改动。</summary>
@@ -56,100 +49,63 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     #region Rendering
 
-    /// <summary>重建列表、刷新状态与错误。</summary>
+    /// <summary>
+    /// 按当前目录重建行列表与面板摘要。
+    /// 行列表与摘要标签缺一即整体不渲染：半张面板会被读成「这里没有 mod」。
+    /// </summary>
     private void Refresh() {
-        if (InterRefs?.ModList is not { } list || InterRefs.StatusLabel is not { } statusLabel)
+        if (_refs is not { ModRowList: { } rows, StatusLabel: { } status })
             return;
 
-        foreach (Node stale in list.GetChildren().ToArray()) {
-            list.RemoveChild(stale);
-            stale.QueueFree();
-        }
         ModCatalog? catalog = ModAssets.Catalog;
-        if (catalog is null) {
-            list.AddChild(SingleLine("mod 尚未装配。"));
-            return;
-        }
+        if (catalog is null)
+            _logger.LogWarning("ModCatalog is null.");
 
-        foreach (ModPackage mod in catalog.Packages)
-            list.AddChild(CreateRow(mod));
-        if (catalog.Packages.Count == 0)
-            list.AddChild(SingleLine("未发现任何 mod。把 mod 包放进下方 mods 目录，每个 mod 一个子目录。"));
-
-        statusLabel.Text = BuildStatus(catalog);
-
-        var errors = catalog.Errors
-            .Concat(catalog.AssemblyErrors)
-            .Concat(catalog.DisplayErrors)
-            .ToList();
-        if (InterRefs?.ErrorLabel is { } errorLabel) {
-            errorLabel.Text = errors.Count > 0 ? string.Join("\n", errors) : "";
-            errorLabel.Visible = errors.Count > 0;
-        }
+        rows.Rebuild(catalog?.Packages);
+        status.Text = SummaryFor(catalog);
     }
 
-    /// <summary>构造单个 mod 的一行：启用开关、ID、构成、问题说明。</summary>
-    private HBoxContainer CreateRow(ModPackage mod) {
-        var row = new HBoxContainer();
+    #endregion
 
-        var toggle = new CheckBox {
-            ButtonPressed = mod.IsEnabled,
-            Text = string.IsNullOrEmpty(mod.Name) ? mod.Id : mod.Name,
-            CustomMinimumSize = new Vector2(NameWidth, 0),
-            TooltipText = $"目录名：{mod.Id}\n版本：{mod.Version}\n优先级：{mod.Priority}",
-            // 被拒载的目录启停无意义：它连内容都没读进来，勾选只会掩盖原因
-            Disabled = mod.Reason is not null,
-        };
-        string captured = mod.Id;
-        toggle.Toggled += on => OnToggleRequested(captured, on);
-        row.AddChild(toggle);
-
-        // ID 列恒为次要色：停用是用户意图不是故障，故障只由问题列以红色表达
-        row.AddChild(Cell(mod.Id, IdWidth, DimColor));
-        row.AddChild(Cell(CompositionOf(mod), CompositionWidth, DimColor));
-        row.AddChild(Cell(ProblemOf(mod), 0, mod.Errors.Count > 0 ? ErrorColor : DimColor, expand: true));
-        return row;
-    }
-
-    /// <summary>单元格标签；宽度为 0 表示按剩余空间伸展。</summary>
-    private static Label Cell(string text, float width, Color color, bool expand = false) {
-        var label = new Label { Text = text, Modulate = color };
-        if (width > 0)
-            label.CustomMinimumSize = new Vector2(width, 0);
-        if (expand) {
-            label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            label.AutowrapMode = TextServer.AutowrapMode.Word;
-        }
-        return label;
-    }
-
-    private static Label SingleLine(string text) => Cell(text, 0, DimColor, expand: true);
-
-    /// <summary>构成列：数据代码与展示代码是否齐备。</summary>
-    private static string CompositionOf(ModPackage mod) =>
-        $"代码 {(mod.HasCode ? "有" : "—")}\u3000展示 {(mod.HasDisplayCode ? "有" : "—")}\u3000优先级 {mod.Priority}";
-
-    /// <summary>问题列：优先显示该 mod 的装载原因，其次显示其依赖关系。归属已由行身份表达，不再重复 mod ID。</summary>
-    private static string ProblemOf(ModPackage mod) {
-        if (mod.Errors.Count > 0)
-            return string.Join("；", mod.Errors.Select(error => error.Message));
-        return mod.Dependencies.Count > 0 ? $"依赖 {string.Join("、", mod.Dependencies)}" : "";
-    }
+    #region Text
 
     /// <summary>
-    /// 状态行：启用集概况、mods 目录位置与运行中的数据修订号——房间与回放门控比的就是这个值。
+    /// 面板摘要：状态主体在上，装载错误与最近操作提示依次在下，缺哪段就不出现哪段。
+    /// 状态主体是启用集概况、mods 目录位置与运行中的数据修订号——房间与回放门控比的就是这个值。
     /// 磁盘启用集与装配那一刻的指纹不等时点出来，否则用户会撞上「改了开关却进不了自己的房」。
+    /// 目录未装配时概况与修订号都无从谈起，只留目录位置。
     /// </summary>
-    private string BuildStatus(ModCatalog catalog) {
+    private string SummaryFor(ModCatalog? catalog) {
+        string body = catalog is null
+            ? $"mod 内容未装配\nmods 目录：{ModManager.ModsRootPath}"
+            : BuildStatusBody(catalog);
+
+        string errors = ErrorsFor(catalog);
+        if (errors.Length > 0)
+            body = $"{body}\n\n{errors}";
+        return WithNotice(body);
+    }
+
+    private static string BuildStatusBody(ModCatalog catalog) {
         string stale = catalog.Fingerprint == ModAssets.AssemblyFingerprint
             ? ""
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
-        string facts = $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个"
-            + $"\nmods 目录：{ModManager.ModsRootPath}"
-            + $"\n运行中数据修订号：{GameContentHost.Registry.DataRevision}"
+        return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
+            + $"mods 目录：{ModManager.ModsRootPath}\n"
+            + $"运行中数据修订号：{GameContentHost.Registry.DataRevision}"
             + stale;
-        return _notice is null ? facts : $"{facts}\n{_notice}";
     }
+
+    /// <summary>
+    /// 装载错误汇总：扫描、数据面装配、展示面装配三段合一，每条仍是「modId: 原因」全量。
+    /// 卡片错误列只挑自己名下的那几条，这里补上不属于任何条目的部分；空串即无错。
+    /// </summary>
+    private static string ErrorsFor(ModCatalog? catalog) => catalog is null
+        ? ""
+        : string.Join('\n', catalog.Errors.Concat(catalog.AssemblyErrors).Concat(catalog.DisplayErrors));
+
+    /// <summary>把最近一次操作的提示附在摘要末尾，无提示即原样。</summary>
+    private string WithNotice(string text) => _notice is null ? text : $"{text}\n{_notice}";
 
     #endregion
 
@@ -160,9 +116,9 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 故新状态要重启进程才生效——服务器子进程同样按重启后的启用集装配。
     /// </summary>
     private void OnToggleRequested(string modId, bool enabled) {
-        string result = enabled ? "启用" : "停用";
+        string action = enabled ? "启用" : "停用";
         _notice = ModAssets.SetEnabled(modId, enabled)
-            ? $"「{modId}」已{result}，重启游戏与服务器进程后生效"
+            ? $"「{modId}」已{action}，重启游戏与服务器进程后生效"
             : $"启停未生效：{modId} 不在当前扫描结果内";
         Refresh();
     }
@@ -174,7 +130,7 @@ public partial class ModManagementPanel : BaseGamePanel {
         Refresh();
     }
 
-    /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找存档路径。</summary>
+    /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找存档路径。成功即不留提示。</summary>
     private void OnOpenFolderPressed() {
         if (DirAccess.MakeDirRecursiveAbsolute(ModManager.ModsRootGodotPath) != Error.Ok)
             _logger.LogWarning("创建 mods 目录失败：{Path}", ModManager.ModsRootPath);
@@ -183,6 +139,7 @@ public partial class ModManagementPanel : BaseGamePanel {
             _logger.LogWarning("打开 mods 目录被系统拒绝");
             _notice = "系统未受理打开请求，请手动进入上方 mods 目录路径";
         }
+
         Refresh();
     }
 

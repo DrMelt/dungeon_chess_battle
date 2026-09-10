@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://bi1t4mwdc8wt1"]
+
+[ext_resource type="Script" uid="uid://dw550oj3w4mtl" path="res://GamePanels/ModManagement/ModRowList/ModRowList.cs" id="1_rows"]
+[ext_resource type="Script" uid="uid://cbmhlqyjmc330" path="res://GamePanels/ModManagement/ModRowList/ModRowListInterRefs.cs" id="2_irfs"]
+[ext_resource type="PackedScene" uid="uid://3c8ifeu0pv4k" path="res://GamePanels/ModManagement/ModItem/mod_item.tscn" id="3_item"]
+
+[node name="ModRowList" type="VBoxContainer" unique_id=-2077528715]
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+script = ExtResource("1_rows")
+
+[node name="ModRowListInterRefs" type="Node" parent="." unique_id=988177029 node_paths=PackedStringArray("ModRows", "EmptyHint")]
+script = ExtResource("2_irfs")
+ModRows = NodePath("../ModRows")
+EmptyHint = NodePath("../EmptyHint")
+ItemScene = ExtResource("3_item")
+
+[node name="ModRows" type="VBoxContainer" parent="." unique_id=-2077528714]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="EmptyHint" type="Label" parent="." unique_id=-2077528713]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
+theme_override_font_sizes/font_size = 12
+text = "未发现任何 mod。"

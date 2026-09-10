@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ck5ahdfwjheaw"]
 
+[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_7oly0"]
 [ext_resource type="Script" uid="uid://cbdke876uutgr" path="res://Replay/ReplayPanel/ReplayPanel.cs" id="1_panel"]
-[ext_resource type="Theme" uid="uid://bkialcypkdmpl" path="res://Theme/game_ui_theme.tres" id="3_theme"]
 [ext_resource type="Script" uid="uid://c0vlhmwypfq04" path="res://Replay/ReplayPanel/ReplayPanelInterRefs.cs" id="4_irfs"]
 [ext_resource type="PackedScene" uid="uid://bhu61t1py1ces" path="res://Replay/ReplayItem/replay_item.tscn" id="5_item"]
 
@@ -12,7 +12,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("3_theme")
+theme = ExtResource("1_7oly0")
 script = ExtResource("1_panel")
 
 [node name="ReplayPanelInterRefs" type="Node" parent="." unique_id=979472335 node_paths=PackedStringArray("ReplayListContainer", "RefreshButton", "CloseButton")]

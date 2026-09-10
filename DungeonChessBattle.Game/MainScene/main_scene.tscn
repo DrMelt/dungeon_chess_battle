@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://blik1l1wwmd5u" path="res://GamePanels/GameLobby/game_lobby.tscn" id="29_7jnwl"]
 [ext_resource type="PackedScene" uid="uid://c2kcy1t1hqkxp" path="res://GamePanels/RoomPreparation/room_preparation.tscn" id="30_1hpbe"]
 [ext_resource type="Script" uid="uid://b021hxukg64h0" path="res://Debug/NetworkDebugOverlay.cs" id="33_ovly"]
-[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="42_cxaww"]
 [ext_resource type="PackedScene" uid="uid://ck5ahdfwjheaw" path="res://Replay/ReplayPanel/replay_panel.tscn" id="42_replay"]
 [ext_resource type="PackedScene" uid="uid://dyerv0mdh12tu" path="res://BattleScene/battle_assemble.tscn" id="45_battle_assemble"]
 [ext_resource type="PackedScene" uid="uid://d0xwy2djp8quy" path="res://Replay/replay_assemble.tscn" id="46_replay_assemble"]
@@ -94,5 +93,4 @@ anchor_left = 0.1
 anchor_top = 0.1
 anchor_right = 0.9
 anchor_bottom = 0.9
-theme = ExtResource("42_cxaww")
 _assembler = NodePath("../..")

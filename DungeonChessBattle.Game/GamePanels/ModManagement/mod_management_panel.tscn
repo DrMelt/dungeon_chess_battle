@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://cta2qs22n7vhm" path="res://GamePanels/ModManagement/ModManagementPanel.cs" id="2_main"]
 [ext_resource type="Script" uid="uid://ktclt1nd04vq" path="res://GamePanels/ModManagement/ModManagementPanelInterRefs.cs" id="3_irfs"]
 [ext_resource type="StyleBox" uid="uid://crl841r6a05w" path="res://Theme/Styles/style_box_flat_bg.tres" id="4_bg"]
+[ext_resource type="PackedScene" uid="uid://bi1t4mwdc8wt1" path="res://GamePanels/ModManagement/ModRowList/mod_row_list.tscn" id="7_rowlist"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_button"]
 bg_color = Color(0.4, 0.35, 0.15, 0.85)
@@ -40,11 +41,10 @@ mouse_filter = 1
 theme = ExtResource("1_theme")
 script = ExtResource("2_main")
 
-[node name="ModManagementPanelInterRefs" type="Node" parent="." unique_id=1416171868 node_paths=PackedStringArray("ModList", "StatusLabel", "ErrorLabel", "RescanButton", "OpenFolderButton", "CloseButton")]
+[node name="ModManagementPanelInterRefs" type="Node" parent="." unique_id=1416171868 node_paths=PackedStringArray("ModRowList", "StatusLabel", "RescanButton", "OpenFolderButton", "CloseButton")]
 script = ExtResource("3_irfs")
-ModList = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ModList")
+ModRowList = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContent/ModRowList")
 StatusLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/StatusLabel")
-ErrorLabel = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ErrorLabel")
 RescanButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/RescanButton")
 OpenFolderButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/OpenFolderButton")
 CloseButton = NodePath("../CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
@@ -67,7 +67,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=1861091787]
-custom_minimum_size = Vector2(760, 520)
+custom_minimum_size = Vector2(800, 520)
 layout_mode = 2
 theme_override_styles/panel = ExtResource("4_bg")
 
@@ -88,12 +88,6 @@ theme_override_font_sizes/font_size = 18
 text = "Mod 管理"
 horizontal_alignment = 1
 
-[node name="HintLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1854928574]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
-theme_override_font_sizes/font_size = 12
-text = "每个 mod 是 mods 目录下的一个子目录，内含 manifest.json、数据代码 code/、可选展示代码 code_display/ 与展示资源包 assets/。停用只改启用集，改动需重启进程生效。"
-
 [node name="Separator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1015825161]
 layout_mode = 2
 
@@ -102,22 +96,19 @@ custom_minimum_size = Vector2(720, 240)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ModList" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer" unique_id=1666647831]
+[node name="ListContent" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer" unique_id=1666647831]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
+
+[node name="ModRowList" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContent" unique_id=1718549967 instance=ExtResource("7_rowlist")]
+layout_mode = 2
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=497662237]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
 theme_override_font_sizes/font_size = 12
 text = "状态: 尚未扫描"
-
-[node name="ErrorLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=561345181]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.42, 0.36, 1)
-theme_override_font_sizes/font_size = 12
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1393113783]
 layout_mode = 2

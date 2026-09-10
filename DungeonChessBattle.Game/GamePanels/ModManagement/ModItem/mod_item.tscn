@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://3c8ifeu0pv4k"]
+
+[ext_resource type="Theme" uid="uid://ckondj30v66jg" path="res://Theme/ui_theme.tres" id="1_3xdg7"]
+[ext_resource type="Script" uid="uid://dm3dxyd8rbmgw" path="res://GamePanels/ModManagement/ModItem/ModItem.cs" id="1_item"]
+[ext_resource type="Script" uid="uid://cengd1g6344fq" path="res://GamePanels/ModManagement/ModItem/ModItemInterRefs.cs" id="2_irfs"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_48ck1"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0a3gk"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_t83u7"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_og10n"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4r3sw"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0t5jx"]
+
+[node name="ModItem" type="MarginContainer" unique_id=2019567955]
+offset_right = 386.0
+offset_bottom = 30.0
+theme = ExtResource("1_3xdg7")
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+script = ExtResource("1_item")
+
+[node name="ModItemInterRefs" type="Node" parent="." unique_id=35567109 node_paths=PackedStringArray("EnableToggle", "RowButton", "ModNameLabel", "IdLabel", "CompositionLabel", "DependencyLabel", "ErrorLabel")]
+script = ExtResource("2_irfs")
+EnableToggle = NodePath("../MarginContainer/HBoxContainer/EnableToggle")
+RowButton = NodePath("../RowButton")
+ModNameLabel = NodePath("../MarginContainer/HBoxContainer/ModName")
+IdLabel = NodePath("../MarginContainer/HBoxContainer/IdLabel")
+CompositionLabel = NodePath("../MarginContainer/HBoxContainer/CompositionLabel")
+DependencyLabel = NodePath("../MarginContainer/HBoxContainer/DependencyLabel")
+ErrorLabel = NodePath("../MarginContainer/HBoxContainer/ErrorLabel")
+
+[node name="RowButton" type="Button" parent="." unique_id=646028981]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1550611926]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1238750708]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="EnableToggle" type="CheckBox" parent="MarginContainer/HBoxContainer" unique_id=1948675309]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_48ck1")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_0a3gk")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_t83u7")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_og10n")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_4r3sw")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_0t5jx")
+
+[node name="ModName" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1777014870]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Mod 名称"
+vertical_alignment = 1
+
+[node name="IdLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1129185173]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61960787, 0.61960787, 0.61960787, 1)
+text = "modId"
+vertical_alignment = 1
+
+[node name="CompositionLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1556102573]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
+text = "代码 / 展示 / 优先级"
+vertical_alignment = 1
+
+[node name="DependencyLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1146349566]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
+text = "依赖"
+vertical_alignment = 1
+
+[node name="ErrorLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=573484621]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.42, 0.36, 1)
+text = "错误"
+horizontal_alignment = 2
+vertical_alignment = 1
