@@ -71,7 +71,7 @@ public partial class TextureRectBuffIcon : TextureRect {
             buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
         // 图标按 Buff 键从展示索引取；未注册时留空
-        Texture = ServiceLocator.ModAssets?.Buff(buff.BuffTypeId.Value)?.Icon;
+        Texture = ServiceLocator.ModAssets?.Buff(buff.BuffTypeId)?.Icon;
     }
 
     /// <summary>仅比较决定图标外观的稳定字段；剩余时间经 _Process 每帧刷新，不纳入短路判定。</summary>

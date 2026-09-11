@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Client;
 
 namespace DungeonChessBattle.Game.GamePlayUI.battle_event_log;
@@ -16,7 +17,7 @@ public static class BattleEventLogTextFormatter {
     public delegate string SkillNameResolver(SkillKeyId skillId);
 
     /// <summary>按 Buff 键解析显示名。</summary>
-    public delegate string BuffNameResolver(string buffKey);
+    public delegate string BuffNameResolver(BuffTypeId buffTypeId);
 
     /// <summary>把日志条目格式化为事件文本，不含时间前缀。</summary>
     public static string Format(BattleEventLogEntry entry,

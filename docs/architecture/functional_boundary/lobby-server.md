@@ -18,5 +18,5 @@
 
 ## 依赖
 
-- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Server.Shared（房间生命周期契约）、Battle.Shared、GameConfig（副本键解析）。
+- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Server.Shared（房间生命周期契约）、Battle.Shared、GameConfig（单位目录）。
 - ASP.NET Core 共享框架 Microsoft.AspNetCore.App，承载 Hub 与广播上下文。

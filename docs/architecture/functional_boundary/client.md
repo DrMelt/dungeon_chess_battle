@@ -19,4 +19,4 @@
 
 ## 依赖
 
-- Lobby.Protocol 契约；Lobby.Client 与 Battle.Client 两端经连接工厂创建；Battle.Entities 网络实体层。
+- Lobby.Protocol 契约；Lobby.Client 与 Battle.Client 两端经连接工厂创建，房间客户端经 Battle.Shared 的内容只读视图取配置；Battle.Entities 网络实体层。

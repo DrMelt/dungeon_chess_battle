@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Game.Services;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -57,7 +57,7 @@ public partial class SkillResourceTable : Resource {
     /// <param name="skillKey">技能配置键。</param>
     /// <returns>UnitSkillBaseGodot 子类的新副本；未找到返回 null。</returns>
     public UnitSkillBaseGodot? GetResourceBySkillId(SkillKeyId skillKey) {
-        var config = GameContentHost.Registry.GetSkill(skillKey);
+        var config = ServiceLocator.GameContent.Registry.GetSkill(skillKey);
         if (config == null)
             return null;
         try {
@@ -69,11 +69,11 @@ public partial class SkillResourceTable : Resource {
     }
 
     /// <summary>
-    /// 自检：验证 UnitRegistry 全部单位引用的技能都在资源表注册。
+    /// 自检：验证内容中全部单位引用的技能都在资源表注册。
     /// 客户端启动时调用一次，未注册技能启动即报错而非进副本后崩溃。
     /// </summary>
     public void Validate() {
-        foreach (var unit in UnitRegistry.Instance.All) {
+        foreach (var unit in ServiceLocator.GameContent.Units.All) {
             foreach (var skill in unit.Skills) {
                 if (_lookup.ContainsKey(skill))
                     continue;

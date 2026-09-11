@@ -16,6 +16,15 @@ public readonly record struct RestrictedString {
         _value = value;
     }
 
+    /// <summary>尝试构造受限字符串；空或超长返回 null，不抛异常。供不可信输入与归档在转换前判定。</summary>
+    /// <param name="value">字符串值，null 视为空。</param>
+    /// <param name="maxLength">最大字符数上限。</param>
+    public static RestrictedString? TryCreate(string? value, ushort maxLength) {
+        if (string.IsNullOrEmpty(value) || value.Length > maxLength)
+            return null;
+        return new RestrictedString(value, maxLength);
+    }
+
     /// <summary>字符串值，null 归一为空串。</summary>
     public string Value => _value ?? string.Empty;
 
@@ -24,7 +33,7 @@ public readonly record struct RestrictedString {
 
     /// <inheritdoc />
     public override string ToString() =>
-        IsDefault ? "<none>" : _value ?? string.Empty;
+        IsDefault ? string.Empty : _value ?? string.Empty;
 
     /// <summary>基于语义值比较，忽略内部存储差异。</summary>
     public bool Equals(RestrictedString other) => Value == other.Value;

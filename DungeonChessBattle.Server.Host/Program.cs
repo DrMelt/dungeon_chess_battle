@@ -17,7 +17,7 @@ if (Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid) is { Length: 
 LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
 // 装配 mod 内容：扫描与装配同归 Battle.Mod.Manager，注册表与行为目录由 Battle.GameConfig 承载。
-// 必须在任何房间创建前完成。
+// 必须在任何房间创建前完成；产物经 DI 分发给大厅与房间。
 var scan = ModLoader.LoadDirectory(config.ModDir ?? "");
 var boot = ContentBootstrapper.Load(scan);
 var modLogger = loggerFactory.CreateLogger("Mod");
@@ -36,7 +36,7 @@ if (ParentProcessWatcher.IsParentGone(config)) {
 }
 
 // ASP.NET Core Kestrel 与 SignalR 大厅服务宿主
-var host = new GameServerHost(loggerFactory, config);
+var host = new GameServerHost(loggerFactory, config, boot.Content);
 if (!host.Start())
     return 1;
 

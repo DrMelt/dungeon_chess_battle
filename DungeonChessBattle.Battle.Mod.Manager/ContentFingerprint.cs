@@ -11,7 +11,7 @@ public static class ContentFingerprint {
     /// 内容即代码：CodeHash 入摘要，改数值必须重编译数据 DLL，逃不过门控。
     /// 展示 DLL 不进指纹：展示字段不参与结算，两端展示不同不破坏确定性。
     /// </summary>
-    /// <remarks>无 mod 返回空串：使 <c>DataRevision</c> 在无 mod 时恒等于引擎内容修订号，与懒装配路径同值。</remarks>
+    /// <remarks>无 mod 返回空串：使 <c>DataRevision</c> 在无 mod 时恒等于引擎内容修订号。</remarks>
     public static string Compute(IReadOnlyList<LoadedMod> mods) {
         if (mods.Count == 0)
             return "";

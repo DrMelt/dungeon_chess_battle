@@ -1,3 +1,5 @@
+using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Shared.Display;
 
 namespace DungeonChessBattle.Game.Mod.Shared;
@@ -10,14 +12,14 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// </summary>
 public interface IDisplayRegistry {
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>
-    SkillDisplay? GetSkill(string skillKey);
+    SkillDisplay? GetSkill(SkillKeyId skillId);
 
     /// <summary>按 Buff 键取展示数据；未注册返回 null。</summary>
-    BuffDisplay? GetBuff(string buffKey);
+    BuffDisplay? GetBuff(BuffTypeId buffTypeId);
 
-    /// <summary>按副本键取展示数据；键为空或未注册返回 null。</summary>
-    DungeonDisplay? GetDungeon(string? dungeonKey);
+    /// <summary>按副本键取展示数据；无键或未注册返回 null。</summary>
+    DungeonDisplay? GetDungeon(DungeonKeyId dungeonKey);
 
     /// <summary>按单位配置键取展示数据；未注册返回 null。</summary>
-    UnitDisplay? GetUnit(string configKey);
+    UnitDisplay? GetUnit(UnitConfigKey configKey);
 }

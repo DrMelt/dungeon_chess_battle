@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Game.Services;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -36,7 +36,7 @@ public partial class DungeonResourceTable : Resource {
 
     /// <summary>按副本键取副本资源；副本未注册或资源未映射时返回 null。</summary>
     private DungeonResourceBaseGodot? GetResource(string? dungeonKey) {
-        var config = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        var config = ServiceLocator.GameContent.Registry.GetDungeon(dungeonKey);
         if (config != null && _lookup.TryGetValue(config, out var res))
             return res;
         return null;
@@ -44,14 +44,12 @@ public partial class DungeonResourceTable : Resource {
 
     /// <summary>
     /// 按副本键实例化环境表现场景；副本未注册或资源未配置环境场景返回 null。
-    /// 副本键未同步/未注册时回退默认副本场景模板，保证环境对象始终可实例化，
+    /// 副本键由权威侧同步，未同步或未注册时不为环境对象造场景，由调用方在键到达后重试。
     /// 主题已在场景模板内固化，加载即成品。
     /// 返回实例未挂载，由消费方 AddChild 使用。
     /// </summary>
     public Node3D? InstantiateEnvironment(string? dungeonKey) {
-        // 副本键未同步/未注册时回退默认副本，保证环境对象始终可实例化
-        var resource = GetResource(dungeonKey)
-            ?? GetResource(DungeonRegistry.Instance.DefaultDungeonKey);
+        var resource = GetResource(dungeonKey);
         return resource?.EnvScene?.Instantiate<Node3D>();
     }
 }

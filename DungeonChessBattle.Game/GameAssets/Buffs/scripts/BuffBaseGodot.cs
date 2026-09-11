@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Shared.Display;
 using Godot;
 
@@ -21,10 +22,10 @@ public partial class BuffBaseGodot : Resource {
         get; private set;
     }
 
-    /// <summary>Buff 键，与内容注册表里的 Buff 身份对齐；未绑定定义为空串。</summary>
-    public string BuffTypeId => Config?.BuffTypeId.Value ?? "";
+    /// <summary>Buff 键，与内容注册表里的 Buff 身份对齐；未绑定定义为无键。</summary>
+    public BuffTypeId BuffTypeId => Config?.BuffTypeId ?? BuffTypeId.None;
 
-    /// <summary>产出注册表用的展示数据；本类成员带 Buff 前缀，通用成员名在此对齐一次。</summary>
+    /// <summary>产出注册表用的展示数据。</summary>
     internal BuffDisplay ToDisplay() => new(BuffTypeId, BuffName, BuffDescription, Icon);
 
     /// <summary>Buff 名称。</summary>

@@ -153,7 +153,7 @@ public partial class UnitStateChangeInfo : Node {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         _effects_root?.AddChild(buffChangeInfo);
         ApplyPopupScale(buffChangeInfo);
-        buffChangeInfo.Init(buffTypeId.Value, added
+        buffChangeInfo.Init(buffTypeId, added
             ? BuffChangeType.Added
             : BuffChangeType.Removed);
         PopupAtUnit(buffChangeInfo, unit);

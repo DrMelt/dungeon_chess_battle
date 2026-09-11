@@ -22,11 +22,11 @@ public partial class UnitSkillBaseGodot : Resource {
     internal SkillDefinition? InternalConfig => Config;
 
     /// <summary>技能强类型 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
-    public SkillKeyId SkillId => Config?.SkillId ?? default;
+    public SkillKeyId SkillId => Config?.SkillId ?? SkillKeyId.None;
 
-    /// <summary>产出注册表用的展示数据；本类成员带前缀，键与通用成员名在此对齐一次。</summary>
+    /// <summary>产出注册表用的展示数据。</summary>
     internal SkillDisplay ToDisplay() =>
-        new(SkillId.Id, SkillName, SkillDescription, Icon, RangeHintScene);
+        new(SkillId, SkillName, SkillDescription, Icon, RangeHintScene);
 
     /// <summary>技能图标。</summary>
     [Export]

@@ -19,4 +19,4 @@
 
 ## 依赖
 
-- Game.Shared。GodotSharp 随该链由 `Godot.NET.Sdk` 提供，与主工程同版本；本库不定义 `GodotObject` 子类，不产生脚本注册需求。
+- Game.Shared，技能键 `SkillKeyId` 经该链出自 Battle.Shared。GodotSharp 随该链由 `Godot.NET.Sdk` 提供，与主工程同版本；本库不定义 `GodotObject` 子类，不产生脚本注册需求。

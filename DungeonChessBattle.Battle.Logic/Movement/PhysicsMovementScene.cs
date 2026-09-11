@@ -12,6 +12,7 @@ namespace DungeonChessBattle.Battle.Logic.Movement;
 /// <summary>
 /// 基于 Aether.Physics2D 的确定性移动场景：以战场布局构建静态障碍物理世界，
 /// 提供竞技场边界约束、静态障碍推挤与单位互斥。
+/// 无布局的副本为空场：无障碍，也不约束位置。
 /// 在线与回放从同一布局构建，结算结果一致。
 /// 移动本体由 <see cref="MovementMath"/> 纯函数驱动，Aether 仅承担静态几何
 /// 宽相查询，不运行动态模拟，天然适配 LES 回滚重放。
@@ -23,11 +24,8 @@ public sealed class PhysicsMovementScene : IMovementScene {
 
     private readonly AetherWorld _world;
 
-    /// <summary>竞技场半宽，X 轴向 ±HalfWidth 为可活动范围。</summary>
-    private readonly float _halfWidth;
-
-    /// <summary>竞技场半高，Y 轴向 ±HalfHeight 为可活动范围。</summary>
-    private readonly float _halfHeight;
+    /// <summary>战场布局；null 即空场，无障碍也无边界约束。</summary>
+    private readonly BattlefieldLayout? _layout;
 
     /// <summary>Aether fixture 到布局障碍的映射，宽相查询命中后取几何数据。</summary>
     private readonly Dictionary<AetherFixture, ObstacleRect> _obstacleByFixture = [];
@@ -38,13 +36,13 @@ public sealed class PhysicsMovementScene : IMovementScene {
     /// <summary>宽相查询回调，避免逐次构造委托。</summary>
     private readonly AetherQueryReport _queryCallback;
 
-    /// <summary>从布局构建物理场景：静态障碍写入 Aether World，边界尺寸本地保存。</summary>
-    public PhysicsMovementScene(BattlefieldLayout layout) {
-        ArgumentNullException.ThrowIfNull(layout);
-        _halfWidth = layout.HalfWidth;
-        _halfHeight = layout.HalfHeight;
+    /// <summary>从布局构建物理场景：静态障碍写入 Aether World，布局留作边界约束来源。</summary>
+    public PhysicsMovementScene(BattlefieldLayout? layout) {
+        _layout = layout;
         _world = new AetherWorld(AetherVector2.Zero);
         _queryCallback = QueryFixtures;
+        if (layout is null)
+            return;
 
         foreach (var rect in layout.Obstacles) {
             var width = rect.MaxX - rect.MinX;
@@ -81,7 +79,7 @@ public sealed class PhysicsMovementScene : IMovementScene {
         var delta = MovementMath.Displacement(intent.Direction, intent.Speed, dt);
         var total = delta.Length();
         if (total <= 1e-6f)
-            return MovementMath.ClampToBounds(start, intent.BodyRadius, _halfWidth, _halfHeight);
+            return ClampToBounds(start, intent.BodyRadius);
 
         // 按固定步长细分位移，防快速单位隧穿细薄障碍
         var segments = Math.Max(1, (int)MathF.Ceiling(total / SubStepLength));
@@ -89,8 +87,14 @@ public sealed class PhysicsMovementScene : IMovementScene {
         var pos = start;
         for (var i = 0; i < segments; i++)
             pos = ResolveObstacles(pos + step, intent.BodyRadius);
-        return MovementMath.ClampToBounds(pos, intent.BodyRadius, _halfWidth, _halfHeight);
+        return ClampToBounds(pos, intent.BodyRadius);
     }
+
+    /// <summary>竞技场边界约束；无布局即不约束位置。</summary>
+    private Vector2 ClampToBounds(Vector2 pos, float bodyRadius) =>
+        _layout is { } layout
+            ? MovementMath.ClampToBounds(pos, bodyRadius, layout.HalfWidth, layout.HalfHeight)
+            : pos;
 
     /// <summary>单步静态障碍推挤：Aether 宽相查询命中候选，再做精确圆↔矩形推挤。</summary>
     private Vector2 ResolveObstacles(Vector2 pos, float bodyRadius) {

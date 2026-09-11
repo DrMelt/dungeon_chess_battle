@@ -58,10 +58,11 @@ public partial class ReplayCoordinator : Node {
     public void LoadReplay(ReplayRecording recording) {
         ReplayEngine engine;
         try {
-            engine = new ReplayEngine(recording);
+            engine = new ReplayEngine(recording, ServiceLocator.GameContent.Units,
+                ServiceLocator.GameContent.Registry);
         }
         catch (Exception ex) {
-            // 引擎构造自带门控：配置缺失与版本不符都在这里挡下，不进入半启动状态
+            // 引擎构造自带门控：配置缺失、版本不符与副本键非法都在这里挡下，不进入半启动状态
             _logger.LogError(ex, "回放引擎构建失败");
             return;
         }
@@ -69,7 +70,7 @@ public partial class ReplayCoordinator : Node {
         _engine = engine;
         _accumulator = 0;
         _isPaused = false;
-        _sessionContext?.Bind(new ReplayBattleViewSource(engine));
+        _sessionContext?.Bind(new ReplayBattleViewSource(engine, ServiceLocator.GameContent.Registry));
         _replayUI?.Visible = true;
         EmitSignal(SignalName.ReplayStarted);
         if (_logger.IsEnabled(LogLevel.Information))

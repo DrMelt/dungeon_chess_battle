@@ -5,7 +5,7 @@
 ## 职责
 
 - 行为注册面 `IModRuntime`：行为按字符串 ID 注册进目录并按 ID 取实例，供构造内容定义填入行为。
-- 内容注册面 `IModContentRuntime`：把技能/Buff/单位/副本定义对象注册进内容注册表，四类内容同构，各以字符串键为身份，同键后写覆盖。
+- 内容注册面 `IModContentRuntime`：把技能/Buff/单位/副本定义对象注册进内容注册表，四类内容同构，各以内容身份键（`SkillKeyId` / `BuffTypeId` / `UnitConfigKey` / `DungeonKeyId`）为身份，同键后写覆盖。
 - 合成口 `IModBootstrapContext`：两面的合成句柄，作入口初始化的唯一实参。
 
 ## 边界外

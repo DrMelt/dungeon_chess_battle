@@ -339,7 +339,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     public RoomStateSnapshot GetRoomState(string roomId) {
         lock (GetRoomLock(roomId)) {
             string hostName = _roomHosts.TryGetValue(roomId, out var host) ? host : "";
-            // 副本键原样取出：Store 不认识内容默认值，未选定即空串，兜底归大厅侧经副本登记点解析
+            // 副本键原样取出：Store 不认识内容默认值，未选定即空串，解析归大厅侧经内容视图完成
             string dungeonKey = _roomConfigs.TryGetValue(roomId, out var config) ? config.DungeonKey : string.Empty;
             var players = new List<PlayerReadyState>();
             if (_roomReadyStates.TryGetValue(roomId, out var states)) {

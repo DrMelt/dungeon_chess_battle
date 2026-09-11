@@ -1,4 +1,5 @@
 ﻿using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -24,12 +25,12 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="battleRoomManager">战斗房间生命周期契约，由装配层绑定实现。</param>
 /// <param name="stateStore">大厅级状态存储，存储引擎由装配层注入，可替换。</param>
 /// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
-/// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
+/// <param name="content">内容注册表只读视图，阵营选项、副本键与内容修订号来源。</param>
 public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster broadcaster,
     LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore,
-    IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) : ILobbyApplication {
+    IUnitRegistry unitRegistry, IContentRegistryView content) : ILobbyApplication {
     private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig,
-        unitRegistry, dungeonRegistry);
+        unitRegistry, content);
     private readonly IBattleRoomManager _battleRoomManager = battleRoomManager;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly ILogger<GameServer> _logger = loggerFactory.CreateLogger<GameServer>();

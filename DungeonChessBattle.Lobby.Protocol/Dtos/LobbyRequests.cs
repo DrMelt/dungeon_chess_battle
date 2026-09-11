@@ -19,12 +19,12 @@ public sealed record LoginRequest(string PlayerName);
 /// <summary>创建房间请求，房间 ID 由服务端生成，经 LobbyResult.RoomId 返回。</summary>
 /// <param name="PlayerId">房主玩家 ID。</param>
 /// <param name="RoomPassword">房间密码；空表示无密码。</param>
-/// <param name="Config">招募板配置；空表示使用默认值。</param>
+/// <param name="Config">招募板配置；副本键必填，未注册即拒绝建房。</param>
 /// <param name="ServerPassword">服务器密码；空表示无密码模式。</param>
 public sealed record CreateRoomRequest(
     string PlayerId,
     string? RoomPassword,
-    RoomConfigDto? Config,
+    RoomConfigDto Config,
     string? ServerPassword);
 
 /// <summary>加入房间请求。</summary>

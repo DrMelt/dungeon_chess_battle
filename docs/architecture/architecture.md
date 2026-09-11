@@ -88,17 +88,19 @@ graph TD
     GameMod --> GameShared
     GameIface --> GameModShared
     GameModShared --> GameShared
+    GameShared --> Shared
 
     %% client 域：门面组装两端，只给上层抽象
     Client --> LobbyClient
     Client --> BattleClient
     Client --> Entities
     Client --> LobbyProtocol
+    Client --> Shared
 
     %% battle 域：在线端与服务端共用领域与配置
     BattleClient --> Logic
     BattleClient --> Entities
-    BattleClient --> GameConfig
+    BattleClient --> Shared
     Logic --> Shared
     Entities --> Shared
     GameConfig --> Shared
@@ -140,6 +142,7 @@ graph TD
 
     %% server 域：Host 是装配根，向下依赖各域实现
     Host --> BattleMod
+    Host --> GameConfig
     Host --> BattleSrvShared
     Host --> Entities
     Host --> LobbySrv
@@ -162,7 +165,7 @@ graph TD
 | `DungeonChessBattle.Battle.Shared`           | 契约与数据结构：战斗、Buff、仇恨、移动、阵营、事件、敌人决策、行为 ID      | [battle-shared](functional_boundary/battle-shared.md)                     |
 | `DungeonChessBattle.Battle.Logic`            | 战斗世界 `BattleScene` 与 Buff、施法校验、仇恨、移动逻辑                   | [battle-logic](functional_boundary/battle-logic.md)                       |
 | `DungeonChessBattle.Battle.Entities`         | LES 网络实体与类型注册表                                                   | [battle-entities](functional_boundary/battle-entities.md)                 |
-| `DungeonChessBattle.Battle.GameConfig`       | 内容配置：定义注册表 / 行为目录 / 单位与副本登记点 / 战斗单位装配          | [gameconfig](functional_boundary/gameconfig.md)                           |
+| `DungeonChessBattle.Battle.GameConfig`       | 内容配置：定义注册表 / 行为目录 / 单位目录 / 战斗单位装配                  | [gameconfig](functional_boundary/gameconfig.md)                           |
 | `DungeonChessBattle.Battle.Mod.Manager`      | mod 包管理与数据面装配：包布局 / 清单与启用集 / 装载排序 / 指纹 / 装配引导 | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
 | `DungeonChessBattle.Battle.Mod.Interface`    | mod 入口契约：mod 要实现 `IModEntry`                                       | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       |
 | `DungeonChessBattle.Battle.Mod.Shared`       | 数据面注册面定义：行为注册 / 内容注册 / 合成口                             | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |

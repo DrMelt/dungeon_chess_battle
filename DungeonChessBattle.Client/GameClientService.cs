@@ -16,26 +16,19 @@ namespace DungeonChessBattle.Client;
 /// 支持断线自动重连，通过缓存的 playerId 与 roomId 重新走大厅到房间流程。
 /// 连接连续性管理见 GameClientService.Connectivity。
 /// </summary>
-public sealed partial class GameClientService {
-    private readonly ILogger<GameClientService> _logger;
+/// <remarks>
+/// 创建客户端门面。连接客户端经 <see cref="IClientConnectionFactory"/> 创建，
+/// 具体传输类型只出现在工厂内部；工厂由组合根按装配内容构造后注入。
+/// </remarks>
+/// <param name="loggerFactory">日志工厂。</param>
+/// <param name="connectionFactory">连接客户端工厂，连接实现与其内容依赖都在它里面。</param>
+public sealed partial class GameClientService(ILoggerFactory loggerFactory, IClientConnectionFactory connectionFactory) {
+    private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
 
     // 传输实现实例，只活在本类内部：连接发起、重定向重连与帧驱动由门面独占，
     // 对外只经 RoomSession 契约与 RoomNetworkStatus 快照透出，连接权力不下放。
-    private readonly LobbyClient _lobbyClient;
-    private readonly RoomBattleClient _roomClient;
-
-    /// <summary>
-    /// 创建客户端门面。连接客户端经 <see cref="IClientConnectionFactory"/> 创建，
-    /// 具体传输类型只出现在门面内部，默认工厂创建 SignalR 与 LES 客户端。
-    /// </summary>
-    /// <param name="loggerFactory">日志工厂。</param>
-    /// <param name="connectionFactory">连接客户端工厂；为空时使用默认实现。</param>
-    public GameClientService(ILoggerFactory loggerFactory, IClientConnectionFactory? connectionFactory = null) {
-        _logger = loggerFactory.CreateLogger<GameClientService>();
-        var factory = connectionFactory ?? new DefaultClientConnectionFactory();
-        _lobbyClient = factory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
-        _roomClient = factory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
-    }
+    private readonly LobbyClient _lobbyClient = connectionFactory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
+    private readonly RoomBattleClient _roomClient = connectionFactory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
 
     // 连接状态机，单一事实源，见 ClientConnectionState。
     // 取代散落的 _connected/_reconnecting 布尔与 _connectStartTimestamp 字段。
@@ -180,9 +173,9 @@ public sealed partial class GameClientService {
     }
 
     /// <summary>
-    /// 请求创建房间，房间 ID 由服务端生成，经 OnRoomCreated 事件回调。含招募板配置。
+    /// 请求创建房间，房间 ID 由服务端生成，经 OnRoomCreated 事件回调。招募板配置必填，副本键由服务端权威解析。
     /// </summary>
-    public void RequestCreateRoom(string? roomPassword = null, RoomConfigDto? config = null) {
+    public void RequestCreateRoom(RoomConfigDto config, string? roomPassword = null) {
         _cachedRoomPassword = roomPassword;
 
         _lobbyClient.RequestCreateRoom(PlayerId, roomPassword, config, _serverPassword);

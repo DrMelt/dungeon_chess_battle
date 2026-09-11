@@ -66,7 +66,7 @@ public partial class SkillInfoPanel : Control {
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon { BindingBuffData: { } buffData }) {
-                var buffView = ServiceLocator.ModAssets?.Buff(buffData.BuffTypeId.Value);
+                var buffView = ServiceLocator.ModAssets?.Buff(buffData.BuffTypeId);
                 skillNameLabel?.Text = buffView?.Name ?? $"Buff({buffData.BuffTypeId.Value})";
                 skillDescriptionLabel?.Text = buffView?.Description ?? string.Empty;
                 isShow = true;

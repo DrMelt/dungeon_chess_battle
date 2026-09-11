@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Replay.Client;
 using DungeonChessBattle.Replay.Protocol.Dtos;
 using DungeonChessBattle.Replay.Shared;
@@ -22,8 +22,10 @@ namespace DungeonChessBattle.Game.Services;
 /// </summary>
 /// <param name="client">服务端回放获取。</param>
 /// <param name="cache">本地回放缓存。</param>
+/// <param name="content">内容注册表只读视图，取本地内容修订号做门控。</param>
 /// <param name="logger">日志记录器。</param>
-public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogger<ReplayService> logger) : IDisposable {
+public sealed class ReplayService(ReplayClient client, ReplayCache cache,
+    IContentRegistryView content, ILogger<ReplayService> logger) : IDisposable {
     /// <summary>本地副本上限，超出按最后写入时间淘汰最旧。</summary>
     private const int MaxCachedReplays = 64;
 
@@ -35,8 +37,8 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
     private volatile IReadOnlyList<ReplayListEntry>? _entries;
 
     /// <summary>录制端两项修订号与本地是否一致：内容修订号管配置与布局，逻辑修订号管结算时序。任一缺失判不一致。</summary>
-    private static bool IsContentCompatible(string? dataVersion, string? logicVersion) =>
-        !string.IsNullOrEmpty(dataVersion) && dataVersion == GameContentHost.Registry.DataRevision
+    private bool IsContentCompatible(string? dataVersion, string? logicVersion) =>
+        !string.IsNullOrEmpty(dataVersion) && dataVersion == content.DataRevision
         && !string.IsNullOrEmpty(logicVersion) && logicVersion == BattleLogicRevision.Value;
 
     /// <summary>取合并后的行视图：基于静态列表快照现场构建动态可用态，进度实时；列表未刷新时返回空。</summary>
@@ -206,7 +208,7 @@ public sealed class ReplayService(ReplayClient client, ReplayCache cache, ILogge
         if (!IsContentCompatible(recording.Meta.DataVersion, recording.Meta.LogicVersion))
             return new ReplayPlayableResult(ReplayGateStatus.Incompatible, Reason:
                 $"回放由内容 {recording.Meta.DataVersion}/逻辑 {recording.Meta.LogicVersion} 录制，" +
-                $"本地为 {GameContentHost.Registry.DataRevision}/{BattleLogicRevision.Value}。");
+                $"本地为 {content.DataRevision}/{BattleLogicRevision.Value}。");
 
         return new ReplayPlayableResult(ReplayGateStatus.Ready, recording);
     }

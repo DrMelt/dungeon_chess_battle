@@ -1,5 +1,7 @@
 using DungeonChessBattle.Battle.Mod.Manager;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Mod.Interface;
 using DungeonChessBattle.Game.Mod.Shared;
 using DungeonChessBattle.Game.Shared.Display;
@@ -72,14 +74,14 @@ public sealed class ModAssets {
     }
 
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>
-    public SkillDisplay? Skill(string skillKey) => _registry.GetSkill(skillKey);
+    public SkillDisplay? Skill(SkillKeyId skillId) => _registry.GetSkill(skillId);
 
     /// <summary>按 Buff 键取展示数据；未注册返回 null。</summary>
-    public BuffDisplay? Buff(string buffKey) => _registry.GetBuff(buffKey);
+    public BuffDisplay? Buff(BuffTypeId buffTypeId) => _registry.GetBuff(buffTypeId);
 
     /// <summary>按副本键取展示数据；未注册返回 null。</summary>
-    public DungeonDisplay? Dungeon(string? dungeonKey) => _registry.GetDungeon(dungeonKey);
+    public DungeonDisplay? Dungeon(DungeonKeyId dungeonKey) => _registry.GetDungeon(dungeonKey);
 
     /// <summary>按单位配置键取展示数据；未注册返回 null。</summary>
-    public UnitDisplay? Unit(string configKey) => _registry.GetUnit(configKey);
+    public UnitDisplay? Unit(UnitConfigKey configKey) => _registry.GetUnit(configKey);
 }

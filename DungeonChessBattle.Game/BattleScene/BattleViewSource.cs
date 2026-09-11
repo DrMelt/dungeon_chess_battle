@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Replay;
 
 namespace DungeonChessBattle.Game.BattleScene;
@@ -81,7 +81,8 @@ public interface IBattleViewSource {
 /// 装配基类：帧事件缓冲与阵营关系按权威副本键懒装配两路共用；
 /// 日志落账时机由子类 <see cref="AppendEventLog"/> 决定。
 /// </summary>
-public abstract class BattleViewSourceBase : IBattleViewSource {
+/// <param name="content">内容注册表只读视图，阵营关系按权威副本键解析的来源。</param>
+public abstract class BattleViewSourceBase(IContentRegistryView content) : IBattleViewSource {
     /// <summary>帧事件缓冲，AppendEvents 追加、DrainFrameEvents 取走。</summary>
     private List<IBattleEvent> _frameEvents = [];
 
@@ -177,7 +178,8 @@ public abstract class BattleViewSourceBase : IBattleViewSource {
         var dungeonKey = DungeonKey;
         if (string.IsNullOrWhiteSpace(dungeonKey))
             return null;
-        return _relations = DungeonRegistry.Instance.GetRelations(dungeonKey);
+        return _relations = content.GetDungeon(dungeonKey)?.RelationsResolver
+            ?? throw new InvalidOperationException($"Unknown dungeon key '{dungeonKey}'.");
     }
 }
 
@@ -185,7 +187,8 @@ public abstract class BattleViewSourceBase : IBattleViewSource {
 /// 在线装配：取数、事件日志与本地语义全部委托权威会话；
 /// 运行时长由本地时钟相对权威开始时刻推算，事件已在会话侧带接收时刻入库，不重复落账。
 /// </summary>
-public sealed class OnlineBattleViewSource(IClientBattleSession session) : BattleViewSourceBase {
+public sealed class OnlineBattleViewSource(IClientBattleSession session, IContentRegistryView content)
+    : BattleViewSourceBase(content) {
     /// <inheritdoc />
     public override IReadOnlyList<IUnitUiView> Units => session.Units;
 
@@ -228,7 +231,8 @@ public sealed class OnlineBattleViewSource(IClientBattleSession session) : Battl
 /// 回放装配：取数经回放引擎世界读数；无本地控制器，本地玩家语义恒 null；
 /// 事件按引擎帧轴折算接收时刻落本装配自持的日志仓库，与在线同数轴。
 /// </summary>
-public sealed class ReplayBattleViewSource(ReplayEngine engine) : BattleViewSourceBase {
+public sealed class ReplayBattleViewSource(ReplayEngine engine, IContentRegistryView content)
+    : BattleViewSourceBase(content) {
     /// <summary>回放事件日志仓库，随本装配生死。</summary>
     private readonly BattleEventLogStore _eventLog = new();
 

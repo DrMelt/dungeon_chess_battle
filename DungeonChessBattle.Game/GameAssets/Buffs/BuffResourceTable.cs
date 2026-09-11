@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -14,11 +15,11 @@ namespace DungeonChessBattle.Game.GameAssets;
 [GlobalClass]
 public partial class BuffResourceTable : Resource {
     /// <summary>运行时查找字典：Buff 键 → Buff 资源。</summary>
-    private readonly Dictionary<string, BuffBaseGodot> _lookup = new(StringComparer.Ordinal);
+    private readonly Dictionary<BuffTypeId, BuffBaseGodot> _lookup = [];
 
-    /// <summary>追加运行时 mod Buff 资源；同键覆盖已有条目。</summary>
+    /// <summary>追加运行时 mod Buff 资源；同键覆盖已有条目，无键资源不入表。</summary>
     internal void RegisterModResource(BuffBaseGodot resource) {
-        if (resource.BuffTypeId.Length > 0)
+        if (!resource.BuffTypeId.IsDefault)
             _lookup[resource.BuffTypeId] = resource;
     }
 
@@ -26,8 +27,8 @@ public partial class BuffResourceTable : Resource {
     public IReadOnlyCollection<BuffBaseGodot> AllResources => _lookup.Values;
 
     /// <summary>该 Buff 键是否已有展示资源；有则以其为模板改写 mod 声明了的字段。</summary>
-    internal bool TryGetResource(string buffKey, out BuffBaseGodot? resource) {
-        bool found = _lookup.TryGetValue(buffKey, out var template);
+    internal bool TryGetResource(BuffTypeId buffTypeId, out BuffBaseGodot? resource) {
+        bool found = _lookup.TryGetValue(buffTypeId, out var template);
         resource = template;
         return found;
     }

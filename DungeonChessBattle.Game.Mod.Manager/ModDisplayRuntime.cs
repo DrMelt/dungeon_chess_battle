@@ -13,16 +13,16 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// </summary>
 public sealed class ModDeclaration {
     /// <summary>被 mod 声明过的技能键。</summary>
-    public HashSet<string> Skills { get; } = new(StringComparer.Ordinal);
+    public HashSet<SkillKeyId> Skills { get; } = [];
 
     /// <summary>被 mod 声明过的 Buff 键。</summary>
-    public HashSet<string> Buffs { get; } = new(StringComparer.Ordinal);
+    public HashSet<BuffTypeId> Buffs { get; } = [];
 
     /// <summary>被 mod 声明过的单位配置键。</summary>
-    public HashSet<string> Units { get; } = new(StringComparer.Ordinal);
+    public HashSet<UnitConfigKey> Units { get; } = [];
 
     /// <summary>被 mod 声明过的副本键。</summary>
-    public HashSet<string> Dungeons { get; } = new(StringComparer.Ordinal);
+    public HashSet<DungeonKeyId> Dungeons { get; } = [];
 }
 
 /// <summary>
@@ -39,40 +39,41 @@ public sealed class ModDisplayRuntime(
     ModDeclaration declared) : IModDisplayRuntime {
     /// <inheritdoc/>
     public void RegisterSkill(SkillDisplay display) {
-        if (content.GetSkill(new SkillKeyId(display.Id)) is null)
-            errors.Add(new ModError(modId, $"展示引用未知技能 '{display.Id}'"));
+        if (display.SkillId.IsDefault)
+            return;
+        if (content.GetSkill(display.SkillId) is null)
+            errors.Add(new ModError(modId, $"展示引用未知技能 '{display.SkillId.Id}'"));
         registry.RegisterSkill(display);
-        declared.Skills.Add(display.Id);
+        declared.Skills.Add(display.SkillId);
     }
 
     /// <inheritdoc/>
     public void RegisterBuff(BuffDisplay display) {
-        if (string.IsNullOrEmpty(display.BuffTypeId))
+        if (display.BuffTypeId.IsDefault)
             return;
-        if (display.BuffTypeId.Length > BuffTypeId.MaxLength) {
-            errors.Add(new ModError(modId,
-                $"Buff 键 '{display.BuffTypeId}' 超过长度上限 {BuffTypeId.MaxLength}，展示数据丢弃"));
-            return;
-        }
-        if (content.GetBuff(new BuffTypeId(display.BuffTypeId)) is null)
-            errors.Add(new ModError(modId, $"展示引用未知 Buff '{display.BuffTypeId}'"));
+        if (content.GetBuff(display.BuffTypeId) is null)
+            errors.Add(new ModError(modId, $"展示引用未知 Buff '{display.BuffTypeId.Value}'"));
         registry.RegisterBuff(display);
         declared.Buffs.Add(display.BuffTypeId);
     }
 
     /// <inheritdoc/>
     public void RegisterUnit(UnitDisplay display) {
-        if (content.GetUnit(new UnitConfigKey(display.ConfigKey)) is null)
-            errors.Add(new ModError(modId, $"展示引用未知单位 '{display.ConfigKey}'"));
+        if (display.ConfigKey.IsDefault)
+            return;
+        if (content.GetUnit(display.ConfigKey) is null)
+            errors.Add(new ModError(modId, $"展示引用未知单位 '{display.ConfigKey.Value}'"));
         registry.RegisterUnit(display);
         declared.Units.Add(display.ConfigKey);
     }
 
     /// <inheritdoc/>
     public void RegisterDungeon(DungeonDisplay display) {
-        if (content.GetDungeon(display.Key) is null)
-            errors.Add(new ModError(modId, $"展示引用未知副本 '{display.Key}'"));
+        if (display.DungeonKey.IsDefault)
+            return;
+        if (content.GetDungeon(display.DungeonKey) is null)
+            errors.Add(new ModError(modId, $"展示引用未知副本 '{display.DungeonKey.Value}'"));
         registry.RegisterDungeon(display);
-        declared.Dungeons.Add(display.Key);
+        declared.Dungeons.Add(display.DungeonKey);
     }
 }

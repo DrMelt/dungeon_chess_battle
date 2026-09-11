@@ -1,6 +1,7 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
@@ -23,16 +24,16 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="broadcaster">大厅广播端口，向房间内连接推送消息。</param>
 /// <param name="config">服务器配置，服务器密码等。</param>
 /// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
-/// <param name="dungeonRegistry">副本目录，阵营选项与副本键来源。</param>
+/// <param name="content">内容注册表只读视图，阵营选项、副本键与内容修订号来源。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     SignalRBroadcaster broadcaster, LobbyServerConfig config,
-    IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
+    IUnitRegistry unitRegistry, IContentRegistryView content) {
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly SignalRBroadcaster _broadcaster = broadcaster;
     private readonly LobbyServerConfig _config = config;
     private readonly IUnitRegistry _unitRegistry = unitRegistry;
-    private readonly IDungeonRegistry _dungeonRegistry = dungeonRegistry;
+    private readonly IContentRegistryView _content = content;
 
     /// <summary>
     /// 校验服务器密码；不匹配时返回 false，调用方负责构造失败结果。
@@ -45,13 +46,22 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         return true;
     }
 
-    /// <summary>解析权威副本键：非法键回落默认副本。</summary>
-    /// <param name="dungeonKey">副本键，null 或空串表示未选定（建房未带配置、房间配置缺失）。</param>
-    /// <returns>合法的副本键。</returns>
-    private string ResolveDungeonKey(string? dungeonKey) {
-        var info = _dungeonRegistry.GetByKey(dungeonKey);
-        return info?.DungeonKey ?? _dungeonRegistry.DefaultDungeonKey;
+    /// <summary>解析建房选定的副本键：键缺失、非法或未注册返回 null，由调用方拒绝建房。</summary>
+    /// <param name="dungeonKey">客户端选定的副本键，必填。</param>
+    /// <returns>权威副本键；无合法键时为 null。</returns>
+    private string? ResolveSelectedDungeonKey(string? dungeonKey) {
+        if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is not { } key)
+            return null;
+        return _content.GetDungeon(key.Value)?.DungeonKey.Value;
     }
+
+    /// <summary>解析房间已持久化的副本键：空或解析不到即房间指向已消失的副本，响亮失败。</summary>
+    /// <param name="dungeonKey">房间快照里的副本键。</param>
+    private string ResolveStoredDungeonKey(string? dungeonKey) =>
+        string.IsNullOrEmpty(dungeonKey)
+            ? throw new InvalidOperationException("Room has no dungeon key.")
+            : _content.GetDungeon(dungeonKey)?.DungeonKey
+                ?? throw new InvalidOperationException($"Room references unknown dungeon key '{dungeonKey}'.");
 
     /// <summary>
     /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份，并为其签发会话凭证。
@@ -81,28 +91,24 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         string playerId = req.PlayerId;
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
 
-        GameRoom roomConfig;
-        if (req.Config != null) {
-            roomConfig = new GameRoom(roomId) {
-                DungeonKey = ResolveDungeonKey(req.Config.DungeonKey),
-                Description = req.Config.Description,
-                HostName = hostDisplayName,
-                MaxPlayers = req.Config.MaxPlayers > 0 ? req.Config.MaxPlayers : 2,
-                CurrentPlayers = 1,
-            };
-        }
-        else {
-            // 启用默认值填充房间，无配置直接进入战斗：副本键经同一解析路径回落默认副本
-            roomConfig = new GameRoom(roomId) {
-                DungeonKey = ResolveDungeonKey(null),
-                HostName = hostDisplayName,
-                MaxPlayers = 2,
-                CurrentPlayers = 1,
-            };
-        }
+        // 协议字段在边界上仍需兜底：反序列化不受可空标注约束，缺失配置即为非法请求
+        if (req.Config is null)
+            return new LobbyResult(string.Empty, false, "room config required.");
 
-        // 房间携带服务端当前内容指纹，客户端不一致拒绝加入，保证内容同源
-        roomConfig.ContentFingerprint = GameContentHost.Registry.DataRevision;
+        // 副本键由服务端权威解析：客户端提交的键超长或未注册即拒绝建房，不静默回落
+        string? dungeonKey = ResolveSelectedDungeonKey(req.Config.DungeonKey);
+        if (dungeonKey is null)
+            return new LobbyResult(string.Empty, false, "invalid dungeon key.");
+
+        GameRoom roomConfig = new(roomId) {
+            DungeonKey = dungeonKey,
+            Description = req.Config.Description,
+            HostName = hostDisplayName,
+            MaxPlayers = req.Config.MaxPlayers > 0 ? req.Config.MaxPlayers : 2,
+            CurrentPlayers = 1,
+            // 房间携带服务端当前内容指纹，客户端不一致拒绝加入，保证内容同源
+            ContentFingerprint = _content.DataRevision
+        };
 
         // 组合原子注册：单锁内完成房间注册 + 房主登记 + 成员登记 + 连接归属 + playerId
         if (!_stateStore.TryRegisterRoomWithHost(roomId, actualRoomPassword, roomConfig,
@@ -209,7 +215,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
 
         // 阵营由副本配置权威解析：客户端只提交选项键，不直接设置阵营数组
         var roomConfig = _stateStore.GetRoomConfig(roomId);
-        var dungeon = roomConfig == null ? null : _dungeonRegistry.GetByKey(roomConfig.DungeonKey);
+        var dungeon = roomConfig == null ? null : _content.GetDungeon(roomConfig.DungeonKey);
         var campOption = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == req.CampOptionKey);
         if (campOption == null)
             return new LobbyResult(roomId, false, "Invalid camp option.");
@@ -302,7 +308,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             roomConfig?.MaxPlayers ?? 2,
             roomConfig?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            ResolveDungeonKey(state.DungeonKey),
+            ResolveStoredDungeonKey(state.DungeonKey),
             roomConfig?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))],

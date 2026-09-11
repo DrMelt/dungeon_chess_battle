@@ -9,8 +9,8 @@ using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.GameConfig;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Battle.Client;
@@ -26,7 +26,8 @@ namespace DungeonChessBattle.Battle.Client;
 /// （<c>BattleSessionContext</c>）投影给 UI，UI 不直接绑定本类。
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
-public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : NetworkClientBase(logger), IClientBattleSession {
+public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
+    IContentRegistryView content) : NetworkClientBase(logger), IClientBattleSession {
     /// <summary>
     /// LES 两级缓冲目标水位下界，秒。<c>PreloadNextState</c> 按 <c>NetworkJitter × 1.5</c> 加本值
     /// 同时约束下行插值缓冲与服务端输入队列，水位除以 tick 宽度即 <c>TickLag</c> 的 debt 与 queue 两段。
@@ -189,9 +190,12 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
             return;
 
         var dungeonKey = room.DungeonKey.Value;
+        // 副本不存在即同步数据与本地内容漂移，与未知单位配置键一致地响亮失败
+        var dungeon = content.GetDungeon(dungeonKey)
+            ?? throw new InvalidOperationException($"Unknown dungeon key '{dungeonKey}' on client.");
         _battleScene = new BattleScene(
-            DungeonRegistry.Instance.GetRelations(dungeonKey),
-            new PhysicsMovementScene(DungeonRegistry.Instance.GetMovementLayout(dungeonKey)));
+            dungeon.RelationsResolver,
+            new PhysicsMovementScene(dungeon.Layout));
         foreach (var unit in _battleUnitByNetId.Values)
             _battleScene.AddUnit(unit);
     }
@@ -202,8 +206,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger) : Networ
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;
 
-        // 基础数值经配置只读视图共享服务端同份配置；未知配置键即配置漂移，与回放端一致地响亮失败
-        var config = UnitRegistry.Instance.GetByKey(pawn.UnitKeyName.Value)
+        // 基础数值经内容只读视图共享服务端同份配置；未知配置键即配置漂移，与回放端一致地响亮失败
+        var config = content.GetUnit(pawn.UnitKeyName.Value)
             ?? throw new InvalidOperationException($"Unknown unit config key '{pawn.UnitKeyName.Value}' on client.");
         var unit = new BattleUnit {
             UnitId = pawn.Id,

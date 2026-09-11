@@ -17,7 +17,7 @@ public sealed partial class ModDungeonResource : DungeonResourceBaseGodot {
     public ModDungeonResource(DungeonConfigDef? config) {
         _config = config;
         if (config is not null)
-            ApplyViewData(null, config.DungeonKey, null);
+            ApplyViewData(null, config.DungeonKey.Value, null);
     }
 
     /// <inheritdoc />

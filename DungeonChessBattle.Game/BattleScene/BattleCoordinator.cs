@@ -53,8 +53,8 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>
-    /// 确保战斗环境实例与会话副本键一致：键为 null（实体未同步）或键变化的首次装配，
-    /// 场景模板内已固化主题，键变化只能整棵重建；未同步键回退默认副本场景由资源工厂裁决。
+    /// 确保战斗环境实例与会话副本键一致：权威副本键未到达时不建环境，键到达后装配；
+    /// 键变化的首次装配只能整棵重建，场景模板内已固化主题。
     /// </summary>
     private void EnsureEnvironment() {
         string? key = _sessionContext?.DungeonKey;
@@ -85,7 +85,9 @@ public partial class BattleCoordinator : Node {
 
         session.BattlePhaseChanged += OnBattlePhase;
         _battleService.BattleEventsReceived += OnBattleEvents;
-        _sessionContext?.Bind(new OnlineBattleViewSource(session), new BattleSessionCommand(session, _roomId));
+        _sessionContext?.Bind(
+            new OnlineBattleViewSource(session, ServiceLocator.GameContent.Registry),
+            new BattleSessionCommand(session, _roomId));
         _inputController?.Reset();
 
         // 按房间选中副本创建环境（场景模板内固化主题，经副本资源表）

@@ -25,18 +25,16 @@ namespace DungeonChessBattle.Battle.Logic;
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建，与战斗世界同生命周期。</param>
-/// <param name="hateSettings">仇恨系统参数，可选覆盖。</param>
 /// <param name="logger">AI 决策日志，可选注入。</param>
 public sealed partial class BattleScene(
     CampRelationResolver relations,
     IMovementScene movementScene,
-    HateSettings? hateSettings = null,
     ILogger<BattleScene>? logger = null) : IBattleSceneView {
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
-    /// <summary>仇恨系统参数，未注入时用默认。</summary>
-    private readonly HateSettings _hateSettings = hateSettings ?? new HateSettings();
+    /// <summary>仇恨倍率是引擎结算平衡常量，不由内容提供：伤害与治疗各按 1.0 落账。</summary>
+    private static readonly HateSettings HateFactors = new(DamageHateFactor: 1.0f, HealHateFactor: 1.0f);
 
     /// <summary>AI 决策与应用日志，未注入时用 NullLogger 静默。</summary>
     private readonly ILogger<BattleScene> _logger = logger ?? NullLogger<BattleScene>.Instance;
@@ -293,7 +291,7 @@ public sealed partial class BattleScene(
             TryEndBattle();
 
             // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
-            foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, _hateSettings, _relations)) {
+            foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, HateFactors, _relations)) {
                 if (_unitById.TryGetValue(effect.HolderUnitId, out var holder))
                     holder.RuntimeState.Hates.ApplyEffect(effect);
             }

@@ -1,27 +1,27 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Battle.Shared.Content;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
-/// 客户端单位目录：以 Battle.GameConfig.UnitRegistry 为数据源，按配置键索引单位配置。
+/// 客户端单位目录：以装配产物的单位目录为数据源，按配置键索引单位配置。
 /// 客户端与服务端共享同一份配置；技能展示资源由 UnitShowManager 从 Config.Skills 构建。
 /// </summary>
 public static class UnitCatalog {
-    /// <summary>按配置键的单位注册表（数据源：UnitRegistry）。</summary>
+    /// <summary>按配置键的单位注册表（数据源：装配产物的单位目录）。</summary>
     private static readonly Dictionary<UnitConfigKey, UnitConfig> ByKey = BuildByKey();
 
     /// <summary>
-    /// 从 UnitRegistry 构建客户端目录：单位配置共享服务端来源。
+    /// 从装配产物的单位目录构建客户端目录：单位配置共享服务端来源。
     /// 构建前执行技能资源自检，配置与客户端资源的漂移在首次使用即暴露。
     /// </summary>
     private static Dictionary<UnitConfigKey, UnitConfig> BuildByKey() {
         ResourceTables.Skills.Validate();
         var dict = new Dictionary<UnitConfigKey, UnitConfig>();
-        foreach (var config in UnitRegistry.Instance.All)
+        foreach (var config in ServiceLocator.GameContent.Units.All)
             dict[config.ConfigKey] = config;
         return dict;
     }

@@ -35,12 +35,6 @@ public readonly record struct EnemyDecision(
         => new(EnemyDecisionKind.CastSkill, targetUnitId, skillId, targetPosition);
 }
 
-/// <summary>敌人智能默认参数常量，实现与配置构造共用。</summary>
-public static class EnemyIntelligenceDefaults {
-    /// <summary>技能未配置射程时的兜底逼近距离。</summary>
-    public const float ApproachRange = 10f;
-}
-
 /// <summary>
 /// 敌人单位决策契约。实现必须无状态，无状态实例可被任意多个单位共享。
 /// 决策只依赖 <see cref="IBattleUnitView"/> 只读契约与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。

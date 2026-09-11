@@ -12,7 +12,7 @@ public sealed record ObstacleRect(float MinX, float MinY, float MaxX, float MaxY
 
 /// <summary>
 /// 战场布局：竞技场边界包围盒与静态障碍集合，纯值配置，只读。
-/// 副本可配置独立布局，客户端与服务端按副本键取同一定义。
+/// 副本可配置独立布局，客户端与服务端按副本键取同一定义；未配置即无布局。
 /// </summary>
 /// <param name="HalfWidth">竞技场半宽，X 轴向可活动范围为 ±HalfWidth。</param>
 /// <param name="HalfHeight">竞技场半高，Y 轴向可活动范围为 ±HalfHeight。</param>
@@ -20,7 +20,4 @@ public sealed record ObstacleRect(float MinX, float MinY, float MaxX, float MaxY
 public sealed record BattlefieldLayout(
     float HalfWidth,
     float HalfHeight,
-    IReadOnlyList<ObstacleRect> Obstacles) {
-    /// <summary>副本未配置布局时使用的默认竞技场。</summary>
-    public static readonly BattlefieldLayout Default = new(50f, 30f, []);
-}
+    IReadOnlyList<ObstacleRect> Obstacles);

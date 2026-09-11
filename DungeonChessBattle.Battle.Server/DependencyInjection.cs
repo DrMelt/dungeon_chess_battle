@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ public static class BattleServiceCollectionExtensions {
             sp.GetRequiredService<BattleServerConfig>(),
             sp.GetRequiredService<IReplayStore>(),
             sp.GetRequiredService<IUnitRegistry>(),
-            sp.GetRequiredService<IDungeonRegistry>()));
+            sp.GetRequiredService<IContentRegistryView>()));
         return services;
     }
 }

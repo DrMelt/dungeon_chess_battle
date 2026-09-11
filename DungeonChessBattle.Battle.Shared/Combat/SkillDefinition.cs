@@ -56,11 +56,11 @@ public abstract class SkillDefinition {
 
     /// <summary>
     /// 单位目标技能的最大施法距离，施法者中心到目标中心的距离上限。
-    /// 0 表示不设射程限制，兼容未配置射程的旧技能定义。
+    /// null 表示不设射程限制，必须显式声明取哪一种。
     /// </summary>
-    public float CastRange {
+    public required float? CastRange {
         get; init;
-    } = 0f;
+    }
 
     /// <summary>位置目标技能的有效范围形状，非位置目标技能为空。</summary>
     public IRangeShape? CastArea {

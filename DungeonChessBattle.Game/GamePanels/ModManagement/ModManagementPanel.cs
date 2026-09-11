@@ -1,5 +1,4 @@
 using System.Linq;
-using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -93,7 +92,7 @@ public partial class ModManagementPanel : BaseGamePanel {
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
         return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
             + $"mods 目录：{ModManager.ModsRootPath}\n"
-            + $"运行中数据修订号：{GameContentHost.Registry.DataRevision}"
+            + $"运行中数据修订号：{ServiceLocator.GameContent.Registry.DataRevision}"
             + stale;
     }
 

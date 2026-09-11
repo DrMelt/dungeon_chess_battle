@@ -10,9 +10,14 @@
     <Description>mod 与宿主共用的展示形状：四类展示数据。</Description>
   </PropertyGroup>
 
-  <!-- mod 与宿主共用的展示形状层，零项目引用：本库进 mod 的传递引用闭包，
-       一旦牵入回放模型或战斗领域对象，mod 编译期就得拖一串程序集。
+  <!-- mod 与宿主共用的展示形状层：依赖 Battle.Shared 的强类型键——展示数据以内容身份为键，
+       键必须与内容注册表里的身份同型，故这一份引用不可避免；
+       带出的是零项目引用、不依赖 Godot 的单一程序集，代价到此为止。
        与主工程同用 Godot.NET.Sdk：GodotSharp 由 SDK 隐式提供，版本天然对齐。
        本库只以 Godot 类型作数据成员，不定义 GodotObject 子类，故不产生脚本注册需求。 -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -61,7 +61,4 @@ public sealed class ModBootstrapContext(BehaviorCatalog behaviors, ContentSetReg
 
     /// <inheritdoc/>
     public void RegisterDungeon(DungeonConfig dungeon) => registry.RegisterDungeon(dungeon);
-
-    /// <inheritdoc/>
-    public void SetDefaultDungeonKey(string key) => registry.SetDefaultDungeonKey(key);
 }

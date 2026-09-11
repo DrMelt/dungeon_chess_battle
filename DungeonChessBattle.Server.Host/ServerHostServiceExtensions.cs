@@ -1,6 +1,7 @@
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Server;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;
 using DungeonChessBattle.Server.DataStore;
@@ -15,16 +16,16 @@ namespace DungeonChessBattle.Server.Host;
 public static class ServerHostServiceExtensions {
     /// <summary>注册服务器全部服务装配。</summary>
     public static IServiceCollection AddServerHost(this IServiceCollection services,
-        ServerConfig config, ILoggerFactory loggerFactory) {
+        ServerConfig config, ILoggerFactory loggerFactory, GameContent content) {
         // 进程内内存存储；引入持久化实现时只需替换此两处注册
         services.AddSingleton<IGameStateStore>(_ => new InMemoryGameStateStore(loggerFactory));
         services.AddSingleton<IReplayStore>(new InMemoryReplayStore());
 
         services.AddSingleton<IPlayerIdentityResolver>(sp =>
             new PlayerIdentityResolver(sp.GetRequiredService<IGameStateStore>()));
-        // 内容装配已在入口完成 Rebind，这里绑定当前实例
-        services.AddSingleton<IUnitRegistry>(UnitRegistry.Instance);
-        services.AddSingleton<IDungeonRegistry>(DungeonRegistry.Instance);
+        // 内容由入口装配一次，这里登记装配产物的只读面与单位目录供大厅与房间消费
+        services.AddSingleton<IContentRegistryView>(content.Registry);
+        services.AddSingleton<IUnitRegistry>(content.Units);
 
         services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
         // 有服务器密码时以密码为房间握手指纹，否则用协议默认连接密钥

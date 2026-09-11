@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Lobby.Shared;
-using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Game.ReplayUI;
@@ -49,10 +47,9 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>当前选中房间的列表配置。</summary>
     private RoomListing? _selectedRoomConfig;
     /// <summary>当前选中的副本键，创建房间时随配置下发。</summary>
-    private string _selectedDungeonKey = DefaultDungeonKey;
-
-    /// <summary>默认副本键，经副本登记点取用，不在面板内持有常量。</summary>
-    private static string DefaultDungeonKey => DungeonRegistry.Instance.DefaultDungeonKey;
+    // 节点构造早于 MainScene._EnterTree 的内容装配，此处会命中未装配；留空，
+    // 面板打开时由 PopulateDungeonSelect 填入。
+    private string _selectedDungeonKey = "";
 
     #endregion
 
@@ -93,7 +90,7 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>
-    /// 从共享副本目录填充创建房间的副本下拉，并缓存选中键。
+    /// 从共享内容注册表的副本集合填充创建房间的副本下拉，并缓存选中键。
     /// 服务端据此生成对应敌人阵容，客户端据此呈现对应环境。
     /// </summary>
     private void PopulateDungeonSelect() {
@@ -102,11 +99,11 @@ public partial class GameLobby : BaseGamePanel {
             return;
 
         select.Clear();
-        var dungeons = DungeonRegistry.Instance.All.ToList();
+        var dungeons = ServiceLocator.GameContent.Registry.Dungeons.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
             var key = dungeons[i].DungeonKey;
-            select.AddItem(ServiceLocator.ModAssets?.Dungeon(key)?.DisplayName ?? key, i);
-            select.SetItemMetadata(i, key);
+            select.AddItem(ServiceLocator.ModAssets?.Dungeon(key)?.DisplayName ?? key.Value, i);
+            select.SetItemMetadata(i, key.Value);
         }
         if (dungeons.Count > 0) {
             select.Selected = 0;
@@ -138,16 +135,24 @@ public partial class GameLobby : BaseGamePanel {
 
     /// <summary>
     /// 点击创建房间按钮：以当前选中副本为配置发送创建请求，房间 ID 由服务端生成。
+    /// 未选中有效副本时不出请求：副本键必填，无值可回落。
     /// </summary>
     private void OnCreateRoom() {
+        var dungeon = ServiceLocator.GameContent.Registry.GetDungeon(_selectedDungeonKey);
+        if (dungeon is null) {
+            _logger.LogWarning("创建房间失败: 未选中有效副本 {DungeonKey}", _selectedDungeonKey);
+            if (InterRefs?.DetailLabel != null)
+                InterRefs.DetailLabel.Text = "没有可选的副本，无法创建房间";
+            return;
+        }
+
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
-        var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
         var config = new RoomConfigDto(
-            DungeonKey: dungeon?.DungeonKey ?? DefaultDungeonKey,
-            Description: ServiceLocator.ModAssets?.Dungeon(_selectedDungeonKey)?.Description ?? string.Empty,
+            DungeonKey: dungeon.DungeonKey,
+            Description: ServiceLocator.ModAssets?.Dungeon(dungeon.DungeonKey)?.Description ?? string.Empty,
             MaxPlayers: 2);
-        ServiceLocator.ClientService.RequestCreateRoom(config: config);
+        ServiceLocator.ClientService.RequestCreateRoom(config);
     }
 
     /// <summary>
@@ -182,23 +187,12 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>
-    /// 主线程处理房间创建成功回调，构造配置并进入准备界面。
+    /// 主线程处理房间创建成功回调，进入准备界面。房间信息不在此猜测，以服务端快照为准。
     /// </summary>
     /// <param name="roomId">创建成功的房间 ID。</param>
     private void OnCreatedDeferred(string roomId) {
         if (_roomPreparation != null) {
-            // 构造 RoomListing 作为进房初始展示，副本取本次选中的选择
-            var dungeon = DungeonRegistry.Instance.GetByKey(_selectedDungeonKey);
-            var config = new RoomListing {
-                RoomId = roomId,
-                DungeonKey = dungeon?.DungeonKey ?? DefaultDungeonKey,
-                HostName = ServiceLocator.ClientService.PlayerName,
-                MaxPlayers = 2,
-                CurrentPlayers = 1,
-                Status = RoomStatus.Waiting,
-                ContentFingerprint = GameContentHost.Registry.DataRevision,
-            };
-            _roomPreparation.EnterRoom(roomId, config, isHost: true);
+            _roomPreparation.EnterRoom(roomId, isHost: true);
             NavigateTo(_roomPreparation);
         }
     }
@@ -214,21 +208,12 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>
-    /// 主线程处理加入房间成功回调，进入准备界面。
+    /// 主线程处理加入房间成功回调，进入准备界面：列表缓存带内容指纹，未命中时交给服务端快照渲染。
     /// </summary>
     /// <param name="joinedRoomId">加入成功的房间 ID。</param>
     private void OnJoinedDeferred(string joinedRoomId) {
         if (_roomPreparation != null) {
-            // 使用缓存的选中房间配置，或构造默认配置
-            var config = _selectedRoomConfig ?? new RoomListing {
-                RoomId = joinedRoomId,
-                DungeonKey = DefaultDungeonKey,
-                MaxPlayers = 2,
-                CurrentPlayers = 1,
-                Status = RoomStatus.Waiting,
-                ContentFingerprint = GameContentHost.Registry.DataRevision,
-            };
-            _roomPreparation.EnterRoom(joinedRoomId, config, isHost: false);
+            _roomPreparation.EnterRoom(joinedRoomId, _selectedRoomConfig, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
             NavigateTo(_roomPreparation);

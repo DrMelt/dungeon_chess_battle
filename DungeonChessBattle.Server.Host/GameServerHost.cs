@@ -1,4 +1,5 @@
-﻿using DungeonChessBattle.Battle.Server.Shared;
+﻿using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;
@@ -8,12 +9,17 @@ namespace DungeonChessBattle.Server.Host;
 /// <summary>
 /// 游戏服务器宿主：负责 Kestrel 宿主、SignalR Hub 注册与生命周期编排。
 /// DI 装配归 <see cref="ServerHostServiceExtensions"/>，空房间清理循环归 <see cref="RoomCleanupLoop"/>，
-/// 配置由 <see cref="ServerConfig"/> 唯一来源注入。提供 Start/Stop/RunAsync 操作。
+/// 配置由 <see cref="ServerConfig"/> 唯一来源注入，内容由入口装配后传入。
+/// 提供 Start/Stop/RunAsync 操作。
 /// </summary>
-public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config) {
+/// <param name="loggerFactory">日志工厂。</param>
+/// <param name="config">服务器配置。</param>
+/// <param name="content">入口装配产出的内容，经 DI 分发给大厅与房间。</param>
+public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config, GameContent content) {
     private readonly ILogger<GameServerHost> _logger = loggerFactory.CreateLogger<GameServerHost>();
     private readonly Lock _lock = new();
     private readonly ServerConfig _config = config;
+    private readonly GameContent _content = content;
     private WebApplication? _app;
     private IHostApplicationLifetime? _lifetime;
     private IBattleRoomManager? _battleRoomManager;
@@ -38,7 +44,7 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
                 builder.Logging.ConfigureConsole();
                 // Ctrl+C/SIGTERM 经宿主生命周期转为停止信号；.NET 10 中 ConsoleLifetime 已 internal，统一经扩展显式启用
                 builder.Host.UseConsoleLifetime();
-                builder.Services.AddServerHost(_config, loggerFactory);
+                builder.Services.AddServerHost(_config, loggerFactory, _content);
 
                 var app = builder.Build();
                 // 先行登记宿主实例与生命周期：后续任一步失败可在 catch 完整释放

@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
@@ -20,8 +21,8 @@ public abstract partial class DungeonResourceBaseGodot : Resource {
     /// <summary>内部访问 Config，供 DungeonResourceTable 等程序集内部使用。</summary>
     internal DungeonConfigDef? InternalConfig => Config;
 
-    /// <summary>副本键，来自领域配置。</summary>
-    public string DungeonKey => Config?.DungeonKey ?? "";
+    /// <summary>副本键，来自领域配置；未绑定定义为无键。</summary>
+    public DungeonKeyId DungeonKey => Config?.DungeonKey ?? DungeonKeyId.None;
 
     /// <summary>产出注册表用的展示数据。</summary>
     internal DungeonDisplay ToDisplay() => new(DungeonKey, DisplayName, Description, EnvScene);

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
@@ -96,10 +95,10 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 内容一致性：房间指纹与服务端指纹不一致即缺 mod 或版本不符，拒绝进入准备
         if (config is not null && !string.IsNullOrEmpty(config.ContentFingerprint)
-            && config.ContentFingerprint != GameContentHost.Registry.DataRevision) {
+            && config.ContentFingerprint != ServiceLocator.GameContent.Registry.DataRevision) {
             _logger.LogError(
                 "内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。缺少 mod 或版本不符。",
-                roomId, config.ContentFingerprint, GameContentHost.Registry.DataRevision);
+                roomId, config.ContentFingerprint, ServiceLocator.GameContent.Registry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法加入该房间";
             return;
         }
@@ -141,7 +140,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
         string? dungeonKey = Client.CurrentRoomSnapshot?.DungeonKey;
-        DungeonConfig? dungeonConfig = DungeonRegistry.Instance.GetByKey(dungeonKey);
+        DungeonConfig? dungeonConfig = ServiceLocator.GameContent.Registry.GetDungeon(dungeonKey);
         IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
         string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
 
@@ -182,10 +181,10 @@ public partial class RoomPreparation : BaseGamePanel {
     private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
         // 快照为权威指纹来源，进房乐观配置后仍以快照复核，防止列表迟到信息
         if (!string.IsNullOrEmpty(snapshot.ContentFingerprint)
-            && snapshot.ContentFingerprint != GameContentHost.Registry.DataRevision) {
+            && snapshot.ContentFingerprint != ServiceLocator.GameContent.Registry.DataRevision) {
             _logger.LogError(
                 "快照内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。",
-                eventRoomId, snapshot.ContentFingerprint, GameContentHost.Registry.DataRevision);
+                eventRoomId, snapshot.ContentFingerprint, ServiceLocator.GameContent.Registry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法继续";
             return;
         }

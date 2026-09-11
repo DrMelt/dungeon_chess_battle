@@ -1,6 +1,8 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.GameConfig;
@@ -71,13 +73,9 @@ public sealed class ReplayEngine {
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
 
-    /// <summary>构建回放：使用默认配置注册表；配置缺失属录制环境不一致，响亮失败。</summary>
-    public ReplayEngine(ReplayRecording recording)
-        : this(recording, UnitRegistry.Instance, DungeonRegistry.Instance) {
-    }
-
-    /// <summary>构建回放：注入配置注册表做双重版本门控、按单位初始态构建战斗世界并立即开战。</summary>
-    public ReplayEngine(ReplayRecording recording, IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
+    /// <summary>构建回放：注入单位目录与内容视图，按单位初始态构建战斗世界并立即开战。</summary>
+    public ReplayEngine(ReplayRecording recording, IUnitRegistry unitRegistry,
+        IContentRegistryView content) {
         _meta = recording.Meta;
         _unitRegistry = unitRegistry;
         _startTick = _meta.StartTick;
@@ -91,19 +89,22 @@ public sealed class ReplayEngine {
         (_moveRunsByPlayer, _moveCursor) = BuildMoveTracks(recording.MoveTracks, _meta.Players.Count);
 
         // 双重门控：内容修订号管配置与布局，逻辑修订号管结算时序，任一不符重算都不可能对上
-        if (_meta.DataVersion != GameContentHost.Registry.DataRevision)
+        if (_meta.DataVersion != content.DataRevision)
             throw new InvalidDataException(
-                $"Replay content mismatch: record data={_meta.DataVersion}, current={GameContentHost.Registry.DataRevision}.");
+                $"Replay content mismatch: record data={_meta.DataVersion}, current={content.DataRevision}.");
         if (_meta.LogicVersion != BattleLogicRevision.Value)
             throw new InvalidDataException(
                 $"Replay logic mismatch: record logic={_meta.LogicVersion}, current={BattleLogicRevision.Value}.");
 
+        // 归档携带的副本键先过值对象校验：空或超长即拒绝，不把非法键带进内容查询
+        if (RestrictedString.TryCreate(_meta.DungeonKey, DungeonKeyId.MaxLength) is not { } key)
+            throw new InvalidDataException($"Replay invalid dungeon key: {_meta.DungeonKey}");
+        var dungeon = content.GetDungeon(key.Value)
+            ?? throw new InvalidDataException($"Replay references unknown dungeon key: {_meta.DungeonKey}");
+        var movementScene = new PhysicsMovementScene(dungeon.Layout);
+
         // 只读投影建在门后：被拒的归档不必先做一遍三表混排
         _inputs = ReplayInputTimeline.Build(recording);
-
-        var dungeon = dungeonRegistry.GetByKey(_meta.DungeonKey)
-            ?? throw new InvalidDataException($"Replay references unknown dungeon key: {_meta.DungeonKey}");
-        var movementScene = new PhysicsMovementScene(dungeonRegistry.GetMovementLayout(_meta.DungeonKey));
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
         _intentHub = new BattleIntentHub(_battleScene);
         BuildUnits();

@@ -17,8 +17,8 @@ namespace DungeonChessBattle.Game.Services;
 /// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配。
 /// 主场景 _Ready 首个调用，保证任何 UI 与资源表访问前内容已就绪；
 /// 服务器子进程由 ServerProcessHost 注入同一 user://mods，两端读同一启用集与内容即同源。
-/// 装配产物写入 <see cref="ServiceLocator.ModAssets"/>，展示装配内部的先后次序不在这里，
-/// 见 <see cref="ModAssets.Assemble"/>。
+/// 两次装配的产物分别写入 <see cref="ServiceLocator.GameContent"/> 与 <see cref="ServiceLocator.ModAssets"/>，
+/// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
 public static class ModManager {
     /// <summary>mods 根目录的 Godot 路径，指向 user:// 下存放 mod 包的目录。</summary>
@@ -43,14 +43,17 @@ public static class ModManager {
         var catalog = ModCatalog.Scan(ModsRootPath);
         // 复用同一次扫描结果装配数据面：启停文件已随扫描读入，两端不必再传参。
         // Load(扫描结果) 只带回装配期新增错误，扫描期错误已在 catalog.Errors
-        catalog.RecordAssemblyErrors(ContentBootstrapper.Load(catalog.ScanResult).Errors);
+        var boot = ContentBootstrapper.Load(catalog.ScanResult);
+        catalog.RecordAssemblyErrors(boot.Errors);
+        // 数据面产物交组合根持有，UI 与资源表经 ServiceLocator.GameContent 取数
+        ServiceLocator.BindContent(boot.Content);
 
         // 注册表取装配后的实例：内容须先就绪，展示键校验才看得到 mod 注册进来的条目。
         // 资源包挂载作为委托交进装配过程，次序由 ModAssets.Assemble 保证：装载展示代码 → 挂载 → 入口执行
         ServiceLocator.ModAssets = ModAssets.Assemble(
-            catalog, GameContentHost.Registry,
+            catalog, boot.Content.Registry,
             MountAssetPacks,
-            (declared, registry) => ModAssetsMapper.Apply(GameContentHost.Registry, declared, registry));
+            (declared, registry) => ModAssetsMapper.Apply(boot.Content.Registry, declared, registry));
 
         foreach (var error in catalog.Errors)
             Logger.LogError("mod 扫描失败: {Error}", error);
@@ -64,8 +67,8 @@ public static class ModManager {
                 "内容 技能 {Skills}/Buff {Buffs}/单位 {Units}/副本 {Dungeons}；" +
                 "落地展示 技能 {SkillRes}/Buff {BuffRes}/副本 {DungeonRes}",
                 catalog.EnabledMods.Count, catalog.DisabledCount, catalog.Fingerprint,
-                GameContentHost.Registry.Skills.Count, GameContentHost.Registry.Buffs.Count,
-                GameContentHost.Registry.Units.Count, GameContentHost.Registry.Dungeons.Count,
+                boot.Content.Registry.Skills.Count, boot.Content.Registry.Buffs.Count,
+                boot.Content.Registry.Units.Count, boot.Content.Registry.Dungeons.Count,
                 ResourceTables.Skills.AllResources.Count, ResourceTables.Buffs.AllResources.Count,
                 ResourceTables.Dungeons.AllResources.Count);
     }

@@ -7,17 +7,18 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// 与数据面 <c>IModRuntime</c> 同构——后注册的同名条目覆盖前者，因此后装载的 mod 天然改写先装载的展示。
 /// 覆盖是字段级的：数据里声明了什么就改什么，未声明字段沿用被覆盖者。
 /// 场景模板与图标纹理随条目数据以对象携带，不经本接口登记。
+/// 四类键同一口径：无内容键的数据不参与注册。
 /// </summary>
 public interface IModDisplayRuntime {
-    /// <summary>注册技能展示数据，同 Id 覆盖。</summary>
+    /// <summary>注册技能展示数据，同 SkillId 覆盖。</summary>
     void RegisterSkill(SkillDisplay display);
 
-    /// <summary>注册 Buff 展示数据，同 BuffTypeId 覆盖；键为空串的数据不参与注册。</summary>
+    /// <summary>注册 Buff 展示数据，同 BuffTypeId 覆盖。</summary>
     void RegisterBuff(BuffDisplay display);
 
     /// <summary>注册单位展示数据，同 ConfigKey 覆盖。</summary>
     void RegisterUnit(UnitDisplay display);
 
-    /// <summary>注册副本展示数据，同 Key 覆盖。</summary>
+    /// <summary>注册副本展示数据，同 DungeonKey 覆盖。</summary>
     void RegisterDungeon(DungeonDisplay display);
 }

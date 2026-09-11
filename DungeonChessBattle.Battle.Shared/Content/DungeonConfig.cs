@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Movement;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Content;
 
@@ -14,8 +15,8 @@ namespace DungeonChessBattle.Battle.Shared.Content;
 public sealed record EnemySpawnConfig(
     UnitConfig Unit,
     int Count,
-    float SpawnBaseX = 30f,
-    float SpawnXSpacing = 3f);
+    float SpawnBaseX,
+    float SpawnXSpacing);
 
 /// <summary>
 /// 玩家阵营选项：客户端在准备阶段提交选项键，服务端据此解析实际阵营列表。
@@ -28,12 +29,12 @@ public sealed record PlayerCampOption(string Key, IReadOnlyList<string> Camps);
 /// <summary>
 /// 副本配置：副本键、玩家阵营选项、敌人阵营、敌人生成阵容与战场布局。
 /// 纯 C# 共享配置，服务端据此生成敌人与指派玩家阵营，客户端据此决定环境表现。
-/// 阵营归属由副本权威定义，单位配置不含阵营。
+/// 阵营归属由副本权威定义，单位配置不含阵营；战场布局必须显式声明，空场传 null。
 /// </summary>
 public sealed record DungeonConfig(
-    string DungeonKey,
+    DungeonKeyId DungeonKey,
     IReadOnlyList<PlayerCampOption> PlayerCampOptions,
     IReadOnlyList<EnemySpawnConfig> Enemies,
     CampRelationResolver RelationsResolver,
     IReadOnlyList<string> EnemyCamps,
-    BattlefieldLayout? Layout = null);
+    BattlefieldLayout? Layout);

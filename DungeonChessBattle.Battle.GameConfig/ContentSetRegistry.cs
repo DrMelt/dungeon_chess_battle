@@ -12,10 +12,10 @@ namespace DungeonChessBattle.Battle.GameConfig;
 /// </summary>
 /// <remarks>注册表自空开始，内容按写入顺序覆盖。</remarks>
 public sealed partial class ContentSetRegistry(string engineRevision, string contentFingerprint) : IContentRegistryView {
-    private readonly Dictionary<string, SkillDefinition> _skillsByKey = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, BuffDefinition> _buffsByKey = new(StringComparer.Ordinal);
+    private readonly Dictionary<SkillKeyId, SkillDefinition> _skillsByKey = [];
+    private readonly Dictionary<BuffTypeId, BuffDefinition> _buffsByKey = [];
     private readonly Dictionary<UnitConfigKey, UnitConfig> _unitsByKey = [];
-    private readonly Dictionary<string, DungeonConfig> _dungeonsByKey = new(StringComparer.Ordinal);
+    private readonly Dictionary<DungeonKeyId, DungeonConfig> _dungeonsByKey = [];
 
     /// <summary>内容修订：引擎内容修订号 + 装配方传入的内容指纹，内容与布局任何变化都会改变值。</summary>
     public string DataRevision {
@@ -23,11 +23,6 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     } = string.IsNullOrEmpty(contentFingerprint)
             ? engineRevision
             : $"{engineRevision}+{contentFingerprint}";
-
-    /// <summary>当前默认副本键；由装配方经 <see cref="SetDefaultDungeonKey"/> 设置，未设置时为空。</summary>
-    public string DefaultDungeonKey {
-        get; private set;
-    } = "";
 
     /// <summary>全部技能定义。</summary>
     public IReadOnlyCollection<SkillDefinition> Skills => _skillsByKey.Values;
@@ -42,14 +37,14 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     public IReadOnlyCollection<DungeonConfig> Dungeons => _dungeonsByKey.Values;
 
     /// <summary>按技能键取定义；不存在返回 null。</summary>
-    public SkillDefinition? GetSkill(SkillKeyId skillKey) => _skillsByKey.GetValueOrDefault(skillKey.Id);
+    public SkillDefinition? GetSkill(SkillKeyId skillKey) => _skillsByKey.GetValueOrDefault(skillKey);
 
     /// <summary>按技能键取定义；不存在抛异常，装配期与内容消费方必得。</summary>
     public SkillDefinition GetRequiredSkill(SkillKeyId skillKey) =>
         GetSkill(skillKey) ?? throw new InvalidOperationException($"技能 '{skillKey.Id}' 未注册。");
 
     /// <summary>按 Buff 键取定义；不存在返回 null。</summary>
-    public BuffDefinition? GetBuff(BuffTypeId buffTypeId) => _buffsByKey.GetValueOrDefault(buffTypeId.Value);
+    public BuffDefinition? GetBuff(BuffTypeId buffTypeId) => _buffsByKey.GetValueOrDefault(buffTypeId);
 
     /// <summary>按 Buff 键取定义；不存在抛异常，装配期与内容消费方必得。</summary>
     public BuffDefinition GetRequiredBuff(BuffTypeId buffTypeId) =>
@@ -62,30 +57,38 @@ public sealed partial class ContentSetRegistry(string engineRevision, string con
     public UnitConfig GetRequiredUnit(UnitConfigKey configKey) =>
         GetUnit(configKey) ?? throw new InvalidOperationException($"单位 '{configKey.Value}' 未注册。");
 
-    /// <summary>按副本键取配置；不存在返回 null。</summary>
-    public DungeonConfig? GetDungeon(string? dungeonKey) =>
-        string.IsNullOrWhiteSpace(dungeonKey) ? null : _dungeonsByKey.GetValueOrDefault(dungeonKey);
+    /// <summary>按副本键取配置；无键或不存在返回 null。</summary>
+    public DungeonConfig? GetDungeon(DungeonKeyId dungeonKey) => _dungeonsByKey.GetValueOrDefault(dungeonKey);
 
     /// <summary>按副本键取配置；不存在抛异常，装配期与内容消费方必得。</summary>
-    public DungeonConfig GetRequiredDungeon(string dungeonKey) =>
-        GetDungeon(dungeonKey) ?? throw new InvalidOperationException($"副本 '{dungeonKey}' 未注册。");
+    public DungeonConfig GetRequiredDungeon(DungeonKeyId dungeonKey) =>
+        GetDungeon(dungeonKey) ?? throw new InvalidOperationException($"副本 '{dungeonKey.Value}' 未注册。");
 
-    /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
-    public void RegisterSkill(SkillDefinition skill) => _skillsByKey[skill.SkillId.Id] = skill;
+    /// <summary>注册技能定义：同 SkillId 覆盖，空键拒绝。</summary>
+    public void RegisterSkill(SkillDefinition skill) {
+        if (skill.SkillId.IsDefault)
+            throw new InvalidOperationException("技能必须声明技能键");
+        _skillsByKey[skill.SkillId] = skill;
+    }
 
     /// <summary>注册 Buff 定义：同键覆盖，空键拒绝。</summary>
     public void RegisterBuff(BuffDefinition buff) {
         if (buff.BuffTypeId.IsDefault)
             throw new InvalidOperationException("Buff 必须声明 Buff 键");
-        _buffsByKey[buff.BuffTypeId.Value] = buff;
+        _buffsByKey[buff.BuffTypeId] = buff;
     }
 
-    /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>
-    public void RegisterUnit(UnitConfig unit) => _unitsByKey[unit.ConfigKey] = unit;
+    /// <summary>注册单位配置：同 ConfigKey 覆盖，空键拒绝。</summary>
+    public void RegisterUnit(UnitConfig unit) {
+        if (unit.ConfigKey.IsDefault)
+            throw new InvalidOperationException("单位必须声明配置键");
+        _unitsByKey[unit.ConfigKey] = unit;
+    }
 
-    /// <summary>注册副本配置，同 DungeonKey 覆盖。</summary>
-    public void RegisterDungeon(DungeonConfig dungeon) => _dungeonsByKey[dungeon.DungeonKey] = dungeon;
-
-    /// <summary>设置默认副本键，后写覆盖。</summary>
-    public void SetDefaultDungeonKey(string key) => DefaultDungeonKey = key;
+    /// <summary>注册副本配置：同 DungeonKey 覆盖，空键拒绝。</summary>
+    public void RegisterDungeon(DungeonConfig dungeon) {
+        if (dungeon.DungeonKey.IsDefault)
+            throw new InvalidOperationException("副本必须声明副本键");
+        _dungeonsByKey[dungeon.DungeonKey] = dungeon;
+    }
 }

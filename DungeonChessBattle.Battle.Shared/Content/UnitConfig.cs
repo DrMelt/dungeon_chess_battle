@@ -22,8 +22,10 @@ public class UnitConfig {
         get; set;
     }
 
-    /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨，默认 1.0。</summary>
-    public float HateFactor { get; set; } = 1.0f;
+    /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨。</summary>
+    public required float HateFactor {
+        get; set;
+    }
 
     /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；null 表示不参与仇恨计算。</summary>
     public IHateRule? HateRule {
@@ -35,6 +37,8 @@ public class UnitConfig {
         get; init;
     }
 
-    /// <summary>是否可被玩家在准备阶段选择，敌人单位设为 false。</summary>
-    public bool IsPlayerSelectable { get; set; } = true;
+    /// <summary>是否可被玩家在准备阶段选择，敌人单位必须显式声明 false。</summary>
+    public required bool IsPlayerSelectable {
+        get; set;
+    }
 }

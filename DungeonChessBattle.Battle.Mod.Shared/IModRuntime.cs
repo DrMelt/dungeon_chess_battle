@@ -47,7 +47,7 @@ public interface IModRuntime {
 /// <summary>
 /// mod 内容注册面：把领域定义对象（技能/Buff/单位/副本）直接注册进内容注册表。
 /// 定义对象是运行时强类型，非字符串 schema——mod 必先构造对象图再注册。
-/// 同键后写覆盖；Buff 以 <see cref="BuffDefinition.BuffTypeId"/> 字符串键为同步身份。
+/// 同键后写覆盖；Buff 以 <see cref="BuffDefinition.BuffTypeId"/> 为同步身份。
 /// </summary>
 public interface IModContentRuntime {
     /// <summary>注册技能定义，同 SkillId 覆盖。</summary>
@@ -59,11 +59,8 @@ public interface IModContentRuntime {
     /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>
     void RegisterUnit(UnitConfig unit);
 
-    /// <summary>注册副本配置，同 DungeonKey 覆盖。</summary>
+    /// <summary>注册副本配置，同 DungeonKey 覆盖，空键拒绝。</summary>
     void RegisterDungeon(DungeonConfig dungeon);
-
-    /// <summary>覆盖默认副本键；无 mod 设置时为空串。</summary>
-    void SetDefaultDungeonKey(string key);
 }
 
 /// <summary>

@@ -79,7 +79,7 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用。
     /// </summary>
     private IReadOnlyList<string> ResolvePlayerCamps(UnitSelection selection) {
-        var dungeon = _dungeonRegistry.GetByKey(_dungeonKey);
+        var dungeon = _content.GetDungeon(_dungeonKey);
         var camps = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey)?.Camps;
         if (camps == null || camps.Count == 0)
             throw new InvalidOperationException(
@@ -92,7 +92,7 @@ public partial class BattleRoomServer {
     /// 仅房间线程调用。
     /// </summary>
     private void SpawnDungeonEnemies() {
-        var dungeon = _dungeonRegistry.GetByKey(_dungeonKey);
+        var dungeon = _content.GetDungeon(_dungeonKey);
         if (dungeon == null)
             return;
 

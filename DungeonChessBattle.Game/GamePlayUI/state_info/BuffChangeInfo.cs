@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using System;
@@ -54,9 +55,9 @@ public partial class BuffChangeInfo : FadeInfo {
     /// <summary>
     /// 初始化提示内容（按 Buff 键版本）：设置变化符号，图标按 Buff 键从展示索引匹配。
     /// </summary>
-    /// <param name="buffKey">要展示的 Buff 键。</param>
+    /// <param name="buffTypeId">要展示的 Buff 键。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(string buffKey, BuffChangeType changeType) {
+    public void Init(BuffTypeId buffTypeId, BuffChangeType changeType) {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
@@ -67,7 +68,7 @@ public partial class BuffChangeInfo : FadeInfo {
         };
 
         // 图标按 Buff 键从展示索引取；未注册时留空
-        textureRectRef.Texture = ServiceLocator.ModAssets?.Buff(buffKey)?.Icon;
+        textureRectRef.Texture = ServiceLocator.ModAssets?.Buff(buffTypeId)?.Icon;
     }
 
     /// <summary>

@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
 using LiteNetLib;
@@ -31,7 +33,7 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly string _connectionKey;
     private readonly IGameStateStore _stateStore;
     private readonly IUnitRegistry _unitRegistry;
-    private readonly IDungeonRegistry _dungeonRegistry;
+    private readonly IContentRegistryView _content;
 
     private const int FramesPerSecond = 128;
 
@@ -89,8 +91,8 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间副本的阵营关系函数，AI 决策与战斗世界共用。</summary>
     private readonly CampRelationResolver _campRelations;
 
-    /// <summary>本房间选中的副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
-    private readonly string _dungeonKey;
+    /// <summary>本房间选中的权威副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
+    private readonly DungeonKeyId _dungeonKey;
 
     /// <summary>实体管理器。</summary>
     public ServerEntityManager EntityManager {
@@ -134,22 +136,23 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="config">战斗侧配置切片，连接密钥。</param>
     /// <param name="stateStore">大厅级状态存储，房间线程用于自取初始化数据与成员校验。</param>
     /// <param name="unitRegistry">单位目录，房间单位装配权威来源。</param>
-    /// <param name="dungeonRegistry">副本目录，阵营关系与移动布局来源。</param>
+    /// <param name="content">内容注册表只读视图，房间副本配置与录制回放修订号来源。</param>
     public BattleRoomServer(int port, string roomId, ILoggerFactory loggerFactory,
         BattleServerConfig config, IGameStateStore stateStore,
-        IUnitRegistry unitRegistry, IDungeonRegistry dungeonRegistry) {
+        IUnitRegistry unitRegistry, IContentRegistryView content) {
         Port = port;
         RoomId = roomId;
         _logger = loggerFactory.CreateLogger<BattleRoomServer>();
         _connectionKey = config.ConnectionKey;
         _stateStore = stateStore;
         _unitRegistry = unitRegistry;
-        _dungeonRegistry = dungeonRegistry;
-        _dungeonKey = _dungeonRegistry.GetByKey(stateStore.GetRoomConfig(roomId)?.DungeonKey)?.DungeonKey
+        _content = content;
+        var dungeon = _content.GetDungeon(stateStore.GetRoomConfig(roomId)?.DungeonKey)
             ?? throw new InvalidOperationException(
                 $"Room '{roomId}' references unknown dungeon key.");
-        _campRelations = _dungeonRegistry.GetRelations(_dungeonKey);
-        var movementScene = new PhysicsMovementScene(_dungeonRegistry.GetMovementLayout(_dungeonKey));
+        _dungeonKey = dungeon.DungeonKey;
+        _campRelations = dungeon.RelationsResolver;
+        var movementScene = new PhysicsMovementScene(dungeon.Layout);
         _battleScene = new BattleScene(_campRelations, movementScene, logger: loggerFactory.CreateLogger<BattleScene>());
         _intentHub = new BattleIntentHub(_battleScene, loggerFactory);
 
