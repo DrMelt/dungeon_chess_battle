@@ -70,7 +70,7 @@ public partial class TextureRectBuffIcon : TextureRect {
         durationLabelRef.LabelSettings.FontColor =
             buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
-        // 图标按 Buff 键从展示索引取；内置与 mod 同源，未注册时留空
+        // 图标按 Buff 键从展示索引取；未注册时留空
         Texture = ServiceLocator.ModAssets?.Buff(buff.BuffTypeId.Value)?.Icon;
     }
 

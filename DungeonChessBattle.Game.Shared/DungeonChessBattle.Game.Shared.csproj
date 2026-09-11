@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <IsPackable>true</IsPackable>
-    <Description>mod 与宿主共用的展示形状：四类展示数据与内置资源名。</Description>
+    <Description>mod 与宿主共用的展示形状：四类展示数据。</Description>
   </PropertyGroup>
 
   <!-- mod 与宿主共用的展示形状层，零项目引用：本库进 mod 的传递引用闭包，

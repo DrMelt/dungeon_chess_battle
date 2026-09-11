@@ -11,7 +11,7 @@ using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
-/// 战斗编排器：`battle_assemble.tscn` 的根节点，战斗子系统（BattleSessionContext/BattleInputController/DungeonEnv）
+/// 战斗编排器：`battle_assemble.tscn` 的根节点，战斗子系统（BattleSessionContext/BattleInputController/副本环境）
 /// 的生命周期与阶段分发中枢。
 /// 进入战斗时单独构建在线装配（视图源 + 命令）注入统一数据源并订阅战斗阶段事件，退出时解绑；
 /// Running 阶段收敛副本环境（实体同步后键变化时整棵重建），Finished 阶段经 OnBattleFinished 回调交还 MainScene 走应用级退出。
@@ -31,7 +31,7 @@ public partial class BattleCoordinator : Node {
     private BattleInputController? _inputController;
 
     /// <summary>当前战斗环境实例，EnterBattle 按会话副本键经资源表创建，ExitBattle 销毁。</summary>
-    private DungeonEnv? _dungeonEnv;
+    private Node3D? _dungeonEnv;
 
     /// <summary>环境实例对应的副本键；会话键变化时重建，覆盖实体同步前后的时序差异。</summary>
     private string? _dungeonEnvKey;

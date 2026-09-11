@@ -11,6 +11,6 @@ namespace DungeonChessBattle.Game.Mod.Interface;
 /// 展示 DLL 仅客户端装载，服务端不加载、不进指纹。
 /// </summary>
 public interface IModDisplayEntry {
-    /// <summary>注册本 mod 的全部展示资源与展示数据；同键后注册覆盖先注册者，未声明字段沿用被覆盖者。</summary>
+    /// <summary>注册本 mod 的全部展示数据；同键后注册覆盖先注册者，未声明字段沿用被覆盖者。</summary>
     void Initialize(IModDisplayRuntime runtime, ModDisplayContext context);
 }

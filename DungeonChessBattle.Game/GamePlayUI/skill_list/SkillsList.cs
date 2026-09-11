@@ -6,7 +6,7 @@ using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.Effects;
+using DungeonChessBattle.Game.Mod.Shared;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -56,7 +56,7 @@ public partial class SkillsList : Control {
     private ButtonSkillBase? _waitingButton;
 
     /// <summary>当前范围提示实例，随鼠标位置每帧刷新。</summary>
-    private SkillRangeRect_Hint? _rangeHint;
+    private IRectRangeHint? _rangeHint;
 
     /// <summary>当前范围提示对应的领域范围形状参数。</summary>
     private RectShape? _rangeRect;
@@ -234,8 +234,7 @@ public partial class SkillsList : Control {
         if (skillRes.InternalConfig?.CastArea is not RectShape shape)
             return;
 
-        var hint = _effectHints.ShowRangeHint<SkillRangeRect_Hint>(
-            skillRes, _ => UpdateRangePreview());
+        var hint = _effectHints.ShowRangeHint(skillRes, _ => UpdateRangePreview());
         if (hint == null)
             return;
 
@@ -246,12 +245,12 @@ public partial class SkillsList : Control {
 
     /// <summary>
     /// 按施法单位位置与鼠标地面位置刷新范围提示的位置与朝向。
-    /// 提示作用场景尚未 _Ready 时跳过本帧，等待挂载帧后执行。
+    /// 提示尚未就绪或读数缺失时跳过本帧。
     /// </summary>
     private void UpdateRangePreview() {
         var hint = _rangeHint;
         var shape = _rangeRect;
-        if (hint == null || shape == null || hint.InterRefs == null)
+        if (hint == null || shape == null)
             return;
 
         var unit = _sessionRef?.LocalUnit;

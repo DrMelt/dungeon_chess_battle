@@ -13,7 +13,7 @@ namespace DungeonChessBattle.Game.GameAssets.Mods;
 /// 表内缺失的领域条目一律补一个运行时资源，保证「内容里有、展示里没有」不再让客户端自检崩。
 /// </summary>
 /// <remarks>
-/// 必须在内容装配（<c>GameContentHost</c> 重建注册表）与引擎侧展示注册之后调用：表的查找以刚注册的领域定义或其键为身份。
+/// 必须在内容装配（<c>GameContentHost</c> 重建注册表）之后调用：表的查找以刚注册的领域定义或其键为身份。
 /// 引擎不提供任何条目，故模板只可能是本方法此前已落地的资源。
 /// 字段取自展示注册表的合并数据，落地后把资源对象的数据回注注册表，
 /// 使「走资源表的渲染」与「走索引的 UI」看到同一份展示真相，缺省名回退也只在资源对象上算一次。
@@ -49,7 +49,7 @@ public static class ModAssetsMapper {
                 ? (UnitSkillBaseGodot)t.Duplicate()
                 : new ModSkillResource(config);
             resource.ApplyViewData(
-                data.Icon, data.Name, data.Description, data.ApplyEffectScene, data.RangeHintScene);
+                data.Icon, data.Name, data.Description, data.RangeHintScene);
             skills.RegisterModResource(resource);
             display.RegisterSkill(resource.ToDisplay());
         }

@@ -31,29 +31,25 @@ public sealed class ModAssets {
     }
 
     /// <summary>
-    /// 展示装配全过程，顺序由本方法保证：建注册表 → 引擎侧先入表 → 装载展示代码 → 挂载展示资源包 →
+    /// 展示装配全过程，顺序由本方法保证：建注册表 → 装载展示代码 → 挂载展示资源包 →
     /// 逐 mod 执行入口把声明注册进同表 → 宿主把 mod 声明落地成资源对象并回注 → 表就绪后对外可查。
     /// </summary>
     /// <remarks>
-    /// 引擎侧注册、资源包挂载与 mod 条目落地三步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与
+    /// 资源包挂载与 mod 条目落地两步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与
     /// <c>res://</c> 路径只能留在 Godot 主工程，本库不认识它们，只负责把顺序钉死在这里。
-    /// 装载先于挂载、入口执行后于挂载：入口 Initialize 要按 <c>res://mods/{id}/</c> 前缀自行读包内资源，
-    /// 而契约程序集必须宿主已装载（引擎侧注册已保证）。
+    /// 装载先于挂载、入口执行后于挂载：入口 Initialize 要按 <c>res://mods/{id}/</c> 前缀自行读包内资源。
     /// </remarks>
     /// <param name="catalog">已扫描的 mod 管理根，提供参与装配的启用 mod 与错误落点。</param>
     /// <param name="content">内容注册表只读视图，展示键完整性校验对它做。</param>
-    /// <param name="registerBuiltin">把引擎预置场景名与单位外观占位注册进注册表，必须先于 mod 声明。</param>
     /// <param name="mountResourcePacks">逐 mod 挂载它声明的展示资源包，必须介于展示代码装载与入口执行之间。</param>
     /// <param name="applyModResources">把 mod 声明过的条目落地成宿主资源对象，收 mod 声明集与注册表。</param>
     /// <returns>装配完成的获取入口实例，由调用方持有。</returns>
     public static ModAssets Assemble(
         ModCatalog catalog,
         IContentRegistryView content,
-        Action<DisplayRegistry> registerBuiltin,
         Action<IReadOnlyList<LoadedMod>> mountResourcePacks,
         Action<ModDeclaration, DisplayRegistry> applyModResources) {
         var registry = new DisplayRegistry();
-        registerBuiltin(registry);
 
         var runtimeErrors = new List<ModError>();
         var declared = new ModDeclaration();

@@ -26,7 +26,7 @@ public partial class UnitSkillBaseGodot : Resource {
 
     /// <summary>产出注册表用的展示数据；本类成员带前缀，键与通用成员名在此对齐一次。</summary>
     internal SkillDisplay ToDisplay() =>
-        new(SkillId.Id, SkillName, SkillDescription, Icon, ApplyEffectScene, RangeHintScene);
+        new(SkillId.Id, SkillName, SkillDescription, Icon, RangeHintScene);
 
     /// <summary>技能图标。</summary>
     [Export]
@@ -40,12 +40,6 @@ public partial class UnitSkillBaseGodot : Resource {
     [Export(PropertyHint.MultilineText)]
     public string SkillDescription { get; private set; } = "";
 
-    /// <summary>技能施放时在目标位置实例化的特效场景模板。</summary>
-    [Export]
-    public PackedScene? ApplyEffectScene {
-        get; private set;
-    }
-
     /// <summary>选择位置目标时展示的范围提示场景模板。</summary>
     [Export]
     public PackedScene? RangeHintScene {
@@ -56,29 +50,16 @@ public partial class UnitSkillBaseGodot : Resource {
     /// 由 mod 资源装配运行时填充展示字段；null 或空串的成员保持模板原值，内部调用。
     /// </summary>
     internal void ApplyViewData(
-        Texture2D? icon, string? name, string? description,
-        PackedScene? applyEffectScene, PackedScene? rangeHintScene) {
+        Texture2D? icon, string? name, string? description, PackedScene? rangeHintScene) {
         if (icon is not null)
             Icon = icon;
         if (!string.IsNullOrEmpty(name))
             SkillName = name;
         if (!string.IsNullOrEmpty(description))
             SkillDescription = description;
-        if (applyEffectScene is not null)
-            ApplyEffectScene = applyEffectScene;
         if (rangeHintScene is not null)
             RangeHintScene = rangeHintScene;
     }
-
-    /// <summary>
-    /// 实例化施放特效节点；模板未配置返回 null。
-    /// </summary>
-    public Node3D? CreateApplyEffect() => ApplyEffectScene?.Instantiate<Node3D>();
-
-    /// <summary>
-    /// 实例化范围提示节点；模板未配置返回 null。
-    /// </summary>
-    public Node3D? CreateRangeHint() => RangeHintScene?.Instantiate<Node3D>();
 
     /// <summary>技能施放总时长（秒）。</summary>
     public float SkillSpellTime => Config?.SpellTime ?? 0;

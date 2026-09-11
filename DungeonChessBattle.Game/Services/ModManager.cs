@@ -1,11 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Mod.Manager;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GameAssets.Mods;
 using DungeonChessBattle.Game.Mod.Manager;
 using Godot;
+using Godot.Bridge;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.Services;
@@ -45,7 +48,7 @@ public static class ModManager {
         // 注册表取装配后的实例：内容须先就绪，展示键校验才看得到 mod 注册进来的条目。
         // 资源包挂载作为委托交进装配过程，次序由 ModAssets.Assemble 保证：装载展示代码 → 挂载 → 入口执行
         ServiceLocator.ModAssets = ModAssets.Assemble(
-            catalog, GameContentHost.Registry, BuiltinDisplayAssets.Register,
+            catalog, GameContentHost.Registry,
             MountAssetPacks,
             (declared, registry) => ModAssetsMapper.Apply(GameContentHost.Registry, declared, registry));
 
@@ -67,8 +70,9 @@ public static class ModManager {
                 ResourceTables.Dungeons.AllResources.Count);
     }
 
-    /// <summary>逐 mod 挂载它声明的展示资源包；挂载失败只记日志，不中止装配。
-    /// 包内资源以 mod 导出时固化的 <c>res://mods/{mod id}/</c> 前缀寻址，由 mod 侧自行加载。</summary>
+    /// <summary>逐 mod 挂载它声明的展示资源包，并把该 mod 展示程序集里的脚本类注册进 Godot 脚本系统。
+    /// 挂载失败只记日志，不中止装配。包内资源以 mod 导出时固化的 <c>res://mods/{mod id}/</c> 前缀寻址，由 mod 侧自行加载。
+    /// 注册必须赶在入口执行之前：包内 <c>.tres</c>/<c>.tscn</c> 引用的脚本类若不注册，实例化时按类型查找失败。</summary>
     private static void MountAssetPacks(IReadOnlyList<LoadedMod> mods) {
         foreach (var mod in mods) {
             foreach (string pck in mod.Packages) {
@@ -81,6 +85,27 @@ public static class ModManager {
                     Logger.LogError("展示资源包挂载失败：{Pck}", pck);
                 }
             }
+
+            RegisterDisplayScripts(mod);
+        }
+    }
+
+    /// <summary>
+    /// 把该 mod 展示程序集里的脚本类注册进 Godot 脚本系统。
+    /// 展示 DLL 走独立 <c>AssemblyLoadContext</c> 装载，Godot 不会自行发现其中的脚本类；
+    /// 按程序集名匹配进程内已加载副本——展示 DLL 只可能由本次装配的装载器装载。
+    /// </summary>
+    private static void RegisterDisplayScripts(LoadedMod mod) {
+        foreach (string dll in mod.DisplayEntries) {
+            string assemblyName = Path.GetFileNameWithoutExtension(dll);
+            var assembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, assemblyName, StringComparison.Ordinal));
+            if (assembly is null) {
+                Logger.LogError("展示程序集未在进程中加载，包内脚本类不会注册：{Dll}", dll);
+                continue;
+            }
+
+            ScriptManagerBridge.LookupScriptsInAssembly(assembly);
         }
     }
 }

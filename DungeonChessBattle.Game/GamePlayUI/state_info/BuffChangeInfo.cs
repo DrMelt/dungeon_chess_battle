@@ -66,7 +66,7 @@ public partial class BuffChangeInfo : FadeInfo {
             _ => throw new NotImplementedException(),
         };
 
-        // 图标按 Buff 键从展示索引取；内置与 mod 同源，未注册时留空
+        // 图标按 Buff 键从展示索引取；未注册时留空
         textureRectRef.Texture = ServiceLocator.ModAssets?.Buff(buffKey)?.Icon;
     }
 

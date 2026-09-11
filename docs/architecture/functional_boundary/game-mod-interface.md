@@ -8,7 +8,7 @@ mod 展示代码的引用锚点：只放 mod 要实现的接口，其余经本�
 
 ## 边界外
 
-- 不含注册表定义：场景资源口、条目数据写面与装配上下文在 Game.Mod.Shared，由宿主实现、mod 调用。
+- 不含注册表定义：条目数据读写面、装配上下文与表现契约在 Game.Mod.Shared。
 - 不含展示数据：四类展示数据在 Game.Shared。
 - 不含内容定义：技能键、Buff 键等以基础值表达，强类型内容对象在 Battle.Shared 与 GameConfig。
 - 不含装载与管理逻辑：mod 扫描、启停、展示装配、加载实现在 Game.Mod.Manager。

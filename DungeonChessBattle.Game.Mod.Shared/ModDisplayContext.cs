@@ -7,8 +7,7 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// 该前缀在 mod 导出资源包时就已固化，宿主只保证入口执行前包已挂载。
 /// </summary>
 /// <param name="ModId">mod 唯一 ID，即 mods 根目录下的目录名，也是包内资源寻址的目录段。</param>
-/// <param name="Registry">展示注册表：场景资源名在此注册与查询，条目展示数据经本口读取，
-/// 含引擎预置条目与先装载 mod 的条目。</param>
+/// <param name="Registry">展示注册表：条目展示数据经本口读取，含先装载 mod 的条目。</param>
 public readonly record struct ModDisplayContext(
     string ModId,
     IDisplayRegistry Registry);

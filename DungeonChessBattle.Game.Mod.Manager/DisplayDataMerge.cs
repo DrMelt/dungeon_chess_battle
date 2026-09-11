@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
 /// 同键展示数据的字段级合并：后写者声明了什么就改什么，未声明字段沿用被覆盖者。
-/// 合并起点是先到该键的注册者——单位是引擎补的外观占位，其余是先前装载的 mod。
+/// 合并起点是先到该键的注册者，即先前装载的 mod。
 /// 空串与 null 即未声明，与 <c>Game.Shared</c> 的展示数据语义同一套。
 /// </summary>
 internal static class DisplayMerge {
@@ -12,7 +12,6 @@ internal static class DisplayMerge {
         Name = TextOr(next.Name, previous.Name),
         Description = TextOr(next.Description, previous.Description),
         Icon = next.Icon ?? previous.Icon,
-        ApplyEffectScene = next.ApplyEffectScene ?? previous.ApplyEffectScene,
         RangeHintScene = next.RangeHintScene ?? previous.RangeHintScene,
     };
 

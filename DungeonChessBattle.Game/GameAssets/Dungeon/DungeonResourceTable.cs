@@ -48,10 +48,10 @@ public partial class DungeonResourceTable : Resource {
     /// 主题已在场景模板内固化，加载即成品。
     /// 返回实例未挂载，由消费方 AddChild 使用。
     /// </summary>
-    public DungeonEnv? InstantiateEnvironment(string? dungeonKey) {
+    public Node3D? InstantiateEnvironment(string? dungeonKey) {
         // 副本键未同步/未注册时回退默认副本，保证环境对象始终可实例化
         var resource = GetResource(dungeonKey)
             ?? GetResource(DungeonRegistry.Instance.DefaultDungeonKey);
-        return resource?.EnvScene?.Instantiate<DungeonEnv>();
+        return resource?.EnvScene?.Instantiate<Node3D>();
     }
 }

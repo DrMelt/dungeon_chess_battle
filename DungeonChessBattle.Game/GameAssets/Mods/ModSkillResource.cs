@@ -18,7 +18,7 @@ public sealed partial class ModSkillResource : UnitSkillBaseGodot {
     public ModSkillResource(SkillDefinition? config) {
         _config = config;
         if (config is not null)
-            ApplyViewData(null, config.SkillId.Id, null, null, null);
+            ApplyViewData(null, config.SkillId.Id, null, null);
     }
 
     /// <inheritdoc />
