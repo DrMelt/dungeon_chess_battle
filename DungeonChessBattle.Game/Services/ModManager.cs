@@ -14,16 +14,14 @@ namespace DungeonChessBattle.Game.Services;
 /// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配。
 /// 主场景 _Ready 首个调用，保证任何 UI 与资源表访问前内容已就绪；
 /// 服务器子进程由 ServerProcessHost 注入同一 user://mods，两端读同一启用集与内容即同源。
-/// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
+/// 装配产物写入 <see cref="ServiceLocator.ModAssets"/>，展示装配内部的先后次序不在这里，
+/// 见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
 public static class ModManager {
-    /// <summary>mods 根目录的 Godot 路径挂载点，mod 自带场景经它寻址。</summary>
+    /// <summary>mods 根目录的 Godot 路径，指向 user:// 下存放 mod 包的目录。</summary>
     // Godot user:// 虚拟路径，非文件系统绝对路径，S1075 误报
 #pragma warning disable S1075
     public const string ModsRootGodotPath = "user://mods";
-
-    /// <summary>mods 根目录经 PCK 挂载到资源系统后的 Godot 路径根；mod 声明的资源包挂载后经此前缀寻址。</summary>
-    public const string ModsMountGodotPath = "res://mods";
 #pragma warning restore S1075
 
     /// <summary>mods 根目录绝对路径。</summary>
@@ -33,7 +31,7 @@ public static class ModManager {
 
     private static bool _initialized;
 
-    /// <summary>执行一次装配，幂等；单个 mod 失败不中止其余 mod，错误汇总进 <c>ModAssets.Catalog</c>。</summary>
+    /// <summary>执行一次装配，幂等；单个 mod 失败不中止其余 mod，错误汇总进装配产物的 <c>ModCatalog</c>。</summary>
     public static void EnsureInitialized() {
         if (_initialized)
             return;
@@ -46,11 +44,10 @@ public static class ModManager {
 
         // 注册表取装配后的实例：内容须先就绪，展示键校验才看得到 mod 注册进来的条目。
         // 资源包挂载作为委托交进装配过程，次序由 ModAssets.Assemble 保证：装载展示代码 → 挂载 → 入口执行
-        ModAssets.Assemble(
+        ServiceLocator.ModAssets = ModAssets.Assemble(
             catalog, GameContentHost.Registry, BuiltinDisplayAssets.Register,
             MountAssetPacks,
-            (declared, registry) => ModAssetsMapper.Apply(GameContentHost.Registry, declared, registry),
-            ModsMountGodotPath);
+            (declared, registry) => ModAssetsMapper.Apply(GameContentHost.Registry, declared, registry));
 
         foreach (var error in catalog.Errors)
             Logger.LogError("mod 扫描失败: {Error}", error);
@@ -70,7 +67,8 @@ public static class ModManager {
                 ResourceTables.Dungeons.AllResources.Count);
     }
 
-    /// <summary>逐 mod 挂载它声明的展示资源包；挂载失败只记日志，不中止装配。</summary>
+    /// <summary>逐 mod 挂载它声明的展示资源包；挂载失败只记日志，不中止装配。
+    /// 包内资源以 mod 导出时固化的 <c>res://mods/{mod id}/</c> 前缀寻址，由 mod 侧自行加载。</summary>
     private static void MountAssetPacks(IReadOnlyList<LoadedMod> mods) {
         foreach (var mod in mods) {
             foreach (string pck in mod.Packages) {

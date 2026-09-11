@@ -8,7 +8,7 @@ using DungeonChessBattle.Game.Shared.Display;
 /// <summary>
 /// Godot 副本资源基类。仅承载展示所需数据（显示名/描述）与领域副本定义引用，
 /// 敌人生成与战场布局由服务端依据共享配置权威结算，客户端据此映射展示。
-/// 产出 <see cref="DungeonDisplay"/>，与 mod 副本展示数据同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="DungeonDisplay"/>，与 mod 副本展示数据同经 <c>ServiceLocator.ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
 public abstract partial class DungeonResourceBaseGodot : Resource {

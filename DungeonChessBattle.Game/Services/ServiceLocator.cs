@@ -1,6 +1,7 @@
 using System;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Replay.Client;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
-/// 服务定位器，持有 ServerService、ClientService 与 ReplayService 的单例。
+/// 服务定位器，持有 ServerService、ClientService、ReplayService 与 mod 展示装配产物的单例。
 /// ReplayService 内部组合 ReplayClient（获取）与 ReplayCache（缓存）。
 /// 创建 ILoggerFactory（Console + Godot Provider），注入 Logger 到各 Service。
 /// </summary>
@@ -52,6 +53,15 @@ public static class ServiceLocator {
     /// <summary>游戏客户端服务单例。</summary>
     public static readonly GameClientService ClientService = new(
         LoggerFactoryInstance);
+
+    /// <summary>
+    /// mod 展示装配产物，UI 与表现组件的展示取数入口；装配前为 null，取用方按未注册处理。
+    /// 值由 <c>ModManager.EnsureInitialized</c> 写入：它产自一次有先后次序的装配，
+    /// 不能在静态初始化期内就地构造，故不像其余服务那样用 readonly 内联字段。
+    /// </summary>
+    public static ModAssets? ModAssets {
+        get; internal set;
+    }
 
     private static ReplayService? _replayService;
 

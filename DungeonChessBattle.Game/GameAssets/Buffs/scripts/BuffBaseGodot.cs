@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
 /// Godot Buff 基类资源，承载 BuffDefinition 引用与展示属性（图标/名称/描述）。
-/// 产出 <see cref="BuffDisplay"/>，与 mod Buff 展示数据同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="BuffDisplay"/>，与 mod Buff 展示数据同经 <c>ServiceLocator.ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
 public partial class BuffBaseGodot : Resource {

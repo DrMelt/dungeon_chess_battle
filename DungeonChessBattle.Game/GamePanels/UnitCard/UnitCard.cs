@@ -1,4 +1,3 @@
-using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -69,7 +68,7 @@ public partial class UnitCard : Control {
     /// <param name="maxHealth">最大生命值。</param>
     public void SetupUnit(string configKey, float maxHealth) {
         UnitConfigKey = configKey;
-        _nameText = ModAssets.Unit(configKey)?.DisplayName ?? configKey;
+        _nameText = ServiceLocator.ModAssets?.Unit(configKey)?.DisplayName ?? configKey;
         _hpValueText = maxHealth.ToString("F0");
         ApplyTexts();
     }

@@ -80,9 +80,6 @@ public sealed class ModCatalog {
     /// <summary>扫描指定 mods 根目录并建立管理视图。</summary>
     public static ModCatalog Scan(string modsRootPath) => new(modsRootPath);
 
-    /// <summary>mods 根目录绝对路径。</summary>
-    public string ModsRootPath => _modsRootPath;
-
     /// <summary>本次扫描的原始装载结果，供数据面直接装配，避免二次扫描。</summary>
     public ModLoadResult ScanResult => _load;
 
@@ -103,7 +100,7 @@ public sealed class ModCatalog {
         get; private set;
     } = [];
 
-    /// <summary>展示面装配期错误：展示代码装载失败与展示键引用不成立，由 <see cref="ModAssets"/> 装配后追加。</summary>
+    /// <summary>展示面装配期错误：展示代码装载失败与展示键引用不成立，由 <see cref="ModAssets.Assemble"/> 装配后追加。</summary>
     public IReadOnlyList<ModError> DisplayErrors {
         get; private set;
     } = [];

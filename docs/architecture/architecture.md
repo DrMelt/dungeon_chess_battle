@@ -12,9 +12,9 @@
 graph TD
     subgraph DGodot["godot：主工程装配与表现"]
         Godot["Game（Godot）<br>场景 / UI / 资源装配"]
-        GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配 / 注册表实现 / 资源加载"]
+        GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配 / 注册表实现"]
         GameIface["Game.Mod.Interface<br>mod 开发锚点：要实现的入口契约"]
-        GameModShared["Game.Mod.Shared<br>展示注册器定义：写面 / 读面 / 加载端口 / 装配上下文"]
+        GameModShared["Game.Mod.Shared<br>展示注册表定义：场景资源口 / 条目写面 / 装配上下文"]
         GameShared["Game.Shared<br>mod 与宿主共用的展示形状：展示数据 / 资源名"]
     end
 
@@ -168,7 +168,7 @@ graph TD
 | `DungeonChessBattle.Battle.Mod.Shared`       | 数据面注册面定义：行为注册 / 内容注册 / 合成口                             | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |
 | `DungeonChessBattle.Game.Mod.Manager`        | mod 管理、展示装配全过程、注册表实现与统一获取入口                         | [game-mod-manager](functional_boundary/game-mod-manager.md)               |
 | `DungeonChessBattle.Game.Mod.Interface`      | mod 开发锚点：只放 mod 要实现的入口 `IModDisplayEntry`                     | [game-mod-interface](functional_boundary/game-mod-interface.md)           |
-| `DungeonChessBattle.Game.Mod.Shared`         | 展示注册器定义：写面 / 读面 / 加载端口 / 装配上下文                        | [game-mod-shared](functional_boundary/game-mod-shared.md)                 |
+| `DungeonChessBattle.Game.Mod.Shared`         | 展示注册表定义：场景资源口 / 条目写面 / 装配上下文                          | [game-mod-shared](functional_boundary/game-mod-shared.md)                 |
 | `DungeonChessBattle.Game.Shared`             | mod 与宿主共用的展示形状：四表展示数据 / 资源名                            | [game-shared](functional_boundary/game-shared.md)                         |
 | `DungeonChessBattle.Battle.Client`           | LES 房间客户端 `RoomBattleClient`                                          | [battle-client](functional_boundary/battle-client.md)                     |
 | `DungeonChessBattle.Battle.Server`           | 战斗房间服务与生命周期                                                     | [battle-server](functional_boundary/battle-server.md)                     |

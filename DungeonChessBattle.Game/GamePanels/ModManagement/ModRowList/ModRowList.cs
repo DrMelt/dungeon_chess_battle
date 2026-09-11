@@ -33,8 +33,7 @@ public partial class ModRowList : Control {
             return;
         }
 
-        if (_refs.ModRows is not null)
-            _refs.ModRows.ChildOrderChanged += SyncEmptyState;
+        _refs.ModRows?.ChildOrderChanged += SyncEmptyState;
         SyncEmptyState();
     }
 
@@ -80,8 +79,7 @@ public partial class ModRowList : Control {
             return;
 
         bool empty = rows.GetChildCount() == 0;
-        if (_refs.EmptyHint is not null)
-            _refs.EmptyHint.Visible = empty;
+        _refs.EmptyHint?.Visible = empty;
         rows.Visible = !empty;
     }
 }

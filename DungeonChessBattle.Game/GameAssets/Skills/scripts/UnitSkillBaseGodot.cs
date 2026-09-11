@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// <summary>
 /// Godot 技能基类资源。仅承载展示所需数据（图标/名称/描述）与技能定义引用，
 /// 施法/冷却由服务端权威结算，客户端仅据 Pawn 同步数据渲染。
-/// 产出 <see cref="SkillDisplay"/>，与 mod 技能展示数据同经 <c>ModAssets</c> 查询。
+/// 产出 <see cref="SkillDisplay"/>，与 mod 技能展示数据同经 <c>ServiceLocator.ModAssets</c> 查询。
 /// </summary>
 [GlobalClass]
 public partial class UnitSkillBaseGodot : Resource {

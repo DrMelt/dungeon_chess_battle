@@ -4,7 +4,6 @@ using DungeonChessBattle.Battle.Shared.Content;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Mod.Shared;
 using DungeonChessBattle.Game.Shared.Display;
-using Godot;
 
 namespace DungeonChessBattle.Game.Mod.Manager;
 
@@ -27,9 +26,10 @@ public sealed class ModDeclaration {
 }
 
 /// <summary>
-/// mod 展示装配面：一个 mod 一个实例，包装 <see cref="DisplayRegistry"/> 递给该 mod 的展示代码入口。
+/// mod 条目数据装配面：一个 mod 一个实例，包装 <see cref="DisplayRegistry"/> 递给该 mod 的展示代码入口。
 /// 声明过的展示键记进跨 mod 汇总的 <see cref="ModDeclaration"/>，错误按归属 mod 记录，
 /// 并按只读视图校验展示引用的内容键存在于内容注册表——不存在则记错误，不中断其余 mod。
+/// 场景资源不经本面：场景名无 mod 归属语义，mod 经装配上下文的注册表口注册与查询。
 /// </summary>
 public sealed class ModDisplayRuntime(
     DisplayRegistry registry,
@@ -37,12 +37,6 @@ public sealed class ModDisplayRuntime(
     List<ModError> errors,
     string modId,
     ModDeclaration declared) : IModDisplayRuntime {
-    /// <inheritdoc/>
-    public void RegisterTexture(string id, Func<Texture2D?> provider) => registry.RegisterTexture(id, provider);
-
-    /// <inheritdoc/>
-    public void RegisterScene(string id, Func<PackedScene?> provider) => registry.RegisterScene(id, provider);
-
     /// <inheritdoc/>
     public void RegisterSkill(SkillDisplay display) {
         if (content.GetSkill(new SkillKeyId(display.Id)) is null)

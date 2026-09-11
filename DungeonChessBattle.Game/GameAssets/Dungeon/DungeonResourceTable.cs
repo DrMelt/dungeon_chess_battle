@@ -10,7 +10,7 @@ using DungeonConfigDef = Battle.Shared.Content.DungeonConfig;
 /// 副本资源强类型映射表（运行时构造 + 类型驱动匹配）。
 /// 表不依赖任何 <c>res://</c> 资源文件：内容全部来自 mod，条目由 <c>ModAssetsMapper</c>
 /// 以 <see cref="ModDungeonResource"/> 运行时构造并注册。以 Config（内容注册表中的静态副本定义实例）
-/// 为键构建反查字典，供环境场景模板实例化；副本显示名与描述经 <c>ModAssets</c> 展示索引取。
+/// 为键构建反查字典，供环境场景模板实例化；副本显示名与描述经 <c>ServiceLocator.ModAssets</c> 展示索引取。
 /// 表实例由 ResourceTables 组合根构造，本类不持有加载入口。
 /// </summary>
 [GlobalClass]

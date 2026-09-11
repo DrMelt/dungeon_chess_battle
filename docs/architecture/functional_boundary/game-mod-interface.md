@@ -4,12 +4,12 @@ mod 展示代码的引用锚点：只放 mod 要实现的接口，其余经本�
 
 ## 职责
 
-- 入口契约 `IModDisplayEntry`：展示代码 mod 实现它，由宿主装载并调用，把资源与展示数据注册进注册器写面。本库只放这一个类型。
+- 入口契约 `IModDisplayEntry`：展示代码 mod 实现它，由宿主装载并调用，把展示数据注册进条目写面。本库只放这一个类型。
 
 ## 边界外
 
-- 不含注册器定义：写面、读面、加载端口与装配上下文在 Game.Mod.Shared，由宿主实现、mod 调用。
-- 不含展示数据与寻址键：四类展示数据在 Game.Shared，寻址键随加载端口在 Game.Mod.Shared。
+- 不含注册表定义：场景资源口、条目数据写面与装配上下文在 Game.Mod.Shared，由宿主实现、mod 调用。
+- 不含展示数据：四类展示数据在 Game.Shared。
 - 不含内容定义：技能键、Buff 键等以基础值表达，强类型内容对象在 Battle.Shared 与 GameConfig。
 - 不含装载与管理逻辑：mod 扫描、启停、展示装配、加载实现在 Game.Mod.Manager。
 

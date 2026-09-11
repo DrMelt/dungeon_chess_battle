@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Client;
-using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.GamePlayUI.battle_event_log;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
@@ -144,9 +143,9 @@ public partial class BattleEventLogPanel : Control {
 
     /// <summary>按技能强类型 ID 解析技能名；展示索引未注册回退为裸 ID。</summary>
     private static string ResolveSkillName(SkillKeyId skillId)
-        => ModAssets.Skill(skillId.Id)?.Name ?? $"技能 {skillId.Id}";
+        => ServiceLocator.ModAssets?.Skill(skillId.Id)?.Name ?? $"技能 {skillId.Id}";
 
     /// <summary>按 Buff 键解析 Buff 名；展示索引未注册回退为裸键。</summary>
     private static string ResolveBuffName(string buffKey)
-        => ModAssets.Buff(buffKey)?.Name ?? $"Buff {buffKey}";
+        => ServiceLocator.ModAssets?.Buff(buffKey)?.Name ?? $"Buff {buffKey}";
 }

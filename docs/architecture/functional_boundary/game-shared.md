@@ -1,6 +1,6 @@
 # DungeonChessBattle.Game.Shared
 
-mod 与宿主共用的展示形状层：注册器收发的展示数据、宿主登记的引擎预置资源名。纯形状，零项目引用，不含接口与实现。
+mod 与宿主共用的展示形状层：注册表收发的展示数据、宿主登记的引擎预置资源名。纯形状，零项目引用，不含接口与实现。
 
 ## 职责
 
@@ -9,8 +9,8 @@ mod 与宿主共用的展示形状层：注册器收发的展示数据、宿主�
 
 ## 边界外
 
-- 不放接口：注册器口在 Game.Mod.Shared，mod 入口在 Game.Mod.Interface。
-- 不放只有宿主用的形状、加载端口寻址键。
+- 不放接口：注册表口在 Game.Mod.Shared，mod 入口在 Game.Mod.Interface。
+- 不放只有宿主用的形状。
 - 不放可被 `.tres`/`.tscn` 引用的脚本类与 `res://` 路径，见 `functional_boundary/game`。
 - 不放持有他库类型的形状与 mod 包管理结构。
 

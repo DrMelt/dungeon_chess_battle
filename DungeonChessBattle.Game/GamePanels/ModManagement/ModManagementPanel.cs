@@ -57,12 +57,12 @@ public partial class ModManagementPanel : BaseGamePanel {
         if (_refs is not { ModRowList: { } rows, StatusLabel: { } status })
             return;
 
-        ModCatalog? catalog = ModAssets.Catalog;
-        if (catalog is null)
-            _logger.LogWarning("ModCatalog is null.");
+        ModAssets? assets = ServiceLocator.ModAssets;
+        if (assets is null)
+            _logger.LogWarning("ModAssets is null.");
 
-        rows.Rebuild(catalog?.Packages);
-        status.Text = SummaryFor(catalog);
+        rows.Rebuild(assets?.Catalog.Packages);
+        status.Text = SummaryFor(assets);
     }
 
     #endregion
@@ -75,19 +75,20 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 磁盘启用集与装配那一刻的指纹不等时点出来，否则用户会撞上「改了开关却进不了自己的房」。
     /// 目录未装配时概况与修订号都无从谈起，只留目录位置。
     /// </summary>
-    private string SummaryFor(ModCatalog? catalog) {
-        string body = catalog is null
+    private string SummaryFor(ModAssets? assets) {
+        string body = assets is null
             ? $"mod 内容未装配\nmods 目录：{ModManager.ModsRootPath}"
-            : BuildStatusBody(catalog);
+            : BuildStatusBody(assets);
 
-        string errors = ErrorsFor(catalog);
+        string errors = ErrorsFor(assets?.Catalog);
         if (errors.Length > 0)
             body = $"{body}\n\n{errors}";
         return WithNotice(body);
     }
 
-    private static string BuildStatusBody(ModCatalog catalog) {
-        string stale = catalog.Fingerprint == ModAssets.AssemblyFingerprint
+    private static string BuildStatusBody(ModAssets assets) {
+        ModCatalog catalog = assets.Catalog;
+        string stale = catalog.Fingerprint == assets.AssemblyFingerprint
             ? ""
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
         return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
@@ -117,15 +118,19 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// </summary>
     private void OnToggleRequested(string modId, bool enabled) {
         string action = enabled ? "启用" : "停用";
-        _notice = ModAssets.SetEnabled(modId, enabled)
-            ? $"「{modId}」已{action}，重启游戏与服务器进程后生效"
-            : $"启停未生效：{modId} 不在当前扫描结果内";
+        ModAssets? assets = ServiceLocator.ModAssets;
+        if (assets is null)
+            _notice = "mod 内容未装配，启停未落盘";
+        else
+            _notice = assets.Catalog.SetEnabled(modId, enabled)
+                ? $"「{modId}」已{action}，重启游戏与服务器进程后生效"
+                : $"启停未生效：{modId} 不在当前扫描结果内";
         Refresh();
     }
 
     /// <summary>重新扫描 mods 目录：发现新增或删除的 mod 目录。已装配的内容不变。</summary>
     private void OnRescanPressed() {
-        ModAssets.Catalog?.Rescan();
+        ServiceLocator.ModAssets?.Catalog.Rescan();
         _notice = "已重新扫描目录；新增的 mod 需重启进程才会参与装配";
         Refresh();
     }

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -83,7 +82,7 @@ public partial class UnitShowManager : Node {
 
         AddChild(unitShow);
         // 单位展示经展示索引取：视图未注册时保持内置共享模板原样（ModelScene/BodyColor 均空）
-        unitShow.ApplyUnitDisplay(ModAssets.Unit(unit.UnitName));
+        unitShow.ApplyUnitDisplay(ServiceLocator.ModAssets?.Unit(unit.UnitName));
         _unitShows[unit.UnitId] = unitShow;
 
         if (_logger.IsEnabled(LogLevel.Information))

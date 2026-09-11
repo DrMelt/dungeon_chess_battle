@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
-using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
@@ -257,7 +256,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void UpdateRoomInfoLabels(string hostName, string dungeonKey, int currentPlayers, int maxPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(hostName) ? "房主: --" : $"房主: {hostName}";
-        string dungeonText = ModAssets.Dungeon(dungeonKey)?.DisplayName ?? dungeonKey;
+        string dungeonText = ServiceLocator.ModAssets?.Dungeon(dungeonKey)?.DisplayName ?? dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
             InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)
