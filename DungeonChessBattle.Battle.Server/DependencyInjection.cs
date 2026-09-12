@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Battle.Server;
 
 /// <summary>
 /// Server.Battle 的 DI 装配扩展。注册战斗配置切片与房间生命周期管理器实现，
-/// IBattleRoomManager 契约供大厅协调层经 DI 消费。
+/// IBattleRoomManager 接口供大厅协调层经 DI 消费。
 /// </summary>
 public static class BattleServiceCollectionExtensions {
     /// <summary>注册战斗服务器：配置切片与 IBattleRoomManager 绑定。</summary>

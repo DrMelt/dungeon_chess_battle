@@ -33,7 +33,7 @@ public partial class BattleSessionContext : Node {
         get; private set;
     }
 
-    /// <summary>玩家命令窄契约（供技能面板直接消费，UI 不接触服务）；回放与未绑定态为 null。</summary>
+    /// <summary>玩家命令窄接口（供技能面板直接消费，UI 不接触服务）；回放与未绑定态为 null。</summary>
     public IBattleSessionCommand? Command => _command;
 
     // =============================================================

@@ -58,7 +58,7 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
                 app.MapReplayEndpoints();
                 app.Start();
 
-                // 解析大厅应用契约校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
+                // 解析大厅应用接口校验 DI 装配完整性，依赖配置错误时构造函数抛异常进入 catch
                 _ = app.Services.GetRequiredService<ILobbyApplication>();
                 _battleRoomManager = app.Services.GetRequiredService<IBattleRoomManager>();
 

@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Battle.Server.Shared;
 
 /// <summary>
-/// 战斗房间服务器生命周期契约，协调抽象。
+/// 战斗房间服务器生命周期接口，协调抽象。
 /// 只暴露原语类型与字符串，不暴露 BattleRoomServer 等实现细节，
 /// 使大厅协调层与战斗实现层互不依赖。
 /// 实现由 Server.Battle 的 BattleRoomManager 承担。

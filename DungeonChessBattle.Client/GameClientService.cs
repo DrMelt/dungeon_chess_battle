@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Client;
 
 /// <summary>
-/// 网络客户端门面，持有大厅客户端和房间客户端两个持久实例，对外只暴露契约与只读快照。
+/// 网络客户端门面，持有大厅客户端和房间客户端两个持久实例，对外只暴露接口与只读快照。
 /// 两个实例互斥连接：大厅连接时通过 _lobbyClient，加入房间后切换到 _roomClient。
 /// 帧更新由 Godot 主线程 GameClientDriver 节点每帧驱动，Update 方法，
 /// 不依赖后台线程，对齐 LiteEntitySystemUnityExample 的主线程驱动模式。
@@ -26,7 +26,7 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory, ICli
     private readonly ILogger<GameClientService> _logger = loggerFactory.CreateLogger<GameClientService>();
 
     // 传输实现实例，只活在本类内部：连接发起、重定向重连与帧驱动由门面独占，
-    // 对外只经 RoomSession 契约与 RoomNetworkStatus 快照透出，连接权力不下放。
+    // 对外只经 RoomSession 接口与 RoomNetworkStatus 快照透出，连接权力不下放。
     private readonly LobbyClient _lobbyClient = connectionFactory.CreateLobbyClient(loggerFactory.CreateLogger<LobbyClient>());
     private readonly RoomBattleClient _roomClient = connectionFactory.CreateRoomBattleClient(loggerFactory.CreateLogger<RoomBattleClient>());
 

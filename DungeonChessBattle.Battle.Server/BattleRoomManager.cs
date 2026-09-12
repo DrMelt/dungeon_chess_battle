@@ -14,7 +14,7 @@ namespace DungeonChessBattle.Battle.Server;
 /// 战斗房间内实体同步与战斗逻辑由 <see cref="BattleRoomServer"/> 承担；
 /// 大厅业务，准备、组队与快照，由 Server.Lobby 的 GameLobby 承担。
 /// 大厅级状态数据由 <see cref="IGameStateStore"/> 持有，本类不直接存储业务状态。
-/// 经 <see cref="IBattleRoomManager"/> 契约供大厅协调层调用，契约只暴露端口等原语，
+/// 经 <see cref="IBattleRoomManager"/> 接口供大厅协调层调用，接口只暴露端口等原语，
 /// 不泄漏 BattleRoomServer 实现细节。
 /// 线程所有权：房间线程通过 BattleRoomServer.RoomEmpty 事件仅向队列投递 roomId，
 /// 由后台清理循环 <see cref="ProcessPendingRoomCleanups"/> 消费执行销毁。

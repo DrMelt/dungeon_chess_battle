@@ -25,7 +25,7 @@ public partial class EffectHints : Node {
 
     /// <summary>
     /// 按技能资源创建并挂载范围提示；已有提示先销毁。
-    /// 模板未配置或场景根不是 Node3D 时不创建，不实现契约的场景即刻回收并记错误。
+    /// 模板未配置或场景根不是 Node3D 时不创建，不实现接口的场景即刻回收并记错误。
     /// </summary>
     /// <param name="skill">技能资源（持有 RangeHintScene 模板）。</param>
     /// <param name="init">实例挂载且 _Ready 完成后执行的初始化回调。</param>

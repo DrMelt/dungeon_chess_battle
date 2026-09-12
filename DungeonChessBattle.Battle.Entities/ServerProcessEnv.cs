@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>
-/// 服务器子进程跨进程契约的环境变量名。
+/// 服务器子进程跨进程约定的环境变量名。
 /// 客户端 ServerProcessHost 写入，服务器端入口与父进程看护读取，两端共享单一来源。
 /// </summary>
 public static class ServerProcessEnv {

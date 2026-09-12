@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Shared.Content;
 namespace DungeonChessBattle.Battle.GameConfig;
 
 /// <summary>
-/// 单位目录契约：配置键 ↔ 单位配置。返回的 <see cref="UnitConfig"/> 已含逻辑定义
+/// 单位目录接口：配置键 ↔ 单位配置。返回的 <see cref="UnitConfig"/> 已含逻辑定义
 /// （AI/仇恨/技能效果），消费方取用即运行，不自行实例化行为。
 /// </summary>
 public interface IUnitRegistry {

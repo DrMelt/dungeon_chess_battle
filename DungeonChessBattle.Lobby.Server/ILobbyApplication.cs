@@ -3,7 +3,7 @@
 namespace DungeonChessBattle.Lobby.Server;
 
 /// <summary>
-/// 大厅应用服务契约，协调层抽象：SignalR Hub 端点面向本接口，
+/// 大厅应用服务接口，协调层抽象：SignalR Hub 端点面向本接口，
 /// 隐藏具体协调实现，便于测试与替换。
 /// </summary>
 public interface ILobbyApplication {

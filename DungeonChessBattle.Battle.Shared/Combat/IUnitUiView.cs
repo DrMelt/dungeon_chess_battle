@@ -39,7 +39,7 @@ public interface IBuffUiView {
 }
 
 /// <summary>
-/// 单位展示层统一只读视图：在线战斗世界与回放重放共用，UI 一律按本契约取数。
+/// 单位展示层统一只读视图：在线战斗世界与回放重放共用，UI 一律按本接口取数。
 /// 在公共面（身份、数值、技能源）之上追加展示所需字段。
 /// 位置语义与 <see cref="ISkillCasterView"/> 一致：Position 即本地 BattleScene 的结算位置，在线随服务端下行校正，回放纯本地重跑。
 /// </summary>

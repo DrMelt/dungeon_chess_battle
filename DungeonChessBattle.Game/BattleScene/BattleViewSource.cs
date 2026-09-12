@@ -11,7 +11,7 @@ using DungeonChessBattle.Replay;
 namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
-/// 战斗表现层统一读契约：单位视图、本地玩家语义、权威元信息、事件日志与帧事件
+/// 战斗表现层统一读接口：单位视图、本地玩家语义、权威元信息、事件日志与帧事件
 /// 一律由当前装配源提供。在线装配为 <see cref="OnlineBattleViewSource"/>，
 /// 回放装配为 <see cref="ReplayBattleViewSource"/>，两者由各自协调器单独构建注入。
 /// </summary>

@@ -65,6 +65,6 @@ public interface IModContentRuntime {
 
 /// <summary>
 /// mod 引导上下文：行为注册与内容注册的合成句柄，入口 <c>IModEntry.Initialize</c> 的唯一参数。
-/// 行为实现只依赖 Battle.Shared 契约，内容定义对象经本接口交给内容注册表。
+/// 行为实现只依赖 Battle.Shared 的接口，内容定义对象经本接口交给内容注册表。
 /// </summary>
 public interface IModBootstrapContext : IModRuntime, IModContentRuntime;

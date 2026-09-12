@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Server.Host;
 /// <summary>
 /// 服务器装配配置唯一来源。
 /// 由入口从命令行参数与环境变量一次解析，映射为各模块配置切片注入。
-/// 环境变量名与子进程跨进程契约 <see cref="ServerProcessEnv"/> 保持单一来源。
+/// 环境变量名与子进程跨进程约定 <see cref="ServerProcessEnv"/> 保持单一来源。
 /// </summary>
 public sealed record ServerConfig {
     /// <summary>默认大厅监听端口。</summary>

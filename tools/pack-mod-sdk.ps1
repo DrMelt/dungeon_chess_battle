@@ -1,4 +1,4 @@
-# 打包 mod 全部契约包到 artifacts/nuget 本地源目录，供 mod 工程把该目录登记为自己的 NuGet 源后还原。
+# 打包 mod 全部接口包到 artifacts/nuget 本地源目录，供 mod 工程把该目录登记为自己的 NuGet 源后还原。
 # 在仓库根执行：./tools/pack-mod-sdk.ps1
 $ErrorActionPreference = 'Stop'
 
@@ -26,4 +26,4 @@ foreach ($project in $projects) {
     }
 }
 
-Write-Host "mod 契约包已生成：$outDir"
+Write-Host "mod 接口包已生成：$outDir"

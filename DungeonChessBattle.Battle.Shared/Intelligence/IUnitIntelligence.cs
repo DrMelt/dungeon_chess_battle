@@ -36,8 +36,8 @@ public readonly record struct EnemyDecision(
 }
 
 /// <summary>
-/// 敌人单位决策契约。实现必须无状态，无状态实例可被任意多个单位共享。
-/// 决策只依赖 <see cref="IBattleUnitView"/> 只读契约与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。
+/// 敌人单位决策接口。实现必须无状态，无状态实例可被任意多个单位共享。
+/// 决策只依赖 <see cref="IBattleUnitView"/> 只读接口与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。
 /// </summary>
 public interface IUnitIntelligence {
     /// <summary>

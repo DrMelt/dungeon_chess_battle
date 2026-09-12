@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 方法名经 <see cref="HubMethodNameAttribute"/> 绑定协议常量，与客户端调用名编译期对齐。
 /// 回放不在本 Hub：它自带 HTTP 端点，身份由登录时签发的会话凭证承载，与大厅连接无关。
 /// </summary>
-/// <param name="server">大厅业务协调器，面向抽象契约。</param>
+/// <param name="server">大厅业务协调器，面向抽象接口。</param>
 public class LobbyHub(ILobbyApplication server) : Hub {
     private readonly ILobbyApplication _server = server;
 

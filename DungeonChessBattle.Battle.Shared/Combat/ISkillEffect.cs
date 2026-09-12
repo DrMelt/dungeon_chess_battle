@@ -1,7 +1,7 @@
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>
-/// 技能效果契约：从只读上下文产出领域事件与待挂载 Buff，无副作用。
+/// 技能效果接口：从只读上下文产出领域事件与待挂载 Buff，无副作用。
 /// 由内容层 GameConfig 实现，定义承载具体规则。
 /// </summary>
 public interface ISkillEffect {

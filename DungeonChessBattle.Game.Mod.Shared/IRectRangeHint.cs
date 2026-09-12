@@ -3,7 +3,7 @@ using Godot;
 namespace DungeonChessBattle.Game.Mod.Shared;
 
 /// <summary>
-/// 矩形范围提示契约：mod 侧提示场景的根节点实现，宿主在选位置目标期间驱动。
+/// 矩形范围提示接口：mod 侧提示场景的根节点实现，宿主在选位置目标期间驱动。
 /// 实现者须为 Node3D 场景根：宿主把它挂进 3D 层后调用，调用时场景的 _Ready 已完成。
 /// 宿主只按本口调用，不认识场景的脚本类型与节点结构。
 /// </summary>

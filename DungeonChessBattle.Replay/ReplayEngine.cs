@@ -15,7 +15,7 @@ namespace DungeonChessBattle.Replay;
 /// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故 ID 解析、排队与落点不会分叉。
 /// 每帧顺序与服务端 BattleLoop 钩子一致：门面预备 → 输入注入 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// 世界重建照录制端的单位初始态表，实体 ID 与阵营取记录值，属性按配置键取当前配置。
-/// 本类只承担重放驱动与世界读数，不实现表现层数据源契约——展示取数由 Game 层统一数据源
+/// 本类只承担重放驱动与世界读数，不实现表现层数据源接口——展示取数由 Game 层统一数据源
 /// <c>BattleSessionContext</c> 经此处只读成员装配。
 /// </summary>
 public sealed class ReplayEngine {

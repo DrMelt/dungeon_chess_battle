@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 大厅业务，创建、加入、列房与准备等，由 Server.Lobby 的
 /// <see cref="GameLobby"/> 承担；
 /// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
-/// 战斗房间生命周期服务经 <see cref="IBattleRoomManager"/> 契约调用，不感知具体实现。
+/// 战斗房间生命周期服务经 <see cref="IBattleRoomManager"/> 接口调用，不感知具体实现。
 /// </summary>
 public partial class GameServer {
     /// <summary>

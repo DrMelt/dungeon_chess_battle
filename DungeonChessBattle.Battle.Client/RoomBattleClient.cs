@@ -20,7 +20,7 @@ namespace DungeonChessBattle.Battle.Client;
 /// 实现 <see cref="IClientBattleSession"/>（写侧组合 <see cref="IClientBattleService"/>，
 /// 读侧自持单位读数 <see cref="Units"/> 与 <see cref="FindUnit"/>），
 /// 管理 LES Entity：BattleRoomEntity、UnitPawn、UnitController。
-/// 在线端构建 BattleScene（领域单位 BattleUnit 实现展示契约），由 <see cref="ClientBattleLoop"/> 每渲染帧
+/// 在线端构建 BattleScene（领域单位 BattleUnit 实现展示接口），由 <see cref="ClientBattleLoop"/> 每渲染帧
 /// 把网络 SyncVar 读数回填进领域单位；当前在线端不跑本地结算，移动与伤害一律服务端权威；
 /// 房间同步状态经 <see cref="BattleRoomState"/> 投影统一读取；本端读数由 Game 层表现层统一数据源
 /// （<c>BattleSessionContext</c>）投影给 UI，UI 不直接绑定本类。
@@ -91,7 +91,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>网络实体 ID 到 UnitPawn 映射，SyncVar 读数回填的定位载体。</summary>
     private readonly Dictionary<ushort, UnitPawn> _pawnByNetId = [];
 
-    /// <summary>在线客户端战斗世界，展示契约的领域单位容器；构建前为 null。</summary>
+    /// <summary>在线客户端战斗世界，展示接口的领域单位容器；构建前为 null。</summary>
     internal BattleScene? BattleScene => _battleScene;
 
     /// <summary>网络实体 ID 到 UnitPawn 的映射，供展示回填定位载体。</summary>

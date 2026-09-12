@@ -102,7 +102,7 @@ public sealed record BattleEntityMetrics(
 }
 
 /// <summary>
-/// 对外唯一网络状态快照契约。消费方，如后续调试 UI，只依赖本类型。
+/// 对外唯一网络状态快照。消费方，如后续调试 UI，只依赖本类型。
 /// </summary>
 public sealed record NetworkStatusSnapshot(
     bool IsConnected, string Host, int Port,

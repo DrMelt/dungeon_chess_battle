@@ -5,10 +5,10 @@ using DungeonChessBattle.Game.GamePlayUI.skill_list;
 namespace DungeonChessBattle.Game.BattleScene;
 
 /// <summary>
-/// 战斗会话玩家命令契约：聚焦与施法的写侧入口。
+/// 战斗会话玩家命令接口：聚焦与施法的写侧入口。
 /// 继承 <see cref="ISkillCaster"/> 使技能面板直接消费命令，UI 不接触
 /// <see cref="IClientBattleService"/> 与房间 ID，门面边界不被绕过。
-/// 仅在线装配存在；回放无命令可发，契约整体缺席。
+/// 仅在线装配存在；回放无命令可发，接口整体缺席。
 /// </summary>
 public interface IBattleSessionCommand : ISkillCaster {
     /// <summary>命令装配是否在场。</summary>

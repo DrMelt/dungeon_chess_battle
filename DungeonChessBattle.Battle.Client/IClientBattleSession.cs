@@ -3,10 +3,10 @@ using DungeonChessBattle.Battle.Shared.Combat;
 namespace DungeonChessBattle.Battle.Client;
 
 /// <summary>
-/// 在线战斗会话契约：房间链路对上层的唯一可见面，由 <see cref="RoomBattleClient"/> 实现。
-/// 写侧继承 <see cref="IClientBattleService"/> 的命令与事件，读侧为本契约自持的单位读数
+/// 在线战斗会话接口：房间链路对上层的唯一可见面，由 <see cref="RoomBattleClient"/> 实现。
+/// 写侧继承 <see cref="IClientBattleService"/> 的命令与事件，读侧为本接口自持的单位读数
 /// （<see cref="Units"/> 与 <see cref="FindUnit"/>），另补本地玩家语义与房间权威元信息。
-/// 消费方是 Game 层的表现层数据源投影与战斗编排器，UI 面板不直接持有本契约。
+/// 消费方是 Game 层的表现层数据源投影与战斗编排器，UI 面板不直接持有本接口。
 /// 不含连接生命周期——连接一律由客户端门面状态机发起，消费方拿不到传输对象。
 /// </summary>
 public interface IClientBattleSession : IClientBattleService {
