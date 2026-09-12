@@ -13,7 +13,6 @@ public sealed class SyncBuffSnapshot : INetSerializable {
         string BuffKey,
         ushort EndServerTick,
         ushort StackCount,
-        ushort MaxStackCount,
         ushort SourceNetId,
         byte DamageType);
 
@@ -35,7 +34,6 @@ public sealed class SyncBuffSnapshot : INetSerializable {
             writer.Put(entry.BuffKey);
             writer.Put(entry.EndServerTick);
             writer.Put(entry.StackCount);
-            writer.Put(entry.MaxStackCount);
             writer.Put(entry.SourceNetId);
             writer.Put(entry.DamageType);
         }
@@ -48,6 +46,6 @@ public sealed class SyncBuffSnapshot : INetSerializable {
         for (int i = 0; i < count; i++)
             _entries.Add(new Entry(
                 reader.GetString(), reader.GetUShort(), reader.GetUShort(),
-                reader.GetUShort(), reader.GetUShort(), reader.GetByte()));
+                reader.GetUShort(), reader.GetByte()));
     }
 }

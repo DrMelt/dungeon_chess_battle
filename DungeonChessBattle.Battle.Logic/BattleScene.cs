@@ -422,7 +422,7 @@ public sealed partial class BattleScene(
         var snapshot = target.Snapshot;
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
-            foreach (var e in BuffTickProcessor.Tick(buff.Definition, buff.Effect, buff.Instance, snapshot, deltaTime, tickSeconds)) {
+            foreach (var e in BuffTickProcessor.Tick(buff, snapshot, deltaTime, tickSeconds)) {
                 ApplyEventEffect(e);
                 log.Append(e);
             }
@@ -522,7 +522,7 @@ public sealed partial class BattleScene(
         }
         else {
             list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitId, buff.From, buff.SourceUnitId),
-                buff.Definition, buff.Definition.Effect));
+                buff.Definition.Effect));
             stacks = 1;
         }
 

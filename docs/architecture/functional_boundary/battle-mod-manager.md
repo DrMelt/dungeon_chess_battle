@@ -16,12 +16,12 @@ mod 包管理面与数据面内容装配：包布局、清单与启用集、目�
 
 ## 边界外
 
-- 不定义注册约定：入口接口在 Battle.Mod.Interface，注册面在 Battle.Mod.Shared，行为 ID 常量在 Battle.Shared；本库实现注册面并调 mod 入口。
-- 不持有注册表与行为目录：实现在 Battle.GameConfig，本库每次装配新建，产物以实例交回调用方。
+- 不定义注册约定：入口接口在 Battle.Mod.Interface，注册面在 Battle.Mod.Shared；本库实现注册面并调 mod 入口。
+- 不持有注册表：实现在 Battle.GameConfig，本库每次装配新建，产物以实例交回调用方。
 - 不感知展示面语义：注册进什么表由 Game.Mod.Manager 决定。
 - 不做战斗与网络，不与引擎交互。
 
 ## 依赖
 
-- Battle.GameConfig 与 Battle.Mod.Interface：前者承载注册表与行为目录，后者承载数据入口接口，注册面定义随之传递可见。
+- Battle.GameConfig 与 Battle.Mod.Interface：前者承载注册表，后者承载数据入口接口，注册面定义随之传递可见。
 - 通用装载机制只用 .NET 基础类库：装配引导是本库唯一接触注册约定的部分。

@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <IsPackable>true</IsPackable>
-    <Description>数据面注册面定义层：行为注册、内容注册与引导上下文，宿主实现、mod 调用。</Description>
+    <Description>数据面注册面定义层：内容注册与引导上下文，宿主实现、mod 调用。</Description>
   </PropertyGroup>
 
   <ItemGroup>

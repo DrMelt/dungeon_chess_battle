@@ -23,13 +23,13 @@ graph TD
     end
 
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
-        Shared["Battle.Shared<br>接口与数据结构：战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策 / 行为 ID"]
+        Shared["Battle.Shared<br>接口与数据结构：战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>实体同步网络实体"]
-        GameConfig["GameConfig<br>内容注册表 / 行为目录 / 登记点"]
+        GameConfig["GameConfig<br>内容注册表 / 登记点"]
         BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / 内容装配"]
         BattleModIface["Battle.Mod.Interface<br>mod 入口接口：要实现的数据入口"]
-        BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：行为注册 / 内容注册 / 合成口"]
+        BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：内容注册口 / 引导上下文"]
         BattleClient["Battle.Client<br>实体同步房间客户端"]
         BattleSrv["Battle.Server<br>战斗房间服务"]
         BattleSrvShared["Battle.Server.Shared<br>战斗域服务端接口"]

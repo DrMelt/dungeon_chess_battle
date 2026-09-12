@@ -1,12 +1,11 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Buffs;
 
 /// <summary>运行时 Buff 实例：携带来源单位快照、持续计时与叠加层数。</summary>
 public sealed class BuffInstance {
-    /// <summary>Buff 键，取自定义。</summary>
+    /// <summary>Buff 键，跨端身份：服务端取自定义，在线端取自下行载荷。</summary>
     public required BuffTypeId BuffTypeId {
         get; init;
     }
@@ -34,18 +33,10 @@ public sealed class BuffInstance {
     /// <summary>当前叠加层数。</summary>
     public int Stacks { get; set; } = 1;
 
-    /// <summary>最大可叠加层数。</summary>
-    public int MaxStacks { get; init; } = 1;
-
-    /// <summary>伤害类型，供投影展示与 DPS 着色；非伤害 Buff 为 None。</summary>
+    /// <summary>伤害类型，自 Buff 定义抄入，展示着色与内容侧结算都读它；非伤害 Buff 为 None。</summary>
     public DamageType DamageType { get; init; } = DamageType.None;
 
     /// <summary>是否仍生效。</summary>
     public bool IsAlive { get; set; } = true;
 }
 
-/// <summary>Buff 的持续效果策略，纯函数无状态。</summary>
-public interface IBuffEffect {
-    /// <summary>按累积秒数执行一次效果，返回产生的领域事件，可能为空。</summary>
-    IEnumerable<IBattleEvent> Tick(BuffDefinition definition, double accumulatedSeconds, BuffInstance instance, UnitSnapshot target);
-}

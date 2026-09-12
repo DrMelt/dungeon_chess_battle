@@ -7,7 +7,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <IsPackable>true</IsPackable>
-        <Description>mod 与宿主共用的战斗领域形状：内容定义、行为接口与行为 ID 常量。</Description>
+        <Description>mod 与宿主共用的战斗领域形状：内容定义与行为接口。</Description>
     </PropertyGroup>
 
 </Project>

@@ -112,7 +112,7 @@ public partial class ModManagementPanel : BaseGamePanel {
     #region Button Handlers
 
     /// <summary>
-    /// 启停一个 mod：只落盘启用集并刷新列表。已装配的内容与已注册的行为都不回滚，
+    /// 启停一个 mod：只落盘启用集并刷新列表。已装配的内容不回滚，
     /// 故新状态要重启进程才生效——服务器子进程同样按重启后的启用集装配。
     /// </summary>
     private void OnToggleRequested(string modId, bool enabled) {

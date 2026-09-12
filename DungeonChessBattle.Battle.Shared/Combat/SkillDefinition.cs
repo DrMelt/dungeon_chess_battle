@@ -1,4 +1,3 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Range;
 
 namespace DungeonChessBattle.Battle.Shared.Combat;
@@ -15,10 +14,10 @@ public enum SkillTargetPolicy {
 }
 
 /// <summary>
-/// 技能只读定义，纯数据无运行时状态。由配置层 GameConfig 提供并装配到战斗单位。
-/// 效果策略经 <see cref="Effect"/> 引用注入，规则实现归属内容层。
+/// 技能只读定义：引擎消费的身份、施法规则与目标规则，加注内容侧行为引用。不可继承，无运行时状态。
+/// 各技能的效果数值由 <see cref="ISkillEffect"/> 实现自持；范围效果的形状经 <see cref="CastArea"/> 声明，效果只读取用。
 /// </summary>
-public abstract class SkillDefinition {
+public sealed class SkillDefinition {
     /// <summary>技能全局唯一强类型 ID。</summary>
     public required SkillKeyId SkillId {
         get; init;
@@ -73,57 +72,3 @@ public abstract class SkillDefinition {
     }
 }
 
-/// <summary>单体伤害技能定义。</summary>
-public sealed class DamageSkillDefinition : SkillDefinition {
-    /// <summary>伤害基础值，经施法者攻击系数换算。</summary>
-    public required float Damage {
-        get; init;
-    }
-
-    /// <summary>伤害类型。</summary>
-    public required DamageType DamageType {
-        get; init;
-    }
-}
-
-/// <summary>治疗技能定义。</summary>
-public sealed class HealSkillDefinition : SkillDefinition {
-    /// <summary>治疗基础值，经施法者治疗强度换算。</summary>
-    public required float CurePotency {
-        get; init;
-    }
-}
-
-/// <summary>仇恨技能定义。</summary>
-public sealed class HateSkillDefinition : SkillDefinition {
-    /// <summary>仇恨操作类型。</summary>
-    public required HateEffectOp Op {
-        get; init;
-    }
-
-    /// <summary>仇恨操作数值。</summary>
-    public required float Value {
-        get; init;
-    }
-}
-
-/// <summary>范围伤害技能定义。有效范围经 <see cref="SkillDefinition.CastArea"/> 表达。</summary>
-public sealed class RangeDamageSkillDefinition : SkillDefinition {
-    /// <summary>伤害基础值。</summary>
-    public required float Damage {
-        get; init;
-    }
-
-    /// <summary>伤害类型。</summary>
-    public required DamageType DamageType {
-        get; init;
-    }
-}
-
-/// <summary>施加 Buff 的技能定义。</summary>
-public sealed class AddBuffSkillDefinition : SkillDefinition {
-    /// <summary>释放时施加给目标的 Buff 定义。</summary>
-    public required BuffDefinition Buff {
-        get; init;
-    }
-}

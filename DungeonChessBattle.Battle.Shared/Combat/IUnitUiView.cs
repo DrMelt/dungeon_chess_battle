@@ -17,11 +17,6 @@ public interface IBuffUiView {
         get;
     }
 
-    /// <summary>最大叠加层数。</summary>
-    int MaxStacks {
-        get;
-    }
-
     /// <summary>剩余持续时间，秒。</summary>
     double Remaining {
         get;
@@ -32,7 +27,7 @@ public interface IBuffUiView {
         get;
     }
 
-    /// <summary>伤害类型，仅供着色；非伤害 Buff 为 None。</summary>
+    /// <summary>伤害类型，展示着色与内容侧结算都读它；非伤害 Buff 为 None。</summary>
     DamageType DamageType {
         get;
     }

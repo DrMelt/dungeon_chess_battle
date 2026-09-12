@@ -5,7 +5,7 @@ using DungeonChessBattle.Battle.Shared.Events;
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>技能结算只读上下文：纯函数输入，不含可变状态，无副作用。</summary>
-/// <param name="Skill">目标技能定义，效果实现按子类型读取数据。</param>
+/// <param name="Skill">目标技能定义，效果实现只从中取引擎侧规则用，数值由实现自持。</param>
 /// <param name="Caster">施法单位只读视图。</param>
 /// <param name="Target">单位目标；无单位目标需求时为空。</param>
 /// <param name="TargetPos">位置目标；无位置目标需求时为空。</param>

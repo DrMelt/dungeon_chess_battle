@@ -47,7 +47,7 @@ public partial class SkillResourceTable : Resource {
             return (UnitSkillBaseGodot)template.Duplicate();
 
         throw new KeyNotFoundException(
-            $"SkillDefinition '{config.GetType().Name}' 未装配到客户端技能资源表。" +
+            $"SkillDefinition '{config.SkillId.Id}' 未装配到客户端技能资源表。" +
             " 请检查该技能的展示数据是否已由对应 mod 注册。");
     }
 
@@ -79,7 +79,7 @@ public partial class SkillResourceTable : Resource {
                     continue;
                 throw new InvalidOperationException(
                     $"自检失败：单位 '{unit.ConfigKey}' 引用的技能 SkillId={skill.SkillId.Id} " +
-                    $"({skill.GetType().Name}) 未装配到客户端技能资源表。");
+                    "未装配到客户端技能资源表。");
             }
         }
     }

@@ -146,7 +146,6 @@ public partial class UnitPawn {
                 b.BuffTypeId.Value,
                 SyncTickHelper.EndTick(EntityManager, (float)b.Remaining),
                 (ushort)b.Stacks,
-                (ushort)Math.Max(1, b.MaxStacks),
                 b.SourceUnitId,
                 (byte)b.DamageType);
         }
@@ -250,8 +249,8 @@ public partial class UnitPawn {
     }
 
     /// <summary>
-    /// Buff 整包还原为 <see cref="ActiveBuff"/> 展示壳：指纹变化才重建，指纹未变只原地刷新剩余秒。
-    /// 在线端不推进 Buff，到期条目随服务端下行增删。
+    /// Buff 整包还原为运行时实例与空效果的绑定：指纹变化才重建，指纹未变只原地刷新剩余秒。
+    /// 在线端无内容定义，故绑 <see cref="NoOpBuffEffect"/>，不推进 Buff，到期条目随服务端下行增删。
     /// </summary>
     private void ApplyBuffs(BattleUnit unit) {
         var snapshot = Buffs.Value;
@@ -276,11 +275,9 @@ public partial class UnitPawn {
                     TargetUnitId = unit.UnitId,
                     SourceUnitId = entry.SourceNetId,
                     Stacks = entry.StackCount,
-                    MaxStacks = entry.MaxStackCount,
                     DamageType = (DamageType)entry.DamageType,
                     Remaining = SyncTickHelper.RemainingSeconds(EntityManager, entry.EndServerTick),
                 },
-                NetworkBuffDefinition.Instance,
                 NoOpBuffEffect.Instance));
     }
 

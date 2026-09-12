@@ -14,7 +14,6 @@ public static class BuffService {
         SourceUnitId = sourceUnitId,
         From = from,
         Remaining = def.Duration,
-        MaxStacks = def.MaxStacks,
         Stacks = 1,
         DamageType = def.DamageType,
     };
