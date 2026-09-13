@@ -1,5 +1,7 @@
 using DungeonChessBattle.Battle.GameConfig;
 using DungeonChessBattle.Battle.Mod.Interface;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
@@ -39,16 +41,29 @@ public static class ContentBootstrapper {
 
     /// <summary>
     /// 用已完成扫描的结果装配：新建空注册表，再逐 mod 装载数据代码入口。
+    /// 装配的起止与数据面条目计数记 Information，两端同形便于按指纹比对。
     /// </summary>
-    public static ContentBootResult Load(ModLoadResult result) {
+    public static ContentBootResult Load(ModLoadResult result, ILoggerFactory? loggerFactory = null) {
+        var logger = loggerFactory?.CreateLogger(typeof(ContentBootstrapper).FullName!) ?? NullLogger.Instance;
         string fingerprint = ContentFingerprint.Compute(result.Mods);
 
         var registry = new ContentSetRegistry(EngineRevision, fingerprint);
         var context = new ModBootstrapContext(registry);
 
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("内容装配开始：启用 {Count} 个 mod，指纹 {Fingerprint}",
+                result.Mods.Count, string.IsNullOrEmpty(fingerprint) ? "无" : fingerprint);
+
+        var sources = result.Mods
+            .Select(mod => new ModEntrySource(mod.Manifest.Id, mod.CodeEntries, mod.CodeLibraries))
+            .ToList();
         var errors = ModEntryLoader.LoadEntries<IModEntry>(
-            result.Mods, ModCodeKind.Data, "mod_", "数据代码入口装载失败",
-            (entry, _) => entry.Initialize(context));
+            sources, "mod_", "数据代码入口装载失败",
+            (entry, _) => entry.Initialize(context), loggerFactory);
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("内容装配完成：技能 {Skills}/Buff {Buffs}/单位 {Units}/副本 {Dungeons}",
+                registry.Skills.Count, registry.Buffs.Count, registry.Units.Count, registry.Dungeons.Count);
 
         return new ContentBootResult {
             Mods = result.Mods,

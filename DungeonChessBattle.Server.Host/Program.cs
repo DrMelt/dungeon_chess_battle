@@ -17,17 +17,9 @@ if (Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid) is { Length: 
 LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
 // 装配 mod 内容：扫描与装配同归 Battle.Mod.Manager，注册表由 Battle.GameConfig 承载。
-// 必须在任何房间创建前完成；产物经 DI 分发给大厅与房间。
-var scan = ModLoader.LoadDirectory(config.ModDir ?? "");
-var boot = ContentBootstrapper.Load(scan);
-var modLogger = loggerFactory.CreateLogger("Mod");
-foreach (var error in scan.Errors)
-    modLogger.LogError("mod 扫描失败: {Error}", error);
-foreach (var error in boot.Errors)
-    modLogger.LogError("mod 装配失败: {Error}", error);
-if (modLogger.IsEnabled(LogLevel.Information))
-    modLogger.LogInformation("内容装配完成：mods={Count} fingerprint={Fingerprint}", boot.Mods.Count, boot.Fingerprint);
-Console.WriteLine($"  Content fingerprint: {boot.Fingerprint}");
+// 必须在任何房间创建前完成；过程日志以库内类型为类别名，与客户端同源可比对。产物经 DI 分发给大厅与房间。
+var scan = ModLoader.LoadDirectory(config.ModDir ?? "", loggerFactory);
+var boot = ContentBootstrapper.Load(scan, loggerFactory);
 
 // 配置了父进程但已不存在：客户端已死，服务器不应继续启动
 if (ParentProcessWatcher.IsParentGone(config)) {

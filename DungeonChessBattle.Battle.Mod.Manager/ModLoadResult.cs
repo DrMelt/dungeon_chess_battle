@@ -1,8 +1,9 @@
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// 已加载的单个 mod：清单、目录、已定位的产物路径与代码摘要。
+/// 已加载的单个 mod 的数据面产物：清单、目录、已定位的数据入口与探测目录、代码摘要。
 /// 路径由 <see cref="ModLoader"/> 在扫描期一次性从 manifest 的相对声明解析而来，下游不再拼路径。
+/// 展示面产物不在此：展示声明取自同一份清单，由 Game.Mod.Manager 读取定位。
 /// 内容不在此——内容以领域对象在引导装配期注册，无中间文件。
 /// </summary>
 public sealed class LoadedMod {
@@ -23,21 +24,6 @@ public sealed class LoadedMod {
 
     /// <summary>数据面依赖探测目录绝对路径，含各入口自身所在目录。</summary>
     public required IReadOnlyList<string> CodeLibraries {
-        get; init;
-    }
-
-    /// <summary>展示入口 DLL 绝对路径，仅客户端装载，不进内容指纹。</summary>
-    public required IReadOnlyList<string> DisplayEntries {
-        get; init;
-    }
-
-    /// <summary>展示面依赖探测目录绝对路径，含各入口自身所在目录。</summary>
-    public required IReadOnlyList<string> DisplayLibraries {
-        get; init;
-    }
-
-    /// <summary>待挂载的展示资源包绝对路径，仅客户端使用，不进内容指纹。</summary>
-    public required IReadOnlyList<string> Packages {
         get; init;
     }
 
@@ -73,8 +59,17 @@ public sealed class UnloadedMod {
 
 /// <summary>
 /// mod 目录扫描结果：参与装载的 mod、被停用的 mod、被拒载的目录、逐 mod 错误。错误不中断其余 mod。
+/// 根目录本身不可用是另一层：它由 <see cref="RootProblem"/> 承载，此时一个 mod 都没有参与装载。
 /// </summary>
 public sealed class ModLoadResult {
+    /// <summary>
+    /// 根目录级问题：未提供目录、目录不存在、启用集不可读；非 null 表示本次未装载任何 mod，
+    /// 文案直接交管理面显示。逐 mod 问题在 <see cref="Errors"/>。
+    /// </summary>
+    public required string? RootProblem {
+        get; init;
+    }
+
     /// <summary>通过校验并完成依赖排序的启用 mod，按加载顺序排列。</summary>
     public required IReadOnlyList<LoadedMod> Mods {
         get; init;

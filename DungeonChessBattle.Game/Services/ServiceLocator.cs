@@ -19,11 +19,12 @@ public static class ServiceLocator {
     /// <summary>默认服务器端口。</summary>
     public const int DefaultPort = NetworkDefaults.LobbyPort;
 
-    /// <summary>日志工厂实例（Godot 控制台 Provider）。</summary>
-    private static readonly ILoggerFactory LoggerFactoryInstance = LoggerFactory.Create(builder => {
-        builder.AddProvider(new GodotLoggerProvider());
-        builder.SetMinimumLevel(LogLevel.Debug);
-    });
+    /// <summary>日志工厂实例（Godot 控制台 Provider）。此处限定框架类型名：本类的 LoggerFactory 属性与它同名。</summary>
+    private static readonly ILoggerFactory LoggerFactoryInstance =
+        Microsoft.Extensions.Logging.LoggerFactory.Create(builder => {
+            builder.AddProvider(new GodotLoggerProvider());
+            builder.SetMinimumLevel(LogLevel.Debug);
+        });
 
     /// <summary>
     /// 静态构造函数：静态字段初始化完成后即可安全读取 LoggerFactoryInstance，
@@ -39,6 +40,11 @@ public static class ServiceLocator {
     /// 获取指定类型的 ILogger 实例。供 Godot 端面板/实体使用，便于排查问题。
     /// </summary>
     public static ILogger<T> GetLogger<T>() => LoggerFactoryInstance.CreateLogger<T>();
+
+    /// <summary>
+    /// 日志工厂，供装配流程把日志通道注入下层库；下层的类别名即其自身类型。
+    /// </summary>
+    public static ILoggerFactory LoggerFactory => LoggerFactoryInstance;
 
     /// <summary>
     /// 通过字符串类别名创建 ILogger。供基类等无法确定具体类型时使用。

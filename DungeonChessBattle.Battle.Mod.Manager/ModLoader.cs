@@ -1,29 +1,67 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// mod 目录加载器：扫描 mods 根目录 → 逐目录解析 manifest.json → 把声明的相对路径定位成 mod 目录内的绝对路径 →
-/// 缺失依赖跳过并记错误 → 依赖拓扑 + 优先级排序 → 计算数据代码摘要指纹。
-/// 路径的合法性、回落与拒载裁决全在这里一次做完，下游只消费 <see cref="LoadedMod"/> 上的绝对路径。
+/// mod 目录加载器：扫描 mods 根目录 → 逐目录校验 manifest.json 必填字段 → 把数据面声明的相对路径定位成
+/// mod 目录内的绝对路径 → 缺失依赖跳过并记错误 → 依赖拓扑排序 → 计算数据代码摘要指纹。
+/// 只处理数据面：清单里的展示面声明段只登记键存在，段内容与裁决归 Game.Mod.Manager。
+/// 数据面路径的合法性与拒载裁决全在这里一次做完，下游只消费 <see cref="LoadedMod"/> 上的绝对路径。
 /// 单个目录解析失败不中断其余 mod，错误以 ModLoadResult 汇总返回。
-/// 清单文件名与默认目录名见 <see cref="ModLayout"/>，产物本身落在哪里由 manifest 声明。
+/// 根目录本身不可用与启用集不可读属根级问题，记 RootProblem 并一个都不装载。
+/// 清单文件名与启用集文件名见 <see cref="ModLayout"/>，产物位置必须由清单显式声明，无默认目录可回落。
 /// </summary>
 public static class ModLoader {
     /// <summary>
-    /// 加载 mods 根目录下全部 mod 目录并按启用集分流；根目录不存在返回空结果。
-    /// 启用集读自同目录的 <see cref="ModLayout.EnablementFileName"/>，缺席即全部启用。
+    /// 加载 mods 根目录下全部 mod 目录并按启用集分流；根目录不可用返回空结果，原因在 <see cref="ModLoadResult.RootProblem"/>。
+    /// 启用集读自同目录的 <see cref="ModLayout.EnablementFileName"/>，文件缺席即全部启用。
+    /// 逐 mod 明细记 Debug，拒载与解析失败记 Error，连带拒载在 <see cref="OrderByDependency"/> 记 Warning。
     /// </summary>
-    public static ModLoadResult LoadDirectory(string rootPath) {
+    public static ModLoadResult LoadDirectory(string rootPath, ILoggerFactory? loggerFactory = null) {
+        var logger = loggerFactory?.CreateLogger(typeof(ModLoader).FullName!) ?? NullLogger.Instance;
+        if (string.IsNullOrEmpty(rootPath)) {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("未提供 mod 目录，本次不装载任何 mod");
+            return EmptyRoot("未提供 mod 目录");
+        }
+
+        if (!Directory.Exists(rootPath)) {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("mods 目录不存在，本次不装载任何 mod：{Root}", rootPath);
+            return EmptyRoot($"mods 目录不存在：{rootPath}");
+        }
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("扫描 mod 目录：{Root}", rootPath);
+
+        string[] directories = Directory.GetDirectories(rootPath);
+        string enablementPath = Path.Combine(rootPath, ModLayout.EnablementFileName);
+        IReadOnlySet<string>? disabledIds;
+        try {
+            disabledIds = ModEnablement.Load(rootPath, logger);
+        }
+        catch (Exception ex) {
+            // 启用集读不出来即一个都不装载：不静默、也不拦进程，两端按同一裁决得到同一内容
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "启用集不可读，本次不装载任何 mod：{Path}", enablementPath);
+            return new ModLoadResult {
+                Mods = [],
+                Disabled = [],
+                Errors = [],
+                RootProblem = $"启用集不可读，本次未装载任何 mod：{enablementPath}：{ex.Message}",
+                Unloaded = [.. directories.Select(dir => new UnloadedMod {
+                    DirectoryPath = dir, Reason = "启用集不可读，本次不装载",
+                })],
+            };
+        }
+
         var mods = new List<LoadedMod>();
         var disabled = new List<LoadedMod>();
         var unloaded = new List<UnloadedMod>();
         var errors = new List<ModError>();
-        if (!Directory.Exists(rootPath))
-            return new ModLoadResult { Mods = [], Disabled = [], Unloaded = [], Errors = [] };
-
-        IReadOnlySet<string>? disabledIds = ModEnablement.Load(rootPath);
-        foreach (string dir in Directory.GetDirectories(rootPath)) {
+        foreach (string dir in directories) {
             string id = Path.GetFileName(dir);
             LoadedMod mod;
             try {
@@ -35,15 +73,34 @@ public static class ModLoader {
                 continue;
             }
 
-            if (disabledIds is not null && disabledIds.Contains(mod.Manifest.Id))
+            if (disabledIds is not null && disabledIds.Contains(mod.Manifest.Id)) {
                 disabled.Add(mod);
-            else
+                if (logger.IsEnabled(LogLevel.Debug))
+                    logger.LogDebug("跳过已停用的 mod {ModId}", mod.Manifest.Id);
+            }
+            else {
                 mods.Add(mod);
+                LogLoaded(logger, mod);
+            }
         }
 
-        var ordered = OrderByDependency(mods, errors, disabled, unloaded);
-        return new ModLoadResult { Mods = ordered, Disabled = disabled, Unloaded = unloaded, Errors = errors };
+        var ordered = OrderByDependency(mods, errors, disabled, unloaded, logger);
+        // 错误由各裁决点记进 errors，在此集中落日志一次，避免同一事实两处输出
+        foreach (var error in errors)
+            LogLoadFailed(logger, error);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("mod 扫描完成：启用 {Enabled} 个，停用 {Disabled} 个，拒载 {Rejected} 个",
+                ordered.Count, disabled.Count, unloaded.Count);
+        return new ModLoadResult {
+            Mods = ordered, Disabled = disabled, Unloaded = unloaded, Errors = errors, RootProblem = null,
+        };
     }
+
+    /// <summary>根级问题下的空结果：一个个目录都没装载，原因只在 RootProblem，逐目录错误不重复报。</summary>
+    private static ModLoadResult EmptyRoot(string problem) =>
+        new() {
+            Mods = [], Disabled = [], Unloaded = [], Errors = [], RootProblem = problem
+        };
 
     private static LoadedMod LoadModDirectory(string dir, List<ModError> errors) {
         string manifestPath = ModLayout.ManifestOf(dir);
@@ -55,61 +112,62 @@ public static class ModLoader {
             ModJsonContext.Default.ModManifestJson)
             ?? throw new InvalidOperationException($"{ModLayout.ManifestFileName} 解析为空");
 
-        if (!string.Equals(Path.GetFileName(dir), manifest.Id, StringComparison.Ordinal))
+        ValidateRequired(manifest);
+
+        // 必填字段已校验，此处起按非空消费
+        string id = manifest.Id!;
+        if (!string.Equals(Path.GetFileName(dir), id, StringComparison.Ordinal))
             throw new InvalidOperationException(
-                $"目录名 '{Path.GetFileName(dir)}' 与 manifest.Id '{manifest.Id}' 不一致，资源寻址按目录名执行，拒绝装载");
+                $"目录名 '{Path.GetFileName(dir)}' 与 manifest.id '{id}' 不一致，资源寻址按目录名执行，拒绝装载");
 
-        var codeEntries = ResolveArtifacts(dir, manifest.Code, ModLayout.CodeDirectoryName,
-            "code", rejectWhenMissing: true);
-        var displayEntries = ResolveArtifacts(dir, manifest.CodeDisplay, ModLayout.DisplayCodeDirectoryName,
-            "codeDisplay", rejectWhenMissing: false);
-        var packages = ResolveArtifacts(dir, manifest.Packages, ModLayout.AssetsDirectoryName,
-            "packages", rejectWhenMissing: false, searchPattern: "*.pck");
-
-        var codeLibraries = ResolveProbeDirectories(dir, manifest.CodeLibraries, codeEntries,
-            "codeLibraries", reportMissing: true, errors);
-        var displayLibraries = ResolveProbeDirectories(dir, manifest.CodeDisplayLibraries, displayEntries,
-            "codeDisplayLibraries", reportMissing: false, errors);
+        var codeEntries = ResolveArtifacts(dir, manifest.Code!, "code");
+        var codeLibraries = ResolveProbeDirectories(dir, manifest.CodeLibraries, codeEntries, "codeLibraries",
+            errors);
 
         return new LoadedMod {
             Manifest = new ModManifest(
-                Id: manifest.Id,
-                Name: manifest.Name,
-                Version: manifest.Version,
-                Revision: manifest.Revision,
+                Id: id,
+                Version: manifest.Version!,
+                Revision: manifest.Revision!,
                 Dependencies: manifest.Dependencies,
-                Priority: manifest.Priority,
-                Code: ToDeclared(dir, codeEntries),
-                CodeLibraries: manifest.CodeLibraries ?? [],
-                CodeDisplay: ToDeclared(dir, displayEntries),
-                CodeDisplayLibraries: manifest.CodeDisplayLibraries ?? [],
-                Packages: ToDeclared(dir, packages)),
+                Code: ToDeclared(dir, codeEntries)),
             DirectoryPath = dir,
             CodeEntries = codeEntries,
             CodeLibraries = codeLibraries,
-            DisplayEntries = displayEntries,
-            DisplayLibraries = displayLibraries,
-            Packages = packages,
             CodeHash = ContentFingerprint.HashCodeFiles(codeEntries, codeLibraries),
         };
     }
 
     /// <summary>
-    /// 把 manifest 声明的产物文件定位成绝对路径并保持声明顺序；未声明即按默认目录名枚举其内匹配文件，
-    /// 按文件名 Ordinal 排序以保证两端同序——<c>Directory.GetFiles</c> 的返回顺序不作保证。
-    /// 声明即承诺存在：数据面产物缺失整包拒载（包不完整），展示面产物缺失只留装载期错误——
-    /// 只有客户端目录里才有展示产物，让它参与拒载裁决会让两端的装载集合分叉，<c>DataRevision</c> 即不一致。
+    /// 数据面必填字段校验。身份与版本字段进指纹，产物字段决定装载什么：缺席即拒载，不接受默认值——
+    /// 默认会让「漏写」与「写了默认值」在两端表现相同，排查只能靠比对磁盘。
+    /// 展示面字段不在此列：它们归 Game.Mod.Manager 校验，写错也不该影响两端的装载集合。
     /// </summary>
-    private static List<string> ResolveArtifacts(
-        string modDirectory, List<string>? declared, string defaultDirectoryName, string fieldName,
-        bool rejectWhenMissing, string searchPattern = "*.dll") {
-        if (declared is null)
-            return [.. EnumerateDefault(modDirectory, defaultDirectoryName, searchPattern)];
+    private static void ValidateRequired(ModManifestJson manifest) {
+        List<string> missing = [];
+        if (string.IsNullOrEmpty(manifest.Id))
+            missing.Add("id");
+        if (string.IsNullOrEmpty(manifest.Version))
+            missing.Add("version");
+        if (string.IsNullOrEmpty(manifest.Revision))
+            missing.Add("revision");
+        if (manifest.Code is null)
+            missing.Add("code");
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"{ModLayout.ManifestFileName} 缺少必填字段 {string.Join("、", missing)}；无数据代码时写 []");
+    }
 
+    /// <summary>
+    /// 把数据面声明的产物文件定位成绝对路径并保持声明顺序；产物字段必填，故没有未声明即回落的分支。
+    /// 声明即承诺存在：数据面产物缺失整包拒载，两端内容必须同源。
+    /// </summary>
+    private static List<string> ResolveArtifacts(string modDirectory, List<string> declared,
+        string fieldName) {
         var resolved = new List<string>(declared.Count);
         foreach (string relative in declared) {
             string path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
-            if (rejectWhenMissing && !File.Exists(path))
+            if (!File.Exists(path))
                 throw new InvalidOperationException(
                     $"manifest.{fieldName} 声明的 '{relative}' 不存在，数据代码缺失即拒载");
             resolved.Add(path);
@@ -119,19 +177,18 @@ public static class ModLoader {
     }
 
     /// <summary>
-    /// 汇总该面的依赖探测目录：manifest 声明的目录 + 各入口文件自身所在目录，按绝对路径去重。
-    /// 声明的探测目录缺席时，数据面记一条错误（声明与包不一致），展示面静默跳过（只有客户端判得到）。
+    /// 汇总数据面的依赖探测目录：清单声明的目录 + 各入口文件自身所在目录，按绝对路径去重。
+    /// 声明的探测目录缺席即记错误——声明与包不一致要看得出来，缺了它入口自带的依赖解析不到。
     /// </summary>
     private static List<string> ResolveProbeDirectories(
         string modDirectory, List<string>? declared, IReadOnlyList<string> entries, string fieldName,
-        bool reportMissing, List<ModError> errors) {
+        List<ModError> errors) {
         var directories = new List<string>();
         foreach (string relative in declared ?? []) {
             string path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
             if (!Directory.Exists(path)) {
-                if (reportMissing)
-                    errors.Add(new ModError(Path.GetFileName(modDirectory),
-                        $"manifest.{fieldName} 声明的 '{relative}' 不存在"));
+                errors.Add(new ModError(Path.GetFileName(modDirectory),
+                    $"manifest.{fieldName} 声明的 '{relative}' 不存在"));
                 continue;
             }
 
@@ -142,16 +199,6 @@ public static class ModLoader {
             AddDistinct(directories, Path.GetDirectoryName(entry)!);
 
         return directories;
-    }
-
-    /// <summary>枚举默认目录内匹配的文件；目录缺席即该面无产物。</summary>
-    private static IEnumerable<string> EnumerateDefault(
-        string modDirectory, string defaultDirectoryName, string searchPattern) {
-        string directory = Path.Combine(modDirectory, defaultDirectoryName);
-        if (!Directory.Exists(directory))
-            return [];
-        return Directory.GetFiles(directory, searchPattern, SearchOption.TopDirectoryOnly)
-            .OrderBy(Path.GetFileName, StringComparer.Ordinal);
     }
 
     /// <summary>把相对声明解析为 mod 目录内的绝对路径；越界或非法即拒载——两端读同一份清单，语法裁决必然一致。</summary>
@@ -172,39 +219,21 @@ public static class ModLoader {
     }
 
     /// <summary>
-    /// 依赖拓扑排序：依赖者排在被依赖者之后，同级按 Priority 升序、再按 Id 字母序，保证确定性。
+    /// 依赖拓扑排序：依赖者排在被依赖者之后，其余按 Id 字母序，保证确定性。
     /// 被拒载的 mod 一律落进 <paramref name="unloaded"/>，让管理面能列出一个都不漏。
+    /// 入参身份已由 LoadModDirectory 判定：Id 非空且等于目录名，同层目录名唯一，故无身份冲突可判。
     /// </summary>
     private static List<LoadedMod> OrderByDependency(
         IReadOnlyList<LoadedMod> mods, List<ModError> errors, IReadOnlyList<LoadedMod> disabled,
-        List<UnloadedMod> unloaded) {
-        foreach (string badDirectory in mods
-                 .Where(m => string.IsNullOrEmpty(m.Manifest.Id))
-                 .Select(m => m.DirectoryPath)) {
-            string reason = "manifest.Id 不能为空";
-            errors.Add(new ModError(Path.GetFileName(badDirectory), reason));
-            unloaded.Add(new UnloadedMod { DirectoryPath = badDirectory, Reason = reason });
-        }
-
-        var unique = mods.Where(m => !string.IsNullOrEmpty(m.Manifest.Id)).ToList();
-        foreach (var duplicate in unique.GroupBy(m => m.Manifest.Id, StringComparer.Ordinal)
-                     .Where(g => g.Count() > 1).SelectMany(g => g.Skip(1))) {
-            string reason = $"manifest.Id '{duplicate.Manifest.Id}' 重复声明，仅首个参与装载";
-            errors.Add(new ModError(duplicate.Manifest.Id, reason));
-            unloaded.Add(new UnloadedMod {
-                DirectoryPath = duplicate.DirectoryPath, Manifest = duplicate.Manifest, Reason = reason,
-            });
-        }
-
-        var byId = unique.GroupBy(m => m.Manifest.Id, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        List<UnloadedMod> unloaded, ILogger logger) {
+        var byId = mods.ToDictionary(m => m.Manifest.Id, StringComparer.Ordinal);
         var disabledIds = disabled.Select(m => m.Manifest.Id).ToHashSet(StringComparer.Ordinal);
 
         var result = new List<LoadedMod>();
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var rejected = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var mod in byId.Values.OrderBy(m => m.Manifest.Priority).ThenBy(m => m.Manifest.Id, StringComparer.Ordinal))
+        foreach (var mod in byId.Values.OrderBy(m => m.Manifest.Id, StringComparer.Ordinal))
             Visit(mod, new Stack<string>());
         return result;
 
@@ -243,6 +272,9 @@ public static class ModLoader {
             void Reject(LoadedMod rejectedMod, string reason, bool report = true) {
                 if (report)
                     errors.Add(new ModError(id, reason));
+                else if (logger.IsEnabled(LogLevel.Warning))
+                    // 原因已由被依赖者报出，这里只留可追溯的目录行
+                    logger.LogWarning("mod 未装载：{ModId}：{Reason}", id, reason);
                 unloaded.Add(new UnloadedMod {
                     DirectoryPath = rejectedMod.DirectoryPath, Manifest = rejectedMod.Manifest, Reason = reason,
                 });
@@ -250,4 +282,30 @@ public static class ModLoader {
             }
         }
     }
+
+    #region 日志
+
+    /// <summary>逐 mod 目录解析明细：身份、依赖、数据入口数量与数据代码摘要前缀。</summary>
+    private static void LogLoaded(ILogger logger, LoadedMod mod) {
+        if (!logger.IsEnabled(LogLevel.Debug))
+            return;
+        logger.LogDebug(
+            "解析 mod {ModId} v{Version} rev{Revision} 依赖 [{Dependencies}] 数据入口 {CodeCount} 个 codeHash {CodeHash}",
+            mod.Manifest.Id, mod.Manifest.Version, mod.Manifest.Revision,
+            string.Join(", ", mod.Manifest.Dependencies), mod.CodeEntries.Count, HashPrefix(mod.CodeHash));
+    }
+
+    private static void LogLoadFailed(ILogger logger, ModError error) {
+        if (logger.IsEnabled(LogLevel.Error))
+            logger.LogError("mod 装载失败：{ModId}：{Reason}", error.ModId, error.Message);
+    }
+
+    /// <summary>摘要前 8 位；无代码即无摘要，以「-」占位免得读成截断。</summary>
+    private static string HashPrefix(string hash) => hash.Length switch {
+        0 => "-",
+        <= 8 => hash,
+        _ => hash[..8],
+    };
+
+    #endregion
 }

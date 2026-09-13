@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
@@ -10,12 +12,16 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// </summary>
 public sealed class ModAssemblyLoader : IDisposable {
     private readonly AssemblyLoadContext _alc;
+    private readonly ILogger<ModAssemblyLoader> _logger;
     private bool _loaded;
 
     /// <summary>装配装载上下文；mod 依赖解析先查宿主上下文（接口程序集已加载处），再回退 mod 同目录 DLL。</summary>
-    public ModAssemblyLoader(string? name = null) {
+    /// <param name="name">ALC 名，便于诊断区分数据面与展示面上下文。</param>
+    /// <param name="logger">依赖解析日志，未注入时静默。</param>
+    public ModAssemblyLoader(string? name = null, ILogger<ModAssemblyLoader>? logger = null) {
         _alc = new AssemblyLoadContext(name ?? $"mod_{Guid.NewGuid():N}", isCollectible: true);
         _alc.Resolving += ResolveFallback;
+        _logger = logger ?? NullLogger<ModAssemblyLoader>.Instance;
     }
 
     /// <summary>装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现返回 null。</summary>
@@ -55,8 +61,11 @@ public sealed class ModAssemblyLoader : IDisposable {
         // 命中一次即被运行时缓存，无性能热点。
         Assembly? fromLoaded = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => string.Equals(a.GetName().FullName, name.FullName, StringComparison.Ordinal));
-        if (fromLoaded is not null)
+        if (fromLoaded is not null) {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("程序集 {Assembly} 由进程内已加载副本解析", name.Name);
             return fromLoaded;
+        }
 
         // 接口程序集之外的 mod 自带依赖，尝试在 mod 目录（已注册的目录）查找
         return ResolveFromDirectory(context, name);
@@ -66,8 +75,11 @@ public sealed class ModAssemblyLoader : IDisposable {
         string[] deps = [.. _dependencyDirectories];
         foreach (string dir in deps) {
             string candidate = Path.Combine(dir, name.Name + ".dll");
-            if (File.Exists(candidate))
-                return context.LoadFromAssemblyPath(candidate);
+            if (!File.Exists(candidate))
+                continue;
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("程序集 {Assembly} 由 mod 目录解析：{Path}", name.Name, candidate);
+            return context.LoadFromAssemblyPath(candidate);
         }
         return null;
     }

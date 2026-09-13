@@ -60,7 +60,7 @@ public partial class ModManagementPanel : BaseGamePanel {
         if (assets is null)
             _logger.LogWarning("ModAssets is null.");
 
-        rows.Rebuild(assets?.Catalog.Packages);
+        rows.Rebuild(assets?.Catalog.Entries);
         status.Text = SummaryFor(assets);
     }
 
@@ -90,19 +90,24 @@ public partial class ModManagementPanel : BaseGamePanel {
         string stale = catalog.Fingerprint == assets.AssemblyFingerprint
             ? ""
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
+        // 根目录不可用时状态主体只是空计数，原因必须显示出来，否则读成「这里没有 mod」
+        string root = catalog.RootProblem is { Length: > 0 } problem ? $"\n{problem}" : "";
         return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
             + $"mods 目录：{ModManager.ModsRootPath}\n"
             + $"运行中数据修订号：{ServiceLocator.GameContent.Registry.DataRevision}"
-            + stale;
+            + stale + root;
     }
 
     /// <summary>
-    /// 装载错误汇总：扫描、数据面装配、展示面装配三段合一，每条仍是「modId: 原因」全量。
+    /// 装载错误汇总：扫描、数据面装配、展示声明读取、展示装配四段合一，每条仍是「modId: 原因」全量。
     /// 卡片错误列只挑自己名下的那几条，这里补上不属于任何条目的部分；空串即无错。
     /// </summary>
     private static string ErrorsFor(ModCatalog? catalog) => catalog is null
         ? ""
-        : string.Join('\n', catalog.Errors.Concat(catalog.AssemblyErrors).Concat(catalog.DisplayErrors));
+        : string.Join('\n', catalog.Errors
+            .Concat(catalog.AssemblyErrors)
+            .Concat(catalog.DisplayDeclarationErrors)
+            .Concat(catalog.DisplayErrors));
 
     /// <summary>把最近一次操作的提示附在摘要末尾，无提示即原样。</summary>
     private string WithNotice(string text) => _notice is null ? text : $"{text}\n{_notice}";

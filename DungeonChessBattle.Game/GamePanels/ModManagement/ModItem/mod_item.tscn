@@ -26,11 +26,10 @@ theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 script = ExtResource("1_item")
 
-[node name="ModItemInterRefs" type="Node" parent="." unique_id=35567109 node_paths=PackedStringArray("EnableToggle", "RowButton", "ModNameLabel", "IdLabel", "CompositionLabel", "DependencyLabel", "ErrorLabel")]
+[node name="ModItemInterRefs" type="Node" parent="." unique_id=35567109 node_paths=PackedStringArray("EnableToggle", "RowButton", "IdLabel", "CompositionLabel", "DependencyLabel", "ErrorLabel")]
 script = ExtResource("2_irfs")
 EnableToggle = NodePath("../MarginContainer/HBoxContainer/EnableToggle")
 RowButton = NodePath("../RowButton")
-ModNameLabel = NodePath("../MarginContainer/HBoxContainer/ModName")
 IdLabel = NodePath("../MarginContainer/HBoxContainer/IdLabel")
 CompositionLabel = NodePath("../MarginContainer/HBoxContainer/CompositionLabel")
 DependencyLabel = NodePath("../MarginContainer/HBoxContainer/DependencyLabel")
@@ -62,13 +61,6 @@ theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_og10n")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_4r3sw")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_0t5jx")
 
-[node name="ModName" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1777014870]
-custom_minimum_size = Vector2(150, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-text = "Mod 名称"
-vertical_alignment = 1
-
 [node name="IdLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1129185173]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
@@ -80,7 +72,7 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
-text = "代码 / 展示 / 优先级"
+text = "代码 / 展示"
 vertical_alignment = 1
 
 [node name="DependencyLabel" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1146349566]

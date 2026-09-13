@@ -1,32 +1,35 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// manifest.json 文件结构，camelCase 键。未知键即拒载：路径字段写错键名会静默回落到默认目录，
-/// 表现是「配了没生效」，比当场报错难查得多。
+/// manifest.json 的文件结构，camelCase 键。未知键与缺失必填字段一律拒载：
+/// 写错键名或漏写字段会让「配了没生效」比当场报错难查得多，必填字段见 <see cref="ModLoader"/> 的校验。
+/// 本类只描述数据面：展示面声明段按 <see cref="ModLayout.ManifestDisplaySection"/> 登记键的存在，
+/// 段内容由 Game.Mod.Manager 读同一份清单自行解释，本类既不定义也不校验它。
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 internal sealed class ModManifestJson {
-    /// <summary>mod 唯一 ID，同时是 mods 根目录下的目录名。</summary>
-    public string Id { get; set; } = "";
+    /// <summary>mod 唯一 ID，同时是 mods 根目录下的目录名；必填。</summary>
+    public string? Id {
+        get; set;
+    }
 
-    /// <summary>展示名。</summary>
-    public string Name { get; set; } = "";
+    /// <summary>语义版本号，进内容指纹；必填。</summary>
+    public string? Version {
+        get; set;
+    }
 
-    /// <summary>语义版本号。</summary>
-    public string Version { get; set; } = "1.0.0";
+    /// <summary>该 mod 的内容修订号，内容变更时递增，进内容指纹；必填。</summary>
+    public string? Revision {
+        get; set;
+    }
 
-    /// <summary>该 mod 的内容修订号，内容变更时递增，参与内容指纹。</summary>
-    public string Revision { get; set; } = "0";
-
-    /// <summary>依赖的其他 mod ID，按顺序加载。</summary>
+    /// <summary>依赖的其他 mod ID，按顺序加载；未声明即无依赖。</summary>
     public List<string> Dependencies { get; set; } = [];
 
-    /// <summary>覆盖优先级，数值大者后加载并覆盖先加载的同键内容。</summary>
-    public int Priority { get; set; } = 10;
-
-    /// <summary>数据入口 DLL，相对 mod 目录，数组顺序即装载顺序；null 即回落 <c>code/*.dll</c>。</summary>
+    /// <summary>数据入口 DLL，相对 mod 目录，数组顺序即装载顺序；必填，无数据代码时写 <c>[]</c>。</summary>
     public List<string>? Code {
         get; set;
     }
@@ -36,36 +39,24 @@ internal sealed class ModManifestJson {
         get; set;
     }
 
-    /// <summary>展示入口 DLL，仅客户端装载；null 即回落 <c>code_display/*.dll</c>。</summary>
-    public List<string>? CodeDisplay {
-        get; set;
-    }
-
-    /// <summary>展示面额外的依赖探测目录，不进内容指纹。</summary>
-    public List<string>? CodeDisplayLibraries {
-        get; set;
-    }
-
-    /// <summary>待挂载的展示资源包；null 即回落 <c>assets/*.pck</c>。</summary>
-    public List<string>? Packages {
+    /// <summary>
+    /// 展示面声明段。登记它才能使上面的「未知键拒载」不把展示段读成写错的键；
+    /// 段内容归 Game.Mod.Manager，数据面不读也不对外传递。
+    /// </summary>
+    [JsonPropertyName(ModLayout.ManifestDisplaySection)]
+    public JsonElement? Display {
         get; set;
     }
 }
 
 /// <summary>
-/// 已校验的 mod 清单领域对象。路径字段一律是相对 mod 目录的路径，未定位也未验存在性：
-/// 入口与资源包未声明时已按默认目录枚举补齐，探测目录原样保留声明、未声明即空。
+/// 已校验的 mod 清单领域对象，只描述数据面。路径字段一律是相对 mod 目录的路径，未定位也未验存在性：
+/// 入口由声明还原为相对路径，供管理面判定有无数据代码。
 /// 被拒载的目录同样带着它进管理面，清单必须自足。绝对路径见 <see cref="LoadedMod"/>。
 /// </summary>
 public sealed record ModManifest(
     string Id,
-    string Name,
     string Version,
     string Revision,
     IReadOnlyList<string> Dependencies,
-    int Priority,
-    IReadOnlyList<string> Code,
-    IReadOnlyList<string> CodeLibraries,
-    IReadOnlyList<string> CodeDisplay,
-    IReadOnlyList<string> CodeDisplayLibraries,
-    IReadOnlyList<string> Packages);
+    IReadOnlyList<string> Code);

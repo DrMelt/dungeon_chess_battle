@@ -38,16 +38,16 @@ public partial class ModRowList : Control {
     }
 
     /// <summary>按目录条目重建全部行。空目录即清空后停在空态，非空则逐条实例化卡片。</summary>
-    public void Rebuild(IReadOnlyList<ModPackage>? mods) {
+    public void Rebuild(IReadOnlyList<ModEntryView>? mods) {
         Clear();
         if (mods is null)
             return;
 
-        foreach (ModPackage mod in mods)
+        foreach (ModEntryView mod in mods)
             AddRow(mod);
     }
 
-    private void AddRow(ModPackage mod) {
+    private void AddRow(ModEntryView mod) {
         if (_refs is not { ItemScene: { } scene, ModRows: { } rows }) {
             _logger.LogError("ItemScene or ModRows is not ready, skip {ModId}.", mod.Id);
             return;

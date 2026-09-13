@@ -21,17 +21,12 @@ public partial class ModItemInterRefs : Node {
     public Button? RowButton {
         get; private set;
     }
-    /// <summary>mod 名称列，tooltip 附目录与版本。</summary>
-    [Export]
-    public Label? ModNameLabel {
-        get; private set;
-    }
-    /// <summary>mod ID 列。</summary>
+    /// <summary>mod ID 列，tooltip 附目录与版本。</summary>
     [Export]
     public Label? IdLabel {
         get; private set;
     }
-    /// <summary>构成列：数据代码、展示代码与优先级。</summary>
+    /// <summary>构成列：数据代码与展示代码。</summary>
     [Export]
     public Label? CompositionLabel {
         get; private set;
@@ -55,8 +50,6 @@ public partial class ModItemInterRefs : Node {
             _logger.LogError("EnableToggle is not assigned!");
         if (RowButton == null)
             _logger.LogError("RowButton is not assigned!");
-        if (ModNameLabel == null)
-            _logger.LogError("ModNameLabel is not assigned!");
         if (IdLabel == null)
             _logger.LogError("IdLabel is not assigned!");
         if (CompositionLabel == null)
