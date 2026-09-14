@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;

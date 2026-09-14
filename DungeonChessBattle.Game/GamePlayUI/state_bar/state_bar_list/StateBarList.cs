@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Common;
 using DungeonChessBattle.Game.BattleScene;
 using Godot;
@@ -73,10 +73,10 @@ public partial class StateBarList : Control {
         if (session == null || InterRefs == null)
             return;
 
-        var localCamps = session.LocalUnit?.Camps;
         _filteredUnits.Clear();
-        foreach (var unit in session.Units.Where(u => CampConstants.HasAnyCamp(u.Camps, localCamps)))
-            _filteredUnits.Add(unit);
+        if (session.LocalUnit?.Camps is { Count: > 0 } localCamps)
+            foreach (var unit in session.Units.Where(u => u.Camps.Any(camp => localCamps.Contains(camp))))
+                _filteredUnits.Add(unit);
         _bars.Sync(_filteredUnits);
     }
 }

@@ -1,7 +1,7 @@
-using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Registry;
+using DungeonChessBattle.Battle.Config.Shared.Buffs;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Mod.Shared;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;

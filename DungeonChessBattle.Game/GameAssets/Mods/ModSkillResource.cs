@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat;
 
 namespace DungeonChessBattle.Game.GameAssets;

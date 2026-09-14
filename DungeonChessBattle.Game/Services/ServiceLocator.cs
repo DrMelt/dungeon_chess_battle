@@ -1,7 +1,7 @@
 using System;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Replay.Client;
 using Godot;

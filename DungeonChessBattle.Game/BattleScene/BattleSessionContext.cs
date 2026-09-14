@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -79,7 +81,7 @@ public partial class BattleSessionContext : Node {
     }
 
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
-    public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps)
+    public CampRelation ResolveLocalCampRelation(IReadOnlyList<CampId> targetCamps)
         => _source?.ResolveLocalCampRelation(targetCamps) ?? CampRelation.Unknown;
 
     /// <summary>驱动方投喂一帧领域事件：交装配入帧缓冲，日志落账由装配自决。</summary>

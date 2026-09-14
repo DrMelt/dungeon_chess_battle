@@ -9,9 +9,9 @@
 ## 边界外
 
 - 不含实现：广播与战斗房间服务器由各域实现，本层只有接口。
-- 不包含战斗域的数据结构：归 Battle.Shared。
+- 不包含战斗域的数据结构：归 Battle.Config.Shared 与 Battle.Shared。
 - 不包含网络传输类型，只暴露端口等原语。
 
 ## 依赖
 
-- 无：纯 .NET 接口库，供 Battle.Server 实现、Lobby.Server 与 Server.Host 消费。
+- 无。

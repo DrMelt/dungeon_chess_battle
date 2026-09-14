@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <IsPackable>false</IsPackable>
+        <Description>战斗运行时对象：单位权威状态、装配工厂、施法与移动意图、Buff 载体与展示视图。不对 mod 发布。</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

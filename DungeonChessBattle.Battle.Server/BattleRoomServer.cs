@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Registry;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Server.DataStore.Shared;
 using LiteEntitySystem;
 using LiteNetLib;
@@ -78,9 +78,6 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>playerId 到其专属 Pawn 的映射，控制器绑定用；房间线程首帧迁移时填充。</summary>
     private readonly Dictionary<string, UnitPawn> _pawnByPlayerId = [];
-
-    /// <summary>同阵营玩家出生点间距，大于两倍碰撞半径避免重叠。</summary>
-    private const float SpawnSpacing = 3f;
 
     /// <summary>本房间的战斗世界，面向 BattleScene 具体类，不依赖网络载体与配置仓库。</summary>
     private readonly BattleScene _battleScene;

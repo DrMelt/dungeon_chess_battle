@@ -16,7 +16,7 @@ if (Environment.GetEnvironmentVariable(ServerProcessEnv.ParentPid) is { Length: 
 // 让 LES 网络框架日志进入统一日志体系 Console，并早于任何 EntityManager 创建
 LesNetworkLogger.Install(loggerFactory.CreateLogger(nameof(LiteEntitySystem)));
 
-// 装配 mod 内容：扫描与装配同归 Battle.Mod.Manager，注册表由 Battle.GameConfig 承载。
+// 装配 mod 内容：扫描与装配同归 Battle.Mod.Manager，注册表由 Battle.Config.Registry 承载。
 // 必须在任何房间创建前完成；过程日志以库内类型为类别名，与客户端同源可比对。产物经 DI 分发给大厅与房间。
 var scan = ModLoader.LoadDirectory(config.ModDir ?? "", loggerFactory);
 var boot = ContentBootstrapper.Load(scan, loggerFactory);

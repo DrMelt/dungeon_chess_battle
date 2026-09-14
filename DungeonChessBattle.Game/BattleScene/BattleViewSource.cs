@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Content;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Config.Shared.Content;
+using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Replay;
 
 namespace DungeonChessBattle.Game.BattleScene;
@@ -74,7 +76,7 @@ public interface IBattleViewSource {
     bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations);
 
     /// <summary>解析目标阵营列表相对本地玩家的关系；本地单位或关系函数未就绪返回 Unknown。</summary>
-    CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps);
+    CampRelation ResolveLocalCampRelation(IReadOnlyList<CampId> targetCamps);
 }
 
 /// <summary>
@@ -163,7 +165,7 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     }
 
     /// <inheritdoc />
-    public CampRelation ResolveLocalCampRelation(IReadOnlyList<string> targetCamps) {
+    public CampRelation ResolveLocalCampRelation(IReadOnlyList<CampId> targetCamps) {
         var relations = RelationsOrResolve();
         var localUnit = LocalUnit;
         if (relations == null || localUnit == null)

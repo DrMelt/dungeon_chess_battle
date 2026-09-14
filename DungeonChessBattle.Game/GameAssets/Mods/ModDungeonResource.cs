@@ -1,6 +1,6 @@
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = Battle.Shared.Content.DungeonConfig;
+using DungeonConfigDef = Battle.Config.Shared.Content.DungeonConfig;
 
 /// <summary>
 /// 由 mod 数据运行时构造的副本展示资源：Config 指向 mod 定义的领域副本，展示字段经 ApplyViewData 填充。

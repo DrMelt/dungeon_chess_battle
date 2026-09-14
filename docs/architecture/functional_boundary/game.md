@@ -25,4 +25,5 @@
 
 ## 依赖
 
-- 客户端：Client 门面与 Battle.Client，Lobby.Client 经门面组装，本工程不直连；大厅与战斗共享层 Lobby.Shared、Lobby.Protocol、Battle.Shared、Battle.Entities、Battle.Logic、GameConfig；回放侧 Replay、Replay.Shared、Replay.Protocol、Replay.Client；展示链 Game.Shared、Game.Mod.Shared、Game.Mod.Manager。mod 开发锚点 Game.Mod.Interface 只面向 mod，本工程不引；数据面 Battle.Mod.Manager、Battle.Mod.Interface 与 Battle.Mod.Shared 经 Game.Mod.Manager 间接进入，本工程不直连。
+- Client、Battle.Client、Lobby.Shared、Lobby.Protocol、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Battle.Config.Registry、Replay、Replay.Shared、Replay.Protocol、Replay.Client、Game.Shared、Game.Mod.Shared、Game.Mod.Manager。
+- 不直连：Lobby.Client 经 Client 门面组装；Battle.Mod.Manager、Battle.Mod.Interface 与 Battle.Mod.Shared 经 Game.Mod.Manager 间接进入；Game.Mod.Interface 只面向 mod。

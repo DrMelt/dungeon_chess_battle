@@ -18,5 +18,4 @@
 
 ## 依赖
 
-- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared；Battle.Server.Shared 的房间生命周期接口、GameConfig 的单位目录。
-- 服务端共享框架，承载长连接端点与广播上下文。
+- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared、Battle.Config.Shared、Battle.Server.Shared、Battle.Config.Registry。

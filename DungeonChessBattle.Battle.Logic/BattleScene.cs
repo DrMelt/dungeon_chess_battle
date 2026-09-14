@@ -1,12 +1,14 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Shared;
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.Intelligence;
-using DungeonChessBattle.Battle.Shared.Movement;
+using DungeonChessBattle.Battle.Runtime.Shared.Buffs;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Movement;
 using DungeonChessBattle.Battle.Logic.Buffs;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Battle.Logic.Events;
@@ -25,7 +27,7 @@ namespace DungeonChessBattle.Battle.Logic;
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建，与战斗世界同生命周期。</param>
-/// <param name="logger">AI 决策日志，可选注入。</param>
+/// <param name="logger">施法裁定与技能解析日志，可选注入。</param>
 public sealed partial class BattleScene(
     CampRelationResolver relations,
     IMovementScene movementScene,
@@ -36,7 +38,7 @@ public sealed partial class BattleScene(
     /// <summary>仇恨倍率是引擎结算平衡常量，不由内容提供：伤害与治疗各按 1.0 落账。</summary>
     private static readonly HateSettings HateFactors = new(DamageHateFactor: 1.0f, HealHateFactor: 1.0f);
 
-    /// <summary>AI 决策与应用日志，未注入时用 NullLogger 静默。</summary>
+    /// <summary>施法裁定与技能解析日志，未注入时用 NullLogger 静默。</summary>
     private readonly ILogger<BattleScene> _logger = logger ?? NullLogger<BattleScene>.Instance;
 
     /// <summary>竞技场移动场景：静态障碍与单位互斥的空间载体，构造后只读，与战斗世界同生命周期。</summary>
@@ -62,8 +64,21 @@ public sealed partial class BattleScene(
         _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
     /// <inheritdoc />
-    public bool CanCast(ISkillCasterView caster, SkillDefinition skill, ISkillCasterView? target, Vector2? targetPos) =>
-        SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations);
+    public bool CanCast(UnitId casterUnitId, SkillKeyId skillKey, UnitId? targetUnitId, Vector2? targetPos) {
+        if (!_unitById.TryGetValue(casterUnitId, out var caster))
+            return false;
+        if (caster.GetSkill(skillKey) is not { } skill)
+            return false;
+
+        BattleUnit? target = null;
+        if (targetUnitId is { } targetId) {
+            if (!_unitById.TryGetValue(targetId, out var targetUnit))
+                return false;
+            target = targetUnit;
+        }
+
+        return SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations);
+    }
 
     /// <summary>按单位 ID 查领域单位写面，供输入门面解析意图与宿主增删实体用；只读消费走 <see cref="FindUnit"/>。</summary>
     public BattleUnit? FindBattleUnit(UnitId unitId) =>
@@ -441,8 +456,8 @@ public sealed partial class BattleScene(
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         ApplyGcdAuthoritative(caster, skill.Gcd);
 
-        var resolution = skill.Effect.Resolve(
-            new SkillResolveContext(skill, caster, target, targetPos, FilterTargets(caster, skill)));
+        var resolution = skill.Effect.Resolve(new SkillResolveContext(
+            skill.CastArea, caster, target, targetPos, FilterTargets(caster, skill)));
         foreach (var evt in resolution.Events) {
             ApplyEventEffect(evt);
             log.Append(evt);

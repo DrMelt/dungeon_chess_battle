@@ -27,11 +27,11 @@ public interface IBattleSceneView {
     IBattleUnitView? FindUnit(UnitId unitId);
 
     /// <summary>
-    /// 施法可行性权威判定：阵营关系、射程与冷却口径由实现方自持，内容侧只取结果。
+    /// 施法可行性权威判定：施法者与技能按身份在战场内解析，阵营关系、射程与冷却口径由实现方自持，内容侧只取结果。
     /// </summary>
-    /// <param name="caster">施法单位只读视图。</param>
-    /// <param name="skill">待判定的技能定义。</param>
-    /// <param name="target">已解析的单位目标；无单位目标需求时传 null。</param>
+    /// <param name="casterUnitId">施法单位身份，须为战场内单位。</param>
+    /// <param name="skillKey">待判定的技能键。</param>
+    /// <param name="targetUnitId">已解析的单位目标身份；无单位目标需求时传 null。</param>
     /// <param name="targetPos">已解析的位置目标；无位置目标需求时传 null。</param>
-    bool CanCast(ISkillCasterView caster, SkillDefinition skill, ISkillCasterView? target, Vector2? targetPos);
+    bool CanCast(UnitId casterUnitId, SkillKeyId skillKey, UnitId? targetUnitId, Vector2? targetPos);
 }

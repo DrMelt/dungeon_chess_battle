@@ -1,4 +1,6 @@
+using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -7,7 +9,7 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
 /// Buff 图标控件，展示单个 Buff 的图标、持续时间与层数，并区分来源颜色。
-/// 数据源为 Buff 展示视图（<see cref="IBuffUiView"/>），图标按 Buff 键从展示索引匹配。
+/// 数据源为 Buff 视图（<see cref="IBuffView"/>），图标按 Buff 键从展示索引匹配。
 /// </summary>
 public partial class TextureRectBuffIcon : TextureRect {
     /// <summary>日志记录器。</summary>
@@ -28,8 +30,8 @@ public partial class TextureRectBuffIcon : TextureRect {
     [Export]
     private Label? durationLabelRef;
 
-    /// <summary>当前绑定的 Buff 展示数据。</summary>
-    public IBuffUiView? BindingBuffData {
+    /// <summary>当前绑定的 Buff 数据。</summary>
+    public IBuffView? BindingBuffData {
         get; private set;
     }
 
@@ -52,7 +54,7 @@ public partial class TextureRectBuffIcon : TextureRect {
     /// </summary>
     /// <param name="buff">要展示的 Buff 视图。</param>
     /// <param name="focusUnit">当前焦点单位，用于判断 Buff 来源颜色。</param>
-    public void SetBuffIcon(IBuffUiView buff, IUnitUiView focusUnit) {
+    public void SetBuffIcon(IBuffView buff, IUnitUiView focusUnit) {
         bool contentChanged = !(_focusUnit == focusUnit && SameContent(buff));
         BindingBuffData = buff;
         _focusUnit = focusUnit;
@@ -75,7 +77,7 @@ public partial class TextureRectBuffIcon : TextureRect {
     }
 
     /// <summary>仅比较决定图标外观的稳定字段；剩余时间经 _Process 每帧刷新，不纳入短路判定。</summary>
-    private bool SameContent(IBuffUiView other) =>
+    private bool SameContent(IBuffView other) =>
         BindingBuffData != null
         && BindingBuffData.BuffTypeId == other.BuffTypeId
         && BindingBuffData.Stacks == other.Stacks

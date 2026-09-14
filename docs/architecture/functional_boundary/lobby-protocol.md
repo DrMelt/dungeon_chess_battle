@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Lobby.Shared 的房间状态枚举。
+- Lobby.Shared。

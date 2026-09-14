@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Replay.Shared 的归档元数据源形状。
+- Replay.Shared。

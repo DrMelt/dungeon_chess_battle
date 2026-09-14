@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
 using Microsoft.Extensions.Logging;

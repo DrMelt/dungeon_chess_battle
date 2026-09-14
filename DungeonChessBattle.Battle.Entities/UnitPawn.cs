@@ -1,5 +1,7 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Battle.Entities.SyncData;
@@ -38,7 +40,7 @@ public partial class UnitPawn : PawnLogic {
     public readonly SyncSpanSerializable<SyncCampsData> CampsData = new(() => new SyncCampsData());
 
     /// <summary>阵营列表只读投影，服务端与客户端同源直读；装配期一次写入后不变，每次读取新建数组。</summary>
-    public IReadOnlyList<string> CampTags => CampsData.Value.ToArray();
+    public IReadOnlyList<CampId> CampTags => CampsData.Value.ToArray();
 
     /// <summary>全局冷却组整包快照，服务端权威回写。</summary>
     public readonly SyncNetSerializable<SyncGcdSnapshot> Gcds = new(() => new SyncGcdSnapshot());
@@ -54,11 +56,6 @@ public partial class UnitPawn : PawnLogic {
 
     /// <summary>单位当前持有的 Buff 整包快照，服务端权威回写。</summary>
     public readonly SyncNetSerializable<SyncBuffSnapshot> Buffs = new(() => new SyncBuffSnapshot());
-
-    /// <summary>单位拥有的技能定义列表，引用共享单位配置，装配期写入后只读，不参与网络同步。</summary>
-    public IReadOnlyList<SkillDefinition> Skills {
-        get; set;
-    } = [];
 
     /// <summary>单位仇恨列表。</summary>
     public readonly SyncList<SyncHateData> HatesList = [];

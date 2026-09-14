@@ -17,5 +17,4 @@
 
 ## 依赖
 
-- Replay.Protocol 的 DTO、路由与序列化约定，Replay.Shared 的归档元数据块读取，Server.DataStore.Shared 的身份解析与归档存储端口。
-- 服务端共享框架，仅用于端点映射。
+- Replay.Protocol、Replay.Shared、Server.DataStore.Shared。

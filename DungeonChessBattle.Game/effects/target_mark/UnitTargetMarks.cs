@@ -1,6 +1,7 @@
 using System;
-using DungeonChessBattle.Battle.Shared.Enums;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Camp;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Common;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;

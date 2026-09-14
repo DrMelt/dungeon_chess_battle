@@ -4,7 +4,7 @@ using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = Battle.Shared.Content.DungeonConfig;
+using DungeonConfigDef = Battle.Config.Shared.Content.DungeonConfig;
 
 /// <summary>
 /// 副本资源强类型映射表（运行时构造 + 类型驱动匹配）。

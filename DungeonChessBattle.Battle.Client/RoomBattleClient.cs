@@ -9,8 +9,10 @@ using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Battle.Client;
@@ -48,7 +50,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     private readonly Lock _lock = new();
 
     /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
-    public event Action<string, ushort, string, IReadOnlyList<string>>? OnUnitCreated;
+    public event Action<string, ushort, string, IReadOnlyList<CampId>>? OnUnitCreated;
 
     /// <summary>
     /// 战斗阶段变化事件，roomId 与 phase。

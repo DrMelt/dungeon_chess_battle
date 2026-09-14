@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
+using DungeonChessBattle.Battle.Config.Shared.Range;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Range;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GamePanels;

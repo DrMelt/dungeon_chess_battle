@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;

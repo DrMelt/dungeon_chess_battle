@@ -23,10 +23,12 @@ graph TD
     end
 
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
-        Shared["Battle.Shared<br>接口与数据结构：战斗 / Buff / 仇恨 / 阵营 / 事件 / 敌人决策"]
+        Shared["Battle.Shared<br>共用形状：身份键 / 数据形状 / 行为端口 / 只读视图"]
+        Config["Battle.Config.Shared<br>静态配置数据：内容定义 / 注册表查找口"]
+        Runtime["Battle.Runtime.Shared<br>运行时对象：单位权威状态 / 装配 / 意图 / 展示视图"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>实体同步网络实体"]
-        GameConfig["GameConfig<br>内容注册表 / 登记点"]
+        ConfigRegistry["Config.Registry<br>内容注册表 / 登记点"]
         BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / 内容装配"]
         BattleModIface["Battle.Mod.Interface<br>mod 入口接口：要实现的数据入口"]
         BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：内容注册口 / 引导上下文"]
@@ -64,10 +66,12 @@ graph TD
     Engine --> LobbyProtocol
     Engine --> Client
     Engine --> BattleClient
-    Engine --> GameConfig
+    Engine --> ConfigRegistry
     Engine --> Logic
     Engine --> Entities
     Engine --> Shared
+    Engine --> Config
+    Engine --> Runtime
     Engine --> Replay
     Engine --> ReplayShared
     Engine --> ReplayProtocol
@@ -78,11 +82,12 @@ graph TD
 
     %% mod 接口：mod 只见 Interface，注册面定义经其传递可见
     BattleModIface --> BattleModShared
-    BattleModShared --> Shared
+    BattleModShared --> Config
     GameMod --> BattleMod
-    BattleMod --> GameConfig
+    BattleMod --> ConfigRegistry
     BattleMod --> BattleModIface
     GameMod --> Shared
+    GameMod --> Config
     GameMod --> GameIface
     GameMod --> GameModShared
     GameMod --> GameShared
@@ -95,19 +100,30 @@ graph TD
     Client --> BattleClient
     Client --> Entities
     Client --> LobbyProtocol
-    Client --> Shared
+    Client --> Config
 
     %% battle 域：在线端与服务端共用领域与配置
     BattleClient --> Logic
     BattleClient --> Entities
     BattleClient --> Shared
+    BattleClient --> Config
+    BattleClient --> Runtime
     Logic --> Shared
+    Logic --> Config
+    Logic --> Runtime
     Entities --> Shared
-    GameConfig --> Shared
+    Entities --> Runtime
+    Config --> Shared
+    Runtime --> Shared
+    Runtime --> Config
+    ConfigRegistry --> Shared
+    ConfigRegistry --> Config
     BattleSrv --> Shared
+    BattleSrv --> Config
+    BattleSrv --> Runtime
     BattleSrv --> Logic
     BattleSrv --> Entities
-    BattleSrv --> GameConfig
+    BattleSrv --> ConfigRegistry
     BattleSrv --> BattleSrvShared
     BattleSrv --> StoreAbst
     BattleSrv --> ReplayShared
@@ -118,7 +134,8 @@ graph TD
     LobbySrv --> LobbyShared
     LobbySrv --> LobbyProtocol
     LobbySrv --> Shared
-    LobbySrv --> GameConfig
+    LobbySrv --> Config
+    LobbySrv --> ConfigRegistry
     LobbySrv --> BattleSrvShared
     LobbySrv --> StoreAbst
 
@@ -133,8 +150,10 @@ graph TD
     ReplayProtocol --> ReplayShared
     ReplayCli --> ReplayProtocol
     Replay --> Shared
+    Replay --> Config
+    Replay --> Runtime
     Replay --> Logic
-    Replay --> GameConfig
+    Replay --> ConfigRegistry
     Replay --> ReplayShared
     ReplaySrv --> ReplayProtocol
     ReplaySrv --> ReplayShared
@@ -142,7 +161,7 @@ graph TD
 
     %% server 域：Host 是装配根，向下依赖各域实现
     Host --> BattleMod
-    Host --> GameConfig
+    Host --> ConfigRegistry
     Host --> BattleSrvShared
     Host --> Entities
     Host --> LobbySrv
@@ -162,10 +181,12 @@ graph TD
 | -------------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | `DungeonChessBattle.Game`                    | engine    | [game](functional_boundary/game.md)                                       |
 | `DungeonChessBattle.Client`                  | client    | [client](functional_boundary/client.md)                                   |
+| `DungeonChessBattle.Battle.Config.Shared`    | battle    | [battle-config-shared](functional_boundary/battle-config-shared.md)       |
 | `DungeonChessBattle.Battle.Shared`           | battle    | [battle-shared](functional_boundary/battle-shared.md)                     |
+| `DungeonChessBattle.Battle.Runtime.Shared`   | battle    | [battle-runtime-shared](functional_boundary/battle-runtime-shared.md)     |
 | `DungeonChessBattle.Battle.Logic`            | battle    | [battle-logic](functional_boundary/battle-logic.md)                       |
 | `DungeonChessBattle.Battle.Entities`         | battle    | [battle-entities](functional_boundary/battle-entities.md)                 |
-| `DungeonChessBattle.Battle.GameConfig`       | battle    | [battle-gameconfig](functional_boundary/battle-gameconfig.md)             |
+| `DungeonChessBattle.Battle.Config.Registry`  | battle    | [battle-config-registry](functional_boundary/battle-config-registry.md)   |
 | `DungeonChessBattle.Battle.Mod.Manager`      | battle    | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
 | `DungeonChessBattle.Battle.Mod.Interface`    | battle    | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       |
 | `DungeonChessBattle.Battle.Mod.Shared`       | battle    | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |

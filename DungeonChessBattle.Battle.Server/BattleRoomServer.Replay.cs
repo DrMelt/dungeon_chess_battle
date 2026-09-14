@@ -1,9 +1,9 @@
+using System.Linq;
 using DungeonChessBattle.Battle.Logic;
-using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.Battle.Server.Replay;
-using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Replay.Shared;
 using Microsoft.Extensions.Logging;
 
@@ -43,8 +43,8 @@ public partial class BattleRoomServer {
         var units = new List<ReplayUnitInit>(_roomPawns.Count);
         foreach (var pawn in _roomPawns) {
             var position = pawn.Position.Value;
-            units.Add(new ReplayUnitInit(pawn.Id, pawn.UnitKeyName.Value, pawn.CampTags,
-                position.X, position.Y));
+            units.Add(new ReplayUnitInit(pawn.Id, pawn.UnitKeyName.Value,
+                [.. pawn.CampTags.Select(camp => camp.Value)], position.X, position.Y));
         }
 
         _replayRecorder.SetUnits(units);

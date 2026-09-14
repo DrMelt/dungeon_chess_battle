@@ -11,12 +11,14 @@
     <ProjectReference Include="..\DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />
-    <ProjectReference Include="..\DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Registry\DungeonChessBattle.Battle.Config.Registry.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Manager\DungeonChessBattle.Game.Mod.Manager.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Client\DungeonChessBattle.Battle.Client.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Runtime.Shared\DungeonChessBattle.Battle.Runtime.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />

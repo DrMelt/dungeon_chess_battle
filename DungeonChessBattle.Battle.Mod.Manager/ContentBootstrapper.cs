@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Mod.Interface;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,7 +33,7 @@ public sealed class ContentBootResult {
 /// 引擎无内置内容，注册表每次装配新建，mod 按装载顺序同键覆盖。服务器进程与 Godot 客户端共用本装配，两端内容同源。
 /// 产物以 <see cref="GameContent"/> 交回调用方持有，本类不持全局状态。
 /// 流程由本类钉死，环节各归其位：扫描与入口装载用本库 <see cref="ModLoader"/> 与 <see cref="ModEntryLoader"/>，
-/// 注册表归 Battle.GameConfig。
+/// 注册表归 Battle.Config.Registry。
 /// </summary>
 public static class ContentBootstrapper {
     /// <summary>引擎内容修订号：引擎侧已无内置内容，修订由装配方传入的内容指纹承担，此值保持稳定。</summary>

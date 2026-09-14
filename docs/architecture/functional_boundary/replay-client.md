@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Replay.Protocol 的 DTO、路由与序列化约定。
+- Replay.Protocol。

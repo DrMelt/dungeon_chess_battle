@@ -9,5 +9,5 @@ namespace DungeonChessBattle.Battle.Shared.Buffs;
 /// </summary>
 public interface IBuffEffect {
     /// <summary>按本次结算节拍时长执行一次效果，返回产生的领域事件，可能为空。</summary>
-    IEnumerable<IBattleEvent> Tick(double elapsedSeconds, BuffInstance instance, UnitSnapshot target);
+    IEnumerable<IBattleEvent> Tick(double elapsedSeconds, IBuffView instance, UnitSnapshot target);
 }

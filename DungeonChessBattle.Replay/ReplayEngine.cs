@@ -1,11 +1,13 @@
+using System.Linq;
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Replay.Shared;
 
 namespace DungeonChessBattle.Replay;
@@ -122,7 +124,7 @@ public sealed class ReplayEngine {
             AddUnit(new BattleUnit {
                 UnitId = unit.NetId,
                 UnitName = config.ConfigKey,
-                Camps = unit.Camps,
+                Camps = [.. unit.Camps.Select(camp => new CampId(camp))],
                 BaseConfig = config.BaseConfig,
                 Skills = config.Skills,
                 Intelligence = IsPlayerUnit(unit.NetId) ? null : config.Intelligence,

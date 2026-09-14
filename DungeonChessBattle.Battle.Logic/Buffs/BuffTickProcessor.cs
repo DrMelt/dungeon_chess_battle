@@ -1,6 +1,6 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Runtime.Shared.Buffs;
 
 namespace DungeonChessBattle.Battle.Logic.Buffs;
 
@@ -17,7 +17,7 @@ public static class BuffTickProcessor {
         var events = new List<IBattleEvent>();
 
         if (tickSeconds > 0)
-            events.AddRange(buff.Effect.Tick(tickSeconds, instance, target));
+            events.AddRange(buff.Effect.Tick(tickSeconds, buff, target));
 
         instance.Remaining -= deltaTime;
         if (instance.Remaining <= 0) {

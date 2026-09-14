@@ -16,4 +16,4 @@
 
 ## 依赖
 
-- Server.DataStore.Shared 的存储门面接口与回放归档、身份解析端口，Battle.Shared 的字段长度常量，Lobby.Shared 的房间状态枚举。
+- Server.DataStore.Shared、Battle.Shared、Lobby.Shared。

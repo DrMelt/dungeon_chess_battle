@@ -11,11 +11,33 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $projects = @(
     'DungeonChessBattle.Battle.Mod.Interface',
     'DungeonChessBattle.Battle.Mod.Shared',
+    'DungeonChessBattle.Battle.Config.Shared',
     'DungeonChessBattle.Battle.Shared',
     'DungeonChessBattle.Game.Mod.Interface',
     'DungeonChessBattle.Game.Mod.Shared',
     'DungeonChessBattle.Game.Shared'
 )
+
+# mod 引用闭包不得含运行时层：Battle.Runtime.Shared 不产包，一旦被拉进闭包即分层被破坏。
+function Resolve-Closure([string]$csproj, [System.Collections.Generic.HashSet[string]]$seen) {
+    $full = [IO.Path]::GetFullPath($csproj)
+    if (-not $seen.Add($full)) { return }
+    $dir = Split-Path -Parent $full
+    foreach ($hit in Select-String -Path $full -Pattern 'ProjectReference Include="([^"]+)"') {
+        $rel = $hit.Matches[0].Groups[1].Value -replace '\\', '/'
+        Resolve-Closure (Join-Path $dir $rel) $seen
+    }
+}
+
+$seen = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($project in $projects) {
+    Resolve-Closure (Join-Path $repoRoot "$project/$project.csproj") $seen
+}
+$leaked = $seen | Where-Object { $_ -match 'Battle\.Runtime\.Shared' }
+if ($leaked) {
+    Write-Error "mod 引用闭包含运行时层，分层被破坏：$leaked"
+    exit 1
+}
 
 foreach ($project in $projects) {
     $csproj = Join-Path $repoRoot "$project/$project.csproj"

@@ -7,7 +7,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <IsPackable>true</IsPackable>
-        <Description>mod 与宿主共用的战斗领域形状：内容定义与行为接口。</Description>
+        <Description>战斗域共用形状：跨端数据与标识、只读视图、行为端口与规格接口。零项目引用的叶子。</Description>
     </PropertyGroup>
 
 </Project>

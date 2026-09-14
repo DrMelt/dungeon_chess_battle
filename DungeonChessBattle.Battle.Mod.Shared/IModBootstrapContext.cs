@@ -1,6 +1,6 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Buffs;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 
 namespace DungeonChessBattle.Battle.Mod.Shared;
 

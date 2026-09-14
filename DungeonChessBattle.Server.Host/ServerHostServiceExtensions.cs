@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Entities;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Server;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Lobby.Server;
 using DungeonChessBattle.Replay.Server;
 using DungeonChessBattle.Server.DataStore;

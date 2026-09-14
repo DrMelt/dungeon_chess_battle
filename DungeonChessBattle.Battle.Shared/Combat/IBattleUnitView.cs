@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
@@ -15,7 +16,7 @@ public interface IUnitIdentityView {
     }
 
     /// <summary>单位所属阵营列表。</summary>
-    IReadOnlyList<string> Camps {
+    IReadOnlyList<CampId> Camps {
         get;
     }
 }
@@ -31,18 +32,15 @@ public interface ICombatStatsView : ICombatValuesView {
     }
 }
 
-/// <summary>技能来源只读视图：技能集与冷却查询。</summary>
+/// <summary>技能来源只读视图：技能键集与冷却查询。</summary>
 public interface ISkillSource {
     /// <summary>单位是否拥有该技能。</summary>
     bool HasSkill(SkillKeyId skillKey);
 
-    /// <summary>单位装备的全部技能定义，AI 决策按配置顺序枚举。</summary>
-    IReadOnlyList<SkillDefinition> Skills {
+    /// <summary>单位装备的全部技能键，按装配顺序；AI 决策按此顺序枚举。</summary>
+    IReadOnlyList<SkillKeyId> SkillKeys {
         get;
     }
-
-    /// <summary>按技能 ID 获取技能定义，单位未装备该技能时返回 null。</summary>
-    SkillDefinition? GetSkill(SkillKeyId skillKey);
 
     /// <summary>读取单个技能的总冷却剩余秒数（全局冷却与个体冷却取较大者），无冷却时返回 0。</summary>
     float GetTotalCooldownRemaining(SkillKeyId skillKey);
@@ -74,7 +72,7 @@ public interface IHateActorView {
 /// 按角色聚合：<see cref="ISkillCasterView"/>（施法判定子集）、<see cref="ICombatStatsView"/>（结算快照）与
 /// <see cref="IHateActorView"/>（仇恨通道），各消费者按需依赖最小子集。
 /// 标量状态经公共面（身份、数值、技能源）收敛，不做重复声明。
-/// 读写能力只保留在 <see cref="BattleUnit"/> 具体类，本接口不暴露任何写通道。
+/// 读写能力只保留在 <c>BattleUnit</c> 具体类，本接口不暴露任何写通道。
 /// </summary>
 public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView {
 }

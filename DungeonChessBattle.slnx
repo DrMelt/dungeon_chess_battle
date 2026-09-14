@@ -22,12 +22,14 @@
   <Project Path="DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
   <Project Path="DungeonChessBattle.Lobby.Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
 
+  <Project Path="DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Config.Registry\DungeonChessBattle.Battle.Config.Registry.csproj" />
   <Project Path="DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+  <Project Path="DungeonChessBattle.Battle.Runtime.Shared\DungeonChessBattle.Battle.Runtime.Shared.csproj" />
   <Project Path="DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
   <Project Path="DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
   <Project Path="DungeonChessBattle.Battle.Mod.Interface\DungeonChessBattle.Battle.Mod.Interface.csproj" />
   <Project Path="DungeonChessBattle.Battle.Mod.Shared\DungeonChessBattle.Battle.Mod.Shared.csproj" />
-  <Project Path="DungeonChessBattle.Battle.GameConfig\DungeonChessBattle.Battle.GameConfig.csproj" />
   <Project Path="DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
   <Project Path="DungeonChessBattle.Replay\DungeonChessBattle.Replay.csproj" />
   <Project Path="DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />

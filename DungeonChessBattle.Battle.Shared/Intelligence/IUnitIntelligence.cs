@@ -1,6 +1,6 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
 
 namespace DungeonChessBattle.Battle.Shared.Intelligence;
 

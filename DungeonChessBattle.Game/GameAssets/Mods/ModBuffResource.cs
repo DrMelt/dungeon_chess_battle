@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
+using DungeonChessBattle.Battle.Config.Shared.Buffs;
 
 namespace DungeonChessBattle.Game.GameAssets;
 

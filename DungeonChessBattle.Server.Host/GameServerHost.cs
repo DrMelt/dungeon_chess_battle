@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Battle.GameConfig;
+﻿using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Server;

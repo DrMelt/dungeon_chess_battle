@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DungeonChessBattle.Battle.GameConfig;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Mod.Manager;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.GameAssets.Mods;

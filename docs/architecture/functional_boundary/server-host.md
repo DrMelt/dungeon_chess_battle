@@ -18,6 +18,4 @@
 
 ## 依赖
 
-- 共享层 GameConfig 与 Battle.Entities。
-- 接口层 Battle.Server.Shared 与 Server.DataStore.Shared。
-- 各域实现：Lobby.Server、Battle.Server、Replay.Server、Battle.Mod.Manager 与 Server.DataStore。
+- Battle.Config.Registry、Battle.Entities、Battle.Server.Shared、Server.DataStore.Shared、Lobby.Server、Battle.Server、Replay.Server、Battle.Mod.Manager、Server.DataStore。

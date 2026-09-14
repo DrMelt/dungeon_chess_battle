@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.GameConfig;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Registry;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;

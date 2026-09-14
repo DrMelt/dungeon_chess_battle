@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 
 namespace DungeonChessBattle.Game.GamePanels;
 

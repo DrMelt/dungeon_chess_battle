@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
-using DungeonChessBattle.Battle.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 
 namespace DungeonChessBattle.Game.GamePanels;
 

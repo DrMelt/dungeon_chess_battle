@@ -19,4 +19,4 @@
 
 ## 依赖
 
-- Battle.Shared。
+- Battle.Shared、Battle.Runtime.Shared。

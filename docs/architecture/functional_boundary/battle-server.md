@@ -20,4 +20,4 @@
 
 ## 依赖
 
-- 共享层 Battle.Logic、Battle.Shared、Battle.Entities、GameConfig 与 Replay.Shared；存储层经数据存储接口；接口层 Battle.Server.Shared。
+- Battle.Logic、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Config.Registry、Replay.Shared、Battle.Server.Shared、Server.DataStore.Shared。

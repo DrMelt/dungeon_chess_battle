@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Game.Common;
+using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
@@ -19,7 +21,7 @@ public partial class ContainerBuffs : Control {
     }
 
     /// <summary>Buff 图标缓存，键为 Buff 键，源列表因 AddBuff 按类型合并而唯一。</summary>
-    private readonly CacheSynchronizer<string, IBuffUiView, TextureRectBuffIcon> _icons;
+    private readonly CacheSynchronizer<string, IBuffView, TextureRectBuffIcon> _icons;
 
     /// <summary>当前绑定单位展示视图，update 回调用于来源着色与剩余时间推算。</summary>
     private IUnitUiView? _focusUnit;
@@ -44,12 +46,12 @@ public partial class ContainerBuffs : Control {
         _focusUnit = unit;
         if (InterRefs == null)
             return;
-        IReadOnlyList<IBuffUiView> source = unit?.Buffs ?? [];
+        IReadOnlyList<IBuffView> source = unit?.Buffs ?? [];
         _icons.Sync(source);
     }
 
     /// <summary>提取 Buff 键作为图标键。</summary>
-    private static string GetKey(IBuffUiView buff) => buff.BuffTypeId.Value;
+    private static string GetKey(IBuffView buff) => buff.BuffTypeId.Value;
 
     /// <summary>创建 Buff 图标并挂载到容器。</summary>
     private TextureRectBuffIcon CreateIcon() {
@@ -65,7 +67,7 @@ public partial class ContainerBuffs : Control {
     private static void RemoveIcon(TextureRectBuffIcon icon) => icon.QueueFree();
 
     /// <summary>刷新图标内容；同单位且数据未变化时由图标内部短路。</summary>
-    private void UpdateIcon(TextureRectBuffIcon icon, IBuffUiView buff) {
+    private void UpdateIcon(TextureRectBuffIcon icon, IBuffView buff) {
         if (_focusUnit is { } unit)
             icon.SetBuffIcon(buff, unit);
     }

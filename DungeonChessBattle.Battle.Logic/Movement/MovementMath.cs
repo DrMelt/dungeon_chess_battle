@@ -1,5 +1,6 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Shared.Movement;
+using DungeonChessBattle.Battle.Config.Shared.Movement;
+using DungeonChessBattle.Battle.Runtime.Shared.Movement;
 
 namespace DungeonChessBattle.Battle.Logic.Movement;
 

@@ -1,6 +1,6 @@
 # DungeonChessBattle.Battle.Mod.Shared
 
-数据面注册面定义层：宿主实现、mod 调用的口——内容注册口与引导上下文。纯 .NET 类库，只引 Battle.Shared。
+数据面注册面定义层：宿主实现、mod 调用的口——内容注册口与引导上下文。纯 .NET 类库，只引 Battle.Config.Shared。
 
 ## 职责
 
@@ -10,9 +10,9 @@
 ## 边界外
 
 - 不含 mod 要实现的接口：数据入口接口在 Battle.Mod.Interface，本库不引用它。
-- 不含实现：内容注册表在 Battle.GameConfig，引导上下文实现与装配引导在 Battle.Mod.Manager。
+- 不含实现：内容注册表在 Battle.Config.Registry，引导上下文实现与装配引导在 Battle.Mod.Manager。
 - 不含装载与管理：扫描、清单、依赖排序与程序集装载在 Battle.Mod.Manager。
 
 ## 依赖
 
-- Battle.Shared。mod 数据代码经 Battle.Mod.Interface 引用链传递可见。
+- Battle.Config.Shared。

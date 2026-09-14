@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.Enums;
+using DungeonChessBattle.Battle.Shared.Camp;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 
 namespace DungeonChessBattle.Game.BattleScene;
 
@@ -28,7 +30,7 @@ public sealed class TargetCycleSelector {
         IReadOnlyList<IUnitUiView> units,
         ushort localNetId,
         ushort focusId,
-        Func<IReadOnlyList<string>, CampRelation> resolveRelation) {
+        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
         var enemies = CollectLivingEnemies(units, localNetId, resolveRelation);
         if (enemies.Count == 0)
             return 0;
@@ -45,7 +47,7 @@ public sealed class TargetCycleSelector {
     private static List<IUnitUiView> CollectLivingEnemies(
         IReadOnlyList<IUnitUiView> units,
         ushort localNetId,
-        Func<IReadOnlyList<string>, CampRelation> resolveRelation) {
+        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
         List<IUnitUiView> enemies = [];
         foreach (var candidate in units) {
             if (candidate.UnitId == localNetId || candidate.IsDead)

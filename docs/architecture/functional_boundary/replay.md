@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Battle.Shared、Battle.Logic、GameConfig、Replay.Shared。
+- Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Logic、Battle.Config.Registry、Replay.Shared。

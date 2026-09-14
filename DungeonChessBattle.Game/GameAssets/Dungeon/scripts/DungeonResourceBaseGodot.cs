@@ -3,7 +3,7 @@ using Godot;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
-using DungeonConfigDef = Battle.Shared.Content.DungeonConfig;
+using DungeonConfigDef = Battle.Config.Shared.Content.DungeonConfig;
 using DungeonChessBattle.Game.Shared.Display;
 
 /// <summary>

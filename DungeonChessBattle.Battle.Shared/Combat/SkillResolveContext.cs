@@ -1,17 +1,18 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.Range;
 
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>技能结算只读上下文：纯函数输入，不含可变状态，无副作用。</summary>
-/// <param name="Skill">目标技能定义，效果实现只从中取引擎侧规则用，数值由实现自持。</param>
+/// <param name="CastArea">施法中的技能范围形状，非位置目标技能为空。</param>
 /// <param name="Caster">施法单位只读视图。</param>
 /// <param name="Target">单位目标；无单位目标需求时为空。</param>
 /// <param name="TargetPos">位置目标；无位置目标需求时为空。</param>
 /// <param name="Targets">可作用目标表，战斗世界已按技能目标阵营策略与敌我关系过滤并排除施法者，范围效果遍历用。</param>
 public readonly record struct SkillResolveContext(
-    SkillDefinition Skill,
+    IRangeShape? CastArea,
     IBattleUnitView Caster,
     IBattleUnitView? Target,
     Vector2? TargetPos,
@@ -27,7 +28,7 @@ public sealed record SkillResolution(
 
 /// <summary>待施加的 Buff 描述，由编排层落账为运行时 Buff 实例。</summary>
 public readonly record struct BuffToApply(
-    BuffDefinition Definition,
+    IBuffSpec Definition,
     UnitId TargetUnitId,
     UnitSnapshot? From,
     UnitId SourceUnitId);

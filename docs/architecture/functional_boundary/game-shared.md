@@ -15,4 +15,4 @@ mod 与宿主共用的展示形状层：注册表收发的展示数据。纯形�
 
 ## 依赖
 
-- Battle.Shared 的强类型键，此外无项目引用。被 Game 与 Game.Mod.Shared 引用，经引用链进 mod 的传递闭包，mod 编译期因此一并带出零项目引用的 Battle.Shared；引擎资源类型由引擎 SDK 提供，与主工程同版本，本库不定义引擎对象子类，不产生脚本注册需求。
+- Battle.Shared。

@@ -1,6 +1,7 @@
-using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Battle.Runtime.Shared.Buffs;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using LiteEntitySystem.Extensions;
 
@@ -70,7 +71,7 @@ public partial class UnitPawn {
 
     /// <summary>个体冷却整包投影，内容一致时跳过，避免每帧重建产生网络流量。</summary>
     private void ProjectCooldowns(BattleUnit unit) {
-        var cds = unit.Cooldowns;
+        var cds = unit.RuntimeState.Cooldowns;
         var entries = new SyncSkillCooldownSnapshot.Entry[cds.Count];
         for (int i = 0; i < cds.Count; i++)
             entries[i] = new SyncSkillCooldownSnapshot.Entry(
@@ -138,7 +139,7 @@ public partial class UnitPawn {
 
     /// <summary>Buff 整包投影，内容一致时跳过，避免每帧重建产生网络流量；剩余秒数落为截止 tick。</summary>
     private void ProjectBuffs(BattleUnit unit) {
-        var buffs = unit.Buffs;
+        var buffs = unit.RuntimeState.Buffs;
         var entries = new SyncBuffSnapshot.Entry[buffs.Count];
         for (int i = 0; i < buffs.Count; i++) {
             var b = buffs[i].Instance;

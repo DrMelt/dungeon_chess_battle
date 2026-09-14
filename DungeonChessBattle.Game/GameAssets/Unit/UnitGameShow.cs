@@ -1,6 +1,6 @@
 using System;
 using Godot;
-using DungeonChessBattle.Battle.Shared.Combat;
+using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Shared.Display;
 
 namespace DungeonChessBattle.Game.GameAssets;

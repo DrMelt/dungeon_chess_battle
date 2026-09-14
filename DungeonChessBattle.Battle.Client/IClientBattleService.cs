@@ -1,5 +1,6 @@
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 using DungeonChessBattle.Battle.Shared.Events;
+using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Client;
 
@@ -9,7 +10,7 @@ namespace DungeonChessBattle.Battle.Client;
 /// </summary>
 public interface IClientBattleService {
     /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
-    event Action<string, ushort, string, IReadOnlyList<string>>? OnUnitCreated;
+    event Action<string, ushort, string, IReadOnlyList<CampId>>? OnUnitCreated;
 
     /// <summary>战斗阶段变化事件。参数：房间 ID、战斗阶段。</summary>
     event Action<string, BattlePhase>? BattlePhaseChanged;
