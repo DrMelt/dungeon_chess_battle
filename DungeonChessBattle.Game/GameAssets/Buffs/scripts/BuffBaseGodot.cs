@@ -6,15 +6,20 @@ using Godot;
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
-/// Godot Buff 基类资源，承载 BuffDefinition 引用与展示属性（图标/名称/描述）。
+/// Godot Buff 资源，承载内容注册表中的领域 Buff 定义与展示属性（图标/名称/描述）。
 /// 产出 <see cref="BuffDisplay"/>，与 mod Buff 展示数据同经 <c>ServiceLocator.ModAssets</c> 查询。
+/// 只由 <c>ModAssetsMapper</c> 装配期构造、Godot 不实例化本类，故不入编辑器资源表；
+/// 资源表交出本类实例本体，装配完成后一律只读。
 /// </summary>
-[GlobalClass]
 public partial class BuffBaseGodot : Resource {
-    /// <summary>
-    /// 子类重写此属性，直接返回内容注册表中的领域 Buff 定义（类型安全，编译期检查）。
-    /// </summary>
-    protected virtual BuffDefinition? Config => null;
+    /// <summary>本资源承载的领域 Buff 定义，装配期注入后不变。</summary>
+    internal BuffDefinition Config { get; }
+
+    /// <remarks>显示名先回退到 Buff 键，mod 声明展示数据后由 <see cref="ApplyViewData"/> 覆盖。</remarks>
+    internal BuffBaseGodot(BuffDefinition config) {
+        Config = config;
+        ApplyViewData(null, $"Buff {config.BuffTypeId.Value}", null);
+    }
 
     /// <summary>Buff 图标。</summary>
     [Export]
@@ -22,8 +27,8 @@ public partial class BuffBaseGodot : Resource {
         get; private set;
     }
 
-    /// <summary>Buff 键，与内容注册表里的 Buff 身份对齐；未绑定定义为无键。</summary>
-    public BuffTypeId BuffTypeId => Config?.BuffTypeId ?? BuffTypeId.None;
+    /// <summary>Buff 键，与内容注册表里的 Buff 身份对齐。</summary>
+    public BuffTypeId BuffTypeId => Config.BuffTypeId;
 
     /// <summary>产出注册表用的展示数据。</summary>
     internal BuffDisplay ToDisplay() => new(BuffTypeId, BuffName, BuffDescription, Icon);
@@ -40,7 +45,7 @@ public partial class BuffBaseGodot : Resource {
         get; private set;
     } = "";
 
-    /// <summary>由 mod 资源装配运行时填充展示字段；null 或空串的成员保持模板原值，内部调用。</summary>
+    /// <summary>由 mod 资源装配运行时填充展示字段；null 或空串的成员保持原值，内部调用。</summary>
     internal void ApplyViewData(Texture2D? icon, string? name, string? description) {
         if (icon is not null)
             Icon = icon;

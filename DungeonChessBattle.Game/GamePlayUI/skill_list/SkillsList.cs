@@ -116,9 +116,7 @@ public partial class SkillsList : Control {
             var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
             if (targetPos != null) {
                 var v = targetPos.Value;
-                var skill = _waitingButton.BindSkill.InternalConfig;
-                if (skill != null)
-                    SubmitCast(skill, 0, v.X, v.Z, _waitingButton);
+                SubmitCast(_waitingButton.BindSkill.Config, 0, v.X, v.Z, _waitingButton);
             }
             CancelWait();
         }
@@ -164,9 +162,9 @@ public partial class SkillsList : Control {
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
-        var skill = button.BindSkill.InternalConfig;
+        var skill = button.BindSkill.Config;
         var session = _sessionRef;
-        if (skill == null || session == null) {
+        if (session == null) {
             button.ButtonPressed = false;
             return;
         }
@@ -233,7 +231,7 @@ public partial class SkillsList : Control {
     private void ShowRangePreview(UnitSkillBaseGodot skillRes) {
         if (_effectHints == null)
             return;
-        if (skillRes.InternalConfig?.CastArea is not RectShape shape)
+        if (skillRes.Config.CastArea is not RectShape shape)
             return;
 
         var hint = _effectHints.ShowRangeHint(skillRes, _ => UpdateRangePreview());

@@ -9,8 +9,9 @@ using DungeonConfigDef = Battle.Config.Shared.Content.DungeonConfig;
 /// <summary>
 /// 副本资源强类型映射表（运行时构造 + 类型驱动匹配）。
 /// 表不依赖任何 <c>res://</c> 资源文件：内容全部来自 mod，条目由 <c>ModAssetsMapper</c>
-/// 以 <see cref="ModDungeonResource"/> 运行时构造并注册。以 Config（内容注册表中的静态副本定义实例）
+/// 以 <see cref="DungeonResourceBaseGodot"/> 运行时构造并注册。以 Config（内容注册表中的副本定义实例）
 /// 为键构建反查字典，供环境场景模板实例化；副本显示名与描述经 <c>ServiceLocator.ModAssets</c> 展示索引取。
+/// 表交出资源本体而非副本，条目装配完成后只读。
 /// 表实例由 ResourceTables 组合根构造，本类不持有加载入口。
 /// </summary>
 [GlobalClass]
@@ -19,20 +20,11 @@ public partial class DungeonResourceTable : Resource {
     private readonly Dictionary<DungeonConfigDef, DungeonResourceBaseGodot> _lookup = [];
 
     /// <summary>追加运行时 mod 副本资源；同 Config 覆盖已有条目。</summary>
-    internal void RegisterModResource(DungeonResourceBaseGodot resource) {
-        if (resource.InternalConfig is { } config)
-            _lookup[config] = resource;
-    }
+    internal void RegisterModResource(DungeonResourceBaseGodot resource) =>
+        _lookup[resource.Config] = resource;
 
     /// <summary>已注册的全部副本资源，均由 <c>ModAssetsMapper</c> 运行时构造。</summary>
     public IReadOnlyCollection<DungeonResourceBaseGodot> AllResources => _lookup.Values;
-
-    /// <summary>该副本定义是否已有展示资源；有则以其为模板改写 mod 声明了的字段。</summary>
-    internal bool TryGetResource(DungeonConfigDef config, out DungeonResourceBaseGodot? resource) {
-        bool found = _lookup.TryGetValue(config, out var template);
-        resource = template;
-        return found;
-    }
 
     /// <summary>按副本键取副本资源；副本未注册或资源未映射时返回 null。</summary>
     private DungeonResourceBaseGodot? GetResource(string? dungeonKey) {

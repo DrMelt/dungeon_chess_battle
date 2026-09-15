@@ -6,24 +6,24 @@ using Godot;
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
-/// Godot 技能基类资源。仅承载展示所需数据（图标/名称/描述）与技能定义引用，
+/// Godot 技能资源。绑定内容注册表中的领域技能定义，承载展示所需数据（图标/名称/描述/范围提示场景），
 /// 施法/冷却由服务端权威结算，客户端仅据 Pawn 同步数据渲染。
 /// 产出 <see cref="SkillDisplay"/>，与 mod 技能展示数据同经 <c>ServiceLocator.ModAssets</c> 查询。
+/// 只由 <c>ModAssetsMapper</c> 装配期构造、Godot 不实例化本类，故不入编辑器资源表；
+/// 资源表交出本类实例本体，装配完成后一律只读。
 /// </summary>
-[GlobalClass]
 public partial class UnitSkillBaseGodot : Resource {
-    /// <summary>
-    /// 子类重写此属性，直接返回内容注册表中的领域技能定义（类型安全，编译期检查）。
-    /// </summary>
-    protected virtual SkillDefinition? Config => null;
+    /// <summary>本资源承载的领域技能定义，装配期注入后不变。</summary>
+    internal SkillDefinition Config { get; }
 
-    /// <summary>
-    /// 内部访问 Config，供 SkillResourceTable 等程序集内部使用。
-    /// </summary>
-    internal SkillDefinition? InternalConfig => Config;
+    /// <remarks>显示名先回退到技能键，mod 声明展示数据后由 <see cref="ApplyViewData"/> 覆盖。</remarks>
+    internal UnitSkillBaseGodot(SkillDefinition config) {
+        Config = config;
+        ApplyViewData(null, config.SkillId.Id, null, null);
+    }
 
     /// <summary>技能强类型 ID（来自 SkillDefinition.SkillId，用于按 Pawn.SkillCasting 匹配）。</summary>
-    public SkillKeyId SkillId => Config?.SkillId ?? SkillKeyId.None;
+    public SkillKeyId SkillId => Config.SkillId;
 
     /// <summary>产出注册表用的展示数据。</summary>
     internal SkillDisplay ToDisplay() =>
@@ -48,7 +48,7 @@ public partial class UnitSkillBaseGodot : Resource {
     }
 
     /// <summary>
-    /// 由 mod 资源装配运行时填充展示字段；null 或空串的成员保持模板原值，内部调用。
+    /// 由 mod 资源装配运行时填充展示字段；null 或空串的成员保持原值，内部调用。
     /// </summary>
     internal void ApplyViewData(
         Texture2D? icon, string? name, string? description, PackedScene? rangeHintScene) {
@@ -63,14 +63,14 @@ public partial class UnitSkillBaseGodot : Resource {
     }
 
     /// <summary>技能施放总时长（秒）。</summary>
-    public float SkillSpellTime => Config?.SpellTime ?? 0;
+    public float SkillSpellTime => Config.SpellTime;
 
     /// <summary>是否需要指定单位目标。</summary>
-    public bool NeedUnitTarget => Config?.NeedUnitTarget ?? false;
+    public bool NeedUnitTarget => Config.NeedUnitTarget;
 
     /// <summary>是否需要指定位置目标。</summary>
-    public bool NeedPosTarget => Config?.NeedPosTarget ?? false;
+    public bool NeedPosTarget => Config.NeedPosTarget;
 
     /// <summary>技能可释放的目标类型，直接读 SkillDefinition.TargetPolicy，UI 目标选择与展示读取。</summary>
-    public SkillTargetPolicy TargetPolicy => Config?.TargetPolicy ?? SkillTargetPolicy.None;
+    public SkillTargetPolicy TargetPolicy => Config.TargetPolicy;
 }

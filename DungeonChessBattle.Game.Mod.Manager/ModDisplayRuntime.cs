@@ -8,8 +8,7 @@ using DungeonChessBattle.Game.Shared.Display;
 namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
-/// mod 侧声明过的展示键全集，跨 mod 汇总。宿主据此判定条目是否被 mod 覆盖、
-/// 该以已落地的资源为模板改写还是直接补占位。
+/// mod 侧声明过的展示键全集，跨 mod 汇总。宿主据此判定条目是按声明落地展示数据还是补占位。
 /// </summary>
 public sealed class ModDeclaration {
     /// <summary>被 mod 声明过的技能键。</summary>
