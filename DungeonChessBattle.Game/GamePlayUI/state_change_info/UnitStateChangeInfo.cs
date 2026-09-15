@@ -148,7 +148,7 @@ public partial class UnitStateChangeInfo : Node {
     }
 
     /// <summary>
-    /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 Buff 键从展示索引匹配。
+    /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 Buff 键取自展示取数入口。
     /// </summary>
     private void ShowBuffPopup(IUnitUiView unit, BuffTypeId buffTypeId, bool added) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;

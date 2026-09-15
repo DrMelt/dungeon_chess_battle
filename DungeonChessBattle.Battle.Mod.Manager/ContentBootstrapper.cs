@@ -48,7 +48,7 @@ public static class ContentBootstrapper {
         string fingerprint = ContentFingerprint.Compute(result.Mods);
 
         var registry = new ContentSetRegistry(EngineRevision, fingerprint);
-        var context = new ModBootstrapContext(registry);
+        var context = new ModBootstrapContext(registry, loggerFactory ?? NullLoggerFactory.Instance);
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("内容装配开始：启用 {Count} 个 mod，指纹 {Fingerprint}",

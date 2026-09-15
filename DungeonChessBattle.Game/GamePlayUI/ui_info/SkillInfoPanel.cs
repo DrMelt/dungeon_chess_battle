@@ -61,14 +61,15 @@ public partial class SkillInfoPanel : Control {
 
         if (control != null) {
             if (control is ButtonSkillBase { IsInitialized: true } mouseOnButtonSkill) {
-                skillNameLabel?.Text = mouseOnButtonSkill.BindSkill.SkillName;
-                skillDescriptionLabel?.Text = mouseOnButtonSkill.BindSkill.SkillDescription;
+                var skillDisplay = mouseOnButtonSkill.BindDisplay;
+                skillNameLabel?.Text = skillDisplay?.DisplayLabel ?? mouseOnButtonSkill.BindSkill.SkillId.Id;
+                skillDescriptionLabel?.Text = skillDisplay?.Description ?? string.Empty;
                 isShow = true;
             }
             else if (control is TextureRectBuffIcon { BindingBuffData: { } buffData }) {
-                var buffView = ServiceLocator.ModAssets?.Buff(buffData.BuffTypeId);
-                skillNameLabel?.Text = buffView?.Name ?? $"Buff({buffData.BuffTypeId.Value})";
-                skillDescriptionLabel?.Text = buffView?.Description ?? string.Empty;
+                var buffDisplay = ServiceLocator.ModAssets?.Buff(buffData.BuffTypeId);
+                skillNameLabel?.Text = buffDisplay?.DisplayLabel ?? buffData.BuffTypeId.Value;
+                skillDescriptionLabel?.Text = buffDisplay?.Description ?? string.Empty;
                 isShow = true;
             }
         }

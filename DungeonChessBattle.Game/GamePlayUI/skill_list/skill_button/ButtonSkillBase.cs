@@ -1,14 +1,15 @@
 using System;
+using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
-using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Game.Shared.Display;
 using Godot;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 技能按钮：绑定一个技能与施法单位 Pawn，点击时委托给技能列表面板发起施法 RPC。
+/// 技能按钮：绑定一个技能定义与其展示数据、施法单位 Pawn，点击时委托给技能列表面板发起施法 RPC。
 /// 冷却期间显示灰色遮罩与剩余秒数。
 /// </summary>
 public partial class ButtonSkillBase : Button {
@@ -27,14 +28,20 @@ public partial class ButtonSkillBase : Button {
     [Export]
     private Label? _labelCooldownTimeRef;
 
-    /// <summary>绑定的技能（由 Init 注入）。</summary>
-    private UnitSkillBaseGodot? _bindingSkill;
+    /// <summary>绑定的技能定义（由 Init 注入）。</summary>
+    private SkillDefinition? _bindingSkill;
+
+    /// <summary>绑定的技能展示数据，mod 未声明该技能展示时为 null。</summary>
+    private SkillDisplay? _bindingDisplay;
 
     /// <summary>是否已完成 Init 初始化（未初始化时隐藏，防止悬停误触）。</summary>
     public bool IsInitialized => _bindingSkill != null;
 
-    /// <summary>绑定的技能对象。</summary>
-    public UnitSkillBaseGodot BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
+    /// <summary>绑定的技能定义，施法规则与冷却匹配读它。</summary>
+    public SkillDefinition BindSkill => _bindingSkill ?? throw new InvalidOperationException("BindSkill has not been initialized.");
+
+    /// <summary>绑定的技能展示数据，图标/名称/描述/范围提示场景读它；未声明展示时为 null。</summary>
+    public SkillDisplay? BindDisplay => _bindingDisplay;
 
     /// <summary>绑定技能所属的施法单位展示视图。</summary>
     public IUnitUiView BindUnit {
@@ -46,17 +53,23 @@ public partial class ButtonSkillBase : Button {
     private SkillsList? _skillsListRef;
 
     /// <summary>
-    /// 初始化按钮与技能、施法单位及技能列表面板的绑定，并设置技能图标。
+    /// 初始化按钮与技能定义、展示数据、施法单位及技能列表面板的绑定，并按展示数据设置图标。
     /// </summary>
-    /// <param name="bindSkill">要绑定的技能。</param>
+    /// <param name="bindSkill">要绑定的技能定义。</param>
+    /// <param name="bindDisplay">该技能的展示数据，未声明时为 null。</param>
     /// <param name="bindUnit">技能所属的施法单位展示视图。</param>
     /// <param name="skillsListRef">技能列表面板引用。</param>
-    public void Init(UnitSkillBaseGodot bindSkill, IUnitUiView bindUnit, SkillsList skillsListRef) {
+    public void Init(
+        SkillDefinition bindSkill, SkillDisplay? bindDisplay,
+        IUnitUiView bindUnit, SkillsList skillsListRef) {
         _bindingSkill = bindSkill;
+        _bindingDisplay = bindDisplay;
         BindUnit = bindUnit;
         _skillsListRef = skillsListRef;
 
-        Icon = bindSkill.Icon;
+        // 未声明图标时保留场景配置的占位图标
+        if (bindDisplay?.Icon is { } icon)
+            Icon = icon;
     }
 
     /// <summary>节点就绪：校验导出引用并注册鼠标悬浮 UI 判定。</summary>

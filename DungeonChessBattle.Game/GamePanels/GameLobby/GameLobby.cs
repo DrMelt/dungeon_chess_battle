@@ -102,7 +102,7 @@ public partial class GameLobby : BaseGamePanel {
         var dungeons = ServiceLocator.GameContent.Registry.Dungeons.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
             var key = dungeons[i].DungeonKey;
-            select.AddItem(ServiceLocator.ModAssets?.Dungeon(key)?.DisplayName ?? key.Value, i);
+            select.AddItem(ServiceLocator.ModAssets?.Dungeon(key)?.DisplayLabel ?? key.Value, i);
             select.SetItemMetadata(i, key.Value);
         }
         if (dungeons.Count > 0) {

@@ -255,7 +255,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void UpdateRoomInfoLabels(string hostName, string dungeonKey, int currentPlayers, int maxPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(hostName) ? "房主: --" : $"房主: {hostName}";
-        string dungeonText = ServiceLocator.ModAssets?.Dungeon(dungeonKey)?.DisplayName ?? dungeonKey;
+        string dungeonText = ServiceLocator.ModAssets?.Dungeon(dungeonKey)?.DisplayLabel ?? dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
             InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)

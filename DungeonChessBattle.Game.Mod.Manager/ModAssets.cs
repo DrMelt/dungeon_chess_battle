@@ -36,30 +36,28 @@ public sealed class ModAssets {
 
     /// <summary>
     /// 展示装配全过程，顺序由本方法保证：建注册表 → 装载展示代码 → 挂载展示资源包 →
-    /// 逐 mod 执行入口把声明注册进同表 → 宿主把 mod 声明落地成资源对象并回注 → 表就绪后对外可查。
+    /// 逐 mod 执行入口把声明注册进同表 → 表就绪后对外可查。
     /// </summary>
     /// <remarks>
-    /// 资源包挂载与 mod 条目落地两步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与
-    /// <c>res://</c> 路径只能留在 Godot 主工程，本库不认识它们，只负责把顺序钉死在这里。
+    /// 资源包挂载一步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与 <c>res://</c> 路径
+    /// 只能留在 Godot 主工程，本库不认识它们，只负责把顺序钉死在这里。
     /// 装载先于挂载、入口执行后于挂载：入口 Initialize 要按 <c>res://mods/{id}/</c> 前缀自行读包内资源。
+    /// 装配产物只有展示注册表：条目在此就绪即最终态，宿主不再据它二次物化。
     /// </remarks>
     /// <param name="catalog">已扫描的 mod 管理根，提供参与装配的启用 mod、展示声明与错误落点。</param>
     /// <param name="content">内容注册表只读视图，展示键完整性校验对它做。</param>
     /// <param name="mountResourcePacks">逐 mod 挂载它声明的展示资源包，必须介于展示代码装载与入口执行之间。</param>
-    /// <param name="applyModResources">把 mod 声明过的条目落地成宿主资源对象，收 mod 声明集与注册表。</param>
     /// <param name="loggerFactory">日志通道工厂，未注入时静默。</param>
     /// <returns>装配完成的获取入口实例，由调用方持有。</returns>
     public static ModAssets Assemble(
         ModCatalog catalog,
         IContentRegistryView content,
         Action<IReadOnlyList<ModDisplayDeclaration>> mountResourcePacks,
-        Action<ModDeclaration, DisplayRegistry> applyModResources,
         ILoggerFactory? loggerFactory = null) {
         var logger = loggerFactory?.CreateLogger<ModAssets>() ?? NullLogger<ModAssets>.Instance;
         var registry = new DisplayRegistry();
 
         var runtimeErrors = new List<ModError>();
-        var declared = new ModDeclaration();
 
         // 声明不可用的 mod 不参与展示装配：数据面已按同一份清单照常装载，展示面缺一块不影响它
         var displays = catalog.EnabledDisplays.Where(display => display.Problem is null).ToList();
@@ -78,7 +76,7 @@ public sealed class ModAssets {
 
         var initErrors = ModEntryLoader.Initialize(loaded, "展示代码入口执行失败",
             (entry, modId) => entry.Initialize(
-                new ModDisplayRuntime(registry, content, runtimeErrors, modId, declared),
+                new ModDisplayRuntime(registry, content, runtimeErrors, modId),
                 new ModDisplayContext(modId, registry)),
             loggerFactory);
 
@@ -86,12 +84,6 @@ public sealed class ModAssets {
         foreach (var error in loaded.Errors.Concat(runtimeErrors).Concat(initErrors))
             LogDisplayFailed(logger, error);
         catalog.RecordDisplayErrors([.. loaded.Errors, .. runtimeErrors, .. initErrors]);
-
-        applyModResources(declared, registry);
-
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("展示装配完成：mod 声明 技能 {Skills}/Buff {Buffs}/单位 {Units}/副本 {Dungeons}",
-                declared.Skills.Count, declared.Buffs.Count, declared.Units.Count, declared.Dungeons.Count);
 
         return new ModAssets(registry, catalog, catalog.Fingerprint);
     }

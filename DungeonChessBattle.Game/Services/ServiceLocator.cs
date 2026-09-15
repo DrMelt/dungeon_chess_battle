@@ -80,7 +80,7 @@ public static class ServiceLocator {
     private static GameContent? _gameContent;
 
     /// <summary>
-    /// 数据面装配产物：本次装配的内容注册表与单位目录，UI、资源表与回放门控取数经它。
+    /// 数据面装配产物：本次装配的内容注册表与单位目录，UI 与回放门控取数经它。
     /// 值由 <c>ModManager.EnsureInitialized</c> 写入，写入前取用即抛，不静默给空内容。
     /// </summary>
     public static GameContent GameContent => _gameContent

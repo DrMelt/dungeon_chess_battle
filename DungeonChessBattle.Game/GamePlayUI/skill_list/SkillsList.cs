@@ -39,7 +39,7 @@ public partial class SkillsList : Control {
         get; private set;
     }
 
-    /// <summary>范围提示协调器引用，选位置目标时按技能资源显示范围预览。</summary>
+    /// <summary>范围提示协调器引用，选位置目标时按技能展示数据提供范围提示场景。</summary>
     [Export]
     private EffectHints? _effectHints;
 
@@ -116,7 +116,7 @@ public partial class SkillsList : Control {
             var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
             if (targetPos != null) {
                 var v = targetPos.Value;
-                SubmitCast(_waitingButton.BindSkill.Config, 0, v.X, v.Z, _waitingButton);
+                SubmitCast(_waitingButton.BindSkill, 0, v.X, v.Z, _waitingButton);
             }
             CancelWait();
         }
@@ -124,7 +124,7 @@ public partial class SkillsList : Control {
 
     /// <summary>
     /// 按本地单位展示视图重建技能按钮列表，无显示单位时清空。
-    /// 技能展示资源经 UnitCatalog 配置与 SkillResourceTable 装配，不依赖视图层。
+    /// 技能定义取自单位配置，展示数据按技能键取自展示取数入口，未声明时为 null 由按钮侧降级。
     /// </summary>
     /// <param name="unit">本地单位展示视图，无则清空按钮。</param>
     private void UpdateSkillsList(IUnitUiView? unit) {
@@ -149,9 +149,9 @@ public partial class SkillsList : Control {
             return;
 
         foreach (var skillDefinition in config.Skills) {
-            var skill = ResourceTables.Skills.LoadResource(skillDefinition);
+            var display = ServiceLocator.ModAssets?.Skill(skillDefinition.SkillId);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
-            buttonSkill.Init(skill, unit, this);
+            buttonSkill.Init(skillDefinition, display, unit, this);
             hBox.AddChild(buttonSkill);
             _skillButtonList.Add(buttonSkill);
         }
@@ -162,7 +162,7 @@ public partial class SkillsList : Control {
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
-        var skill = button.BindSkill.Config;
+        var skill = button.BindSkill;
         var session = _sessionRef;
         if (session == null) {
             button.ButtonPressed = false;
@@ -197,7 +197,7 @@ public partial class SkillsList : Control {
             _state = SkillReleaseState.WaitingPosTarget;
             _waitingButton = button;
             PlayerInterfaceRes?.IsWaitingSkillTarget = true;
-            ShowRangePreview(button.BindSkill);
+            ShowRangePreview(button);
             return;
         }
 
@@ -225,16 +225,16 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 展示范围提示：按技能资源的范围提示场景创建预览实例，参数取自领域范围形状。
+    /// 展示范围提示：按按钮携带的范围提示场景创建预览实例，参数取自领域范围形状。
     /// 初始化延迟到挂载后一帧，经 UpdateRangePreview 执行，保证提示场景 _Ready 已完成。
     /// </summary>
-    private void ShowRangePreview(UnitSkillBaseGodot skillRes) {
+    private void ShowRangePreview(ButtonSkillBase button) {
         if (_effectHints == null)
             return;
-        if (skillRes.Config.CastArea is not RectShape shape)
+        if (button.BindSkill.CastArea is not RectShape shape)
             return;
 
-        var hint = _effectHints.ShowRangeHint(skillRes, _ => UpdateRangePreview());
+        var hint = _effectHints.ShowRangeHint(button.BindDisplay?.RangeHintScene, _ => UpdateRangePreview());
         if (hint == null)
             return;
 

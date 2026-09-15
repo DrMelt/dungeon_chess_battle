@@ -142,11 +142,15 @@ public partial class BattleEventLogPanel : Control {
         return $"#{netId}";
     }
 
-    /// <summary>按技能强类型 ID 解析技能名；展示索引未注册回退为裸 ID。</summary>
-    private static string ResolveSkillName(SkillKeyId skillId)
-        => ServiceLocator.ModAssets?.Skill(skillId)?.Name ?? $"技能 {skillId.Id}";
+    /// <summary>按技能键解析技能名：条目缺席时以技能键呈现，条目在则取展示用名称。</summary>
+    private static string ResolveSkillName(SkillKeyId skillId) =>
+        ServiceLocator.ModAssets?.Skill(skillId) is { } display
+            ? display.DisplayLabel
+            : $"技能 {skillId.Id}";
 
-    /// <summary>按 Buff 键解析 Buff 名；展示索引未注册回退为裸键。</summary>
-    private static string ResolveBuffName(BuffTypeId buffTypeId)
-        => ServiceLocator.ModAssets?.Buff(buffTypeId)?.Name ?? $"Buff {buffTypeId.Value}";
+    /// <summary>按 Buff 键解析 Buff 名：条目缺席时以 Buff 键呈现，条目在则取展示用名称。</summary>
+    private static string ResolveBuffName(BuffTypeId buffTypeId) =>
+        ServiceLocator.ModAssets?.Buff(buffTypeId) is { } display
+            ? display.DisplayLabel
+            : $"Buff {buffTypeId.Value}";
 }

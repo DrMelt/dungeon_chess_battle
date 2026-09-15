@@ -41,7 +41,7 @@ public readonly record struct EnemyDecision(
 /// </summary>
 public interface IUnitIntelligence {
     /// <summary>
-    /// 生成敌方单位当帧决策：选目标，按目标距离决定逼近或施法。
+    /// 生成敌方单位当帧决策：选目标，按技能序取首个可施放技能施放；无可施放技能时按冷却状态决定逼近或原地等待。
     /// 仅房间线程调用，输入在本帧内不应变化。
     /// </summary>
     /// <param name="self">决策主体，仇恨取自其自身仇恨投影。</param>

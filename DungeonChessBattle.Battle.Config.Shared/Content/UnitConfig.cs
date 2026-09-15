@@ -18,7 +18,7 @@ public sealed class UnitConfig {
     /// <summary>单位拥有的技能定义列表。</summary>
     public IReadOnlyList<SkillDefinition> Skills { get; init; } = [];
 
-    /// <summary>敌人单位智能，装配期直接引用本层决策实现实例，无状态实例可多单位共享；玩家可选单位不配。</summary>
+    /// <summary>敌人单位智能，装配期直接引用本层决策实现实例，决策不依赖跨单位状态、可多单位共享；玩家可选单位不配。</summary>
     public IUnitIntelligence? Intelligence {
         get; init;
     }

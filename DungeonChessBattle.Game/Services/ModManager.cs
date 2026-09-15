@@ -4,8 +4,6 @@ using System.IO;
 using System.Linq;
 using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Mod.Manager;
-using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.GameAssets.Mods;
 using DungeonChessBattle.Game.Mod.Manager;
 using Godot;
 using Godot.Bridge;
@@ -14,8 +12,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
-/// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配。
-/// 主场景 _Ready 首个调用，保证任何 UI 与资源表访问前内容已就绪；
+/// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配 → 展示覆盖巡检。
+/// 主场景 _Ready 首个调用，保证任何 UI 取数前内容已就绪；
 /// 服务器子进程由 ServerProcessHost 注入同一 user://mods，两端读同一启用集与内容即同源。
 /// 两次装配的产物分别写入 <see cref="ServiceLocator.GameContent"/> 与 <see cref="ServiceLocator.ModAssets"/>，
 /// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
@@ -36,7 +34,7 @@ public static class ModManager {
 
     /// <summary>
     /// 执行一次装配，幂等；单个 mod 失败不中止其余 mod，错误汇总进装配产物的 <c>ModCatalog</c>。
-    /// 扫描、装配与展示装配的过程日志由下层按自身类别名记录，本类只注入通道并补记 Godot 侧落地结果。
+    /// 扫描、装配与展示装配的过程日志由下层按自身类别名记录，本类只注入通道并补记展示覆盖巡检结果。
     /// 幂等标志在装配成功后置位：装配中断可以重试，不留下「标志已置位、内容永久未就绪」的中间态。
     /// </summary>
     public static void EnsureInitialized() {
@@ -49,22 +47,18 @@ public static class ModManager {
             // Load(扫描结果) 只带回装配期新增错误，扫描期错误已在 catalog.Errors
             var boot = ContentBootstrapper.Load(catalog.ScanResult, ServiceLocator.LoggerFactory);
             catalog.RecordAssemblyErrors(boot.Errors);
-            // 数据面产物交组合根持有，UI 与资源表经 ServiceLocator.GameContent 取数
+            // 数据面产物交组合根持有，UI 经 ServiceLocator.GameContent 取内容定义
             ServiceLocator.BindContent(boot.Content);
 
             // 注册表取装配后的实例：内容须先就绪，展示键校验才看得到 mod 注册进来的条目。
             // 资源包挂载作为委托交进装配过程，次序由 ModAssets.Assemble 保证：装载展示代码 → 挂载 → 入口执行
-            ServiceLocator.ModAssets = ModAssets.Assemble(
+            var assets = ModAssets.Assemble(
                 catalog, boot.Content.Registry,
                 MountAssetPacks,
-                (declared, registry) => ModAssetsMapper.Apply(boot.Content.Registry, declared, registry),
                 ServiceLocator.LoggerFactory);
+            ServiceLocator.ModAssets = assets;
 
-            // 表内条目落在 ModAssetsMapper 里，只有这里看得到三张表的最终条数
-            if (Logger.IsEnabled(LogLevel.Information))
-                Logger.LogInformation("落地展示条目：技能 {Skills}/Buff {Buffs}/副本 {Dungeons}",
-                    ResourceTables.Skills.AllResources.Count, ResourceTables.Buffs.AllResources.Count,
-                    ResourceTables.Dungeons.AllResources.Count);
+            LogDisplayCoverage(boot.Content.Registry, assets);
         }
         catch (Exception ex) {
             // 装配中断不吞也不留中间态：补上装配层上下文后继续上抛，幂等标志保持未置位
@@ -72,6 +66,32 @@ public static class ModManager {
         }
 
         _initialized = true;
+    }
+
+    /// <summary>
+    /// 展示覆盖巡检：取内容条目对应的展示数据，无展示条目者汇总记一条告警，并记一条装配规模。
+    /// 缺席不阻断装配——消费方按内容键回退显示名、图标留空、无范围提示与环境场景。
+    /// 规模按内容条目数报，不报展示条目数：mod 可声明内容里没有的展示键，那部分不进内容计数。
+    /// </summary>
+    private static void LogDisplayCoverage(ContentSetRegistry registry, ModAssets assets) {
+        var missing =
+            registry.Skills.Where(skill => assets.Skill(skill.SkillId) is null)
+                .Select(skill => $"技能 {skill.SkillId.Id}")
+            .Concat(registry.Buffs.Where(buff => assets.Buff(buff.BuffTypeId) is null)
+                .Select(buff => $"Buff {buff.BuffTypeId.Value}"))
+            .Concat(registry.Units.Where(unit => assets.Unit(unit.ConfigKey) is null)
+                .Select(unit => $"单位 {unit.ConfigKey.Value}"))
+            .Concat(registry.Dungeons.Where(dungeon => assets.Dungeon(dungeon.DungeonKey) is null)
+                .Select(dungeon => $"副本 {dungeon.DungeonKey.Value}"))
+            .ToList();
+
+        if (Logger.IsEnabled(LogLevel.Information))
+            Logger.LogInformation("展示装配完成：内容技能 {Skills}/Buff {Buffs}/单位 {Units}/副本 {Dungeons}，无展示 {Missing}",
+                registry.Skills.Count, registry.Buffs.Count, registry.Units.Count, registry.Dungeons.Count,
+                missing.Count);
+
+        if (missing.Count > 0 && Logger.IsEnabled(LogLevel.Warning))
+            Logger.LogWarning("以下条目无展示数据，按内容键降级展示：{Entries}", string.Join("、", missing));
     }
 
     /// <summary>逐 mod 挂载它声明的展示资源包，并把该 mod 展示程序集里的脚本类注册进 Godot 脚本系统。

@@ -2,7 +2,6 @@ using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using System;
-using DungeonChessBattle.Game.GameAssets;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Game.GamePlayUI.state_info;
 
@@ -35,25 +34,7 @@ public partial class BuffChangeInfo : FadeInfo {
     }
 
     /// <summary>
-    /// 初始化提示内容：设置变化符号与 Buff 图标。
-    /// </summary>
-    /// <param name="buffBase">要展示的 Buff。</param>
-    /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(BuffBaseGodot buffBase, BuffChangeType changeType) {
-        if (label_ChangeRef == null || textureRectRef == null)
-            return;
-
-        label_ChangeRef.Text = changeType switch {
-            BuffChangeType.Added => "+",
-            BuffChangeType.Removed => "-",
-            _ => throw new NotImplementedException(),
-        };
-
-        textureRectRef.Texture = buffBase.Icon;
-    }
-
-    /// <summary>
-    /// 初始化提示内容（按 Buff 键版本）：设置变化符号，图标按 Buff 键从展示索引匹配。
+    /// 初始化提示内容：设置变化符号，图标按 Buff 键取自展示取数入口。
     /// </summary>
     /// <param name="buffTypeId">要展示的 Buff 键。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
@@ -67,8 +48,9 @@ public partial class BuffChangeInfo : FadeInfo {
             _ => throw new NotImplementedException(),
         };
 
-        // 图标按 Buff 键从展示索引取；未注册时留空
-        textureRectRef.Texture = ServiceLocator.ModAssets?.Buff(buffTypeId)?.Icon;
+        // 未声明图标时保留场景配置的占位图标
+        if (ServiceLocator.ModAssets?.Buff(buffTypeId)?.Icon is { } icon)
+            textureRectRef.Texture = icon;
     }
 
     /// <summary>

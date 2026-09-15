@@ -1,4 +1,3 @@
-using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -65,8 +64,7 @@ public partial class DungeonEnvironmentManager : Node3D {
         if (string.IsNullOrWhiteSpace(key))
             return;
 
-        var env = ResourceTables.Dungeons.InstantiateEnvironment(key);
-        if (env == null) {
+        if (ServiceLocator.ModAssets?.Dungeon(key)?.EnvScene?.Instantiate<Node3D>() is not { } env) {
             _logger.LogWarning("副本 '{DungeonKey}' 无环境场景资源，战场缺少地面与光照。", key);
             return;
         }

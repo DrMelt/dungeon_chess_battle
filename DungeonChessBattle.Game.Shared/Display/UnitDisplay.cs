@@ -4,10 +4,10 @@ using Godot;
 namespace DungeonChessBattle.Game.Shared.Display;
 
 /// <summary>
-/// 单位展示数据：仅覆盖展示字段，单位数值与行为仍在内容注册表。
+/// 单位展示数据：仅覆盖展示字段，单位数值与行为仍在内容注册表；字段为空串或 null 即未声明，显示名经 <see cref="DisplayLabel"/> 回退配置键。
 /// </summary>
 /// <param name="ConfigKey">单位配置键，与内容注册表里的单位身份同一；键长上限由 <see cref="UnitConfigKey"/> 承担。</param>
-/// <param name="DisplayName">单位显示名，未配置时由消费方回退配置键。</param>
+/// <param name="DisplayName">单位显示名。</param>
 /// <param name="Description">单位描述。</param>
 /// <param name="Icon">单位图标，未配置或解析失败为 null。</param>
 /// <param name="ModelScene">单位模型场景模板，未配置为 null 由消费方回退内置共享模板。</param>
@@ -18,4 +18,7 @@ public sealed record UnitDisplay(
     string Description,
     Texture2D? Icon,
     PackedScene? ModelScene,
-    Color? BodyColor);
+    Color? BodyColor) {
+    /// <summary>展示用名称：显示名未声明时取单位配置键。</summary>
+    public string DisplayLabel => string.IsNullOrEmpty(DisplayName) ? ConfigKey.Value : DisplayName;
+}

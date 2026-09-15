@@ -80,7 +80,7 @@ public partial class RoomInfo : Container {
     /// <param name="room">房间列表条目。</param>
     public void UpdateListing(RoomListing room) {
         RoomId = room.RoomId;
-        _dungeonText = ServiceLocator.ModAssets?.Dungeon(room.DungeonKey)?.DisplayName ?? room.DungeonKey;
+        _dungeonText = ServiceLocator.ModAssets?.Dungeon(room.DungeonKey)?.DisplayLabel ?? room.DungeonKey;
         _passwordText = room.HasPassword ? "🔒" : "";
         _statusText = GetStatusText(room.Status);
         _hostText = $"房主: {room.HostName}";
