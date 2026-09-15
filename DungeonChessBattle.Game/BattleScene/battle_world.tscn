@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://cqa42iddtybum" path="res://effects/target_mark/node_3d_target_mark.tscn" id="34_7m0x"]
 [ext_resource type="Script" uid="uid://c83a7urju38u0" path="res://effects/target_mark/UnitTargetMarks.cs" id="35_7m0y"]
 [ext_resource type="Script" uid="uid://c0sf7o0laqf4q" path="res://BattleScene/BattleSessionContext.cs" id="37_battleSession"]
+[ext_resource type="Script" uid="uid://bpusgbf76qchc" path="res://BattleScene/DungeonEnvironmentManager.cs" id="38_dungeonEnv"]
 [ext_resource type="Script" uid="uid://bq41bupgt5ami" path="res://GamePlayUI/state_bar/state_bar_2d/StateBar2d_LocalPlayer.cs" id="40_localplayer"]
 [ext_resource type="PackedScene" uid="uid://daxkf4sb5aeqp" path="res://GamePlayUI/battle_event_log/battle_event_log_panel.tscn" id="41_evtlog"]
 
@@ -37,6 +38,10 @@ shader_parameter/outline_width = 0.002
 
 [node name="BattleSessionContext" type="Node" parent="." unique_id=1868664181]
 script = ExtResource("37_battleSession")
+
+[node name="DungeonEnvironmentManager" type="Node3D" parent="." unique_id=1923057468 node_paths=PackedStringArray("_sessionRef")]
+script = ExtResource("38_dungeonEnv")
+_sessionRef = NodePath("../BattleSessionContext")
 
 [node name="BattleInputController" type="Node" parent="." unique_id=1868664180 node_paths=PackedStringArray("sessionRef", "cameraRef")]
 script = ExtResource("32_piuq")
@@ -214,9 +219,9 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 26.0
-offset_top = -211.0
+offset_top = -288.0
 offset_right = 323.0
-offset_bottom = -34.0
+offset_bottom = -111.0
 grow_vertical = 0
 _sessionRef = NodePath("../../BattleSessionContext")
 
