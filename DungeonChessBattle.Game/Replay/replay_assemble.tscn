@@ -11,7 +11,6 @@ _replayUI = NodePath("ReplayUI")
 _sessionContext = NodePath("BattleScene/BattleSessionContext")
 
 [node name="ReplayUI" type="Control" parent="." unique_id=85086063]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,9 +37,9 @@ _coordinator = NodePath("../..")
 [node name="ReplayInputPanel" parent="ReplayUI" unique_id=1734829017 node_paths=PackedStringArray("_coordinator") instance=ExtResource("4_inputpanel")]
 layout_mode = 0
 offset_left = 29.0
-offset_top = 121.0
+offset_top = 83.0
 offset_right = 302.0
-offset_bottom = 380.0
+offset_bottom = 342.0
 _coordinator = NodePath("../..")
 
 [node name="BattleScene" parent="." unique_id=2060186014 instance=ExtResource("2_world")]
