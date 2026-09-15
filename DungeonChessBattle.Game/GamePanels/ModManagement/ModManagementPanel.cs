@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Linq;
 using DungeonChessBattle.Game.Mod.Manager;
 using DungeonChessBattle.Game.Services;
@@ -139,10 +141,15 @@ public partial class ModManagementPanel : BaseGamePanel {
         Refresh();
     }
 
-    /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找存档路径。成功即不留提示。</summary>
+    /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找游戏目录。成功即不留提示。</summary>
     private void OnOpenFolderPressed() {
-        if (DirAccess.MakeDirRecursiveAbsolute(ModManager.ModsRootGodotPath) != Error.Ok)
-            _logger.LogWarning("创建 mods 目录失败：{Path}", ModManager.ModsRootPath);
+        try {
+            Directory.CreateDirectory(ModManager.ModsRootPath);
+        }
+        catch (Exception ex) {
+            // 建目录失败不阻断打开：目录已存在即无碍，其余结果由 ShellOpen 提示用户
+            _logger.LogWarning(ex, "创建 mods 目录失败：{Path}", ModManager.ModsRootPath);
+        }
 
         if (OS.ShellOpen($"file://{ModManager.ModsRootPath}") != Error.Ok) {
             _logger.LogWarning("打开 mods 目录被系统拒绝");

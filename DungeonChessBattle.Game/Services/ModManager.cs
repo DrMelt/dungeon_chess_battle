@@ -14,19 +14,16 @@ namespace DungeonChessBattle.Game.Services;
 /// <summary>
 /// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配 → 展示覆盖巡检。
 /// 主场景 _Ready 首个调用，保证任何 UI 取数前内容已就绪；
-/// 服务器子进程由 ServerProcessHost 注入同一 user://mods，两端读同一启用集与内容即同源。
+/// 服务器子进程由 ServerProcessHost 注入同一 mods 目录绝对路径，两端读同一启用集与内容即同源。
 /// 两次装配的产物分别写入 <see cref="ServiceLocator.GameContent"/> 与 <see cref="ServiceLocator.ModAssets"/>，
 /// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
 public static class ModManager {
-    /// <summary>mods 根目录的 Godot 路径，指向 user:// 下存放 mod 包的目录。</summary>
-    // Godot user:// 虚拟路径，非文件系统绝对路径，S1075 误报
-#pragma warning disable S1075
-    public const string ModsRootGodotPath = "user://mods";
-#pragma warning restore S1075
+    /// <summary>mods 目录名，位于游戏可执行文件所在目录下。</summary>
+    private const string ModsDirName = "mods";
 
-    /// <summary>mods 根目录绝对路径。</summary>
-    public static string ModsRootPath => ProjectSettings.GlobalizePath(ModsRootGodotPath);
+    /// <summary>mods 根目录绝对路径：游戏可执行文件所在目录下的 mods。</summary>
+    public static string ModsRootPath => OS.GetExecutablePath().GetBaseDir().PathJoin(ModsDirName);
 
     private static readonly ILogger Logger = ServiceLocator.CreateLogger(nameof(ModManager));
 

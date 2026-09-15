@@ -55,7 +55,7 @@ public static class ServiceLocator {
     public static readonly IServerHost ServerService = new ServerProcessHost(
         LoggerFactoryInstance.CreateLogger<ServerProcessHost>(),
         new ServerProcessConfig {
-            ModDirectory = ProjectSettings.GlobalizePath(ModManager.ModsRootGodotPath),
+            ModDirectory = ModManager.ModsRootPath,
         });
 
     private static GameClientService? _clientService;
