@@ -1,8 +1,8 @@
 ﻿using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Client.Diagnostics;
 using DungeonChessBattle.Lobby.Client;
+using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
-using DungeonChessBattle.Battle.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -43,9 +43,6 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory, ICli
     // 加入房间时暂存的 roomId，房间端口连接成功后通过 OnRoomJoined 通知 UI
     private string? _pendingJoinRoomId;
     private const double ConnectTimeoutSeconds = 10.0;
-
-    /// <summary>默认大厅端口。</summary>
-    public const int DefaultPort = NetworkDefaults.LobbyPort;
 
     // 身份与会话缓存
 
@@ -144,11 +141,11 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory, ICli
     // 连接管理
 
     /// <summary>
-    /// 连接服务器大厅，默认大厅端口。
+    /// 连接服务器大厅，端口未指定时取大厅默认端口。
     /// </summary>
     /// <param name="host">服务器主机地址。</param>
     /// <param name="port">大厅端口。</param>
-    public void Connect(string host, int port = DefaultPort) {
+    public void Connect(string host, int port = LobbyTransport.DefaultPort) {
         if (IsConnected) {
             _logger.LogWarning("已连接到服务器");
             return;

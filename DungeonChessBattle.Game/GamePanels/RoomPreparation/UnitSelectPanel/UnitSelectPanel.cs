@@ -50,7 +50,7 @@ public partial class UnitSelectPanel : BaseGamePanel {
         foreach (Node child in _refs.UnitCardGrid.GetChildren())
             child.QueueFree();
 
-        foreach (var config in UnitCatalog.All) {
+        foreach (var config in ServiceLocator.GameContent.Units.All) {
             // 只展示玩家可选单位
             if (!config.IsPlayerSelectable)
                 continue;

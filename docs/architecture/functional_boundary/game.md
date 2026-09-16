@@ -5,15 +5,15 @@
 ## 职责
 
 - 装配客户端服务与服务器子进程，驱动网络与输入。
-- 路由战斗进出，互斥加载与释放战斗/回放两套组装场景，统一编排屏幕状态。
+- 路由战斗进出，互斥加载与释放战斗/回放两套组装场景，统一收发前厅图层显隐。
 - 以统一数据源承载战斗会话读数，按装配切换在线与回放两路取数。
 - 组装单位视图，经展示取数入口定制单位外观，未声明回落共享模板。
 - 经唯一展示取数入口按内容键读取技能、Buff、单位、副本展示数据，条目缺席即由消费方回退内容键，展示用名称由展示数据自身回退；技能范围提示与副本环境场景随 mod 包提供。
 - 经数据面装配产物取单位目录、内容注册表与内容修订号，供单位选择、副本环境实例化与内容一致性门控。
 - mod 装配编排：扫描后交 Battle.Mod.Manager 做数据面装配，把资源包挂载一步交进展示装配；挂载步骤兼把展示程序集里的脚本类注册进引擎脚本系统；装配后巡检内容条目与展示条目的覆盖差，缺展示数据记告警并按内容键降级展示，不计入装配错误；装配产物交宿主持有。
-- 引擎自身场景与 UI 的脚本类与资源路径留在本工程；表现效果资源随 mod 包提供。
+- 引擎自身场景与 UI 的脚本类与资源路径留在本工程，宿主设置驱动的通用标记随其留在本工程；内容相关表现效果资源随 mod 包提供。
 - 采集战斗输入与目标拾取。
-- 全部界面：主菜单、大厅、房间准备、单位选择、mod 管理与战斗 HUD。mod 管理面板只呈现扫描结果与启停转达。
+- 全部界面：主菜单、大厅、房间准备、单位选择、mod 管理、战斗 HUD 与网络调试覆盖层。mod 管理面板只呈现扫描结果与启停转达。
 - 以子进程拉起与停止服务器，状态供 UI 查询。
 
 ## 边界外
@@ -25,5 +25,5 @@
 
 ## 依赖
 
-- Client、Battle.Client、Lobby.Shared、Lobby.Protocol、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Battle.Config.Registry、Replay、Replay.Shared、Replay.Protocol、Replay.Client、Game.Shared、Game.Mod.Shared、Game.Mod.Manager。
-- 不直连：Lobby.Client 经 Client 门面组装；Battle.Mod.Manager、Battle.Mod.Interface 与 Battle.Mod.Shared 经 Game.Mod.Manager 间接进入；Game.Mod.Interface 只面向 mod。
+- Client、Battle.Client、Lobby.Shared、Lobby.Protocol、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Battle.Config.Registry、Battle.Mod.Manager、Replay、Replay.Shared、Replay.Protocol、Replay.Client、Game.Shared、Game.Mod.Shared、Game.Mod.Manager。
+- 不直连：Lobby.Client 经 Client 门面组装；Battle.Mod.Interface 与 Battle.Mod.Shared 经 Battle.Mod.Manager 传递可见；Game.Mod.Interface 只面向 mod。

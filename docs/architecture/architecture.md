@@ -67,6 +67,7 @@ graph TD
     Engine --> Client
     Engine --> BattleClient
     Engine --> ConfigRegistry
+    Engine --> BattleMod
     Engine --> Logic
     Engine --> Entities
     Engine --> Shared
@@ -164,6 +165,7 @@ graph TD
     Host --> ConfigRegistry
     Host --> BattleSrvShared
     Host --> Entities
+    Host --> LobbyProtocol
     Host --> LobbySrv
     Host --> BattleSrv
     Host --> ReplaySrv

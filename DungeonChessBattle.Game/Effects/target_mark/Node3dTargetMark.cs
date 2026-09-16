@@ -2,7 +2,7 @@ using System;
 using DungeonChessBattle.Battle.Shared.Camp;
 using Godot;
 
-namespace DungeonChessBattle.Effects;
+namespace DungeonChessBattle.Game.Effects;
 
 /// <summary>
 /// 目标标记节点：用于在棋盘上显示单位的目标圈标记，并根据阵营关系着色。

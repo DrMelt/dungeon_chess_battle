@@ -156,7 +156,7 @@ public partial class BattleRoomServer : INetEventListener {
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
             typesMap,
-            NetworkDefaults.PacketHeader,
+            BattleRoomProtocol.PacketHeader,
             framesPerSecond: FramesPerSecond,
             sendRate: ServerSendRate.EqualToFPS);
 

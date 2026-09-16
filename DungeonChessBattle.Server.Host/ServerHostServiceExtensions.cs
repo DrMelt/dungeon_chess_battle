@@ -1,4 +1,3 @@
-using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Server;
 using DungeonChessBattle.Battle.Config.Shared.Content;
@@ -25,12 +24,12 @@ public static class ServerHostServiceExtensions {
             new PlayerIdentityResolver(sp.GetRequiredService<IGameStateStore>()));
         // 内容由入口装配一次，这里登记装配产物的只读面与单位目录供大厅与房间消费
         services.AddSingleton<IContentRegistryView>(content.Registry);
-        services.AddSingleton<IUnitRegistry>(content.Units);
+        services.AddSingleton(content.Units);
 
         services.AddLobbyServer(new LobbyServerConfig { ServerPassword = config.ServerPassword });
         // 有服务器密码时以密码为房间握手指纹，否则用协议默认连接密钥
         services.AddBattleServer(new BattleServerConfig {
-            ConnectionKey = config.ServerPassword ?? NetworkDefaults.ConnectionKey,
+            ConnectionKey = config.ServerPassword ?? BattleServerConfig.DefaultConnectionKey,
         });
         services.AddReplayServer();
         services.AddSignalR();

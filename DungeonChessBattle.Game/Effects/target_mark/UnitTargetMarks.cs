@@ -8,7 +8,7 @@ using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Effects;
+namespace DungeonChessBattle.Game.Effects;
 
 /// <summary>
 /// 单位目标标记管理器，为场景中单位生成对应的 3D 目标标记并跟随单位位置。

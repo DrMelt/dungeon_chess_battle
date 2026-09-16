@@ -1,6 +1,7 @@
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Lobby.Protocol;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -32,7 +33,7 @@ public partial class ServerManagementPanel : BaseGamePanel {
             return;
         }
 
-        InterRefs?.PortInput?.Text = ServiceLocator.DefaultPort.ToString();
+        InterRefs?.PortInput?.Text = LobbyTransport.DefaultPort.ToString();
         InterRefs?.StartButton?.Pressed += OnStartPressed;
         var stopBtn = InterRefs?.StopButton;
         if (stopBtn is not null) {

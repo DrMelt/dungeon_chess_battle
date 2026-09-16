@@ -120,7 +120,7 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         }
         _selectedUnitKey = unitConfigKey;
-        var config = UnitCatalog.GetByKey(unitConfigKey);
+        var config = ServiceLocator.GameContent.Units.GetByKey(unitConfigKey);
         if (config is not null)
             InterRefs?.StatusLabel?.Text = $"已选择: {config.ConfigKey}";
         AddUnit();
@@ -133,7 +133,7 @@ public partial class RoomPreparation : BaseGamePanel {
         if (string.IsNullOrEmpty(_selectedUnitKey))
             return;
 
-        var config = UnitCatalog.GetByKey(_selectedUnitKey);
+        var config = ServiceLocator.GameContent.Units.GetByKey(_selectedUnitKey);
         if (config is null)
             return;
         string configKey = config.ConfigKey;
@@ -297,7 +297,7 @@ public partial class RoomPreparation : BaseGamePanel {
             var card = InterRefs.UnitCardScene.Instantiate<UnitCard>();
             string? unitConfigKey = snapshot?.Units.FirstOrDefault(u => u.PlayerName == player.PlayerName)?.UnitConfigKey;
 
-            if (unitConfigKey != null && UnitCatalog.GetByKey(unitConfigKey) is { } config) {
+            if (unitConfigKey != null && ServiceLocator.GameContent.Units.GetByKey(unitConfigKey) is { } config) {
                 // 已选择职业：展示职业名 + 玩家名 + 真实 HP 数值
                 card.SetupUnit(config.ConfigKey, config.BaseConfig.MaxHealth);
                 card.SetUserName(player.PlayerName);

@@ -6,11 +6,11 @@ using DungeonChessBattle.Replay.Shared;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.MainScene;
+namespace DungeonChessBattle.Game.MainScene;
 
 /// <summary>
 /// 主场景入口脚本，挂载到 MainScene 根节点。
-/// 负责服务事件订阅转发、屏幕状态机仲裁，以及战斗/回放两套完整组装场景的互斥加载与释放：
+/// 负责服务事件订阅转发、前厅图层显隐仲裁，以及战斗/回放两套完整组装场景的互斥加载与释放：
 /// 进入战斗实例化 battle 组装场景（根即 BattleCoordinator），启动回放实例化 replay 组装场景
 /// （根即 ReplayCoordinator，自带回放表现），退出即释放，同一时刻至多存在一套。
 /// 战斗子系统生命周期编排归 BattleCoordinator，回放引擎生命周期归 ReplayCoordinator，本节点不碰其内部。
@@ -18,14 +18,6 @@ namespace DungeonChessBattle.MainScene;
 public partial class MainScene : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<MainScene> _logger = ServiceLocator.GetLogger<MainScene>();
-
-    #region Signals
-
-    /// <summary>战斗结束信号：通知外部监听方（如 UI）战斗编排已退出、回到前厅。</summary>
-    [Signal]
-    public delegate void BattleEndedEventHandler();
-
-    #endregion
 
     #region Exports
 
@@ -44,8 +36,8 @@ public partial class MainScene : Node {
 
     #region State
 
-    /// <summary>前端屏幕状态机，统一仲裁 FrontUI 容器显隐与屏幕态。</summary>
-    private ScreenStateMachine? _screenMachine;
+    /// <summary>前厅图层仲裁，统一收发 FrontUI 容器显隐。</summary>
+    private FrontLayer? _frontLayer;
 
     /// <summary>在场战斗组装场景，未在战斗中为 null。</summary>
     private BattleCoordinator? _battleCoordinator;
@@ -65,7 +57,7 @@ public partial class MainScene : Node {
     }
 
     /// <summary>
-    /// 节点就绪：校验导出引用、订阅战斗服务事件、构造屏幕状态机。
+    /// 节点就绪：校验导出引用、订阅战斗服务事件、构造前厅图层仲裁。
     /// </summary>
     public override void _Ready() {
         ValidateExports();
@@ -75,7 +67,7 @@ public partial class MainScene : Node {
         // 订阅战斗会话终结事件：重连失败或完全断开时退出战斗
         ServiceLocator.ClientService.OnBattleSessionLost += OnBattleSessionLost;
 
-        _screenMachine = new ScreenStateMachine(_frontUI);
+        _frontLayer = new FrontLayer(_frontUI);
 
         _logger.LogInformation("_Ready Initialized.");
     }
@@ -93,7 +85,7 @@ public partial class MainScene : Node {
     // 进入/退出战斗
     // =============================================================
 
-    /// <summary>进入战斗：加载战斗组装场景并驱动其编排器，首次进入交屏幕态机切战斗态。</summary>
+    /// <summary>进入战斗：加载战斗组装场景并驱动其编排器，首次进入隐藏前厅图层。</summary>
     private void OnBattleStarted(string roomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Battle started for room: {RoomId}", roomId);
@@ -106,7 +98,7 @@ public partial class MainScene : Node {
         // 重连恢复由 BattleCoordinator.EnterBattle 内部处理（先退出旧绑定再重入）
         coordinator.EnterBattle(roomId);
         if (!wasInBattle)
-            _screenMachine?.EnterBattle();
+            _frontLayer?.EnterBattle();
 
         _logger.LogInformation("Entered battle.");
     }
@@ -140,9 +132,8 @@ public partial class MainScene : Node {
         coordinator.QueueFree();
 
         // 恢复前厅 UI（FrontUI 容器 + 大厅面板）
-        _screenMachine?.ExitBattle();
+        _frontLayer?.ExitBattle();
 
-        EmitSignal(SignalName.BattleEnded);
         _logger.LogInformation("Exited battle.");
     }
 
@@ -184,8 +175,8 @@ public partial class MainScene : Node {
         return true;
     }
 
-    /// <summary>回放启动：经屏幕态机进入回放态，隐藏前厅。</summary>
-    private void OnReplayStarted() => _screenMachine?.EnterReplay();
+    /// <summary>回放启动：隐藏前厅图层。</summary>
+    private void OnReplayStarted() => _frontLayer?.EnterReplay();
 
     /// <summary>回放结束：释放回放组装场景并恢复前厅。</summary>
     private void OnReplayFinished() {
@@ -197,7 +188,7 @@ public partial class MainScene : Node {
         replay.ReplayStarted -= OnReplayStarted;
         replay.ReplayFinished -= OnReplayFinished;
         replay.QueueFree();
-        _screenMachine?.ExitReplay();
+        _frontLayer?.ExitReplay();
     }
 
     /// <summary>

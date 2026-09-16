@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Lobby.Protocol;
 
 namespace DungeonChessBattle.Server.Host;
 
@@ -8,11 +9,8 @@ namespace DungeonChessBattle.Server.Host;
 /// 环境变量名与子进程跨进程约定 <see cref="ServerProcessEnv"/> 保持单一来源。
 /// </summary>
 public sealed record ServerConfig {
-    /// <summary>默认大厅监听端口。</summary>
-    public const int DefaultPort = NetworkDefaults.LobbyPort;
-
     /// <summary>大厅监听端口。</summary>
-    public int LobbyPort { get; init; } = DefaultPort;
+    public int LobbyPort { get; init; } = LobbyTransport.DefaultPort;
 
     /// <summary>服务器访问密码；为空表示不启用。</summary>
     public string? ServerPassword {
@@ -34,7 +32,7 @@ public sealed record ServerConfig {
     /// 命令行：--port &lt;端口&gt;、--mod-dir &lt;路径&gt;；环境变量见 <see cref="ServerProcessEnv"/>。
     /// </summary>
     public static ServerConfig Load(string[] args) {
-        int port = DefaultPort;
+        int port = LobbyTransport.DefaultPort;
         if (int.TryParse(GetArg(args, "--port"), out int parsedPort) && parsedPort is > 0 and <= 65535)
             port = parsedPort;
 

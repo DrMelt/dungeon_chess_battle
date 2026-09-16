@@ -144,7 +144,7 @@ public partial class SkillsList : Control {
         if (unit == null || packedScene == null)
             return;
 
-        var config = UnitCatalog.GetByKey(unit.UnitName);
+        var config = ServiceLocator.GameContent.Units.GetByKey(unit.UnitName);
         if (config == null)
             return;
 

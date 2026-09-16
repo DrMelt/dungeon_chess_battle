@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using DungeonChessBattle.Battle.Entities;
 using LiteNetLib;
 using Microsoft.Extensions.Logging;
 
@@ -19,11 +18,6 @@ public abstract class NetworkClientBase : INetEventListener {
     /// <summary>日志记录器。</summary>
     protected readonly ILogger _logger;
 
-    /// <summary>默认连接密钥，收口于 Battle.Entities.NetworkDefaults。</summary>
-    public const string ConnectionKey = NetworkDefaults.ConnectionKey;
-    /// <summary>默认服务端端口。</summary>
-    protected const int DefaultPort = NetworkDefaults.LobbyPort;
-
     /// <summary>完全连接成功事件。</summary>
     public event Action? OnFullyConnected;
     /// <summary>完全断开连接事件。</summary>
@@ -39,16 +33,7 @@ public abstract class NetworkClientBase : INetEventListener {
     }
 
     /// <summary>
-    /// 使用默认连接密钥连接到指定主机。
-    /// </summary>
-    /// <param name="host">目标主机地址。</param>
-    /// <param name="port">目标端口，默认使用 <see cref="DefaultPort"/>。</param>
-    public virtual void Connect(string host, int port = DefaultPort) {
-        Connect(host, port, ConnectionKey);
-    }
-
-    /// <summary>
-    /// 使用自定义连接密钥连接。
+    /// 连接到指定主机与端口，用给定连接密钥握手。
     /// </summary>
     public virtual void Connect(string host, int port, string connectionKey) {
         _netClient.Start();
@@ -57,14 +42,7 @@ public abstract class NetworkClientBase : INetEventListener {
 
     /// <summary>
     /// 复用当前实例重连到新地址，不清空对象和事件订阅。
-    /// 先执行 Disconnect 级别的清理，不触发 OnFullyDisconnected，再连接新地址。
-    /// </summary>
-    public virtual void Reconnect(string host, int port) {
-        Reconnect(host, port, ConnectionKey);
-    }
-
-    /// <summary>
-    /// 使用自定义连接密钥重连。
+    /// 先执行 Disconnect 级别的清理，不触发 OnFullyDisconnected，再用给定连接密钥连接新地址。
     /// </summary>
     public virtual void Reconnect(string host, int port, string connectionKey) {
         OnReconnectCleanup();

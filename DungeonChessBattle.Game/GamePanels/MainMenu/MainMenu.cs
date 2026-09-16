@@ -2,6 +2,7 @@ using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Lobby.Protocol;
 
 namespace DungeonChessBattle.Game.GamePanels;
 
@@ -14,10 +15,6 @@ namespace DungeonChessBattle.Game.GamePanels;
 public partial class MainMenu : BaseGamePanel {
     /// <summary>日志记录器。</summary>
     private readonly ILogger<MainMenu> _logger = ServiceLocator.GetLogger<MainMenu>();
-
-    /// <summary>服务器连接成功信号。</summary>
-    [Signal]
-    public delegate void ServerConnectedEventHandler();
 
     #region References
 
@@ -67,7 +64,7 @@ public partial class MainMenu : BaseGamePanel {
         _gameLobby?.Visible = false;
 
         // 默认端口
-        InterRefs?.PortInput?.Text = ServiceLocator.DefaultPort.ToString();
+        InterRefs?.PortInput?.Text = LobbyTransport.DefaultPort.ToString();
     }
 
     /// <summary>
@@ -162,7 +159,6 @@ public partial class MainMenu : BaseGamePanel {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("连接成功: {Host}:{Port}", host, port);
             UpdateStatus($"已连接到 {host}:{port}");
-            EmitSignal(SignalName.ServerConnected);
             // 切换界面：隐藏主菜单，显示大厅
             NavigateTo(_gameLobby);
         }

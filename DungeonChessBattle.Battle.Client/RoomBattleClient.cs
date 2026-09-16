@@ -251,7 +251,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
             HandleReliableServerMessage(body);
             return;
         }
-        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader)
+        if (data.Length > 0 && data[0] == BattleRoomProtocol.PacketHeader)
             _entityManager?.Deserialize(data);
     }
 
@@ -294,7 +294,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         var countingPeer = new CountingNetPeer(lesPeer);
         _countingPeer = countingPeer;
         var typesMap = EntityTypesRegistry.EntityTypesMap;
-        _entityManager = new ClientEntityManager(typesMap, countingPeer, NetworkDefaults.PacketHeader) {
+        _entityManager = new ClientEntityManager(typesMap, countingPeer, BattleRoomProtocol.PacketHeader) {
             // 重设两级缓冲水位：默认值在 128 Hz 下折成 3.2/6.4 tick，本地回环的 TickLag 几乎全由此撑起。
             // 该水位只够本地链路，公网部署需按 RTT 与抖动分档，否则插值饥饿。
             PreferredBufferTimeLowest = BufferLowestSeconds,

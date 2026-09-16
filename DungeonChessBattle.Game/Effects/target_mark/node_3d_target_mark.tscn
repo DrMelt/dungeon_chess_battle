@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://cqa42iddtybum"]
 
-[ext_resource type="Texture2D" uid="uid://bqsyuvsy3u8fd" path="res://effects/target_mark/target_mark_white.png" id="1_ehvke"]
-[ext_resource type="Script" uid="uid://jhy8a4dd3ple" path="res://effects/target_mark/Node3dTargetMark.cs" id="1_mdwx6"]
+[ext_resource type="Texture2D" uid="uid://dipwtplnftpg6" path="res://Effects/target_mark/target_mark_white.png" id="1_ehvke"]
+[ext_resource type="Script" uid="uid://b6iylrfaqp7gm" path="res://Effects/target_mark/Node3dTargetMark.cs" id="1_mdwx6"]
 [ext_resource type="Resource" uid="uid://b0iwa5usgilno" path="res://GamePlayUI/user_ui_settings/res_user_ui_settings.tres" id="3_savtm"]
-[ext_resource type="Script" uid="uid://c6d2rrkc3xgv3" path="res://effects/target_mark/Node3dTargetMarkInterRefs.cs" id="4_interrefs"]
+[ext_resource type="Script" uid="uid://can81awa2eop8" path="res://Effects/target_mark/Node3dTargetMarkInterRefs.cs" id="4_interrefs"]
 [ext_resource type="Resource" uid="uid://dxc2d4ehwh4ij" path="res://GamePlayUI/user_interface/res_user_interface.tres" id="5_useriface"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_xhqo5"]

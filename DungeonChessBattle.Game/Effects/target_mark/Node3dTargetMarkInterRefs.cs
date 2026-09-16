@@ -3,7 +3,7 @@ using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
 
-namespace DungeonChessBattle.Effects;
+namespace DungeonChessBattle.Game.Effects;
 
 /// <summary>
 /// 目标标记节点的资源引用集合，用于集中管理场景中引用的 UI 资源与贴花。

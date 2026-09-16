@@ -11,16 +11,16 @@ public static class ReliableMessageFrame {
     /// <summary>帧头长度：0xDC 包头与消息类型各一字节。</summary>
     public const int HeaderLength = 2;
 
-    /// <summary>写入帧头：0xDC 包头与可靠消息类型，随后由调用方写消息体。</summary>
+    /// <summary>写入帧头：0xDC 包头与服务器可靠消息类型，随后由调用方写消息体。</summary>
     public static void WriteHeader(NetDataWriter writer) {
-        writer.Put(NetworkDefaults.PacketHeader);
-        writer.Put(NetworkDefaults.ReliableServerMessage);
+        writer.Put(BattleRoomProtocol.PacketHeader);
+        writer.Put(BattleRoomProtocol.ReliableServerMessage);
     }
 
     /// <summary>识别可靠消息帧并返回消息体读取器；非可靠消息帧返回 false，body 未定义。</summary>
     public static bool TryReadBody(ReadOnlySpan<byte> data, [NotNullWhen(true)] out NetDataReader? body) {
-        if (data.Length < HeaderLength || data[0] != NetworkDefaults.PacketHeader
-            || data[1] != NetworkDefaults.ReliableServerMessage) {
+        if (data.Length < HeaderLength || data[0] != BattleRoomProtocol.PacketHeader
+            || data[1] != BattleRoomProtocol.ReliableServerMessage) {
             body = null;
             return false;
         }

@@ -92,7 +92,7 @@ public partial class BattleRoomServer {
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
         var data = reader.GetRemainingBytes();
-        if (data.Length > 0 && data[0] == NetworkDefaults.PacketHeader && peer.Tag is LiteNetLibNetPeer lesPeer)
+        if (data.Length > 0 && data[0] == BattleRoomProtocol.PacketHeader && peer.Tag is LiteNetLibNetPeer lesPeer)
             EntityManager.Deserialize(lesPeer, data);
         // 房间端口不处理 JSON 自定义包，所有逻辑走 LES RPC
     }

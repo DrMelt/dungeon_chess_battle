@@ -5,7 +5,7 @@ using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
-using MainSceneNode = DungeonChessBattle.MainScene.MainScene;
+using MainSceneNode = DungeonChessBattle.Game.MainScene.MainScene;
 
 namespace DungeonChessBattle.Game.ReplayUI;
 
@@ -13,7 +13,7 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// 回放入口面板：呈现由回放浏览服务裁决好的行视图列表，逐行卡片，下载与播放各自独立。
 /// 本面板不保存过程状态（列表、在途与进度皆在 ReplayService），_Process 每帧消费行视图结论渲染。
 /// 每行有下载按钮（只获取）与播放按钮（显式启动回放）。
-/// 前厅页面之一，打开与返回走 BaseGamePanel 导航链；屏幕态交 ReplayCoordinator 信号仲裁。
+/// 前厅页面之一，打开与返回走 BaseGamePanel 导航链；前厅图层显隐交 ReplayCoordinator 信号仲裁。
 /// 回放组装场景互斥加载，播放请求经导出的 <see cref="MainSceneNode"/> 装配启动，本面板不接触回放引擎与编排器。
 /// </summary>
 public partial class ReplayPanel : BaseGamePanel {

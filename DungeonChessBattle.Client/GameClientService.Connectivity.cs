@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DungeonChessBattle.Lobby.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
 
@@ -113,7 +114,7 @@ public sealed partial class GameClientService {
         if (!_lobbyClient.IsConnected) {
             // 事件驱动：大厅连接建立后自动登录，登录结果回调再发送重连请求，避免竞态
             _reconnectPendingLogin = true;
-            _lobbyClient.Connect(Host, DefaultPort);
+            _lobbyClient.Connect(Host, LobbyTransport.DefaultPort);
         }
         else {
             SendReconnectRequest(); // 大厅已连接且登录会话有效，直接发送

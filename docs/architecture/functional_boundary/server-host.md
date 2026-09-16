@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Battle.Config.Registry、Battle.Entities、Battle.Server.Shared、Server.DataStore.Shared、Lobby.Server、Battle.Server、Replay.Server、Battle.Mod.Manager、Server.DataStore。
+- Battle.Config.Registry、Battle.Entities、Battle.Server.Shared、Server.DataStore.Shared、Lobby.Protocol、Lobby.Server、Battle.Server、Replay.Server、Battle.Mod.Manager、Server.DataStore。

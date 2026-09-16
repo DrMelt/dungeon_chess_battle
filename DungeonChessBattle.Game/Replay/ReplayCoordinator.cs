@@ -13,14 +13,14 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// 把回放装配 <see cref="ReplayBattleViewSource"/> 注入共享 <see cref="BattleSessionContext"/> 作为表现层统一数据源，
 /// 同场景的单位展示与浮字组件自持该数据源，与在线同口径驱动。提供播放/暂停/倍速/拖动控制。
 /// 组装场景由 MainScene 在 StartReplay 时实例化、回放结束时释放；本节点管引擎生命周期与回放表现（ReplayUI）显隐。
-/// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换屏幕态。
+/// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换前厅图层显隐。
 /// </summary>
 public partial class ReplayCoordinator : Node {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ReplayCoordinator> _logger =
         ServiceLocator.GetLogger<ReplayCoordinator>();
 
-    /// <summary>回放已启动信号：字节流加载成功，通知主场景切换屏幕态。</summary>
+    /// <summary>回放已启动信号：字节流加载成功，通知主场景隐藏前厅。</summary>
     [Signal]
     public delegate void ReplayStartedEventHandler();
 
@@ -105,7 +105,7 @@ public partial class ReplayCoordinator : Node {
         _engine.SeekTo(Math.Clamp(frame, 0, _engine.TotalFrames));
     }
 
-    /// <summary>退出回放：解绑统一数据源，释放引擎并恢复屏幕态。</summary>
+    /// <summary>退出回放：解绑统一数据源，释放引擎并恢复前厅。</summary>
     public void ExitReplay() {
         if (!IsActive)
             return;

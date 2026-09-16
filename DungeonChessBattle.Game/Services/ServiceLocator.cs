@@ -16,9 +16,6 @@ namespace DungeonChessBattle.Game.Services;
 /// 创建 ILoggerFactory（Console + Godot Provider），注入 Logger 到各 Service。
 /// </summary>
 public static class ServiceLocator {
-    /// <summary>默认服务器端口。</summary>
-    public const int DefaultPort = NetworkDefaults.LobbyPort;
-
     /// <summary>日志工厂实例（Godot 控制台 Provider）。此处限定框架类型名：本类的 LoggerFactory 属性与它同名。</summary>
     private static readonly ILoggerFactory LoggerFactoryInstance =
         Microsoft.Extensions.Logging.LoggerFactory.Create(builder => {

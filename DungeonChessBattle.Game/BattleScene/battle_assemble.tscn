@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dyerv0mdh12tu"]
 
 [ext_resource type="Script" uid="uid://bolcdqihs7w6m" path="res://BattleScene/BattleCoordinator.cs" id="1_coord"]
-[ext_resource type="PackedScene" path="res://BattleScene/battle_world.tscn" id="2_world"]
+[ext_resource type="PackedScene" uid="uid://cbefmmi22rp07" path="res://BattleScene/battle_world.tscn" id="2_world"]
 
 [node name="BattleCoordinator" type="Node" unique_id=1868664182 node_paths=PackedStringArray("_sessionContext", "_inputController")]
 process_priority = -1
