@@ -28,7 +28,7 @@ if (ParentProcessWatcher.IsParentGone(config)) {
 }
 
 // ASP.NET Core Kestrel 与 SignalR 大厅服务宿主
-var host = new GameServerHost(loggerFactory, config, boot.Content);
+var host = new GameServerHost(loggerFactory, config, boot.Registry);
 if (!host.Start())
     return 1;
 

@@ -14,12 +14,12 @@ namespace DungeonChessBattle.Server.Host;
 /// </summary>
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="config">服务器配置。</param>
-/// <param name="content">入口装配产出的内容，经 DI 分发给大厅与房间。</param>
-public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config, GameContent content) {
+/// <param name="content">入口装配产出的内容注册表，经 DI 分发给大厅与房间。</param>
+public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config, ContentSetRegistry content) {
     private readonly ILogger<GameServerHost> _logger = loggerFactory.CreateLogger<GameServerHost>();
     private readonly Lock _lock = new();
     private readonly ServerConfig _config = config;
-    private readonly GameContent _content = content;
+    private readonly ContentSetRegistry _content = content;
     private WebApplication? _app;
     private IHostApplicationLifetime? _lifetime;
     private IBattleRoomManager? _battleRoomManager;

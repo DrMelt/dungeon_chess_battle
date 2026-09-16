@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DungeonChessBattle.Battle.Config.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Replay.Client;
 using DungeonChessBattle.Replay.Protocol.Dtos;

@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Config.Shared;
 using DungeonChessBattle.Battle.Config.Shared.Buffs;
 using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Config.Shared.Content;

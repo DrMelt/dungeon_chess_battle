@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Game.Display.Registry\DungeonChessBattle.Game.Display.Registry.csproj" />
   </ItemGroup>
 
 </Project>

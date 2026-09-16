@@ -1,10 +1,9 @@
 ﻿using System.Collections.Concurrent;
-using DungeonChessBattle.Battle.Config.Registry;
-using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Battle.Config.Shared;
 
 namespace DungeonChessBattle.Battle.Server;
 
@@ -23,17 +22,15 @@ namespace DungeonChessBattle.Battle.Server;
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="config">战斗侧配置切片，房间端口池起点。</param>
 /// <param name="replayStore">回放存储，房间销毁时归档战斗输入回放。</param>
-/// <param name="unitRegistry">单位目录，房间单位装配权威来源。</param>
-/// <param name="content">内容注册表只读视图，房间副本配置与录制回放修订号来源。</param>
+/// <param name="content">内容注册表只读视图，房间副本配置、单位配置与录制回放修订号来源。</param>
 public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     BattleServerConfig config, IReplayStore replayStore,
-    IUnitRegistry unitRegistry, IContentRegistryView content) : IBattleRoomManager {
+    IContentRegistryView content) : IBattleRoomManager {
     private readonly ILogger<BattleRoomManager> _logger = loggerFactory.CreateLogger<BattleRoomManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly BattleServerConfig _config = config;
     private readonly IReplayStore _replayStore = replayStore;
-    private readonly IUnitRegistry _unitRegistry = unitRegistry;
     private readonly IContentRegistryView _content = content;
 
     /// <summary>房间服务器注册表，线程安全。准备阶段房间不在此表中。</summary>
@@ -104,7 +101,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         int port = AllocatePort();
         var server = new BattleRoomServer(port, roomId,
             _loggerFactory,
-            _config, _stateStore, _unitRegistry, _content);
+            _config, _stateStore, _content);
         server.Start();
 
         // 房间全部活跃连接断开后自动销毁，闭合 RoomEmpty 事件链，仅入队

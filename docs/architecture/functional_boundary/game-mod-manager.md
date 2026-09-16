@@ -1,15 +1,14 @@
 # DungeonChessBattle.Game.Mod.Manager
 
-引擎端 mod 子系统：mod 包管理、展示装配全过程、展示注册表与统一获取入口。只被 Game 引用，服务端程序集不携带。与数据面 Battle.Mod.Manager 的分工：数据面管包形态与内容装配，本库管展示装配与用户管理。
+引擎端 mod 子系统：mod 包管理、展示装配全过程与装配产物。只被 Game 引用，服务端程序集不携带。与数据面 Battle.Mod.Manager 的分工：数据面管包形态与内容装配，本库管展示装配与用户管理。
 
 ## 职责
 
 - mod 管理：扫描 mods 根目录，产出 mod 列表与逐项错误，读写启用集。
 - 展示声明：读清单文件的展示段，把展示入口、依赖探测目录与资源包定位成绝对路径；段缺席即该 mod 无展示面，声明不可用即整体跳过该 mod 的展示面并记错误，不影响数据面装载。
 - 展示装配全过程：由本库按序执行，宿主侧步骤由宿主交入，产物交回宿主。
-- 展示注册表：条目展示数据的读写面，条目同键后注册字段级合并。
 - 装配写面：一个 mod 一个实例，按 mod 归属记录错误，校验展示引用的内容键存在。
-- 条目取数入口：一次装配产出的实例，提供四类条目查询与装配期指纹，并承载启停与重扫等管理动作。
+- 装配产物：一次装配产出的实例，交出展示注册表、mod 管理根与装配期指纹，并承载启停与重扫等管理动作。
 - 过程日志：扫描重扫、启停落盘、展示声明读取与展示装配按自身类别名写入宿主注入的日志通道。
 
 ## 边界外
@@ -18,8 +17,9 @@
 - 不做数据面裁决：数据面清单解析、路径裁决、依赖排序、指纹、启用集落盘与内容注册都在 Battle.Mod.Manager 的数据面装配。本库只经只读视图校验展示键。
 - 不定义数据面清单：顶层字段与拒载裁决归数据面；展示段的段名取自数据面的布局约定，段内字段由本库定义，两侧读同一份文件各取自己的段，互不传递。
 - 不做内容注册：mod 数据入口经 Battle.Mod.Manager 的引导上下文写入 Battle.Config.Registry 内容注册表，本库不中转。
+- 不含注册表实现：展示注册表的读写面实现在 Game.Display.Registry，本库只建表并把装配产物交回宿主。
 - 不持有全局实例：禁止以静态成员在本库持有装配结果或任何可变状态，装配产物一律以实例交回宿主持有。
 
 ## 依赖
 
-- Game.Mod.Interface、Game.Mod.Shared、Game.Shared、Battle.Mod.Manager、Battle.Shared、Battle.Config.Shared。
+- Game.Mod.Interface、Game.Mod.Shared、Game.Shared、Game.Display.Registry、Battle.Mod.Manager、Battle.Shared、Battle.Config.Shared。

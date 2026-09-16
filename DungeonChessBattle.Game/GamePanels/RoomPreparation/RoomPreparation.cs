@@ -95,10 +95,10 @@ public partial class RoomPreparation : BaseGamePanel {
 
         // 内容一致性：房间指纹与服务端指纹不一致即缺 mod 或版本不符，拒绝进入准备
         if (config is not null && !string.IsNullOrEmpty(config.ContentFingerprint)
-            && config.ContentFingerprint != ServiceLocator.GameContent.Registry.DataRevision) {
+            && config.ContentFingerprint != ServiceLocator.ContentRegistry.DataRevision) {
             _logger.LogError(
                 "内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。缺少 mod 或版本不符。",
-                roomId, config.ContentFingerprint, ServiceLocator.GameContent.Registry.DataRevision);
+                roomId, config.ContentFingerprint, ServiceLocator.ContentRegistry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法加入该房间";
             return;
         }
@@ -120,7 +120,7 @@ public partial class RoomPreparation : BaseGamePanel {
             return;
         }
         _selectedUnitKey = unitConfigKey;
-        var config = ServiceLocator.GameContent.Units.GetByKey(unitConfigKey);
+        var config = ServiceLocator.ContentRegistry.GetUnit(unitConfigKey);
         if (config is not null)
             InterRefs?.StatusLabel?.Text = $"已选择: {config.ConfigKey}";
         AddUnit();
@@ -133,14 +133,14 @@ public partial class RoomPreparation : BaseGamePanel {
         if (string.IsNullOrEmpty(_selectedUnitKey))
             return;
 
-        var config = ServiceLocator.GameContent.Units.GetByKey(_selectedUnitKey);
+        var config = ServiceLocator.ContentRegistry.GetUnit(_selectedUnitKey);
         if (config is null)
             return;
         string configKey = config.ConfigKey;
 
         // 阵营选项键由副本配置提供，服务端据此解析实际阵营；当前单阵营取首选项
         string? dungeonKey = Client.CurrentRoomSnapshot?.DungeonKey;
-        DungeonConfig? dungeonConfig = ServiceLocator.GameContent.Registry.GetDungeon(dungeonKey);
+        DungeonConfig? dungeonConfig = ServiceLocator.ContentRegistry.GetDungeon(dungeonKey);
         IReadOnlyList<PlayerCampOption>? playerCampOptions = dungeonConfig?.PlayerCampOptions;
         string? campOptionKey = playerCampOptions is { Count: > 0 } ? playerCampOptions[0].Key : null;
 
@@ -181,10 +181,10 @@ public partial class RoomPreparation : BaseGamePanel {
     private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
         // 快照为权威指纹来源，进房乐观配置后仍以快照复核，防止列表迟到信息
         if (!string.IsNullOrEmpty(snapshot.ContentFingerprint)
-            && snapshot.ContentFingerprint != ServiceLocator.GameContent.Registry.DataRevision) {
+            && snapshot.ContentFingerprint != ServiceLocator.ContentRegistry.DataRevision) {
             _logger.LogError(
                 "快照内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。",
-                eventRoomId, snapshot.ContentFingerprint, ServiceLocator.GameContent.Registry.DataRevision);
+                eventRoomId, snapshot.ContentFingerprint, ServiceLocator.ContentRegistry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法继续";
             return;
         }
@@ -255,7 +255,7 @@ public partial class RoomPreparation : BaseGamePanel {
     private void UpdateRoomInfoLabels(string hostName, string dungeonKey, int currentPlayers, int maxPlayers) {
         if (InterRefs?.HostLabel != null)
             InterRefs.HostLabel.Text = string.IsNullOrEmpty(hostName) ? "房主: --" : $"房主: {hostName}";
-        string dungeonText = ServiceLocator.ModAssets?.Dungeon(dungeonKey)?.DisplayLabel ?? dungeonKey;
+        string dungeonText = ServiceLocator.ModAssets?.Registry.GetDungeon(dungeonKey)?.DisplayLabel ?? dungeonKey;
         if (InterRefs?.DungeonNameLabel != null)
             InterRefs.DungeonNameLabel.Text = string.IsNullOrEmpty(dungeonText) ? "副本: --" : $"副本: {dungeonText}";
         if (InterRefs?.PlayersLabel != null)
@@ -297,7 +297,7 @@ public partial class RoomPreparation : BaseGamePanel {
             var card = InterRefs.UnitCardScene.Instantiate<UnitCard>();
             string? unitConfigKey = snapshot?.Units.FirstOrDefault(u => u.PlayerName == player.PlayerName)?.UnitConfigKey;
 
-            if (unitConfigKey != null && ServiceLocator.GameContent.Units.GetByKey(unitConfigKey) is { } config) {
+            if (unitConfigKey != null && ServiceLocator.ContentRegistry.GetUnit(unitConfigKey) is { } config) {
                 // 已选择职业：展示职业名 + 玩家名 + 真实 HP 数值
                 card.SetupUnit(config.ConfigKey, config.BaseConfig.MaxHealth);
                 card.SetUserName(player.PlayerName);

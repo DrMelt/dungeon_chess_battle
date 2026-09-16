@@ -1,6 +1,6 @@
 using DungeonChessBattle.Game.Shared.Display;
 
-namespace DungeonChessBattle.Game.Mod.Manager;
+namespace DungeonChessBattle.Game.Display.Registry;
 
 /// <summary>
 /// 同键展示数据的字段级合并：后写者声明了什么就改什么，未声明字段沿用被覆盖者。

@@ -15,6 +15,7 @@ $projects = @(
     'DungeonChessBattle.Battle.Shared',
     'DungeonChessBattle.Game.Mod.Interface',
     'DungeonChessBattle.Game.Mod.Shared',
+    'DungeonChessBattle.Game.Display.Registry',
     'DungeonChessBattle.Game.Shared'
 )
 

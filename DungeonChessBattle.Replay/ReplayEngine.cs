@@ -1,14 +1,13 @@
 using System.Linq;
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
-using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Replay.Shared;
+using DungeonChessBattle.Battle.Config.Shared;
 
 namespace DungeonChessBattle.Replay;
 
@@ -23,7 +22,7 @@ namespace DungeonChessBattle.Replay;
 public sealed class ReplayEngine {
     private readonly BattleScene _battleScene;
     private readonly BattleIntentHub _intentHub;
-    private readonly IUnitRegistry _unitRegistry;
+    private readonly IContentRegistryView _content;
     private readonly IReadOnlyList<ReplayUnitInit> _units;
     private readonly ReplayMeta _meta;
     private readonly ReplayMoveRun[][] _moveRunsByPlayer;
@@ -75,11 +74,10 @@ public sealed class ReplayEngine {
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
 
-    /// <summary>构建回放：注入单位目录与内容视图，按单位初始态构建战斗世界并立即开战。</summary>
-    public ReplayEngine(ReplayRecording recording, IUnitRegistry unitRegistry,
-        IContentRegistryView content) {
+    /// <summary>构建回放：注入内容注册表只读视图，按单位初始态构建战斗世界并立即开战。</summary>
+    public ReplayEngine(ReplayRecording recording, IContentRegistryView content) {
         _meta = recording.Meta;
-        _unitRegistry = unitRegistry;
+        _content = content;
         _startTick = _meta.StartTick;
         if (_meta.TickRate <= 0)
             throw new InvalidDataException($"Replay invalid tick rate: {_meta.TickRate}.");
@@ -119,7 +117,7 @@ public sealed class ReplayEngine {
     /// </summary>
     private void BuildUnits() {
         foreach (var unit in _units) {
-            var config = _unitRegistry.GetByKey(unit.UnitConfigKey)
+            var config = _content.GetUnit(unit.UnitConfigKey)
                 ?? throw new InvalidDataException($"Replay references unknown unit config: {unit.UnitConfigKey}");
             AddUnit(new BattleUnit {
                 UnitId = unit.NetId,

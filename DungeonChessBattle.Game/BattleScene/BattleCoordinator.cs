@@ -57,7 +57,7 @@ public partial class BattleCoordinator : Node {
         session.BattlePhaseChanged += OnBattlePhase;
         _battleService.BattleEventsReceived += OnBattleEvents;
         _sessionContext?.Bind(
-            new OnlineBattleViewSource(session, ServiceLocator.GameContent.Registry),
+            new OnlineBattleViewSource(session, ServiceLocator.ContentRegistry),
             new BattleSessionCommand(session, _roomId));
         _inputController?.Reset();
 

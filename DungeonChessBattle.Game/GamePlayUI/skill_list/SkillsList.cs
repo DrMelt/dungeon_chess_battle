@@ -5,7 +5,6 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
-using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Game.Mod.Shared;
@@ -144,12 +143,12 @@ public partial class SkillsList : Control {
         if (unit == null || packedScene == null)
             return;
 
-        var config = ServiceLocator.GameContent.Units.GetByKey(unit.UnitName);
+        var config = ServiceLocator.ContentRegistry.GetUnit(unit.UnitName);
         if (config == null)
             return;
 
         foreach (var skillDefinition in config.Skills) {
-            var display = ServiceLocator.ModAssets?.Skill(skillDefinition.SkillId);
+            var display = ServiceLocator.ModAssets?.Registry.GetSkill(skillDefinition.SkillId);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
             buttonSkill.Init(skillDefinition, display, unit, this);
             hBox.AddChild(buttonSkill);

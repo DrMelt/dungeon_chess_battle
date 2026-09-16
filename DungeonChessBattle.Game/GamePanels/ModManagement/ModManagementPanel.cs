@@ -96,7 +96,7 @@ public partial class ModManagementPanel : BaseGamePanel {
         string root = catalog.RootProblem is { Length: > 0 } problem ? $"\n{problem}" : "";
         return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
             + $"mods 目录：{ModManager.ModsRootPath}\n"
-            + $"运行中数据修订号：{ServiceLocator.GameContent.Registry.DataRevision}"
+            + $"运行中数据修订号：{ServiceLocator.ContentRegistry.DataRevision}"
             + stale + root;
     }
 

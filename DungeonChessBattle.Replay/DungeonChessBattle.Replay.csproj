@@ -12,7 +12,6 @@
         <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Runtime.Shared\DungeonChessBattle.Battle.Runtime.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Logic\DungeonChessBattle.Battle.Logic.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Registry\DungeonChessBattle.Battle.Config.Registry.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
     </ItemGroup>
 

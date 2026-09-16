@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;

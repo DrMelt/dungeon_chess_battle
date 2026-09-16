@@ -99,10 +99,10 @@ public partial class GameLobby : BaseGamePanel {
             return;
 
         select.Clear();
-        var dungeons = ServiceLocator.GameContent.Registry.Dungeons.ToList();
+        var dungeons = ServiceLocator.ContentRegistry.Dungeons.ToList();
         for (int i = 0; i < dungeons.Count; i++) {
             var key = dungeons[i].DungeonKey;
-            select.AddItem(ServiceLocator.ModAssets?.Dungeon(key)?.DisplayLabel ?? key.Value, i);
+            select.AddItem(ServiceLocator.ModAssets?.Registry.GetDungeon(key)?.DisplayLabel ?? key.Value, i);
             select.SetItemMetadata(i, key.Value);
         }
         if (dungeons.Count > 0) {
@@ -138,7 +138,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 未选中有效副本时不出请求：副本键必填，无值可回落。
     /// </summary>
     private void OnCreateRoom() {
-        var dungeon = ServiceLocator.GameContent.Registry.GetDungeon(_selectedDungeonKey);
+        var dungeon = ServiceLocator.ContentRegistry.GetDungeon(_selectedDungeonKey);
         if (dungeon is null) {
             _logger.LogWarning("创建房间失败: 未选中有效副本 {DungeonKey}", _selectedDungeonKey);
             if (InterRefs?.DetailLabel != null)
@@ -150,7 +150,7 @@ public partial class GameLobby : BaseGamePanel {
             _logger.LogInformation("请求创建房间(网络): dungeon={DungeonKey}", _selectedDungeonKey);
         var config = new RoomConfigDto(
             DungeonKey: dungeon.DungeonKey,
-            Description: ServiceLocator.ModAssets?.Dungeon(dungeon.DungeonKey)?.Description ?? string.Empty,
+            Description: ServiceLocator.ModAssets?.Registry.GetDungeon(dungeon.DungeonKey)?.Description ?? string.Empty,
             MaxPlayers: 2);
         ServiceLocator.ClientService.RequestCreateRoom(config);
     }

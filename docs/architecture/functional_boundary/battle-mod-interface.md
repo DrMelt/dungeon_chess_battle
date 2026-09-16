@@ -13,7 +13,7 @@ mod 数据代码的引用锚点：只放 mod 要实现的接口，其余经本�
 - 不含程序集装载与入口执行：归 Battle.Mod.Manager。
 - 不定义行为端口与内容类型本身：端口与只读视图在 Battle.Shared，内容定义在 Battle.Config.Shared。
 - 不含战斗运行时对象：单位权威实体与运行时状态在 Battle.Runtime.Shared，该库不发布，mod 编译期不可见。
-- 不含展示面接口：在 Game.Mod.Interface 与 Game.Mod.Shared，仅客户端侧装载。
+- 不含展示面接口：在 Game.Mod.Interface、Game.Mod.Shared 与 Game.Display.Registry，仅客户端侧装载。
 
 ## 依赖
 

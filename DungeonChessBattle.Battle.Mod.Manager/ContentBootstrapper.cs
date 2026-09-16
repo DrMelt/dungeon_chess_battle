@@ -22,8 +22,8 @@ public sealed class ContentBootResult {
         get; init;
     }
 
-    /// <summary>本次装配产出的内容：注册表与建在其上的单位目录，由调用方持有。</summary>
-    public required GameContent Content {
+    /// <summary>本次装配产出的内容注册表，由调用方持有。</summary>
+    public required ContentSetRegistry Registry {
         get; init;
     }
 }
@@ -31,7 +31,7 @@ public sealed class ContentBootResult {
 /// <summary>
 /// 数据面内容装配引导：逐 mod 装载数据代码入口（ALC） → Initialize 把内容定义注册进引导上下文。
 /// 引擎无内置内容，注册表每次装配新建，mod 按装载顺序同键覆盖。服务器进程与 Godot 客户端共用本装配，两端内容同源。
-/// 产物以 <see cref="GameContent"/> 交回调用方持有，本类不持全局状态。
+/// 产物以 <see cref="ContentSetRegistry"/> 交回调用方持有，本类不持全局状态。
 /// 流程由本类钉死，环节各归其位：扫描与入口装载用本库 <see cref="ModLoader"/> 与 <see cref="ModEntryLoader"/>，
 /// 注册表归 Battle.Config.Registry。
 /// </summary>
@@ -69,7 +69,7 @@ public static class ContentBootstrapper {
             Mods = result.Mods,
             Errors = errors,
             Fingerprint = fingerprint,
-            Content = new GameContent(registry),
+            Registry = registry,
         };
     }
 }

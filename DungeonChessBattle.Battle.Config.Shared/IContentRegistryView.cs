@@ -1,9 +1,10 @@
 using DungeonChessBattle.Battle.Config.Shared.Buffs;
 using DungeonChessBattle.Battle.Config.Shared.Combat;
+using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
-namespace DungeonChessBattle.Battle.Config.Shared.Content;
+namespace DungeonChessBattle.Battle.Config.Shared;
 
 /// <summary>
 /// 内容注册表只读视图：按身份键查领域定义，并暴露内容修订号，不含任何注册能力。

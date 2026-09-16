@@ -66,7 +66,7 @@ public partial class ReplayItem : Control {
         if (_refs?.InfoLabel == null)
             return;
 
-        var dungeon = ServiceLocator.ModAssets?.Dungeon(view.DungeonKey)?.DisplayLabel ?? view.DungeonKey;
+        var dungeon = ServiceLocator.ModAssets?.Registry.GetDungeon(view.DungeonKey)?.DisplayLabel ?? view.DungeonKey;
         var time = DateTimeOffset.FromUnixTimeSeconds(view.StartUnixTime).ToLocalTime().ToString("MM-dd HH:mm");
         var players = string.Join("、", view.PlayerNames);
         // 服务端还有归档时随时可重下；只剩本地副本就标出来，删了这个文件就没有第二次

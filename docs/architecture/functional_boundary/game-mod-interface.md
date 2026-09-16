@@ -8,12 +8,13 @@ mod 展示代码的引用锚点：只放 mod 要实现的接口，其余经本�
 
 ## 边界外
 
-- 不含注册表定义：条目数据读写面、装配上下文与表现接口在 Game.Mod.Shared。
+- 不含注册表读写口：读写口与实现在 Game.Display.Registry。
+- 不含装配上下文与表现接口：在 Game.Mod.Shared。
 - 不含展示数据：四类展示数据在 Game.Shared。
 - 不含内容定义：内容身份键与内容对象在 Battle.Shared、Battle.Config.Shared 与 Battle.Config.Registry。
 - 不含装载与管理逻辑：mod 扫描、启停、展示装配、加载实现在 Game.Mod.Manager。
 
 ## 依赖
 
-- Game.Mod.Shared。
+- Game.Display.Registry、Game.Mod.Shared。
 - 宿主不引用本库：引用锚点对主工程是空依赖。

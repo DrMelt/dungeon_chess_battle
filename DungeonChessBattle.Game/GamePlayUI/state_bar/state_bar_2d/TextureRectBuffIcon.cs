@@ -1,5 +1,4 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -73,7 +72,7 @@ public partial class TextureRectBuffIcon : TextureRect {
             buff.SourceUnitId == focusUnit.UnitId ? fromFocusUnit : fromOther;
 
         // 节点随 Buff 复用，未声明图标时置空以清除上一个 Buff 的图标
-        Texture = ServiceLocator.ModAssets?.Buff(buff.BuffTypeId)?.Icon;
+        Texture = ServiceLocator.ModAssets?.Registry.GetBuff(buff.BuffTypeId)?.Icon;
     }
 
     /// <summary>仅比较决定图标外观的稳定字段；剩余时间经 _Process 每帧刷新，不纳入短路判定。</summary>

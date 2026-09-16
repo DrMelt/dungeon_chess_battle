@@ -11,7 +11,7 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
 /// 服务定位器：持有服务与两次装配产物的单例，服务为 ServerService、ClientService 与 ReplayService，
-/// 装配产物为数据面 <see cref="GameContent"/> 与展示面 <see cref="ModAssets"/>。
+/// 装配产物为数据面 <see cref="ContentSetRegistry"/> 与展示面 <see cref="ModAssets"/>。
 /// ReplayService 内部组合 ReplayClient（获取）与 ReplayCache（缓存）。
 /// 创建 ILoggerFactory（Console + Godot Provider），注入 Logger 到各 Service。
 /// </summary>
@@ -58,12 +58,12 @@ public static class ServiceLocator {
     private static GameClientService? _clientService;
 
     /// <summary>
-    /// 游戏客户端服务单例。惰性创建：房间客户端要按内容目录装配领域单位与副本布局，
+    /// 游戏客户端服务单例。惰性创建：房间客户端要按内容注册表装配领域单位与副本布局，
     /// 而内容在 `MainScene._EnterTree` 才装配，静态初始化期内拿不到。
     /// </summary>
     public static GameClientService ClientService => _clientService ??= new GameClientService(
         LoggerFactoryInstance,
-        new DefaultClientConnectionFactory(GameContent.Registry));
+        new DefaultClientConnectionFactory(ContentRegistry));
 
     /// <summary>
     /// mod 展示装配产物，UI 与表现组件的展示取数入口；装配前为 null，取用方按未注册处理。
@@ -74,17 +74,17 @@ public static class ServiceLocator {
         get; internal set;
     }
 
-    private static GameContent? _gameContent;
+    private static ContentSetRegistry? _contentRegistry;
 
     /// <summary>
-    /// 数据面装配产物：本次装配的内容注册表与单位目录，UI 与回放门控取数经它。
+    /// 数据面装配产物：本次装配的内容注册表，UI 与回放门控取数经它。
     /// 值由 <c>ModManager.EnsureInitialized</c> 写入，写入前取用即抛，不静默给空内容。
     /// </summary>
-    public static GameContent GameContent => _gameContent
+    public static ContentSetRegistry ContentRegistry => _contentRegistry
         ?? throw new InvalidOperationException("内容尚未装配：ModManager.EnsureInitialized 未执行。");
 
     /// <summary>写入数据面装配产物，仅装配流程调用。</summary>
-    internal static void BindContent(GameContent content) => _gameContent = content;
+    internal static void BindContent(ContentSetRegistry registry) => _contentRegistry = registry;
 
     private static ReplayService? _replayService;
 
@@ -108,6 +108,6 @@ public static class ServiceLocator {
             static () => ClientService.SessionToken,
             LoggerFactoryInstance.CreateLogger<ReplayClient>()),
         new ReplayCache(ProjectSettings.GlobalizePath(ReplaysRootGodotPath)),
-        GameContent.Registry,
+        ContentRegistry,
         LoggerFactoryInstance.CreateLogger<ReplayService>());
 }

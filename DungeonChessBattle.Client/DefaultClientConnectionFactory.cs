@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Client;
-using DungeonChessBattle.Battle.Config.Shared.Content;
+using DungeonChessBattle.Battle.Config.Shared;
 using DungeonChessBattle.Lobby.Client;
 using Microsoft.Extensions.Logging;
 

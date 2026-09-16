@@ -1,6 +1,6 @@
+using DungeonChessBattle.Battle.Config.Shared;
 using DungeonChessBattle.Battle.Mod.Manager;
-using DungeonChessBattle.Battle.Config.Shared.Content;
-using DungeonChessBattle.Game.Mod.Shared;
+using DungeonChessBattle.Game.Display.Registry;
 using DungeonChessBattle.Game.Shared.Display;
 
 namespace DungeonChessBattle.Game.Mod.Manager;
@@ -10,11 +10,11 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// 错误按归属 mod 记录，并按只读视图校验展示引用的内容键存在于内容注册表——不存在则记错误，不中断其余 mod。
 /// 场景资源不经本面：场景名无 mod 归属语义，mod 经装配上下文的注册表口注册与查询。
 /// </summary>
-public sealed class ModDisplayRuntime(
+public sealed class ModDisplayRegistrar(
     DisplayRegistry registry,
     IContentRegistryView content,
     List<ModError> errors,
-    string modId) : IModDisplayRuntime {
+    string modId) : IDisplayRegistrar {
     /// <inheritdoc/>
     public void RegisterSkill(SkillDisplay display) {
         if (display.SkillId.IsDefault)

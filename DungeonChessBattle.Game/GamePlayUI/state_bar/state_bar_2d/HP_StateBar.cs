@@ -1,4 +1,3 @@
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.BattleScene;
@@ -50,7 +49,7 @@ public partial class HP_StateBar : Control {
         InterRefs.LabelPercentRef?.Text = healthPercent.ToString("P1");
         InterRefs.LabelCurrentValueRef?.Text = unit.Health.ToString("F1");
         InterRefs.LabelObjectNameRef?.Text =
-            ServiceLocator.ModAssets?.Unit(unit.UnitName)?.DisplayLabel ?? unit.UnitName;
+            ServiceLocator.ModAssets?.Registry.GetUnit(unit.UnitName)?.DisplayLabel ?? unit.UnitName;
     }
 
 }

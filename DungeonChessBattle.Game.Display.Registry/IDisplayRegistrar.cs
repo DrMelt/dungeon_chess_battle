@@ -1,6 +1,6 @@
 using DungeonChessBattle.Game.Shared.Display;
 
-namespace DungeonChessBattle.Game.Mod.Shared;
+namespace DungeonChessBattle.Game.Display.Registry;
 
 /// <summary>
 /// 条目展示数据注册面：注册什么条目、注册成什么键由内容方自定义，宿主只把本接口递过去。
@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 /// 场景模板与图标纹理随条目数据以对象携带，不经本接口登记。
 /// 四类键同一口径：无内容键的数据不参与注册。
 /// </summary>
-public interface IModDisplayRuntime {
+public interface IDisplayRegistrar {
     /// <summary>注册技能展示数据，同 SkillId 覆盖。</summary>
     void RegisterSkill(SkillDisplay display);
 

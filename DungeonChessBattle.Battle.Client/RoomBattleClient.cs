@@ -9,11 +9,11 @@ using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Battle.Config.Shared;
 
 namespace DungeonChessBattle.Battle.Client;
 

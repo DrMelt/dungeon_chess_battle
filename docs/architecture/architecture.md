@@ -12,9 +12,10 @@
 graph TD
     subgraph DEngine["engine：主工程装配与表现"]
         Engine["Game<br>场景 / UI / 资源装配"]
-        GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配 / 注册表实现"]
+        GameDisplayRegistry["Game.Display.Registry<br>展示数据注册表：条目读写口 / 登记点"]
+        GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配"]
         GameIface["Game.Mod.Interface<br>mod 开发锚点：要实现的入口接口"]
-        GameModShared["Game.Mod.Shared<br>展示接口：条目读写口 / 装配上下文 / 表现接口"]
+        GameModShared["Game.Mod.Shared<br>展示接口：装配上下文 / 表现接口"]
         GameShared["Game.Shared<br>mod 与宿主共用的展示形状：展示数据"]
     end
 
@@ -78,6 +79,7 @@ graph TD
     Engine --> ReplayProtocol
     Engine --> ReplayCli
     Engine --> GameMod
+    Engine --> GameDisplayRegistry
     Engine --> GameModShared
     Engine --> GameShared
 
@@ -85,6 +87,9 @@ graph TD
     BattleModIface --> BattleModShared
     BattleModShared --> Config
     GameMod --> BattleMod
+    GameMod --> GameDisplayRegistry
+    GameDisplayRegistry --> GameShared
+    GameDisplayRegistry --> Shared
     BattleMod --> ConfigRegistry
     BattleMod --> BattleModIface
     GameMod --> Shared
@@ -93,7 +98,8 @@ graph TD
     GameMod --> GameModShared
     GameMod --> GameShared
     GameIface --> GameModShared
-    GameModShared --> GameShared
+    GameIface --> GameDisplayRegistry
+    GameModShared --> GameDisplayRegistry
     GameShared --> Shared
 
     %% client 域：门面组装两端，只给上层抽象
@@ -192,6 +198,7 @@ graph TD
 | `DungeonChessBattle.Battle.Mod.Manager`      | battle    | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
 | `DungeonChessBattle.Battle.Mod.Interface`    | battle    | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       |
 | `DungeonChessBattle.Battle.Mod.Shared`       | battle    | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |
+| `DungeonChessBattle.Game.Display.Registry`   | engine    | [game-display-registry](functional_boundary/game-display-registry.md)     |
 | `DungeonChessBattle.Game.Mod.Manager`        | engine    | [game-mod-manager](functional_boundary/game-mod-manager.md)               |
 | `DungeonChessBattle.Game.Mod.Interface`      | engine    | [game-mod-interface](functional_boundary/game-mod-interface.md)           |
 | `DungeonChessBattle.Game.Mod.Shared`         | engine    | [game-mod-shared](functional_boundary/game-mod-shared.md)                 |

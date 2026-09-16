@@ -4,7 +4,6 @@ using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
-using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Entities;
@@ -99,7 +98,7 @@ public partial class BattleRoomServer {
 
         foreach (var spawn in dungeon.Enemies) {
             // 敌人生成以注册表权威配置键为准，杜绝错配
-            var config = _unitRegistry.GetByConfig(spawn.Unit)
+            var config = _content.GetUnit(spawn.Unit.ConfigKey)
                 ?? throw new InvalidOperationException(
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
@@ -128,7 +127,7 @@ public partial class BattleRoomServer {
         _pawnByNetId[entity.Id] = entity;
 
         // 领域单位（权威）：战斗世界结算读写，状态同步器写 SyncVar
-        var config = _unitRegistry.GetByKey(unitName)
+        var config = _content.GetUnit(unitName)
             ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
         var unit = BattleUnitFactory.Create(config, entity.Id, camps, spawnPos);
         _battleScene.AddUnit(unit);

@@ -45,7 +45,7 @@ public partial class SkillProgressBar : Control {
         }
 
         var castingKey = new SkillKeyId(castingId);
-        var config = ServiceLocator.GameContent.Registry.GetSkill(castingKey);
+        var config = ServiceLocator.ContentRegistry.GetSkill(castingKey);
         if (config == null) {
             WarnMissingSkill(castingKey);
             Visible = false;
@@ -53,7 +53,7 @@ public partial class SkillProgressBar : Control {
         }
 
         Visible = true;
-        InterRefs.LabelSkillNameRef?.Text = ServiceLocator.ModAssets?.Skill(castingKey)?.DisplayLabel ?? castingKey.Id;
+        InterRefs.LabelSkillNameRef?.Text = ServiceLocator.ModAssets?.Registry.GetSkill(castingKey)?.DisplayLabel ?? castingKey.Id;
         var remaining = unit.SkillCastRemaining;
         InterRefs.LabelRemainingTimeRef?.Text = remaining.ToString("F1");
         var total = Mathf.Max(config.SpellTime, 0.001f);

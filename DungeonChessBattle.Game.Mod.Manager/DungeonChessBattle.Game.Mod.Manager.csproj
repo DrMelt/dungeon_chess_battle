@@ -11,10 +11,12 @@
        本库不定义 GodotObject 子类：可被 .tres/.tscn 引用的脚本类必须留在 Godot 工程目录内。
        本库禁止静态可变状态：装配产物一律以实例交回宿主，由 Game 侧 ServiceLocator 持有。
        引 Game.Mod.Interface 为装载展示代码入口，引 Battle.Config.Shared 取内容定义、Battle.Shared 取内容身份键与展示形状，
-       展开展示装配期的引用完整性校验，不依赖数据面装配根 Battle.Config.Registry。 -->
+       展开展示装配期的引用完整性校验，不依赖数据面装配根 Battle.Config.Registry。
+       引 Game.Display.Registry 建展示注册表：本库只管装配次序，注册表的读写面实现在那边。 -->
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Interface\DungeonChessBattle.Game.Mod.Interface.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Game.Display.Registry\DungeonChessBattle.Game.Display.Registry.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Mod.Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
     <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />

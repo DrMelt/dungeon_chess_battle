@@ -1,38 +1,36 @@
+using DungeonChessBattle.Battle.Config.Shared;
 using DungeonChessBattle.Battle.Mod.Manager;
-using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Config.Shared.Content;
-using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Game.Display.Registry;
 using DungeonChessBattle.Game.Mod.Interface;
 using DungeonChessBattle.Game.Mod.Shared;
-using DungeonChessBattle.Game.Shared.Display;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
-/// 条目展示数据获取入口：展示注册表与 mod 管理根的持有者，一次装配产出，全程只读。
+/// 一次展示装配的产物：展示注册表与 mod 管理根，全程只读。
 /// 本库不持全局状态，实例由宿主工程的组合根持有。
-/// 未注册的键查询恒返回 null 而不抛，保证零 mod 环境直接可用。
+/// 注册表读面恒返回 null 而不抛，保证零 mod 环境直接可用。
 /// </summary>
-public sealed class ModAssets {
-    private readonly DisplayRegistry _registry;
-
-    private ModAssets(DisplayRegistry registry, ModCatalog catalog, string assemblyFingerprint) {
-        _registry = registry;
-        Catalog = catalog;
-        AssemblyFingerprint = assemblyFingerprint;
-    }
+/// <param name="registry">本次装配的展示注册表，条目展示数据所在。</param>
+/// <param name="catalog">本次装配所用的 mod 管理根。</param>
+/// <param name="assemblyFingerprint">装配那一刻的启用集指纹。</param>
+public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, string assemblyFingerprint) {
+    /// <summary>展示注册表：条目展示数据的唯一读面，按内容键查询。</summary>
+    public IDisplayRegistry Registry {
+        get;
+    } = registry;
 
     /// <summary>本次装配所用的 mod 管理根。</summary>
     public ModCatalog Catalog {
         get;
-    }
+    } = catalog;
 
     /// <summary>装配那一刻的启用集指纹；与 <see cref="ModCatalog.Fingerprint"/> 不等即说明磁盘已改动而未重启。</summary>
     public string AssemblyFingerprint {
         get;
-    }
+    } = assemblyFingerprint;
 
     /// <summary>
     /// 展示装配全过程，顺序由本方法保证：建注册表 → 装载展示代码 → 挂载展示资源包 →
@@ -42,13 +40,13 @@ public sealed class ModAssets {
     /// 资源包挂载一步以委托交入：可被 <c>.tres</c>/<c>.tscn</c> 引用的资源类与 <c>res://</c> 路径
     /// 只能留在 Godot 主工程，本库不认识它们，只负责把顺序钉死在这里。
     /// 装载先于挂载、入口执行后于挂载：入口 Initialize 要按 <c>res://mods/{id}/</c> 前缀自行读包内资源。
-    /// 装配产物只有展示注册表：条目在此就绪即最终态，宿主不再据它二次物化。
+    /// 展示注册表在装配结束时即最终态：宿主不再据它二次物化。
     /// </remarks>
     /// <param name="catalog">已扫描的 mod 管理根，提供参与装配的启用 mod、展示声明与错误落点。</param>
     /// <param name="content">内容注册表只读视图，展示键完整性校验对它做。</param>
     /// <param name="mountResourcePacks">逐 mod 挂载它声明的展示资源包，必须介于展示代码装载与入口执行之间。</param>
     /// <param name="loggerFactory">日志通道工厂，未注入时静默。</param>
-    /// <returns>装配完成的获取入口实例，由调用方持有。</returns>
+    /// <returns>装配完成的产物实例，由调用方持有。</returns>
     public static ModAssets Assemble(
         ModCatalog catalog,
         IContentRegistryView content,
@@ -76,7 +74,7 @@ public sealed class ModAssets {
 
         var initErrors = ModEntryLoader.Initialize(loaded, "展示代码入口执行失败",
             (entry, modId) => entry.Initialize(
-                new ModDisplayRuntime(registry, content, runtimeErrors, modId),
+                new ModDisplayRegistrar(registry, content, runtimeErrors, modId),
                 new ModDisplayContext(modId, registry)),
             loggerFactory);
 
@@ -87,18 +85,6 @@ public sealed class ModAssets {
 
         return new ModAssets(registry, catalog, catalog.Fingerprint);
     }
-
-    /// <summary>按技能键取展示数据；未注册返回 null。</summary>
-    public SkillDisplay? Skill(SkillKeyId skillId) => _registry.GetSkill(skillId);
-
-    /// <summary>按 Buff 键取展示数据；未注册返回 null。</summary>
-    public BuffDisplay? Buff(BuffTypeId buffTypeId) => _registry.GetBuff(buffTypeId);
-
-    /// <summary>按副本键取展示数据；未注册返回 null。</summary>
-    public DungeonDisplay? Dungeon(DungeonKeyId dungeonKey) => _registry.GetDungeon(dungeonKey);
-
-    /// <summary>按单位配置键取展示数据；未注册返回 null。</summary>
-    public UnitDisplay? Unit(UnitConfigKey configKey) => _registry.GetUnit(configKey);
 
     /// <summary>一条展示装配问题：原因已含 mod 归属，条目同时进管理面。</summary>
     private static void LogDisplayFailed(ILogger logger, ModError error) {

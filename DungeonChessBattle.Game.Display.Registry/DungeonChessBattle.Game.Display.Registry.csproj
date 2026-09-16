@@ -1,0 +1,22 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <IsPackable>true</IsPackable>
+    <Description>展示注册表：条目展示数据的读写口与实现。</Description>
+  </PropertyGroup>
+
+  <!-- 展示数据注册表：条目展示数据的读写口与实现同库，随本库发布后 mod 展示代码经引用链可见。
+       与主工程同用 Godot.NET.Sdk：展示数据成员携带 Godot 类型，GodotSharp 由 SDK 隐式提供，版本天然对齐。
+       本库只以 Godot 类型作数据成员，不定义 GodotObject 子类，故不产生脚本注册需求。
+       不认识 mod，也不做装配编排：展示形状取 Game.Shared，内容身份键取 Battle.Shared。 -->
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
+    <ProjectReference Include="..\DungeonChessBattle.Battle.Shared\DungeonChessBattle.Battle.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,12 +1,11 @@
 using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Lobby.Protocol;
-using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Battle.Config.Shared;
 
 namespace DungeonChessBattle.Lobby.Server;
 
@@ -23,16 +22,14 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="stateStore">大厅级状态存储。</param>
 /// <param name="broadcaster">大厅广播端口，向房间内连接推送消息。</param>
 /// <param name="config">服务器配置，服务器密码等。</param>
-/// <param name="unitRegistry">单位目录，准备单位校验权威来源。</param>
-/// <param name="content">内容注册表只读视图，阵营选项、副本键与内容修订号来源。</param>
+/// <param name="content">内容注册表只读视图，阵营选项、单位配置、副本键与内容修订号来源。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     SignalRBroadcaster broadcaster, LobbyServerConfig config,
-    IUnitRegistry unitRegistry, IContentRegistryView content) {
+    IContentRegistryView content) {
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly SignalRBroadcaster _broadcaster = broadcaster;
     private readonly LobbyServerConfig _config = config;
-    private readonly IUnitRegistry _unitRegistry = unitRegistry;
     private readonly IContentRegistryView _content = content;
 
     /// <summary>
@@ -221,7 +218,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(roomId, false, "Invalid camp option.");
 
         // 单位必须为已注册且可被玩家选择的配置，拒绝虚构键与敌人单位
-        var unitConfig = _unitRegistry.GetByKey(req.UnitConfigKey);
+        var unitConfig = _content.GetUnit(req.UnitConfigKey);
         if (unitConfig == null || !unitConfig.IsPlayerSelectable)
             return new LobbyResult(roomId, false, "Invalid unit config.");
 

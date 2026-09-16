@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Mod.Manager;
+using DungeonChessBattle.Game.Display.Registry;
 using DungeonChessBattle.Game.Mod.Manager;
 using Godot;
 using Godot.Bridge;
@@ -15,7 +16,7 @@ namespace DungeonChessBattle.Game.Services;
 /// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配 → 展示覆盖巡检。
 /// 主场景 _Ready 首个调用，保证任何 UI 取数前内容已就绪；
 /// 服务器子进程由 ServerProcessHost 注入同一 mods 目录绝对路径，两端读同一启用集与内容即同源。
-/// 两次装配的产物分别写入 <see cref="ServiceLocator.GameContent"/> 与 <see cref="ServiceLocator.ModAssets"/>，
+/// 两次装配的产物分别写入 <see cref="ServiceLocator.ContentRegistry"/> 与 <see cref="ServiceLocator.ModAssets"/>，
 /// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
 public static class ModManager {
@@ -44,18 +45,18 @@ public static class ModManager {
             // Load(扫描结果) 只带回装配期新增错误，扫描期错误已在 catalog.Errors
             var boot = ContentBootstrapper.Load(catalog.ScanResult, ServiceLocator.LoggerFactory);
             catalog.RecordAssemblyErrors(boot.Errors);
-            // 数据面产物交组合根持有，UI 经 ServiceLocator.GameContent 取内容定义
-            ServiceLocator.BindContent(boot.Content);
+            // 数据面产物交组合根持有，UI 经 ServiceLocator.ContentRegistry 取内容定义
+            ServiceLocator.BindContent(boot.Registry);
 
             // 注册表取装配后的实例：内容须先就绪，展示键校验才看得到 mod 注册进来的条目。
             // 资源包挂载作为委托交进装配过程，次序由 ModAssets.Assemble 保证：装载展示代码 → 挂载 → 入口执行
             var assets = ModAssets.Assemble(
-                catalog, boot.Content.Registry,
+                catalog, boot.Registry,
                 MountAssetPacks,
                 ServiceLocator.LoggerFactory);
             ServiceLocator.ModAssets = assets;
 
-            LogDisplayCoverage(boot.Content.Registry, assets);
+            LogDisplayCoverage(boot.Registry, assets.Registry);
         }
         catch (Exception ex) {
             // 装配中断不吞也不留中间态：补上装配层上下文后继续上抛，幂等标志保持未置位
@@ -70,15 +71,15 @@ public static class ModManager {
     /// 缺席不阻断装配——消费方按内容键回退显示名、图标留空、无范围提示与环境场景。
     /// 规模按内容条目数报，不报展示条目数：mod 可声明内容里没有的展示键，那部分不进内容计数。
     /// </summary>
-    private static void LogDisplayCoverage(ContentSetRegistry registry, ModAssets assets) {
+    private static void LogDisplayCoverage(ContentSetRegistry registry, IDisplayRegistry display) {
         var missing =
-            registry.Skills.Where(skill => assets.Skill(skill.SkillId) is null)
+            registry.Skills.Where(skill => display.GetSkill(skill.SkillId) is null)
                 .Select(skill => $"技能 {skill.SkillId.Id}")
-            .Concat(registry.Buffs.Where(buff => assets.Buff(buff.BuffTypeId) is null)
+            .Concat(registry.Buffs.Where(buff => display.GetBuff(buff.BuffTypeId) is null)
                 .Select(buff => $"Buff {buff.BuffTypeId.Value}"))
-            .Concat(registry.Units.Where(unit => assets.Unit(unit.ConfigKey) is null)
+            .Concat(registry.Units.Where(unit => display.GetUnit(unit.ConfigKey) is null)
                 .Select(unit => $"单位 {unit.ConfigKey.Value}"))
-            .Concat(registry.Dungeons.Where(dungeon => assets.Dungeon(dungeon.DungeonKey) is null)
+            .Concat(registry.Dungeons.Where(dungeon => display.GetDungeon(dungeon.DungeonKey) is null)
                 .Select(dungeon => $"副本 {dungeon.DungeonKey.Value}"))
             .ToList();
 

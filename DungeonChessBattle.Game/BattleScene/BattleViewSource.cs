@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Config.Shared.Content;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Replay;
+using DungeonChessBattle.Battle.Config.Shared;
 
 namespace DungeonChessBattle.Game.BattleScene;
 

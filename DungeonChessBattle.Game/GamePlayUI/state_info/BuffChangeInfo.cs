@@ -49,7 +49,7 @@ public partial class BuffChangeInfo : FadeInfo {
         };
 
         // 未声明图标时保留场景配置的占位图标
-        if (ServiceLocator.ModAssets?.Buff(buffTypeId)?.Icon is { } icon)
+        if (ServiceLocator.ModAssets?.Registry.GetBuff(buffTypeId)?.Icon is { } icon)
             textureRectRef.Texture = icon;
     }
 

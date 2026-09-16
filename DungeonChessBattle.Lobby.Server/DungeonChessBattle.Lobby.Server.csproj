@@ -14,7 +14,6 @@
         <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Server.Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Registry\DungeonChessBattle.Battle.Config.Registry.csproj" />
     </ItemGroup>
 
     <ItemGroup>

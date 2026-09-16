@@ -144,13 +144,13 @@ public partial class BattleEventLogPanel : Control {
 
     /// <summary>按技能键解析技能名：条目缺席时以技能键呈现，条目在则取展示用名称。</summary>
     private static string ResolveSkillName(SkillKeyId skillId) =>
-        ServiceLocator.ModAssets?.Skill(skillId) is { } display
+        ServiceLocator.ModAssets?.Registry.GetSkill(skillId) is { } display
             ? display.DisplayLabel
             : $"技能 {skillId.Id}";
 
     /// <summary>按 Buff 键解析 Buff 名：条目缺席时以 Buff 键呈现，条目在则取展示用名称。</summary>
     private static string ResolveBuffName(BuffTypeId buffTypeId) =>
-        ServiceLocator.ModAssets?.Buff(buffTypeId) is { } display
+        ServiceLocator.ModAssets?.Registry.GetBuff(buffTypeId) is { } display
             ? display.DisplayLabel
             : $"Buff {buffTypeId.Value}";
 }

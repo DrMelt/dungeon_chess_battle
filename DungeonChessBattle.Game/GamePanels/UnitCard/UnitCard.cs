@@ -68,7 +68,7 @@ public partial class UnitCard : Control {
     /// <param name="maxHealth">最大生命值。</param>
     public void SetupUnit(string configKey, float maxHealth) {
         UnitConfigKey = configKey;
-        _nameText = ServiceLocator.ModAssets?.Unit(configKey)?.DisplayLabel ?? configKey;
+        _nameText = ServiceLocator.ModAssets?.Registry.GetUnit(configKey)?.DisplayLabel ?? configKey;
         _hpValueText = maxHealth.ToString("F0");
         ApplyTexts();
     }

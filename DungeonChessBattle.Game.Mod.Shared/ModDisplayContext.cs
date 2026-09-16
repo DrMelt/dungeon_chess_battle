@@ -1,3 +1,5 @@
+using DungeonChessBattle.Game.Display.Registry;
+
 namespace DungeonChessBattle.Game.Mod.Shared;
 
 /// <summary>

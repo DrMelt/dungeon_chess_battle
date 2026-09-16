@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Battle.Config.Shared.Content;
 /// 敌人阵容条目：单位配置引用与出生点参数。
 /// 直接引用 UnitConfig 而非字符串名，编译期类型安全，杜绝手写名称拼写错误。
 /// </summary>
-/// <param name="Unit">敌人单位配置，须已在 UnitRegistry 注册。</param>
+/// <param name="Unit">敌人单位配置，须已在内容注册表注册。</param>
 /// <param name="Count">生成数量。</param>
 /// <param name="SpawnBaseX">阵营出生列基准 X，同批敌人按 SpawnXSpacing 向右错开。</param>
 /// <param name="SpawnXSpacing">同批敌人出生点列间距。</param>

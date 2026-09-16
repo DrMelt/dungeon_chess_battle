@@ -1,0 +1,38 @@
+using DungeonChessBattle.Battle.Mod.Manager;
+using Microsoft.Extensions.Logging;
+
+namespace DungeonChessBattle.Game.Mod.Manager;
+
+/// <summary>
+/// 一次扫描的展示声明集合：读全部参与扫描的 mod 的展示段，产出装配用的声明序与查询用的归属索引。
+/// 停用者也读：它不进装配，但列表要显示有没有展示代码。
+/// 展示声明只影响展示面，读取失败不进数据面的拒载裁决。
+/// </summary>
+internal sealed class ModDisplaySet(
+    Dictionary<string, ModDisplayDeclaration> byModId,
+    IReadOnlyList<ModDisplayDeclaration> enabled,
+    IReadOnlyList<ModError> declarationErrors) {
+    /// <summary>参与装载的启用 mod 的声明，顺序与 <see cref="ModLoadResult.Mods"/> 一致。</summary>
+    public IReadOnlyList<ModDisplayDeclaration> Enabled { get; } = enabled;
+
+    /// <summary>展示段写错、缺字段或路径非法产生的错误。</summary>
+    public IReadOnlyList<ModError> DeclarationErrors { get; } = declarationErrors;
+
+    /// <summary>读装载集与停用集内每个 mod 的展示声明，读取失败逐条落日志。</summary>
+    public static ModDisplaySet Read(ModLoadResult load, ILogger logger) {
+        var errors = new List<ModError>();
+        var byModId = new Dictionary<string, ModDisplayDeclaration>(StringComparer.Ordinal);
+        foreach (var mod in load.Mods.Concat(load.Disabled))
+            byModId[mod.Manifest.Id] = ModDisplayDeclarationReader.Read(mod, errors);
+
+        if (logger.IsEnabled(LogLevel.Error))
+            foreach (var error in errors)
+                logger.LogError("展示声明读取失败：{ModId}：{Reason}", error.ModId, error.Message);
+
+        return new ModDisplaySet(byModId, [.. load.Mods.Select(mod => byModId[mod.Manifest.Id])], errors);
+    }
+
+    /// <summary>该 mod 是否声明了展示入口 DLL；被拒载的目录无声明记录，恒为 false。</summary>
+    public bool HasEntryCode(string modId) =>
+        byModId.TryGetValue(modId, out var display) && display.EntryDlls.Count > 0;
+}
