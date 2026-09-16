@@ -14,21 +14,49 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>
 /// Godot 端 mod 装配编排：扫描启用集 → 挂载各 mod 资源包 → 数据面装配 → 展示面装配 → 展示覆盖巡检。
-/// 主场景 _Ready 首个调用，保证任何 UI 取数前内容已就绪；
+/// 主场景 _EnterTree 首个调用，保证任何 UI 取数前内容已就绪；
 /// 服务器子进程由 ServerProcessHost 注入同一 mods 目录绝对路径，两端读同一启用集与内容即同源。
 /// 两次装配的产物分别写入 <see cref="ServiceLocator.ContentRegistry"/> 与 <see cref="ServiceLocator.ModAssets"/>，
 /// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
 public static class ModManager {
-    /// <summary>mods 目录名，位于游戏可执行文件所在目录下。</summary>
+    /// <summary>mods 目录名，未被启动参数覆盖时位于游戏可执行文件所在目录下。</summary>
     private const string ModsDirName = "mods";
 
-    /// <summary>mods 根目录绝对路径：游戏可执行文件所在目录下的 mods。</summary>
-    public static string ModsRootPath => OS.GetExecutablePath().GetBaseDir().PathJoin(ModsDirName);
+    /// <summary>覆盖 mods 根目录的启动参数名，值为其后的目录路径，与服务端同名参数一致。</summary>
+    private const string ModsDirArg = "--mod-dir";
+
+    /// <summary>
+    /// mods 根目录绝对路径：启动参数 <c>--mod-dir</c> 覆盖，缺省为可执行文件所在目录下的 mods。
+    /// 首次访问解析一次并缓存，此后恒为同值——启用集读写、子进程注入与面板显示必须落在同一目录。
+    /// </summary>
+    public static string ModsRootPath => field ??= ResolveModsRootPath();
 
     private static readonly ILogger Logger = ServiceLocator.CreateLogger(nameof(ModManager));
 
     private static bool _initialized;
+
+    /// <summary>
+    /// 解析 mods 根目录：参数取自 Godot 用户参数段，即命令行中 <c>--</c> 或 <c>++</c> 之后的部分；
+    /// 相对路径按进程当前工作目录归一，编辑器以 <c>--path</c> 运行即工程目录，导出运行即可执行文件所在目录。
+    /// 参数缺席或值为空即回落默认推导，生效目录由下层扫描日志体现。
+    /// 解析期不取用本类日志通道：本方法可能经 <c>Logger</c> 自身的初始化链进入。
+    /// </summary>
+    private static string ResolveModsRootPath() {
+        string? arg = GetArgValue(OS.GetCmdlineUserArgs(), ModsDirArg);
+        return string.IsNullOrEmpty(arg)
+            ? OS.GetExecutablePath().GetBaseDir().PathJoin(ModsDirName)
+            : Path.GetFullPath(arg);
+    }
+
+    /// <summary>取 args 中 name 后紧跟的值，name 不区分大小写；无该参数返回 null。</summary>
+    private static string? GetArgValue(string[] args, string name) {
+        for (int i = 0; i < args.Length - 1; i++) {
+            if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+                return args[i + 1];
+        }
+        return null;
+    }
 
     /// <summary>
     /// 执行一次装配，幂等；单个 mod 失败不中止其余 mod，错误汇总进装配产物的 <c>ModCatalog</c>。
