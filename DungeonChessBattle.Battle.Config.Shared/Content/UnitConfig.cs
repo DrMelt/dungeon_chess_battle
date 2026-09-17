@@ -1,7 +1,7 @@
 using DungeonChessBattle.Battle.Config.Shared.Combat;
+using DungeonChessBattle.Battle.Config.Shared.Control;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
-using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Config.Shared.Content;
@@ -18,15 +18,15 @@ public sealed class UnitConfig {
     /// <summary>单位拥有的技能定义列表。</summary>
     public IReadOnlyList<SkillDefinition> Skills { get; init; } = [];
 
-    /// <summary>敌人单位智能，装配期直接引用本层决策实现实例，决策不依赖跨单位状态、可多单位共享；玩家可选单位不配。</summary>
-    public IUnitIntelligence? Intelligence {
+    /// <summary>自治驱动所用的控制者配置：装配期直接引用本层控制者实例；null 表示本单位不声明自治驱动。</summary>
+    public UnitControllerConfig? Controller {
         get; init;
     }
 
     /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨。</summary>
     public required float HateFactor {
         get; init;
-    }
+    } = 1.0f;
 
     /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；null 表示不参与仇恨计算。</summary>
     public IHateRule? HateRule {
@@ -35,11 +35,6 @@ public sealed class UnitConfig {
 
     /// <summary>单位配置键，唯一身份标识，注册表与协议身份来源。</summary>
     public required UnitConfigKey ConfigKey {
-        get; init;
-    }
-
-    /// <summary>是否可被玩家在准备阶段选择，敌人单位必须显式声明 false。</summary>
-    public required bool IsPlayerSelectable {
         get; init;
     }
 }

@@ -50,10 +50,7 @@ public partial class UnitSelectPanel : BaseGamePanel {
         foreach (Node child in _refs.UnitCardGrid.GetChildren())
             child.QueueFree();
 
-        foreach (var config in ServiceLocator.ContentRegistry.Units) {
-            // 只展示玩家可选单位
-            if (!config.IsPlayerSelectable)
-                continue;
+        foreach (var config in ServiceLocator.ContentRegistry.GetPlayerSelectableUnits()) {
             var card = _refs.UnitCardScene.Instantiate<UnitCard>();
             card.SetupUnit(config.ConfigKey, config.BaseConfig.MaxHealth);
             card.UnitSelected += OnCardSelected;

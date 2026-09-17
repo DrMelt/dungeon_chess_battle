@@ -217,9 +217,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (campOption == null)
             return new LobbyResult(roomId, false, "Invalid camp option.");
 
-        // 单位必须为已注册且可被玩家选择的配置，拒绝虚构键与敌人单位
-        var unitConfig = _content.GetUnit(req.UnitConfigKey);
-        if (unitConfig == null || !unitConfig.IsPlayerSelectable)
+        // 单位必须在玩家可选单位名册内：名册由内容注册写入，虚构键与不可选单位同源拒绝
+        if (!_content.IsPlayerSelectable(req.UnitConfigKey))
             return new LobbyResult(roomId, false, "Invalid unit config.");
 
         if (!_stateStore.AddPrepareUnit(roomId, req.UnitConfigKey, req.CampOptionKey, ownerName, ownerPlayerId))

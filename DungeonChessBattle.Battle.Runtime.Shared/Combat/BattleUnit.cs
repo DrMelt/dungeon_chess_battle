@@ -3,7 +3,6 @@ using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
-using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
@@ -42,13 +41,8 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         get; init;
     }
 
-    /// <summary>技能键缓存，首读时按 <see cref="Skills"/> 顺序构建；AI 决策按此枚举，避免逐帧投影。</summary>
+    /// <summary>技能键缓存，首读时按 <see cref="Skills"/> 顺序构建；自治决策按此枚举，避免逐帧投影。</summary>
     private SkillKeyId[]? _skillKeys;
-
-    /// <summary>单位智能决策器，敌人单位装配，玩家单位为空。</summary>
-    public IUnitIntelligence? Intelligence {
-        get; init;
-    }
 
     /// <summary>仇恨规则，装配期直传配置；null 表示不参与仇恨计算。</summary>
     public IHateRule? HateRule {

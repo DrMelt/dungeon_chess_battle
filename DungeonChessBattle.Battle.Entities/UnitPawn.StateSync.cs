@@ -49,7 +49,7 @@ public partial class UnitPawn {
     /// <summary>
     /// 在线端回填：把本实体 SyncVar 读数覆写进本地领域单位，作为展示与判定的取数源。
     /// 本实体持有的冷却/Buff 领域列表由本方法独占维护，本地改写会被指纹跳过掩盖。
-    /// HatesList 只下行不回填：在线端不跑仇恨结算与 AI；聚焦随本通道双向回填，供 UI 直读。
+    /// HatesList 只下行不回填：在线端不跑仇恨结算与自治决策；聚焦随本通道双向回填，供 UI 直读。
     /// </summary>
     public void SyncInto(BattleUnit unit) {
         // 换绑即失效：LES 实体池复用的载体带着上一个单位的残留指纹

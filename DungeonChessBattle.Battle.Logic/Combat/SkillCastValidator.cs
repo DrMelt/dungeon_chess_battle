@@ -6,7 +6,7 @@ using DungeonChessBattle.Battle.Shared.Camp;
 namespace DungeonChessBattle.Battle.Logic.Combat;
 
 /// <summary>
-/// 技能施放静态判定唯一来源。三处判据共用同一实现：服务端权威校验、施法预输入缓冲的重试、
+/// 技能施放静态判定唯一来源。三处判据共用同一实现：服务端权威校验、玩家意图源待决施法的转投、
 /// 战斗世界应答内容侧的 <see cref="DungeonChessBattle.Battle.Shared.IBattleSceneView.CanCast"/> 问答。
 /// 基于施法单位状态、技能定义与已解析的目标/位置判断，不接触技能仓库。
 /// 在线端不做任何本地施法判定：按键即上行，可否施放由本判定在权威侧裁定。
@@ -49,7 +49,7 @@ public static class SkillCastValidator {
 
     /// <summary>
     /// 状态就绪判据：存活、非读条与技能总冷却（全局与个体取较大）均就绪。单值查询，无托管对象分配。
-    /// 除 <see cref="CanCast"/> 内部聚合外，亦是施法预输入缓冲的唯一重试判据：
+    /// 除 <see cref="CanCast"/> 内部聚合外，亦是玩家意图源待决施法的唯一就绪判据：
     /// 只有会自然转就绪的状态阻塞值得等待，目标条件一律交落地时裁定。
     /// </summary>
     public static bool IsStateReady(ISkillCasterView caster, SkillKeyId skillKey) {

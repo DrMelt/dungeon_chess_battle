@@ -25,6 +25,9 @@ public interface IContentRegistryView {
     /// <summary>按单位配置键取定义；不存在返回 null。</summary>
     UnitConfig? GetUnit(UnitConfigKey configKey);
 
+    /// <summary>单位是否可被玩家在准备阶段选择，判据来自内容注册的玩家可选单位名册。</summary>
+    bool IsPlayerSelectable(UnitConfigKey configKey);
+
     /// <summary>按副本键取定义；无键或不存在返回 null。</summary>
     DungeonConfig? GetDungeon(DungeonKeyId dungeonKey);
 }

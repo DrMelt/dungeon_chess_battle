@@ -62,8 +62,9 @@ public static class ContentBootstrapper {
             (entry, _) => entry.Initialize(context), loggerFactory);
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("内容装配完成：技能 {Skills}/Buff {Buffs}/单位 {Units}/副本 {Dungeons}",
-                registry.Skills.Count, registry.Buffs.Count, registry.Units.Count, registry.Dungeons.Count);
+            logger.LogInformation("内容装配完成：技能 {Skills}/Buff {Buffs}/单位 {Units}/可选单位 {Selectable}/副本 {Dungeons}",
+                registry.Skills.Count, registry.Buffs.Count, registry.Units.Count,
+                registry.GetPlayerSelectableUnits().Count, registry.Dungeons.Count);
 
         return new ContentBootResult {
             Mods = result.Mods,

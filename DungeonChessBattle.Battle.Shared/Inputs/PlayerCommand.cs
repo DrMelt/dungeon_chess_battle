@@ -8,7 +8,7 @@ public enum PlayerCommandKind : byte {
     /// <summary>本帧移动意图，零向量即静止，随 <c>BattleScene.Tick</c> 末作废。</summary>
     Move,
 
-    /// <summary>施法请求，经排队器接管后转投为本帧施法意图。</summary>
+    /// <summary>施法请求，经玩家意图源的待决槽接管后转投为本帧施法意图。</summary>
     Cast,
 
     /// <summary>聚焦目标设定，持续状态，不参与逐帧作废。</summary>

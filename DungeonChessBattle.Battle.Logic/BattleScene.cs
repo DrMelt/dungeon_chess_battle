@@ -4,8 +4,8 @@ using DungeonChessBattle.Battle.Shared;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.Camp;
+using DungeonChessBattle.Battle.Shared.Control;
 using DungeonChessBattle.Battle.Shared.Events;
-using DungeonChessBattle.Battle.Shared.Intelligence;
 using DungeonChessBattle.Battle.Runtime.Shared.Buffs;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Runtime.Shared.Movement;
@@ -21,9 +21,9 @@ namespace DungeonChessBattle.Battle.Logic;
 /// <summary>
 /// 战斗世界实现：自持单位权威状态，统一驱动移动、读条、冷却、Buff、仇恨与技能结算。
 /// 面向 <see cref="BattleUnit"/> 领域实体读写，不依赖网络载体与配置仓库。
-/// <see cref="ApplyDecisions"/> 先触发 AI 决策产出意图，<see cref="Tick"/> 消费意图并推进战斗、返回帧事件流；
+/// 意图由意图驱动在 <see cref="Tick"/> 之前投递，<see cref="Tick"/> 消费意图并推进战斗、返回帧事件流；
 /// 事件流是仇恨推衍的唯一真相源。阶段由宿主写 <c>CurrentPhase</c>，死亡不产出事件而由生命值派生。
-/// 宿主提交意图见 <see cref="BattleIntentHub"/>。
+/// 意图源与投递在意图侧，谁驱动单位由单位配置声明；宿主提交玩家命令见 <see cref="BattleIntentHub"/>。
 /// </summary>
 /// <param name="relations">副本配置的阵营关系函数，由房间按副本装配。</param>
 /// <param name="movementScene">竞技场移动场景，由房间按副本布局构建，与战斗世界同生命周期。</param>
@@ -152,13 +152,33 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。宿主与回放一律经 <see cref="BattleIntentHub.Submit"/> 转入。
+    /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。调用者是意图驱动，玩家与自治同路。
     /// </summary>
     /// <returns>单位存在并已写入意图返回 true。</returns>
     internal bool SubmitMove(UnitId sourceUnitId, Vector2 moveDirection) {
         if (!_unitById.TryGetValue(sourceUnitId, out var unit))
             return false;
         unit.MoveInput = moveDirection;
+        return true;
+    }
+
+    /// <summary>
+    /// 提交施法意图：按技能的目标类型解析单位目标，写该单位本帧施法意图，单位不存在或目标解不到即不接管。
+    /// 只写意图不做裁定，射程与冷却一律在 <see cref="Tick"/> 的读条推进段按当时状态判，口径见 <see cref="SkillCastValidator"/>。
+    /// </summary>
+    /// <returns>已写入意图返回 true。</returns>
+    internal bool SubmitCastIntent(UnitId casterUnitId, in UnitCastIntent cast) {
+        if (!_unitById.TryGetValue(casterUnitId, out var caster))
+            return false;
+
+        BattleUnit? target = null;
+        if (caster.GetSkill(cast.Skill) is { NeedUnitTarget: true }) {
+            if (!_unitById.TryGetValue(cast.TargetUnitId, out var targetUnit))
+                return false;
+            target = targetUnit;
+        }
+
+        caster.CastInput = new CastIntent(cast.Skill, target, cast.TargetPos);
         return true;
     }
 
@@ -182,7 +202,7 @@ public sealed partial class BattleScene(
 
     /// <summary>
     /// 施法裁定：技能属该单位且 <see cref="SkillCastValidator.CanCast"/> 通过后，瞬发立即结算、
-    /// 否则写入读条状态与目标，事件直写本帧日志。未通过只记日志不改状态，意图不退回——重投由输入源负责。
+    /// 否则写入读条状态与目标，事件直写本帧日志。未通过只记日志不改状态，意图不退回——重新产出由意图源负责。
     /// </summary>
     private void AttemptCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos,
         BattleEventLog log) {
@@ -225,54 +245,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>
-    /// AI 前置推进：逐单位触发自治决策，产出的移动与施法意图直写单位字段，不触碰结算状态。
-    /// 须在 <see cref="Tick"/> 之前由 <see cref="BattleIntentHub.PrepareTick"/> 调用。
-    /// </summary>
-    internal void ApplyDecisions() {
-        if (CurrentPhase != BattlePhase.Running)
-            return;
-
-        foreach (var unit in _units) {
-            if (unit.IsDead || unit.Intelligence is not { } intelligence)
-                continue;
-
-            // 正在读条：本帧不投移动意图，原地等读条完成，避免移动打断自身读条
-            if (unit.SkillCasting != default)
-                continue;
-
-            var decision = intelligence.Decide(unit, this, _relations);
-            switch (decision.Kind) {
-                case EnemyDecisionKind.MoveTo:
-                    unit.MoveInput = decision.MoveDirection;
-                    break;
-
-                case EnemyDecisionKind.CastSkill:
-                    SubmitAiCast(unit, decision.SkillId, decision.TargetUnitId, decision.TargetPosition);
-                    break;
-
-                    // Idle 与未知决策不投意图：静止是缺省结果
-            }
-        }
-    }
-
-    /// <summary>
-    /// AI 决策的施法意图投递：按技能目标类型解析单位目标后写入该单位的 <c>CastInput</c>，位置锚点恒随决策携带；
-    /// 目标解不到即本帧不投，下一帧重新决策。
-    /// </summary>
-    private void SubmitAiCast(BattleUnit caster, SkillKeyId skillKey, UnitId targetUnitId, Vector2 targetPosition) {
-        BattleUnit? target = null;
-        if (caster.GetSkill(skillKey) is { NeedUnitTarget: true }) {
-            if (!_unitById.TryGetValue(targetUnitId, out var targetUnit))
-                return;
-            target = targetUnit;
-        }
-
-        caster.CastInput = new CastIntent(skillKey, target, targetPosition);
-    }
-
-    /// <summary>
     /// 按帧推进位移解算、施法裁定与读条、冷却与 Buff，返回本帧领域事件；仅在 Running 阶段推进，结束条件满足时切 Finished。
-    /// 单出口：两类意图在末尾统一作废，静止与无待决施法是缺省结果。作废点必须晚于读条推进段——它是移动意图的最后一个读者。
+    /// 单出口：两类意图在末尾统一作废。作废点必须晚于读条推进段——它是移动意图的最后一个读者。
     /// </summary>
     public IReadOnlyList<IBattleEvent> Tick(float deltaTime) {
         _eventLog.Clear();
@@ -317,7 +291,7 @@ public sealed partial class BattleScene(
             ClearDeadFocusTargets();
         }
 
-        // 本帧意图统一作废，下一帧由输入源重投
+        // 本帧意图统一作废，下一帧由意图源重新产出
         foreach (var unit in _units) {
             unit.MoveInput = Vector2.Zero;
             unit.CastInput = null;

@@ -47,21 +47,24 @@ public partial class BattleRoomServer {
             spawnIndexByOption[option.Key] = spawnIndex + 1;
             var spawnPos = new Vector2(option.SpawnBaseX + spawnIndex * option.SpawnXSpacing, 0);
             var pawn = CreatePawnEntity(selection.UnitConfigKey, option.Camps, spawnPos);
+            // 玩家输入轨道由生成路径登记，与敌人同源分流
+            _intentDriver.RegisterPlayer(pawn.Id);
             _pawnByPlayerId[selection.PlayerId] = pawn;
             // 回放玩家表：下标即记录条目里的玩家序号，敌人与非玩家单位不收录
             playerInfos.Add(new ReplayPlayerInfo(selection.PlayerName, selection.UnitConfigKey, pawn.Id));
         }
 
-        // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，服务端 AI 驱动
+        // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，意图源按各单位配置声明的控制者登记
         SpawnDungeonEnemies();
 
-        // 战斗输入回放记录：全部单位创建完成后装配，单位初始态整表落盘——敌人 ID 不再靠
-        // 「实体 ID 连续分配」这个前提推演；条目引用了表外单位时门内解析落空，不报错
+        // 战斗输入回放记录：全部单位创建完成后装配，单位初始态整表落盘，敌人 ID 取记录值；
+        // 条目引用了表外单位时门内解析落空，不报错
         CreateReplayRecorder(playerInfos);
         RecordUnitInits();
 
-        // 战斗循环收编进 LES tick 生命周期：Update=输入预备（AI 决策 → 在架施法重试）先于位移，
-        // LateUpdate=Tick → 帧末收口（权威状态同步 + 把结束帧写进回放时间轴）→ 整帧事件外送。
+        // 战斗循环收编进 LES tick 生命周期：LateUpdate=输入预备（刷新意图源 → 投递当帧意图）→ Tick →
+        // 帧末收口（权威状态同步 + 把结束帧写进回放时间轴）→ 整帧事件外送。
+        // 输入预备排在实体更新之后：本 tick 到达的玩家输入当帧即生效，与回放端「注入 → 预备 → Tick」同序。
         // 帧末收口留在闭包里：_stateSynchronizer 在上方刚赋值，闭包带得走这份可空状态。
         EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, _intentHub,
             scene => {
@@ -103,14 +106,18 @@ public partial class BattleRoomServer {
                     $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                CreatePawnEntity(config.ConfigKey, dungeon.EnemyCamps, spawnPos);
+                var pawn = CreatePawnEntity(config.ConfigKey, dungeon.EnemyCamps, spawnPos);
+                // 未声明控制者即不登记意图源，该单位不产出意图
+                if (config.Controller is { } controller)
+                    _intentDriver.RegisterAutonomous(pawn.Id, controller);
             }
         }
     }
 
     /// <summary>
-    /// 在本房间的 SEM 中创建 UnitPawn 实体，并按同一 NetId 创建领域单位 BattleUnit 注册进战斗世界。
-    /// 战斗系数与技能装配在 BattleUnit，状态同步器写 SyncVar 供客户端展示。仅房间线程调用。
+    /// 在本房间的 SEM 中创建 UnitPawn 实体，按同一 NetId 创建领域单位 BattleUnit 注册进战斗世界。
+    /// 战斗系数与技能装配在 BattleUnit，状态同步器写 SyncVar 供客户端展示；意图源不在本方法登记，
+    /// 由调用方按单位进入战场的方式选择驱动轨道。仅房间线程调用。
     /// </summary>
     public UnitPawn CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<CampId> camps, Vector2 spawnPos) {
         var entity = EntityManager.AddEntity<UnitPawn>(e => {

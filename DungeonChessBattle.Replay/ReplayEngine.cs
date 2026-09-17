@@ -5,6 +5,7 @@ using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Logic.Control;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Battle.Config.Shared;
@@ -13,14 +14,15 @@ namespace DungeonChessBattle.Replay;
 
 /// <summary>
 /// 回放引擎：解码后的回放在本地用战斗世界确定性重跑。
-/// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故 ID 解析、排队与落点不会分叉。
-/// 每帧顺序与服务端 BattleLoop 钩子一致：门面预备 → 输入注入 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
+/// 与在线端共用同一 BattleScene 与输入门面 <see cref="BattleIntentHub"/>，故单位 ID 解析与落点不会分叉。
+/// 每帧顺序与服务端 BattleLoop 钩子一致：输入注入 → 门面预备 → Tick。纯本地零网络依赖，Godot 主线程逐帧驱动。
 /// 世界重建照录制端的单位初始态表，实体 ID 与阵营取记录值，属性按配置键取当前配置。
 /// 本类只承担重放驱动与世界读数，不实现表现层数据源接口——展示取数由 Game 层统一数据源
 /// <c>BattleSessionContext</c> 经此处只读成员装配。
 /// </summary>
 public sealed class ReplayEngine {
     private readonly BattleScene _battleScene;
+    private readonly UnitIntentDriver _intentDriver;
     private readonly BattleIntentHub _intentHub;
     private readonly IContentRegistryView _content;
     private readonly IReadOnlyList<ReplayUnitInit> _units;
@@ -106,36 +108,38 @@ public sealed class ReplayEngine {
         // 只读投影建在门后：被拒的归档不必先做一遍三表混排
         _inputs = ReplayInputTimeline.Build(recording);
         _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
-        _intentHub = new BattleIntentHub(_battleScene);
+        _intentDriver = new UnitIntentDriver(_battleScene, dungeon.RelationsResolver);
+        _intentHub = new BattleIntentHub(_battleScene, _intentDriver);
         BuildUnits();
         _battleScene.CurrentPhase = BattlePhase.Running;
     }
 
     /// <summary>
     /// 按录制的单位初始态重建全部单位：ID、阵营与出生点取记录值，战斗属性按配置键取当前配置。
-    /// 玩家与敌人同表同序，唯一区别是 AI 驱动——玩家单位的 Intelligence 恒为空，操作权在输入轨道。
+    /// 玩家与敌人同表同序，意图源按录制玩家表分流登记，与服务器生成路径同一判据。
     /// </summary>
     private void BuildUnits() {
         foreach (var unit in _units) {
             var config = _content.GetUnit(unit.UnitConfigKey)
                 ?? throw new InvalidDataException($"Replay references unknown unit config: {unit.UnitConfigKey}");
-            AddUnit(new BattleUnit {
+            var battleUnit = new BattleUnit {
                 UnitId = unit.NetId,
                 UnitName = config.ConfigKey,
                 Camps = [.. unit.Camps.Select(camp => new CampId(camp))],
                 BaseConfig = config.BaseConfig,
                 Skills = config.Skills,
-                Intelligence = IsPlayerUnit(unit.NetId) ? null : config.Intelligence,
                 HateRule = config.HateRule,
                 HateFactor = config.HateFactor,
                 Health = config.BaseConfig.MaxHealth,
                 Position = new Vector2(unit.SpawnX, unit.SpawnY),
-            });
+            };
+            AddUnit(battleUnit);
+            if (_playerUnitIdByIndex.Contains(unit.NetId))
+                _intentDriver.RegisterPlayer(battleUnit.UnitId);
+            else if (config.Controller is { } controller)
+                _intentDriver.RegisterAutonomous(battleUnit.UnitId, controller);
         }
     }
-
-    /// <summary>是否玩家单位：由元数据玩家表的 NetId 认定，不在单位初始态里留第二份。</summary>
-    private bool IsPlayerUnit(ushort netId) => Array.IndexOf(_playerUnitIdByIndex, (UnitId)netId) >= 0;
 
     /// <summary>
     /// 移动轨道按玩家序号归位，段序按帧重排以不信任录制端顺序。玩家表超轨道键容量、序号越界、
@@ -184,9 +188,9 @@ public sealed class ReplayEngine {
         if (_battleScene.IsFinished)
             return [];
 
-        // 与服务端同序：门面预备意图 → 注入本帧记录的新输入 → 推进战斗世界
-        _intentHub.PrepareTick(_dt);
+        // 与服务端同序：注入本帧记录的新输入 → 门面预备意图 → 推进战斗世界
         InjectInputs();
+        _intentHub.PrepareTick(_dt);
         var events = _battleScene.Tick(_dt);
         _frame++;
         return events;
@@ -237,13 +241,12 @@ public sealed class ReplayEngine {
     private UnitId UnitIdOf(int playerIndex) =>
         playerIndex < _playerUnitIdByIndex.Length ? _playerUnitIdByIndex[playerIndex] : UnitId.None;
 
-    /// <summary>重置到战斗开始帧：先经门面丢弃持旧单位引用的在架意图，再重建战斗世界与单位。</summary>
+    /// <summary>重置到战斗开始帧：拆除单位后重建，意图源按单位重新登记，在架待决意图随之作废。</summary>
     private void Reset() {
         Array.Clear(_moveCursor);
         _castCursor = 0;
         _focusCursor = 0;
         _frame = 0;
-        _intentHub.ClearQueuedCasts();
         foreach (var unit in _battleScene.BattleUnits.ToArray())
             _battleScene.RemoveUnit(unit);
         BuildUnits();

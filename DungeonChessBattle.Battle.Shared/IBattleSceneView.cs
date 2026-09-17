@@ -4,7 +4,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 namespace DungeonChessBattle.Battle.Shared;
 
 /// <summary>
-/// 战场查询视图：AI 决策只读入口，不含写通道与推进方法。
+/// 战场查询视图：自治决策只读入口，不含写通道与推进方法。
 /// 单位权威状态经 <see cref="IBattleUnitView"/> 只读成员读取；实现方为 BattleScene。
 /// </summary>
 public interface IBattleSceneView {
@@ -18,7 +18,7 @@ public interface IBattleSceneView {
         get;
     }
 
-    /// <summary>本房间全部战斗单位只读视图。AI 决策只读使用，禁止写。</summary>
+    /// <summary>本房间全部战斗单位只读视图。自治决策只读使用，禁止写。</summary>
     IReadOnlyList<IBattleUnitView> Units {
         get;
     }

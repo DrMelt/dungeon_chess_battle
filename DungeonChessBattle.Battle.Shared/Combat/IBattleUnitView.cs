@@ -37,7 +37,7 @@ public interface ISkillSource {
     /// <summary>单位是否拥有该技能。</summary>
     bool HasSkill(SkillKeyId skillKey);
 
-    /// <summary>单位装备的全部技能键，按装配顺序；AI 决策按此顺序枚举。</summary>
+    /// <summary>单位装备的全部技能键，按装配顺序；自治决策按此顺序枚举。</summary>
     IReadOnlyList<SkillKeyId> SkillKeys {
         get;
     }
@@ -68,7 +68,7 @@ public interface IHateActorView {
 }
 
 /// <summary>
-/// 战斗单位只读视图：AI 决策、施法校验与仇恨规则的只读消费入口。
+/// 战斗单位只读视图：自治决策、施法校验与仇恨规则的只读消费入口。
 /// 按角色聚合：<see cref="ISkillCasterView"/>（施法判定子集）、<see cref="ICombatStatsView"/>（结算快照）与
 /// <see cref="IHateActorView"/>（仇恨通道），各消费者按需依赖最小子集。
 /// 标量状态经公共面（身份、数值、技能源）收敛，不做重复声明。

@@ -29,5 +29,8 @@ public sealed class ModBootstrapContext(ContentSetRegistry registry, ILoggerFact
     public void RegisterUnit(UnitConfig unit) => registry.RegisterUnit(unit);
 
     /// <inheritdoc/>
+    public void RegisterPlayerSelectableUnit(UnitConfig unit) => registry.RegisterPlayerSelectableUnit(unit);
+
+    /// <inheritdoc/>
     public void RegisterDungeon(DungeonConfig dungeon) => registry.RegisterDungeon(dungeon);
 }

@@ -20,15 +20,15 @@ internal static class ModEntryViewBuilder {
 
     private static ModEntryView From(
         ModLoadResult load, ModDisplaySet displays, LoadedMod mod, bool enabled) => new() {
-        Id = mod.Manifest.Id,
-        Version = mod.Manifest.Version,
-        IsEnabled = enabled,
-        DirectoryPath = mod.DirectoryPath,
-        Dependencies = mod.Manifest.Dependencies,
-        HasCode = mod.Manifest.Code.Count > 0,
-        HasDisplayCode = displays.HasEntryCode(mod.Manifest.Id),
-        Errors = [.. load.Errors.Where(error => error.ModId == mod.Manifest.Id)],
-    };
+            Id = mod.Manifest.Id,
+            Version = mod.Manifest.Version,
+            IsEnabled = enabled,
+            DirectoryPath = mod.DirectoryPath,
+            Dependencies = mod.Manifest.Dependencies,
+            HasCode = mod.Manifest.Code.Count > 0,
+            HasDisplayCode = displays.HasEntryCode(mod.Manifest.Id),
+            Errors = [.. load.Errors.Where(error => error.ModId == mod.Manifest.Id)],
+        };
 
     /// <summary>被拒载的目录不读展示声明：它连数据面内容都没进来，展示更无从谈起。</summary>
     private static ModEntryView From(ModLoadResult load, UnloadedMod mod) {

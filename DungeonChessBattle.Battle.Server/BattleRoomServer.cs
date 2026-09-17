@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Logic;
+using DungeonChessBattle.Battle.Logic.Control;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -80,10 +81,13 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>本房间的战斗世界，面向 BattleScene 具体类，不依赖网络载体与配置仓库。</summary>
     private readonly BattleScene _battleScene;
 
-    /// <summary>权威输入门面：本房间移动与施法意图的唯一提交入口，内含施法预输入缓冲。</summary>
+    /// <summary>本房间意图驱动：按单位登记意图源，每逻辑帧刷新全部意图源并经战斗世界投递当帧意图。</summary>
+    private readonly UnitIntentDriver _intentDriver;
+
+    /// <summary>权威输入门面：本房间玩家命令的唯一提交入口，并按帧单点推进意图驱动。</summary>
     private readonly BattleIntentHub _intentHub;
 
-    /// <summary>本房间副本的阵营关系函数，AI 决策与战斗世界共用。</summary>
+    /// <summary>本房间副本的阵营关系函数，战斗世界与意图驱动共用。</summary>
     private readonly CampRelationResolver _campRelations;
 
     /// <summary>本房间选中的权威副本键，来自 Store 房间配置，服务端据此生成敌人。</summary>
@@ -147,7 +151,8 @@ public partial class BattleRoomServer : INetEventListener {
         _campRelations = dungeon.RelationsResolver;
         var movementScene = new PhysicsMovementScene(dungeon.Layout);
         _battleScene = new BattleScene(_campRelations, movementScene, logger: loggerFactory.CreateLogger<BattleScene>());
-        _intentHub = new BattleIntentHub(_battleScene, loggerFactory);
+        _intentDriver = new UnitIntentDriver(_battleScene, _campRelations, loggerFactory);
+        _intentHub = new BattleIntentHub(_battleScene, _intentDriver, loggerFactory);
 
         var typesMap = EntityTypesRegistry.EntityTypesMap;
         EntityManager = new ServerEntityManager(
@@ -215,7 +220,7 @@ public partial class BattleRoomServer : INetEventListener {
 
     /// <summary>
     /// 房间服务器主循环，独立线程：首帧初始化后轮询网络事件并驱动
-    /// EntityManager.Update()。AI 决策与战斗推进经 BattleLoop LocalSingleton
+    /// EntityManager.Update()。意图刷新与战斗推进经 BattleLoop LocalSingleton
     /// 收编进逻辑 tick 生命周期，时间由 LES accumulator 按真实时间统一管理。
     /// </summary>
     private void RunLoop() {

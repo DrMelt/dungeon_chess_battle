@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Replay.Shared;
 
 /// <summary>
 /// 回放归档元数据，即 <see cref="ReplayChunkType.Meta"/> 块的全部内容，也是列表侧的唯一元数据真相：
-/// 服务端摘要、本地缓存条目与协议 DTO 都由本类型投影，不再有第二份形状。
+/// 服务端摘要、本地缓存条目与协议 DTO 都由本类型投影，形状只有一份。
 /// 编码进容器头之后本类型不带格式版本，版本门控归 <see cref="ReplayArchive"/>。
 /// StartTick 为战斗开始逻辑帧，EndTick 为战斗结束或最后一条输入所在帧，二者 inclusive。
 /// DataVersion 为录制端内容数据修订号，LogicVersion 为录制端结算逻辑修订号，重放端据此双重门控。
@@ -37,8 +37,8 @@ public sealed record ReplayPlayerInfo(
 
 /// <summary>
 /// 单位初始态：世界重建的唯一依据，玩家与敌人同表同序，按录制端创建顺序落盘。
-/// NetId 是录制端 LES 同步实体 ID，条目里的目标 ID 与本表同一数轴；重建端不再从副本配置的
-/// 生成顺序推演 ID，敌人数组错位这类静默漂移在源头消失。
+/// NetId 是录制端 LES 同步实体 ID，条目里的目标 ID 与本表同一数轴；重建端按表取 ID 而不按副本配置的
+/// 生成顺序推演，敌人数组错位这类静默漂移在源头消失。
 /// 玩家身份不在本条目：它由 <see cref="ReplayMeta.Players"/> 的 NetId 判定，一份事实不留两个落点。
 /// SpawnX/SpawnY 为出生点坐标，Y 对应场景 XZ 平面的 Z 轴。单位属性仍按 UnitConfigKey 取当前配置。
 /// </summary>
@@ -77,7 +77,7 @@ public readonly record struct ReplayMoveRun(
     public int EndFrame => Frame + Length - 1;
 }
 
-/// <summary>施法请求条目：Accepted 表示服务端已投递接管（含入排队槽），不含可施放性结论。</summary>
+/// <summary>施法请求条目：Accepted 表示服务端已接管并写入待决施法槽，不含可施放性结论。</summary>
 [MessagePackObject]
 public readonly record struct ReplayCastEntry(
     [property: Key(0)] int Frame,

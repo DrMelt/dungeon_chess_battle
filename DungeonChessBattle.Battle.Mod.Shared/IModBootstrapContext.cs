@@ -27,6 +27,9 @@ public interface IModBootstrapContext {
     /// <summary>注册单位配置，同 ConfigKey 覆盖。</summary>
     void RegisterUnit(UnitConfig unit);
 
+    /// <summary>注册玩家可选单位：同一次调用写入单位表与玩家可选单位名册，同键覆盖单位，空键拒绝。</summary>
+    void RegisterPlayerSelectableUnit(UnitConfig unit);
+
     /// <summary>注册副本配置，同 DungeonKey 覆盖，空键拒绝。</summary>
     void RegisterDungeon(DungeonConfig dungeon);
 }

@@ -9,5 +9,5 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// </summary>
 /// <param name="Skill">要施放的技能键。</param>
 /// <param name="Target">单位目标；位置目标或无目标技能传 null。</param>
-/// <param name="TargetPos">位置目标锚点，单位目标时玩家与回放传 null。AI 决策恒带锚点：单位目标下裁定不读它，但它随读条状态传给效果层。</param>
+/// <param name="TargetPos">位置目标锚点，无位置目标时为 null；单位目标下不参与判定，随读条状态传给效果层。</param>
 public readonly record struct CastIntent(SkillKeyId Skill, BattleUnit? Target, Vector2? TargetPos);
