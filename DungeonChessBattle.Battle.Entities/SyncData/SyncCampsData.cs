@@ -1,4 +1,3 @@
-using System.Text;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using LiteEntitySystem;
 
@@ -38,26 +37,25 @@ public struct SyncCampsData : ISpanSerializable {
     /// <summary>序列化后的最大字节数。</summary>
     public readonly int MaxSize => 1 + MaxCamps * (2 + MaxCampBytes); // 391 bytes
 
-    /// <summary>写入阵营列表；空、超限或非法标识即抛异常，配置故障响亮暴露。</summary>
+    /// <summary>
+    /// 写入阵营列表；数量越出槽位属调用方未先裁决内容，不变量断言。
+    /// 阵营标识的合法性与数量由内容裁决点判定，<see cref="CampId"/> 已保证编码长度不越 <see cref="MaxCampBytes"/>。
+    /// </summary>
     public void Set(IReadOnlyList<CampId> camps) {
-        if (camps == null || camps.Count == 0 || camps.Count > MaxCamps)
-            throw new InvalidOperationException(
-                $"Camps count must be in 1..{MaxCamps}, got {camps?.Count ?? 0}.");
+        if (camps.Count is 0 or > MaxCamps)
+            throw new InvalidOperationException($"Camps count must be in 1..{MaxCamps}, got {camps.Count}.");
         Count = (byte)camps.Count;
         Camp0 = Camp1 = Camp2 = CampId.None;
         for (int i = 0; i < camps.Count; i++) {
-            var camp = camps[i];
-            if (string.IsNullOrWhiteSpace(camp.Value) || Encoding.UTF8.GetByteCount(camp.Value) > MaxCampBytes)
-                throw new InvalidOperationException($"Invalid camp '{camp}' at index {i}.");
             switch (i) {
                 case 0:
-                    Camp0 = camp;
+                    Camp0 = camps[i];
                     break;
                 case 1:
-                    Camp1 = camp;
+                    Camp1 = camps[i];
                     break;
                 default:
-                    Camp2 = camp;
+                    Camp2 = camps[i];
                     break;
             }
         }

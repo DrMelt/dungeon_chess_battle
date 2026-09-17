@@ -9,6 +9,8 @@ using DungeonChessBattle.Battle.Logic.Control;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Battle.Config.Shared;
+using DungeonChessBattle.Battle.Config.Shared.Content;
+using ErrorOr;
 
 namespace DungeonChessBattle.Replay;
 
@@ -76,38 +78,58 @@ public sealed class ReplayEngine {
     /// <summary>固定逻辑步长秒数。</summary>
     public float FixedDelta => _dt;
 
-    /// <summary>构建回放：注入内容注册表只读视图，按单位初始态构建战斗世界并立即开战。</summary>
-    public ReplayEngine(ReplayRecording recording, IContentRegistryView content) {
+    /// <summary>
+    /// 构建回放：注入内容注册表只读视图，归档门控、副本引用、移动轨道与单位引用先全部裁决，
+    /// 通过后按单位初始态装配战斗世界并立即开战。被拒的归档不做三表混排与单位构建。
+    /// </summary>
+    public static ErrorOr<ReplayEngine> Create(ReplayRecording recording, IContentRegistryView content) {
+        ReplayMeta meta = recording.Meta;
+        if (meta.TickRate <= 0)
+            return ReplayErrors.InvalidTickRate(meta.TickRate);
+
+        // 双重门控：内容修订号管配置与布局，逻辑修订号管结算时序，任一不符重算都不可能对上
+        if (meta.DataVersion != content.DataRevision)
+            return ReplayErrors.ContentMismatch(meta.DataVersion, content.DataRevision);
+        if (meta.LogicVersion != BattleLogicRevision.Value)
+            return ReplayErrors.LogicMismatch(meta.LogicVersion, BattleLogicRevision.Value);
+
+        // 归档携带的副本键先过值对象校验：空或超长即拒绝，不把非法键带进内容查询
+        if (RestrictedString.TryCreate(meta.DungeonKey, DungeonKeyId.MaxLength) is not { } key)
+            return ReplayErrors.InvalidDungeonKey(meta.DungeonKey);
+        if (content.GetDungeon(key.Value) is not { } dungeon)
+            return ReplayErrors.UnknownDungeonKey(meta.DungeonKey);
+
+        ErrorOr<(ReplayMoveRun[][] Runs, int[] Cursors)> tracks =
+            BuildMoveTracks(recording.MoveTracks, meta.Players.Count);
+        if (tracks.IsError)
+            return tracks.FirstError;
+
+        // 单位初始态引用的配置必须在场：重建路径按同一份表取值，不再逐个体复核
+        ReplayUnitInit? missing = recording.Units
+            .FirstOrDefault(unit => content.GetUnit(unit.UnitConfigKey) is null);
+        if (missing is not null)
+            return ReplayErrors.UnknownUnitConfig(missing.UnitConfigKey);
+
+        return new ReplayEngine(recording, content, dungeon, tracks.Value.Runs, tracks.Value.Cursors);
+    }
+
+    /// <summary>装配回放：门控与内容引用已由 <see cref="Create"/> 裁决，本构造只建只读投影与战斗世界。</summary>
+    private ReplayEngine(ReplayRecording recording, IContentRegistryView content, DungeonConfig dungeon,
+        ReplayMoveRun[][] moveRunsByPlayer, int[] moveCursor) {
         _meta = recording.Meta;
         _content = content;
         _startTick = _meta.StartTick;
-        if (_meta.TickRate <= 0)
-            throw new InvalidDataException($"Replay invalid tick rate: {_meta.TickRate}.");
         _dt = 1f / _meta.TickRate;
         _units = recording.Units;
         _casts = [.. recording.Casts.OrderBy(c => c.Frame)];
         _focuses = [.. recording.Focuses.OrderBy(f => f.Frame)];
         _playerUnitIdByIndex = [.. _meta.Players.Select(p => p.NetId)];
-        (_moveRunsByPlayer, _moveCursor) = BuildMoveTracks(recording.MoveTracks, _meta.Players.Count);
-
-        // 双重门控：内容修订号管配置与布局，逻辑修订号管结算时序，任一不符重算都不可能对上
-        if (_meta.DataVersion != content.DataRevision)
-            throw new InvalidDataException(
-                $"Replay content mismatch: record data={_meta.DataVersion}, current={content.DataRevision}.");
-        if (_meta.LogicVersion != BattleLogicRevision.Value)
-            throw new InvalidDataException(
-                $"Replay logic mismatch: record logic={_meta.LogicVersion}, current={BattleLogicRevision.Value}.");
-
-        // 归档携带的副本键先过值对象校验：空或超长即拒绝，不把非法键带进内容查询
-        if (RestrictedString.TryCreate(_meta.DungeonKey, DungeonKeyId.MaxLength) is not { } key)
-            throw new InvalidDataException($"Replay invalid dungeon key: {_meta.DungeonKey}");
-        var dungeon = content.GetDungeon(key.Value)
-            ?? throw new InvalidDataException($"Replay references unknown dungeon key: {_meta.DungeonKey}");
-        var movementScene = new PhysicsMovementScene(dungeon.Layout);
+        _moveRunsByPlayer = moveRunsByPlayer;
+        _moveCursor = moveCursor;
 
         // 只读投影建在门后：被拒的归档不必先做一遍三表混排
         _inputs = ReplayInputTimeline.Build(recording);
-        _battleScene = new BattleScene(dungeon.RelationsResolver, movementScene);
+        _battleScene = new BattleScene(dungeon.RelationsResolver, new PhysicsMovementScene(dungeon.Layout));
         _intentDriver = new UnitIntentDriver(_battleScene, dungeon.RelationsResolver);
         _intentHub = new BattleIntentHub(_battleScene, _intentDriver);
         BuildUnits();
@@ -117,11 +139,11 @@ public sealed class ReplayEngine {
     /// <summary>
     /// 按录制的单位初始态重建全部单位：ID、阵营与出生点取记录值，战斗属性按配置键取当前配置。
     /// 玩家与敌人同表同序，意图源按录制玩家表分流登记，与服务器生成路径同一判据。
+    /// 单位配置在场由 <see cref="Create"/> 一次裁决，重建路径不再查空。
     /// </summary>
     private void BuildUnits() {
         foreach (var unit in _units) {
-            var config = _content.GetUnit(unit.UnitConfigKey)
-                ?? throw new InvalidDataException($"Replay references unknown unit config: {unit.UnitConfigKey}");
+            var config = _content.GetUnit(unit.UnitConfigKey)!;
             var battleUnit = new BattleUnit {
                 UnitId = unit.NetId,
                 UnitName = config.ConfigKey,
@@ -143,13 +165,13 @@ public sealed class ReplayEngine {
 
     /// <summary>
     /// 移动轨道按玩家序号归位，段序按帧重排以不信任录制端顺序。玩家表超轨道键容量、序号越界、
-    /// 同序号重复轨道都属归档不合规范，响亮失败：缺前一条守卫，按玩家遍历的注入循环永不收敛；
+    /// 同序号重复轨道都属归档不合规范，以错误拒载：缺前一条守卫，按玩家遍历的注入循环永不收敛；
     /// 缺后一条，重复轨道静默吃掉先到的整条轨道。
     /// </summary>
-    private static (ReplayMoveRun[][], int[]) BuildMoveTracks(IReadOnlyList<ReplayMoveTrack> tracks, int playerCount) {
+    private static ErrorOr<(ReplayMoveRun[][] Runs, int[] Cursors)> BuildMoveTracks(
+        IReadOnlyList<ReplayMoveTrack> tracks, int playerCount) {
         if (playerCount > ReplayMoveTrack.MaxPlayers)
-            throw new InvalidDataException(
-                $"Replay player table holds {playerCount} players, above move track capacity {ReplayMoveTrack.MaxPlayers}.");
+            return ReplayErrors.PlayerTableOverCapacity(playerCount, ReplayMoveTrack.MaxPlayers);
 
         var runsByPlayer = new ReplayMoveRun[playerCount][];
         for (int i = 0; i < playerCount; i++)
@@ -158,9 +180,9 @@ public sealed class ReplayEngine {
         var claimed = new bool[playerCount];
         foreach (var track in tracks) {
             if (track.PlayerIndex >= playerCount)
-                throw new InvalidDataException($"Move track for player index {track.PlayerIndex} exceeds player table.");
+                return ReplayErrors.MoveTrackIndexOutOfRange(track.PlayerIndex);
             if (claimed[track.PlayerIndex])
-                throw new InvalidDataException($"Duplicate move track for player index {track.PlayerIndex}.");
+                return ReplayErrors.DuplicateMoveTrack(track.PlayerIndex);
             claimed[track.PlayerIndex] = true;
             runsByPlayer[track.PlayerIndex] = [.. track.Runs.OrderBy(r => r.Frame)];
         }

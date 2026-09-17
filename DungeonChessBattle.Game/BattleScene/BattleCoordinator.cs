@@ -40,7 +40,7 @@ public partial class BattleCoordinator : Node {
         get; private set;
     }
 
-    /// <summary>战斗完成回调（Finished 阶段触发），由 MainScene 注入应用级退出流程。</summary>
+    /// <summary>战斗完成或不可继续时回调，由 MainScene 注入应用级退出流程。</summary>
     public Action? OnBattleFinished {
         get; set;
     }
@@ -56,6 +56,8 @@ public partial class BattleCoordinator : Node {
 
         session.BattlePhaseChanged += OnBattlePhase;
         _battleService.BattleEventsReceived += OnBattleEvents;
+        // 内容不一致经客户端门面事件消费：门面在主线程帧首派发，退出流程不在房间客户端更新中途执行
+        ServiceLocator.ClientService.OnBattleContentMismatch += OnContentMismatch;
         _sessionContext?.Bind(
             new OnlineBattleViewSource(session, ServiceLocator.ContentRegistry),
             new BattleSessionCommand(session, _roomId));
@@ -74,6 +76,7 @@ public partial class BattleCoordinator : Node {
 
         _battleService?.BattlePhaseChanged -= OnBattlePhase;
         _battleService?.BattleEventsReceived -= OnBattleEvents;
+        ServiceLocator.ClientService.OnBattleContentMismatch -= OnContentMismatch;
         _sessionContext?.Unbind();
         _inputController?.Reset();
 
@@ -99,6 +102,18 @@ public partial class BattleCoordinator : Node {
         if (roomId != _roomId)
             return;
         _sessionContext?.AppendEvents(events);
+    }
+
+    /// <summary>
+    /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界，这里交还应用级退出流程。
+    /// 按房间 ID 过滤，旧房间的迟到通知不动当前战斗；事实本身由检测层记录，玩家提示由大厅面板承担。
+    /// </summary>
+    private void OnContentMismatch(string roomId, string reason) {
+        if (roomId != _roomId)
+            return;
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("战斗中止，本地内容与服务端不一致：{RoomId}（{Reason}）", roomId, reason);
+        OnBattleFinished?.Invoke();
     }
 
     private void OnBattlePhase(string roomId, BattlePhase phase) {

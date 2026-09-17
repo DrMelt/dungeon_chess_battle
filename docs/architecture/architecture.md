@@ -130,7 +130,6 @@ graph TD
     BattleSrv --> Runtime
     BattleSrv --> Logic
     BattleSrv --> Entities
-    BattleSrv --> ConfigRegistry
     BattleSrv --> BattleSrvShared
     BattleSrv --> StoreAbst
     BattleSrv --> ReplayShared
@@ -142,7 +141,6 @@ graph TD
     LobbySrv --> LobbyProtocol
     LobbySrv --> Shared
     LobbySrv --> Config
-    LobbySrv --> ConfigRegistry
     LobbySrv --> BattleSrvShared
     LobbySrv --> StoreAbst
 
@@ -160,7 +158,6 @@ graph TD
     Replay --> Config
     Replay --> Runtime
     Replay --> Logic
-    Replay --> ConfigRegistry
     Replay --> ReplayShared
     ReplaySrv --> ReplayProtocol
     ReplaySrv --> ReplayShared

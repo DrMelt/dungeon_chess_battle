@@ -3,6 +3,7 @@ using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Replay;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Game.BattleScene;
+using ErrorOr;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -54,18 +55,18 @@ public partial class ReplayCoordinator : Node {
         get; set;
     } = 1f;
 
-    /// <summary>启动回放：以回放获取端解码并门控后的记录构建引擎，生成单位展示。</summary>
-    public void LoadReplay(ReplayRecording recording) {
-        ReplayEngine engine;
-        try {
-            engine = new ReplayEngine(recording, ServiceLocator.ContentRegistry);
-        }
-        catch (Exception ex) {
-            // 引擎构造自带门控：配置缺失、版本不符与副本键非法都在这里挡下，不进入半启动状态
-            _logger.LogError(ex, "回放引擎构建失败");
-            return;
+    /// <summary>
+    /// 启动回放：以回放获取端解码并门控后的记录构建引擎，生成单位展示。
+    /// 引擎门控不通过以错误返回，由调用方决定提示与导航，本节点不留半启动态。
+    /// </summary>
+    public ErrorOr<Success> LoadReplay(ReplayRecording recording) {
+        var created = ReplayEngine.Create(recording, ServiceLocator.ContentRegistry);
+        if (created.IsError) {
+            _logger.LogError("回放引擎构建失败：{Reason}", created.FirstError.Description);
+            return created.FirstError;
         }
 
+        var engine = created.Value;
         _engine = engine;
         _accumulator = 0;
         _isPaused = false;
@@ -74,6 +75,7 @@ public partial class ReplayCoordinator : Node {
         EmitSignal(SignalName.ReplayStarted);
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("回放加载完成：{RoomId}，单位 {UnitCount}", recording.Meta.RoomId, engine.Units.Count);
+        return Result.Success;
     }
 
     /// <summary>每帧推进回放引擎：按倍速累积固定步长，未加载/暂停/结束时为空操作。</summary>

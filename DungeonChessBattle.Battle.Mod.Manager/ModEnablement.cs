@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
@@ -14,33 +15,50 @@ internal sealed class ModEnablementJson {
 /// 放在 mods 目录内而非别处，是因为服务端子进程与客户端读同一 mods 根目录，
 /// 启停裁决无需扩参数通道即两端一致，停用集合变化会联动内容指纹。
 /// 文件名见 <see cref="ModLayout.EnablementFileName"/>。
+/// 读写都以错误返回可预期失败：读侧被 UI 启停与装载共用，抛出去会打断调用方所在的一整步。
 /// </summary>
 public static class ModEnablement {
-    /// <summary>读取启用集；文件缺席或根目录不存在返回 null，等价于全部启用。解析失败抛异常。</summary>
-    public static IReadOnlySet<string>? Load(string rootPath, ILogger? logger = null) {
+    /// <summary>读取启用集；文件缺席或根目录不存在即无停用项，等价于全部启用。不可读以错误返回。</summary>
+    public static ErrorOr<IReadOnlySet<string>> Load(string rootPath, ILogger? logger = null) {
         string path = Path.Combine(rootPath, ModLayout.EnablementFileName);
         if (!File.Exists(path)) {
             if (logger is not null && logger.IsEnabled(LogLevel.Debug))
                 logger.LogDebug("无启用集文件，全部 mod 启用：{Path}", path);
-            return null;
+            return new HashSet<string>(StringComparer.Ordinal);
         }
 
-        var data = JsonSerializer.Deserialize(File.ReadAllText(path), ModJsonContext.Default.ModEnablementJson)
-            ?? throw new InvalidOperationException($"{ModLayout.EnablementFileName} 解析为空");
+        ModEnablementJson? data;
+        try {
+            data = JsonSerializer.Deserialize(File.ReadAllText(path), ModJsonContext.Default.ModEnablementJson);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
+            return ModLoaderErrors.EnablementUnreadable(path, ex.Message);
+        }
+
+        if (data is null)
+            return ModLoaderErrors.EnablementUnreadable(path);
         if (logger is not null && logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("读取启用集：{Path}，停用 {Count} 个", path, data.Disabled.Count);
         return data.Disabled.ToHashSet(StringComparer.Ordinal);
     }
 
-    /// <summary>写入启用集，只落被停用的 ID 并按字母序，保证文件内容对同一状态稳定。</summary>
-    public static void Save(string rootPath, IReadOnlyCollection<string> disabledIds, ILogger? logger = null) {
-        Directory.CreateDirectory(rootPath);
+    /// <summary>写入启用集，只落被停用的 ID 并按字母序，保证文件内容对同一状态稳定。写不下去以错误返回。</summary>
+    public static ErrorOr<Success> Save(
+        string rootPath, IReadOnlyCollection<string> disabledIds, ILogger? logger = null) {
+        string path = Path.Combine(rootPath, ModLayout.EnablementFileName);
         var data = new ModEnablementJson {
             Disabled = [.. disabledIds.Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal)],
         };
-        string path = Path.Combine(rootPath, ModLayout.EnablementFileName);
-        File.WriteAllText(path, JsonSerializer.Serialize(data, ModJsonContext.Default.ModEnablementJson));
+        try {
+            Directory.CreateDirectory(rootPath);
+            File.WriteAllText(path, JsonSerializer.Serialize(data, ModJsonContext.Default.ModEnablementJson));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            return ModLoaderErrors.EnablementWriteFailed(path, ex.Message);
+        }
+
         if (logger is not null && logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("写入启用集：{Path}，停用 {Count} 个", path, data.Disabled.Count);
+        return Result.Success;
     }
 }

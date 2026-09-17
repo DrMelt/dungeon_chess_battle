@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -24,12 +25,17 @@ public sealed class ModAssemblyLoader : IDisposable {
         _logger = logger ?? NullLogger<ModAssemblyLoader>.Instance;
     }
 
-    /// <summary>装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现返回 null。</summary>
-    public TEntry? LoadEntry<TEntry>(string dllAbsolutePath) where TEntry : class {
+    /// <summary>
+    /// 装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现以错误返回。
+    /// 装载、类型清单解析与入口构造的异常不在此收口：那是文件系统、CLR 与 mod 自己的代码，交上层装载边界连栈记一条错误。
+    /// </summary>
+    public ErrorOr<TEntry> LoadEntry<TEntry>(string dllAbsolutePath) where TEntry : class {
+        // 一上下文一程序集是本库的既定时序，用错上下文是调用方的程序错误，不做成返回值
         if (_loaded)
             throw new InvalidOperationException("该装载上下文已使用，一个上下文只装载一个 mod 程序集");
         _loaded = true;
 
+        // 装载异常不在这里收成错误：那是文件系统与 CLR 的交界
         Assembly assembly = _alc.LoadFromAssemblyPath(Path.GetFullPath(dllAbsolutePath));
         Type[] types;
         try {
@@ -42,14 +48,17 @@ public sealed class ModAssemblyLoader : IDisposable {
                     .Select(e => e is null ? "<null>" : e.Message)
                     .Distinct()
                     .Take(5));
+            // 类型清单解析失败属 CLR 交界：原因进消息，异常本体交上层装载边界连栈记一条
             throw new InvalidOperationException($"程序集类型加载失败：{reason}", ex);
         }
 
         Type? entryType = types
             .FirstOrDefault(t => !t.IsInterface && !t.IsAbstract && typeof(TEntry).IsAssignableFrom(t));
         if (entryType is null)
-            return null;
-        return Activator.CreateInstance(entryType) as TEntry;
+            return ModLoaderErrors.EntryTypeMissing(typeof(TEntry).Name);
+
+        // 类型筛选已保证可实例化为 TEntry，构造函数抛什么由上层装载边界收成一条错误
+        return (TEntry)Activator.CreateInstance(entryType)!;
     }
 
     /// <inheritdoc/>

@@ -12,7 +12,7 @@ public sealed class ContentBootResult {
         get; init;
     }
 
-    /// <summary>装配期新增错误：数据代码入口装载失败。扫描期错误由装载结果携带，不在此重复。</summary>
+    /// <summary>装配期新增错误：数据代码入口装载失败与内容注册被拒。扫描期错误由装载结果携带，不在此重复。</summary>
     public required IReadOnlyList<ModError> Errors {
         get; init;
     }
@@ -34,6 +34,7 @@ public sealed class ContentBootResult {
 /// 产物以 <see cref="ContentSetRegistry"/> 交回调用方持有，本类不持全局状态。
 /// 流程由本类钉死，环节各归其位：扫描与入口装载用本库 <see cref="ModLoader"/> 与 <see cref="ModEntryLoader"/>，
 /// 注册表归 Battle.Config.Registry。
+/// 注册被拒不中断 mod 的 Initialize：逐条按归属 mod 收进产物错误，同 mod 其余内容照常注册。
 /// </summary>
 public static class ContentBootstrapper {
     /// <summary>引擎内容修订号：引擎侧已无内置内容，修订由装配方传入的内容指纹承担，此值保持稳定。</summary>
@@ -57,9 +58,16 @@ public static class ContentBootstrapper {
         var sources = result.Mods
             .Select(mod => new ModEntrySource(mod.Manifest.Id, mod.CodeEntries, mod.CodeLibraries))
             .ToList();
-        var errors = ModEntryLoader.LoadEntries<IModEntry>(
+        var entryErrors = ModEntryLoader.LoadEntries<IModEntry>(
             sources, "mod_", "数据代码入口装载失败",
-            (entry, _) => entry.Initialize(context), loggerFactory);
+            (entry, modId) => {
+                context.BeginMod(modId);
+                entry.Initialize(context);
+            }, loggerFactory);
+        IReadOnlyList<ModError> errors = [.. entryErrors, .. context.Errors];
+        // 装配期错误两处产出：入口装载失败已由装载边界带栈记过，此处只记注册被拒，一个事实一处落日志
+        foreach (var error in context.Errors)
+            LogBootFailed(logger, error);
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("内容装配完成：技能 {Skills}/Buff {Buffs}/单位 {Units}/可选单位 {Selectable}/副本 {Dungeons}",
@@ -72,5 +80,11 @@ public static class ContentBootstrapper {
             Fingerprint = fingerprint,
             Registry = registry,
         };
+    }
+
+    /// <summary>注册被拒的一条：原因已含 mod 归属，条目同时进产物供管理面展示。</summary>
+    private static void LogBootFailed(ILogger logger, ModError error) {
+        if (logger.IsEnabled(LogLevel.Error))
+            logger.LogError("内容装配失败：{ModId}：{Reason}", error.ModId, error.Message);
     }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DungeonChessBattle.Battle.Mod.Manager;
+using ErrorOr;
 
 namespace DungeonChessBattle.Game.Mod.Manager;
 
@@ -29,7 +30,6 @@ internal sealed class ModDisplayJson {
 /// <summary>
 /// 一个 mod 的展示面声明：展示入口、依赖探测目录与待挂载资源包，路径已定位为 mod 目录内绝对路径。
 /// 声明段缺席即空声明，表示该 mod 不贡献展示面。
-/// <see cref="Problem"/> 非 null 表示声明不可用，展示装配整体跳过该 mod；数据面装载与内容指纹都不受影响。
 /// </summary>
 public sealed class ModDisplayDeclaration {
     /// <summary>mod ID，与清单 id 及目录名一致。</summary>
@@ -56,45 +56,34 @@ public sealed class ModDisplayDeclaration {
     public required IReadOnlyList<string> ResourcePacks {
         get; init;
     }
-
-    /// <summary>声明不可用的原因；非 null 表示该 mod 的展示面整体跳过。</summary>
-    public string? Problem {
-        get; init;
-    }
 }
 
 /// <summary>
 /// 展示面声明读取器：从 manifest.json 的展示段读出本 mod 的展示产物并定位成绝对路径。
 /// 与数据面各读一次同一份清单，互不传递：数据面只登记段的存在，段内容在这里解释，
 /// 定位规则复用 <see cref="ModRelativePath"/> 这一道安全闸。
-/// 问题一律记 <see cref="ModError"/> 而不拒载——展示面缺席不该影响两端的装载集合与内容指纹。
+/// 声明不可用以错误返回，不拒载——展示面缺席不该影响两端的装载集合与内容指纹。
 /// </summary>
 public static class ModDisplayDeclarationReader {
     /// <summary>
-    /// 读一个 mod 的展示声明。段缺席即空声明；段写错、字段缺失或路径非法时记错误并返回带
-    /// <see cref="ModDisplayDeclaration.Problem"/> 的空声明，调用方据此跳过该 mod 的展示面。
+    /// 读一个 mod 的展示声明。段缺席即空声明；清单读不出来、段写错或缺字段以错误返回，调用方据此跳过该 mod 的展示面；
+    /// 段内单个条目非法或缺失不使声明整体失败，逐条记 <paramref name="errors"/> 后其余条目照常可用。
     /// </summary>
     /// <param name="mod">已通过数据面校验的 mod，提供 ID、目录与清单路径。</param>
-    /// <param name="errors">错误落点，条目带归属 mod ID。</param>
-    public static ModDisplayDeclaration Read(LoadedMod mod, List<ModError> errors) {
+    /// <param name="errors">非致命问题的落点，条目带归属 mod ID。</param>
+    public static ErrorOr<ModDisplayDeclaration> Read(LoadedMod mod, List<ModError> errors) {
         string modId = mod.Manifest.Id;
         string directory = mod.DirectoryPath;
 
-        (ModDisplayJson? json, string? problem) = ReadSection(modId, directory, errors);
-        if (problem is not null) {
-            errors.Add(new ModError(modId, problem));
-            return Empty(modId, directory, problem);
-        }
+        var section = ReadSection(directory);
+        if (section.IsError)
+            return section.FirstError;
 
-        if (json is null)
-            return Empty(modId, directory, problem: null);
+        if (section.Value is not { } json)
+            return Empty(modId, directory);
 
-        string section = ModLayout.ManifestDisplaySection;
-        if (MissingRequired(json) is { Count: > 0 } missing) {
-            string reason = $"manifest.{section} 缺少必填字段 {string.Join("、", missing)}；无该产物时写 []";
-            errors.Add(new ModError(modId, reason));
-            return Empty(modId, directory, reason);
-        }
+        if (MissingRequired(json) is { Count: > 0 } missing)
+            return ModDisplayErrors.SectionMissingFields(missing);
 
         var entries = ResolveFiles(directory, modId, json.Code!, "code", errors);
         var packs = ResolveFiles(directory, modId, json.Packs!, "packs", errors);
@@ -105,38 +94,33 @@ public static class ModDisplayDeclarationReader {
             EntryDlls = entries,
             ProbeDirectories = directories,
             ResourcePacks = packs,
-            Problem = null,
         };
     }
 
     /// <summary>
-    /// 读展示段并反序列化。段缺席与清单读不出来都返回空且无原因，读不出来时另记一条错误；
-    /// 段存在却解释不了返回空且带原因，由调用方判为声明不可用。
+    /// 读展示段并反序列化。清单读不出来、段存在却解释不了都以错误返回；段缺席返回空值，表示该 mod 无展示面。
     /// </summary>
-    private static (ModDisplayJson? Json, string? Problem) ReadSection(
-        string modId, string directory, List<ModError> errors) {
-        string manifestPath = ModLayout.ManifestOf(directory);
+    private static ErrorOr<ModDisplayJson?> ReadSection(string directory) {
         string text;
         try {
-            text = File.ReadAllText(manifestPath);
+            text = File.ReadAllText(ModLayout.ManifestOf(directory));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
-            errors.Add(new ModError(modId, $"{ModLayout.ManifestFileName} 展示段读取失败：{ex.Message}"));
-            return (null, null);
+            return ModDisplayErrors.ManifestUnreadable(ex.Message);
         }
 
         try {
             using var document = JsonDocument.Parse(text);
             if (document.RootElement.ValueKind != JsonValueKind.Object
                 || !document.RootElement.TryGetProperty(ModLayout.ManifestDisplaySection, out JsonElement section))
-                return (null, null);
-            var parsed = section.Deserialize(ModDisplayJsonContext.Default.ModDisplayJson);
-            return parsed is null
-                ? (null, $"manifest.{ModLayout.ManifestDisplaySection} 段不是对象，展示面未装配")
-                : (parsed, null);
+                return (ModDisplayJson?)null;
+            ModDisplayJson? parsed = section.Deserialize(ModDisplayJsonContext.Default.ModDisplayJson);
+            if (parsed is null)
+                return ModDisplayErrors.SectionUnreadable("段不是对象");
+            return parsed;
         }
         catch (JsonException ex) {
-            return (null, $"manifest.{ModLayout.ManifestDisplaySection} 段不可解析，展示面未装配：{ex.Message}");
+            return ModDisplayErrors.SectionUnreadable(ex.Message);
         }
     }
 
@@ -201,12 +185,12 @@ public static class ModDisplayDeclarationReader {
             directories.Add(path);
     }
 
-    private static ModDisplayDeclaration Empty(string modId, string directory, string? problem) => new() {
+    /// <summary>段缺席的空声明：该 mod 不贡献展示面。</summary>
+    private static ModDisplayDeclaration Empty(string modId, string directory) => new() {
         ModId = modId,
         DirectoryPath = directory,
         EntryDlls = [],
         ProbeDirectories = [],
         ResourcePacks = [],
-        Problem = problem,
     };
 }

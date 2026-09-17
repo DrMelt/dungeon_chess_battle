@@ -78,30 +78,29 @@ public static class ModEntryLoader {
             foreach (string dll in source.EntryDlls) {
                 string alcName = $"{alcNamePrefix}{source.ModId}";
                 var loader = new ModAssemblyLoader(alcName, loggerFactory?.CreateLogger<ModAssemblyLoader>());
+                void AddFailure(string reason, Exception? exception = null) {
+                    loader.Dispose();
+                    var error = new ModError(source.ModId, $"{failureText} {Path.GetFileName(dll)}: {reason}");
+                    loaded.AddError(error);
+                    LogEntryLoadFailed(logger, error, exception);
+                }
+
                 try {
                     foreach (string directory in source.ProbeDirectories)
                         loader.AddDependencyDirectory(directory);
 
                     LogEntryLoading(logger, source.ModId, dll, alcName);
                     var entry = loader.LoadEntry<TEntry>(dll);
-                    if (entry is not null) {
-                        loaded.Items.Add((entry, source.ModId, dll));
-                        loaded.Loaders.Add(loader);
-                    }
+                    if (entry.IsError)
+                        AddFailure(entry.FirstError.Description);
                     else {
-                        loader.Dispose();
-                        var error = new ModError(source.ModId,
-                            $"{failureText} {Path.GetFileName(dll)}: DLL 未包含入口接口 {typeof(TEntry).Name} 的实现");
-                        loaded.AddError(error);
-                        LogEntryLoadFailed(logger, error);
+                        loaded.Items.Add((entry.Value, source.ModId, dll));
+                        loaded.Loaders.Add(loader);
                     }
                 }
                 catch (Exception ex) {
-                    loader.Dispose();
-                    var error = new ModError(
-                        source.ModId, $"{failureText} {Path.GetFileName(dll)}: {ex.Message}");
-                    loaded.AddError(error);
-                    LogEntryLoadFailed(logger, error, ex);
+                    // mod 自带的 DLL 与入口构造函数抛什么由不得本库，这里收成一条错误并继续其余入口
+                    AddFailure(ex.Message, ex);
                 }
             }
         }

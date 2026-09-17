@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
@@ -32,28 +33,50 @@ public static class ContentFingerprint {
         return Convert.ToHexString(hash);
     }
 
-    /// <summary>计算文件字节的 SHA-256 十六进制摘要；文件不存在抛异常，作为 loading 期响亮失败。</summary>
-    internal static string HashFile(string absolutePath) {
-        byte[] hash = SHA256.HashData(File.ReadAllBytes(absolutePath));
-        return Convert.ToHexString(hash);
+    /// <summary>计算文件字节的 SHA-256 十六进制摘要；读不动以错误返回，原因取自文件系统。</summary>
+    private static ErrorOr<string> TryHashFile(string absolutePath) {
+        try {
+            return Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(absolutePath)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            return ModLoaderErrors.ArtifactUnreadable(absolutePath, ex.Message);
+        }
     }
 
     /// <summary>
     /// 计算 mod 数据面指纹：入口文件与各探测目录顶层 DLL 取并集，按「文件名|字节摘要」Ordinal 排序去重后整体摘要。
     /// 传入的集合必须与装载侧解析到的同一份集合，否则改了未被哈希到的 DLL 就绕过了门控。
     /// 排序键不含目录，故重排包内布局不改指纹；文件内容一改即变。无 DLL 时返回空串，与「无代码 mod」同值。
+    /// 产物与探测目录读不动都按错误返回：摘要算不出即拒载整个 mod，哈希不到的文件不能放行。
     /// </summary>
-    public static string HashCodeFiles(
+    public static ErrorOr<string> HashCodeFiles(
         IReadOnlyList<string> entryFiles, IReadOnlyList<string> probeDirectories) {
         var digests = new HashSet<string>(StringComparer.Ordinal);
-        foreach (string file in entryFiles.Where(File.Exists))
-            digests.Add($"{Path.GetFileName(file)}|{HashFile(file)}");
+        foreach (string file in entryFiles.Where(File.Exists)) {
+            var digest = TryHashFile(file);
+            if (digest.IsError)
+                return digest.FirstError;
+            digests.Add($"{Path.GetFileName(file)}|{digest.Value}");
+        }
 
         foreach (string directory in probeDirectories) {
             if (!Directory.Exists(directory))
                 continue;
-            foreach (string dll in Directory.GetFiles(directory, "*.dll", SearchOption.TopDirectoryOnly))
-                digests.Add($"{Path.GetFileName(dll)}|{HashFile(dll)}");
+
+            string[] libraries;
+            try {
+                libraries = Directory.GetFiles(directory, "*.dll", SearchOption.TopDirectoryOnly);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+                return ModLoaderErrors.DirectoryUnreadable(directory, ex.Message);
+            }
+
+            foreach (string library in libraries) {
+                var digest = TryHashFile(library);
+                if (digest.IsError)
+                    return digest.FirstError;
+                digests.Add($"{Path.GetFileName(library)}|{digest.Value}");
+            }
         }
 
         if (digests.Count == 0)

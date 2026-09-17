@@ -4,6 +4,7 @@ using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Config.Shared;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Server;
 
@@ -46,6 +47,9 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     // 端口池：从配置的 FirstRoomPort 开始递增分配，大厅端口之后
     private int _nextPort = config.FirstRoomPort;
     private readonly ConcurrentQueue<int> _portPool = new();
+
+    /// <summary>房间首帧初始化的等待上限；超出即按启动失败处理，房间不登记。</summary>
+    private static readonly TimeSpan InitializeTimeout = TimeSpan.FromSeconds(10);
 
     /// <summary>当前所有房间服务器，快照。</summary>
     public ICollection<BattleRoomServer> RoomServers => _roomServers.Values;
@@ -90,34 +94,38 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     // ─── 战斗房间生命周期 ───
 
     /// <summary>
-    /// 开始战斗：创建 BattleRoomServer 并等待其完成首帧初始化。
+    /// 开始战斗：先解析房间副本配置，再创建 BattleRoomServer 并等待其完成首帧初始化。
+    /// 副本缺失、初始化超时与初始化失败都以错误返回，失败的房间退订事件、停止并回收端口，不留半启动态。
     /// 初始化，根实体、Logic 房间与单位迁移，全部在房间线程完成；
     /// 本方法仅执行生命周期控制，不触碰 EntityManager。
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <returns>房间监听端口。</returns>
-    public int StartRoomBattle(string roomId) {
-        // 分配端口并创建 BattleRoomServer
+    public ErrorOr<int> StartRoomBattle(string roomId) {
+        // 副本配置先解析：房间引用的副本必须在场，缺失即拒绝启动，不把失败带进房间线程。
+        // Store 中的副本键由大厅经内容注册表校验后写入，长度必在值对象约束内，查询不会因转换校验抛异常
+        string? dungeonKey = _stateStore.GetRoomConfig(roomId)?.DungeonKey;
+        if (_content.GetDungeon(dungeonKey) is not { } dungeon)
+            return BattleRoomErrors.UnknownDungeon(roomId, dungeonKey);
+
         int port = AllocatePort();
-        var server = new BattleRoomServer(port, roomId,
-            _loggerFactory,
-            _config, _stateStore, _content);
+        var server = new BattleRoomServer(port, roomId, _loggerFactory, _config, _stateStore, _content, dungeon);
         server.Start();
 
         // 房间全部活跃连接断开后自动销毁，闭合 RoomEmpty 事件链，仅入队
         server.RoomEmpty += OnRoomEmptied;
 
-        // 等待首帧初始化完成，保证客户端连入时根实体已就绪
-        if (!server.WaitUntilInitialized(TimeSpan.FromSeconds(10)))
-            throw new InvalidOperationException($"Room '{roomId}' failed to initialize within timeout.");
+        // 等待首帧初始化完成，保证客户端连入时根实体已就绪。
+        // 超时与初始化失败都同步清理，否则会留下没有实体的空房间与泄漏的端口
+        if (!server.WaitUntilInitialized(InitializeTimeout)) {
+            DiscardRoom(server, port);
+            return BattleRoomErrors.InitializeTimeout(roomId, (int)InitializeTimeout.TotalSeconds);
+        }
 
-        // 初始化失败：房间线程已退出且未投递 RoomEmpty，这里同步清理并回收端口，
-        // 避免登记一个没有实体的空房间导致泄漏
-        if (!server.InitializeSucceeded) {
-            server.RoomEmpty -= OnRoomEmptied;
-            server.Stop();
-            RecyclePort(port);
-            throw new InvalidOperationException($"Room '{roomId}' failed to initialize.");
+        var initialized = server.InitializeResult;
+        if (initialized.IsError) {
+            DiscardRoom(server, port);
+            return BattleRoomErrors.InitializeFailed(roomId, initialized.FirstError.Description);
         }
 
         _roomServers[roomId] = server;
@@ -127,6 +135,21 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
                 roomId, port);
 
         return port;
+    }
+
+    /// <summary>
+    /// 丢弃未登记的房间服务器：退订空房事件、停止房间线程，线程停稳才回收端口。
+    /// 线程未停时端口仍被它使用，回收会让下一个房间与它争用。仅协调线程调用。
+    /// </summary>
+    private void DiscardRoom(BattleRoomServer server, int port) {
+        server.RoomEmpty -= OnRoomEmptied;
+        if (!server.Stop()) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Room '{RoomId}' 线程未在期限内停止，端口 {Port} 不回收", server.RoomId, port);
+            return;
+        }
+
+        RecyclePort(port);
     }
 
     /// <summary>
@@ -156,9 +179,17 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         _replayStore.Add(recording.Meta.RoomId, ReplayArchive.Encode(recording), participants);
     }
 
-    /// <summary>停止房间服务器并回收端口；房间线程已退出，回放内容稳定，归档供大厅查询与下载。仅协调线程调用。</summary>
+    /// <summary>
+    /// 停止房间服务器并回收端口；房间线程已退出，回放内容稳定，归档供大厅查询与下载。
+    /// 线程未在期限内退出即不回收端口也不归档，回放内容仍归它。仅协调线程调用。
+    /// </summary>
     private void StopAndArchive(BattleRoomServer server) {
-        server.Stop();
+        if (!server.Stop()) {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Room '{RoomId}' 线程未在期限内停止，端口与回放归档跳过", server.RoomId);
+            return;
+        }
+
         RecyclePort(server.Port);
         if (server.BuildReplayRecording() is { } recording)
             ArchiveReplay(recording);
@@ -175,7 +206,7 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
             StopAndArchive(server);
             removed = true;
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Room '{RoomId}' removed (port {Port} recycled)", roomId, server.Port);
+                _logger.LogInformation("Room '{RoomId}' removed on port {Port}", roomId, server.Port);
         }
         else {
             removed = false;

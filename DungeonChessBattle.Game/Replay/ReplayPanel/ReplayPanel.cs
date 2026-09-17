@@ -31,19 +31,24 @@ public partial class ReplayPanel : BaseGamePanel {
     /// <summary>房间 ID 到条目卡片的缓存（视图所有权，非会话状态）。</summary>
     private readonly Dictionary<string, ReplayItem> _rows = [];
 
-    /// <summary>节点就绪：获取引用集合，绑定按钮。</summary>
+    /// <summary>节点就绪：获取引用集合，校验导出引用，绑定按钮。</summary>
     public override void _Ready() {
         InterRefs = GetNode<ReplayPanelInterRefs>("ReplayPanelInterRefs");
         if (InterRefs is null) {
             _logger.LogError("ReplayPanelInterRefs node not found.");
             return;
         }
+        if (_assembler == null)
+            _logger.LogError("回放装配根未注入，播放不可用。");
         InterRefs.RefreshButton?.Pressed += OnRefreshPressed;
         InterRefs.CloseButton?.Pressed += GoBack;
     }
 
-    /// <summary>面板打开：取一次合并列表。会话失效的在途清理由客户端状态机经 ReplayService.OnSessionInvalid 处理。</summary>
-    protected override void OnPanelOpened() => Refresh();
+    /// <summary>面板打开：清掉上次启动结论并取一次合并列表。会话失效的在途清理由客户端状态机经 ReplayService.OnSessionInvalid 处理。</summary>
+    protected override void OnPanelOpened() {
+        SetStatusLabelText("");
+        Refresh();
+    }
 
     /// <summary>每帧取最新行视图并增量刷新；面板隐藏时不消费。</summary>
     public override void _Process(double delta) {
@@ -61,16 +66,34 @@ public partial class ReplayPanel : BaseGamePanel {
     /// <summary>下载按钮回调：可下载与否由服务层裁决，本面板只上报房间 ID。</summary>
     private static void OnRowActionPressed(string roomId) => ServiceLocator.ReplayService.RequestFetch(roomId);
 
-    /// <summary>播放按钮回调：服务层取可重放记录，成功即交主场景装配回放场景启动并返回大厅。</summary>
+    /// <summary>
+    /// 播放按钮回调：服务层取可重放记录，成功即交主场景装配回放场景启动并返回大厅，
+    /// 失败把原因写给玩家；事实记录各归其裁决点，本面板不重复记日志。
+    /// </summary>
     private void OnPlayPressed(string roomId) {
         var result = ServiceLocator.ReplayService.TryGetPlayable(roomId);
         if (!result.IsReady || result.Recording is null) {
             if (IsInstanceValid(this))
                 _logger.LogWarning("回放本地副本无法读取或版本不兼容，无法启动: {RoomId}（{Status}）", roomId, result.Status);
+            SetStatusLabelText($"回放无法启动：{result.Reason ?? "本地副本不可用，请重新下载"}");
             return;
         }
-        if (_assembler?.StartReplay(result.Recording) == true)
-            GoBack();
+        if (_assembler is null)
+            return;
+
+        var started = _assembler.StartReplay(result.Recording);
+        if (started.IsError) {
+            SetStatusLabelText($"回放启动失败：{started.FirstError.Description}");
+            return;
+        }
+
+        GoBack();
+    }
+
+    /// <summary>把最近一次启动结论写给玩家，空串即清空。</summary>
+    private void SetStatusLabelText(string text) {
+        if (InterRefs?.StatusLabel != null)
+            InterRefs.StatusLabel.Text = text;
     }
 
     /// <summary>按行视图增量刷新逐行卡片：摘要随回放元数据固定仅新建构建，动作态每帧更新。</summary>

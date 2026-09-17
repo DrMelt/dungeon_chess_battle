@@ -23,4 +23,8 @@
     <ProjectReference Include="..\DungeonChessBattle.Battle.Config.Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ErrorOr" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -36,44 +37,53 @@ public static class ModLoader {
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("扫描 mod 目录：{Root}", rootPath);
 
-        string[] directories = Directory.GetDirectories(rootPath);
-        string enablementPath = Path.Combine(rootPath, ModLayout.EnablementFileName);
-        IReadOnlySet<string>? disabledIds;
+        string[] directories;
         try {
-            disabledIds = ModEnablement.Load(rootPath, logger);
+            directories = Directory.GetDirectories(rootPath);
         }
-        catch (Exception ex) {
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            // 目录枚举失败属根级问题：记根级原因并一个都不装载，不把整个装配带崩；
+            // 原因另以异常连栈落一条日志，根级问题文案本身不含异常对象
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning(ex, "mods 目录枚举失败，本次不装载任何 mod：{Root}", rootPath);
+            return EmptyRoot($"mods 目录枚举失败：{ex.Message}");
+        }
+
+        var enablement = ModEnablement.Load(rootPath, logger);
+        if (enablement.IsError) {
             // 启用集读不出来即一个都不装载：不静默、也不拦进程，两端按同一裁决得到同一内容
+            string problem = enablement.FirstError.Description;
             if (logger.IsEnabled(LogLevel.Error))
-                logger.LogError(ex, "启用集不可读，本次不装载任何 mod：{Path}", enablementPath);
+                logger.LogError("启用集不可读，本次不装载任何 mod：{Reason}", problem);
             return new ModLoadResult {
                 Mods = [],
                 Disabled = [],
                 Errors = [],
-                RootProblem = $"启用集不可读，本次未装载任何 mod：{enablementPath}：{ex.Message}",
+                RootProblem = $"启用集不可读，本次未装载任何 mod：{problem}",
                 Unloaded = [.. directories.Select(dir => new UnloadedMod {
                     DirectoryPath = dir, Reason = "启用集不可读，本次不装载",
                 })],
             };
         }
 
+        IReadOnlySet<string> disabledIds = enablement.Value;
         var mods = new List<LoadedMod>();
         var disabled = new List<LoadedMod>();
         var unloaded = new List<UnloadedMod>();
         var errors = new List<ModError>();
         foreach (string dir in directories) {
             string id = Path.GetFileName(dir);
-            LoadedMod mod;
-            try {
-                mod = LoadModDirectory(dir, errors);
-            }
-            catch (Exception ex) {
-                errors.Add(new ModError(id, ex.Message));
-                unloaded.Add(new UnloadedMod { DirectoryPath = dir, Reason = ex.Message });
+            // 清单与产物的可预期失败都已在 LoadModDirectory 内收成错误，此处不再兜异常
+            ErrorOr<LoadedMod> parsed = LoadModDirectory(dir, errors);
+            if (parsed.IsError) {
+                string reason = parsed.FirstError.Description;
+                errors.Add(new ModError(id, reason));
+                unloaded.Add(new UnloadedMod { DirectoryPath = dir, Reason = reason });
                 continue;
             }
 
-            if (disabledIds is not null && disabledIds.Contains(mod.Manifest.Id)) {
+            LoadedMod mod = parsed.Value;
+            if (disabledIds.Contains(mod.Manifest.Id)) {
                 disabled.Add(mod);
                 if (logger.IsEnabled(LogLevel.Debug))
                     logger.LogDebug("跳过已停用的 mod {ModId}", mod.Manifest.Id);
@@ -102,27 +112,45 @@ public static class ModLoader {
             Mods = [], Disabled = [], Unloaded = [], Errors = [], RootProblem = problem
         };
 
-    private static LoadedMod LoadModDirectory(string dir, List<ModError> errors) {
+    private static ErrorOr<LoadedMod> LoadModDirectory(string dir, List<ModError> errors) {
         string manifestPath = ModLayout.ManifestOf(dir);
         if (!File.Exists(manifestPath))
-            throw new InvalidOperationException($"缺少 {ModLayout.ManifestFileName}");
+            return ModLoaderErrors.ManifestMissing;
 
-        var manifest = JsonSerializer.Deserialize(
-            File.ReadAllText(manifestPath),
-            ModJsonContext.Default.ModManifestJson)
-            ?? throw new InvalidOperationException($"{ModLayout.ManifestFileName} 解析为空");
+        ModManifestJson? manifest;
+        try {
+            manifest = JsonSerializer.Deserialize(
+                File.ReadAllText(manifestPath),
+                ModJsonContext.Default.ModManifestJson);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
+            // 坏 JSON 与读不动文件由序列化器与文件系统抛出，在本库的裁决点收成错误
+            return ModLoaderErrors.ManifestUnreadable(ex.Message);
+        }
+        if (manifest is null)
+            return ModLoaderErrors.ManifestEmpty;
 
-        ValidateRequired(manifest);
+        ErrorOr<Success> validated = ValidateRequired(manifest);
+        if (validated.IsError)
+            return validated.FirstError;
 
         // 必填字段已校验，此处起按非空消费
         string id = manifest.Id!;
         if (!string.Equals(Path.GetFileName(dir), id, StringComparison.Ordinal))
-            throw new InvalidOperationException(
-                $"目录名 '{Path.GetFileName(dir)}' 与 manifest.id '{id}' 不一致，资源寻址按目录名执行，拒绝装载");
+            return ModLoaderErrors.DirectoryIdMismatch(Path.GetFileName(dir), id);
 
-        var codeEntries = ResolveArtifacts(dir, manifest.Code!, "code");
-        var codeLibraries = ResolveProbeDirectories(dir, manifest.CodeLibraries, codeEntries, "codeLibraries",
-            errors);
+        ErrorOr<List<string>> codeEntries = ResolveArtifacts(dir, manifest.Code!, "code");
+        if (codeEntries.IsError)
+            return codeEntries.FirstError;
+
+        ErrorOr<List<string>> codeLibraries = ResolveProbeDirectories(
+            dir, manifest.CodeLibraries, codeEntries.Value, "codeLibraries", errors);
+        if (codeLibraries.IsError)
+            return codeLibraries.FirstError;
+
+        ErrorOr<string> codeHash = ContentFingerprint.HashCodeFiles(codeEntries.Value, codeLibraries.Value);
+        if (codeHash.IsError)
+            return codeHash.FirstError;
 
         return new LoadedMod {
             Manifest = new ModManifest(
@@ -130,11 +158,11 @@ public static class ModLoader {
                 Version: manifest.Version!,
                 Revision: manifest.Revision!,
                 Dependencies: manifest.Dependencies,
-                Code: ToDeclared(dir, codeEntries)),
+                Code: ToDeclared(dir, codeEntries.Value)),
             DirectoryPath = dir,
-            CodeEntries = codeEntries,
-            CodeLibraries = codeLibraries,
-            CodeHash = ContentFingerprint.HashCodeFiles(codeEntries, codeLibraries),
+            CodeEntries = codeEntries.Value,
+            CodeLibraries = codeLibraries.Value,
+            CodeHash = codeHash.Value,
         };
     }
 
@@ -143,7 +171,7 @@ public static class ModLoader {
     /// 默认会让「漏写」与「写了默认值」在两端表现相同，排查只能靠比对磁盘。
     /// 展示面字段不在此列：它们归 Game.Mod.Manager 校验，写错也不该影响两端的装载集合。
     /// </summary>
-    private static void ValidateRequired(ModManifestJson manifest) {
+    private static ErrorOr<Success> ValidateRequired(ModManifestJson manifest) {
         List<string> missing = [];
         if (string.IsNullOrEmpty(manifest.Id))
             missing.Add("id");
@@ -154,23 +182,24 @@ public static class ModLoader {
         if (manifest.Code is null)
             missing.Add("code");
         if (missing.Count > 0)
-            throw new InvalidOperationException(
-                $"{ModLayout.ManifestFileName} 缺少必填字段 {string.Join("、", missing)}；无数据代码时写 []");
+            return ModLoaderErrors.ManifestMissingFields(missing);
+        return Result.Success;
     }
 
     /// <summary>
     /// 把数据面声明的产物文件定位成绝对路径并保持声明顺序；产物字段必填，故没有未声明即回落的分支。
     /// 声明即承诺存在：数据面产物缺失整包拒载，两端内容必须同源。
     /// </summary>
-    private static List<string> ResolveArtifacts(string modDirectory, List<string> declared,
+    private static ErrorOr<List<string>> ResolveArtifacts(string modDirectory, List<string> declared,
         string fieldName) {
         var resolved = new List<string>(declared.Count);
         foreach (string relative in declared) {
-            string path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
-            if (!File.Exists(path))
-                throw new InvalidOperationException(
-                    $"manifest.{fieldName} 声明的 '{relative}' 不存在，数据代码缺失即拒载");
-            resolved.Add(path);
+            ErrorOr<string> path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
+            if (path.IsError)
+                return path.FirstError;
+            if (!File.Exists(path.Value))
+                return ModLoaderErrors.ArtifactMissing(fieldName, relative);
+            resolved.Add(path.Value);
         }
 
         return resolved;
@@ -178,14 +207,18 @@ public static class ModLoader {
 
     /// <summary>
     /// 汇总数据面的依赖探测目录：清单声明的目录 + 各入口文件自身所在目录，按绝对路径去重。
-    /// 声明的探测目录缺席即记错误——声明与包不一致要看得出来，缺了它入口自带的依赖解析不到。
+    /// 声明的探测目录缺席即记错误——声明与包不一致要看得出来，缺了它入口自带的依赖解析不到；
+    /// 路径本身非法是清单写错，整包拒载由调用方裁决。
     /// </summary>
-    private static List<string> ResolveProbeDirectories(
+    private static ErrorOr<List<string>> ResolveProbeDirectories(
         string modDirectory, List<string>? declared, IReadOnlyList<string> entries, string fieldName,
         List<ModError> errors) {
         var directories = new List<string>();
         foreach (string relative in declared ?? []) {
-            string path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
+            ErrorOr<string> resolved = ResolveWithinModDirectory(modDirectory, relative, fieldName);
+            if (resolved.IsError)
+                return resolved.FirstError;
+            string path = resolved.Value;
             if (!Directory.Exists(path)) {
                 errors.Add(new ModError(Path.GetFileName(modDirectory),
                     $"manifest.{fieldName} 声明的 '{relative}' 不存在"));
@@ -201,12 +234,11 @@ public static class ModLoader {
         return directories;
     }
 
-    /// <summary>把相对声明解析为 mod 目录内的绝对路径；越界或非法即拒载——两端读同一份清单，语法裁决必然一致。</summary>
-    private static string ResolveWithinModDirectory(string modDirectory, string relative, string fieldName) =>
+    /// <summary>把相对声明解析为 mod 目录内的绝对路径；越界或语法非法返回错误——两端读同一份清单，语法裁决必然一致。</summary>
+    private static ErrorOr<string> ResolveWithinModDirectory(string modDirectory, string relative, string fieldName) =>
         ModRelativePath.TryResolve(modDirectory, relative, out string? path) && path is not null
             ? path
-            : throw new InvalidOperationException(
-                $"manifest.{fieldName} 的 '{relative}' 不是 mod 目录内的合法相对路径");
+            : ModLoaderErrors.PathUnsafe(fieldName, relative);
 
     /// <summary>把绝对路径集还原为相对 mod 目录的 <c>/</c> 分隔声明，供清单与管理面展示。</summary>
     private static List<string> ToDeclared(string modDirectory, IReadOnlyList<string> absolutePaths) =>

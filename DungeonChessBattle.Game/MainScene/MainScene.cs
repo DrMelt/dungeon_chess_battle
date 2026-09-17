@@ -3,6 +3,7 @@ using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.ReplayUI;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Replay.Shared;
+using ErrorOr;
 using Godot;
 using Microsoft.Extensions.Logging;
 
@@ -150,29 +151,30 @@ public partial class MainScene : Node {
     // =============================================================
 
     /// <summary>
-    /// 启动回放：实例化回放组装场景并加载记录，成功返回 true 供入口面板决定导航去向。
-    /// 引擎构建失败即回收场景，不留半启动态。
+    /// 启动回放：实例化回放组装场景并加载记录，成功返回 <c>Result.Success</c> 供入口面板决定导航去向。
+    /// 本层拒绝与引擎门控不通过都以错误交回调用方提示，失败即回收场景，不留半启动态。
     /// </summary>
-    public bool StartReplay(ReplayRecording recording) {
+    public ErrorOr<Success> StartReplay(ReplayRecording recording) {
         if (_replayCoordinator != null) {
             _logger.LogWarning("回放已在进行中，忽略重复启动。");
-            return false;
+            return MainSceneErrors.AssemblyBusy("回放");
         }
         if (_replayAssembleScene == null)
-            return false;
+            return MainSceneErrors.AssemblySceneMissing("回放");
 
         var replay = _replayAssembleScene.Instantiate<ReplayCoordinator>();
         AddChild(replay);
         replay.ReplayStarted += OnReplayStarted;
         replay.ReplayFinished += OnReplayFinished;
-        replay.LoadReplay(recording);
-        if (!replay.IsActive) {
+        var loaded = replay.LoadReplay(recording);
+        if (loaded.IsError) {
+            // 门控原因由回放编排层记录并随错误带出，这里只回收场景
             replay.QueueFree();
-            return false;
+            return loaded.FirstError;
         }
 
         _replayCoordinator = replay;
-        return true;
+        return Result.Success;
     }
 
     /// <summary>回放启动：隐藏前厅图层。</summary>

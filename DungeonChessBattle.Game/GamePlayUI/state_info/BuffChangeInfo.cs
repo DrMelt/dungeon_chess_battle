@@ -1,7 +1,6 @@
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Game.Services;
 using Godot;
-using System;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Game.GamePlayUI.state_info;
 
@@ -42,11 +41,7 @@ public partial class BuffChangeInfo : FadeInfo {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
-        label_ChangeRef.Text = changeType switch {
-            BuffChangeType.Added => "+",
-            BuffChangeType.Removed => "-",
-            _ => throw new NotImplementedException(),
-        };
+        label_ChangeRef.Text = changeType == BuffChangeType.Added ? "+" : "-";
 
         // 未声明图标时保留场景配置的占位图标
         if (ServiceLocator.ModAssets?.Registry.GetBuff(buffTypeId)?.Icon is { } icon)

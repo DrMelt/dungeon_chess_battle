@@ -48,8 +48,16 @@ public partial class GameServer {
             return new LobbyResult(roomId, false, "Not all players selected a unit.");
         }
 
-        // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成
-        int port = _battleRoomManager.StartRoomBattle(roomId);
+        // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成。
+        // 副本缺失与初始化失败以错误交回，房间未进入战斗即拒绝本次请求
+        var started = _battleRoomManager.StartRoomBattle(roomId);
+        if (started.IsError) {
+            _logger.LogError("start_battle: room '{RoomId}' 战斗房间未启动：{Reason}",
+                roomId, started.FirstError.Description);
+            return new LobbyResult(roomId, false, "Failed to start battle room.");
+        }
+
+        int port = started.Value;
 
         // 房间状态迁移由拥有状态所有权的协调层执行，战斗实现层不触碰房间状态
         _stateStore.UpdateRoomStatus(roomId, RoomStatus.InProgress);

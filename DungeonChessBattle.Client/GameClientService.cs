@@ -105,6 +105,12 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory, ICli
     public event Action? OnBattleSessionLost;
 
     /// <summary>
+    /// 战斗期本地内容与服务端不一致事件，主线程派发。参数：房间 ID、原因。
+    /// 战斗编排层据此退出战斗，大厅面板据此提示玩家。
+    /// </summary>
+    public event Action<string, string>? OnBattleContentMismatch;
+
+    /// <summary>
     /// 房间快照更新事件，主线程派发。参数：房间 ID、完整快照。
     /// 面向显示层；底层 SignalR 回调经主线程队列转发，显示层无需自行 CallDeferred。
     /// </summary>
@@ -384,6 +390,9 @@ public sealed partial class GameClientService(ILoggerFactory loggerFactory, ICli
                 OnRoomJoined?.Invoke(roomId);
             }
         };
+        // 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界，这里转到主线程交编排层与面板，房间 ID 一并带出
+        _roomClient.ContentMismatchDetected += (roomId, reason) =>
+            EnqueueMainThread(() => OnBattleContentMismatch?.Invoke(roomId, reason));
         _roomClient.OnFullyDisconnected += () => {
             // 主动离开，LeaveRoom 或 Disconnect 用 _netClient.Stop 不触发此事件，此处为意外断开
             if (_state is not (ClientConnectionState.InRoom or ClientConnectionState.ConnectingRoom))

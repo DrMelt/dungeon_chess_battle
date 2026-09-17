@@ -61,6 +61,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>战斗事件日志事件。参数：房间 ID、本帧领域事件列表。</summary>
     public event Action<string, IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
 
+    /// <summary>本地内容与服务端不一致事件。参数：房间 ID、原因。</summary>
+    public event Action<string, string>? ContentMismatchDetected;
+
     // 本地玩家的 UnitController，在 OnUnitControllerCreated 回调中识别并缓存
     private UnitController? _localController;
 
@@ -86,6 +89,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
 
     /// <summary>在线端战斗世界：领域单位 BattleUnit 作为展示源，状态由 SyncVar 回填。</summary>
     private BattleScene? _battleScene;
+
+    /// <summary>本次房间会话是否已上报内容不一致；上报后不再尝试构建战斗世界，避免逐帧重复。</summary>
+    private bool _contentMismatchReported;
 
     /// <summary>网络实体 ID 到领域单位映射，展示回填与取数定位。</summary>
     private readonly Dictionary<ushort, BattleUnit> _battleUnitByNetId = [];
@@ -119,6 +125,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         _entityManager = null;
         _localController = null;
         _battleScene = null;
+        _contentMismatchReported = false;
         _battleUnitByNetId.Clear();
         _pawnByNetId.Clear();
         _localNetId = 0;
@@ -184,17 +191,26 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>
     /// 副本键同步后就绪时构建在线战斗世界：领域单位 BattleUnit 作为展示源。
     /// 副本键未同步返回并随下一帧重试；构建时补注册已到达的单位。
+    /// 副本不在本地内容中即本地内容与服务端漂移：放弃构建并上报，由装配层退出战斗。
     /// </summary>
     private void EnsureBattleScene() {
-        if (_battleScene != null)
+        if (_battleScene != null || _contentMismatchReported)
             return;
         if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
             return;
 
         var dungeonKey = room.DungeonKey.Value;
-        // 副本不存在即同步数据与本地内容漂移，与未知单位配置键一致地响亮失败
-        var dungeon = content.GetDungeon(dungeonKey)
-            ?? throw new InvalidOperationException($"Unknown dungeon key '{dungeonKey}' on client.");
+        // 同步键来自服务端，进查询前先过值对象约束：超限即漂移，不让转换校验的异常冒到查询
+        if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is null) {
+            ReportContentMismatch($"invalid dungeon key '{dungeonKey}'");
+            return;
+        }
+
+        if (content.GetDungeon(dungeonKey) is not { } dungeon) {
+            ReportContentMismatch($"unknown dungeon key '{dungeonKey}'");
+            return;
+        }
+
         _battleScene = new BattleScene(
             dungeon.RelationsResolver,
             new PhysicsMovementScene(dungeon.Layout));
@@ -208,9 +224,18 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;
 
-        // 基础数值经内容只读视图共享服务端同份配置；未知配置键即配置漂移，与回放端一致地响亮失败
-        var config = content.GetUnit(pawn.UnitKeyName.Value)
-            ?? throw new InvalidOperationException($"Unknown unit config key '{pawn.UnitKeyName.Value}' on client.");
+        string unitKey = pawn.UnitKeyName.Value;
+        // 同步键同样先过值对象约束再进查询
+        if (RestrictedString.TryCreate(unitKey, UnitConfigKey.MaxLength) is null) {
+            ReportContentMismatch($"invalid unit config key '{unitKey}'");
+            return;
+        }
+
+        // 基础数值经内容只读视图共享服务端同份配置；未知配置键即本地内容与服务端漂移，与副本键一致地上报
+        if (content.GetUnit(unitKey) is not { } config) {
+            ReportContentMismatch($"unknown unit config key '{unitKey}'");
+            return;
+        }
         var unit = new BattleUnit {
             UnitId = pawn.Id,
             UnitName = pawn.UnitKeyName.Value,
@@ -225,6 +250,19 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         _battleUnitByNetId[pawn.Id] = unit;
         _pawnByNetId[pawn.Id] = pawn;
         _battleScene?.AddUnit(unit);
+    }
+
+    /// <summary>
+    /// 本地内容与服务端不一致：只上报一次，此后不再构建本地战斗世界。
+    /// 由装配层退出战斗并提示玩家，本端保留网络连接，不做缺内容的降级呈现。
+    /// </summary>
+    private void ReportContentMismatch(string reason) {
+        if (_contentMismatchReported)
+            return;
+        _contentMismatchReported = true;
+        logger.LogError("本地内容与服务端不一致，不再构建本地战斗世界：{Reason}", reason);
+        if (_currentRoomId is { } roomId)
+            ContentMismatchDetected?.Invoke(roomId, reason);
     }
 
     /// <inheritdoc />

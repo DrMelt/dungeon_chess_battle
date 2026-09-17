@@ -31,6 +31,11 @@ public partial class ReplayPanelInterRefs : Node {
     public Button? CloseButton {
         get; private set;
     }
+    /// <summary>启动结论提示标签，把失败原因告诉玩家。</summary>
+    [Export]
+    public Label? StatusLabel {
+        get; private set;
+    }
 
     /// <summary>
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
@@ -44,5 +49,7 @@ public partial class ReplayPanelInterRefs : Node {
             _logger.LogError("RefreshButton is not assigned!");
         if (CloseButton == null)
             _logger.LogError("CloseButton is not assigned!");
+        if (StatusLabel == null)
+            _logger.LogError("StatusLabel is not assigned!");
     }
 }

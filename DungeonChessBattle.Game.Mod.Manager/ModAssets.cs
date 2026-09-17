@@ -57,11 +57,11 @@ public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, stri
 
         var runtimeErrors = new List<ModError>();
 
-        // 声明不可用的 mod 不参与展示装配：数据面已按同一份清单照常装载，展示面缺一块不影响它
-        var displays = catalog.EnabledDisplays.Where(display => display.Problem is null).ToList();
+        // 声明不可用的 mod 已在扫描期排除：数据面已按同一份清单照常装载，展示面缺一块不影响它
+        var displays = catalog.EnabledDisplays;
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("展示装配开始：启用 {Count} 个 mod，展示声明不可用 {Blocked} 个",
-                catalog.EnabledMods.Count, catalog.EnabledDisplays.Count - displays.Count);
+                catalog.EnabledMods.Count, catalog.EnabledMods.Count - displays.Count);
 
         // 装载展示代码不执行入口，ALC 由 loaded 持有到入口统一执行完成
         var sources = displays

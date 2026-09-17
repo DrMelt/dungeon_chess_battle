@@ -83,6 +83,8 @@ public partial class GameLobby : BaseGamePanel {
         ServiceLocator.ClientService.OnRoomJoined += OnRoomJoinedHandler;
         ServiceLocator.ClientService.OnRoomCreated += OnRoomCreatedHandler;
         SubscribeRoomListEvent();
+        // 战斗期内容不一致：战斗已中止并退回本面板，提示由本面板写给玩家
+        ServiceLocator.ClientService.OnBattleContentMismatch += OnBattleContentMismatch;
 
         PopulateDungeonSelect();
 
@@ -218,6 +220,17 @@ public partial class GameLobby : BaseGamePanel {
                 _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
             NavigateTo(_roomPreparation);
         }
+    }
+
+    /// <summary>
+    /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界、编排层已退出战斗，玩家退回本面板。
+    /// 事实与原因由检测层记录，本条把结论写给玩家，日志只留退回上下文。
+    /// </summary>
+    private void OnBattleContentMismatch(string roomId, string reason) {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("内容不一致，战斗已中止并退回大厅：{RoomId}（{Reason}）", roomId, reason);
+        if (InterRefs?.DetailLabel != null)
+            InterRefs.DetailLabel.Text = "内容不一致：缺少 mod 或版本不符，战斗已中止";
     }
 
     /// <summary>

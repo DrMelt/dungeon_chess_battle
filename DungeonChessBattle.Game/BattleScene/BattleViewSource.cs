@@ -173,15 +173,20 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
         return relations.Invoke(localUnit.Camps, targetCamps);
     }
 
-    /// <summary>阵营关系读取：未装配且权威副本键已到达时即收敛装配，未知键抛异常不静默回退。</summary>
+    /// <summary>
+    /// 阵营关系读取：未装配且权威副本键已到达时即收敛装配；键非法或未注册按未就绪处理，
+    /// 由会话层的内容不一致上报中止战斗。副本键来自服务端同步或归档，进查询前先过值对象约束，
+    /// 不让转换校验的异常冒到查询。
+    /// </summary>
     private CampRelationResolver? RelationsOrResolve() {
         if (_relations is { } relations)
             return relations;
         var dungeonKey = DungeonKey;
         if (string.IsNullOrWhiteSpace(dungeonKey))
             return null;
-        return _relations = content.GetDungeon(dungeonKey)?.RelationsResolver
-            ?? throw new InvalidOperationException($"Unknown dungeon key '{dungeonKey}'.");
+        if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is null)
+            return null;
+        return _relations = content.GetDungeon(dungeonKey)?.RelationsResolver;
     }
 }
 

@@ -10,6 +10,7 @@ using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Battle.Entities.SyncData;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
+using ErrorOr;
 using LiteNetLib.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -24,8 +25,9 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 房间线程首帧初始化：创建根实体、装配状态同步器、
     /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不再被其他线程触碰。
+    /// 内容与配置裁决不通过以错误返回，调用方据此清理房间；LES 与 CLR 交界的异常不在此收口。
     /// </summary>
-    private void InitializeFromStore() {
+    private ErrorOr<Success> InitializeFromStore() {
         var roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
@@ -42,20 +44,29 @@ public partial class BattleRoomServer {
         var spawnIndexByOption = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var selection in units) {
             // 玩家阵营与出生列由副本配置按选项键权威解析，本层不做阵营名判定
-            var option = ResolvePlayerCampOption(selection);
+            var resolved = ResolvePlayerCampOption(selection);
+            if (resolved.IsError)
+                return resolved.FirstError;
+            var option = resolved.Value;
+
             int spawnIndex = spawnIndexByOption.GetValueOrDefault(option.Key);
             spawnIndexByOption[option.Key] = spawnIndex + 1;
             var spawnPos = new Vector2(option.SpawnBaseX + spawnIndex * option.SpawnXSpacing, 0);
             var pawn = CreatePawnEntity(selection.UnitConfigKey, option.Camps, spawnPos);
+            if (pawn.IsError)
+                return pawn.FirstError;
+
             // 玩家输入轨道由生成路径登记，与敌人同源分流
-            _intentDriver.RegisterPlayer(pawn.Id);
-            _pawnByPlayerId[selection.PlayerId] = pawn;
+            _intentDriver.RegisterPlayer(pawn.Value.Id);
+            _pawnByPlayerId[selection.PlayerId] = pawn.Value;
             // 回放玩家表：下标即记录条目里的玩家序号，敌人与非玩家单位不收录
-            playerInfos.Add(new ReplayPlayerInfo(selection.PlayerName, selection.UnitConfigKey, pawn.Id));
+            playerInfos.Add(new ReplayPlayerInfo(selection.PlayerName, selection.UnitConfigKey, pawn.Value.Id));
         }
 
         // 按房间选中的副本配置生成敌人，阵营由副本配置统一编队，意图源按各单位配置声明的控制者登记
-        SpawnDungeonEnemies();
+        var enemies = SpawnDungeonEnemies();
+        if (enemies.IsError)
+            return enemies.FirstError;
 
         // 战斗输入回放记录：全部单位创建完成后装配，单位初始态整表落盘，敌人 ID 取记录值；
         // 条目引用了表外单位时门内解析落空，不报错
@@ -75,51 +86,63 @@ public partial class BattleRoomServer {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Initialized from store: {UnitCount} units migrated.",
                 RoomId, units.Count);
+
+        return Result.Success;
     }
 
     /// <summary>
     /// 按副本配置的玩家阵营选项解析选择记录对应的选项，阵营与出生列一并取自该选项；
-    /// 选项缺失属配置故障，响亮失败。仅房间线程调用。
+    /// 选项缺失属准备记录与副本配置不一致，以错误交回房间初始化。仅房间线程调用。
     /// </summary>
-    private PlayerCampOption ResolvePlayerCampOption(UnitSelection selection) {
-        var dungeon = _content.GetDungeon(_dungeonKey);
-        var option = dungeon?.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey);
-        if (option == null || option.Camps.Count == 0)
-            throw new InvalidOperationException(
-                $"Room '{RoomId}': camp option '{selection.CampOptionKey}' not found in dungeon '{_dungeonKey}' for unit '{selection.UnitConfigKey}'.");
+    private ErrorOr<PlayerCampOption> ResolvePlayerCampOption(UnitSelection selection) {
+        // 副本配置由启动方解析并随房间传入，选项缺失即准备记录与副本配置不一致
+        var option = _dungeon.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey);
+        if (option is null)
+            return BattleRoomErrors.UnknownCampOption(_dungeonKey.Value, selection.CampOptionKey);
         return option;
     }
 
     /// <summary>
     /// 按房间副本配置生成敌人：UnitPawn 与 BattleUnit 对称创建，敌方在场地对侧按纵队排布。
-    /// 仅房间线程调用。
+    /// 副本引用的单位配置未注册以错误交回房间初始化。仅房间线程调用。
     /// </summary>
-    private void SpawnDungeonEnemies() {
-        var dungeon = _content.GetDungeon(_dungeonKey);
-        if (dungeon == null)
-            return;
-
-        foreach (var spawn in dungeon.Enemies) {
+    private ErrorOr<Success> SpawnDungeonEnemies() {
+        foreach (var spawn in _dungeon.Enemies) {
             // 敌人生成以注册表权威配置键为准，杜绝错配
-            var config = _content.GetUnit(spawn.Unit.ConfigKey)
-                ?? throw new InvalidOperationException(
-                    $"Dungeon '{_dungeonKey}' references unregistered unit config for enemy spawn.");
+            var config = _content.GetUnit(spawn.Unit.ConfigKey);
+            if (config is null)
+                return BattleRoomErrors.UnknownUnitConfig(_dungeonKey.Value, spawn.Unit.ConfigKey.Value);
+
             for (int i = 0; i < spawn.Count; i++) {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
-                var pawn = CreatePawnEntity(config.ConfigKey, dungeon.EnemyCamps, spawnPos);
+                var pawn = CreatePawnEntity(config.ConfigKey, _dungeon.EnemyCamps, spawnPos);
+                if (pawn.IsError)
+                    return pawn.FirstError;
+
                 // 未声明控制者即不登记意图源，该单位不产出意图
                 if (config.Controller is { } controller)
-                    _intentDriver.RegisterAutonomous(pawn.Id, controller);
+                    _intentDriver.RegisterAutonomous(pawn.Value.Id, controller);
             }
         }
+
+        return Result.Success;
     }
 
     /// <summary>
     /// 在本房间的 SEM 中创建 UnitPawn 实体，按同一 NetId 创建领域单位 BattleUnit 注册进战斗世界。
     /// 战斗系数与技能装配在 BattleUnit，状态同步器写 SyncVar 供客户端展示；意图源不在本方法登记，
-    /// 由调用方按单位进入战场的方式选择驱动轨道。仅房间线程调用。
+    /// 由调用方按单位进入战场的方式选择驱动轨道。
+    /// 阵营列表与单位配置都取自内容，在进实体初始化委托之前裁决：该委托签名无返回值，进去只能抛。
+    /// 仅房间线程调用。
     /// </summary>
-    public UnitPawn CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<CampId> camps, Vector2 spawnPos) {
+    public ErrorOr<UnitPawn> CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<CampId> camps, Vector2 spawnPos) {
+        if (camps.Count is 0 or > SyncCampsData.MaxCamps || camps.Any(camp => camp.IsDefault))
+            return BattleRoomErrors.InvalidCamps(unitName.Value, camps.Count);
+
+        var config = _content.GetUnit(unitName);
+        if (config is null)
+            return BattleRoomErrors.UnknownUnitConfig(_dungeonKey.Value, unitName.Value);
+
         var entity = EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitKeyName.Value = unitName;
             var campsData = new SyncCampsData();
@@ -134,8 +157,6 @@ public partial class BattleRoomServer {
         _pawnByNetId[entity.Id] = entity;
 
         // 领域单位（权威）：战斗世界结算读写，状态同步器写 SyncVar
-        var config = _content.GetUnit(unitName)
-            ?? throw new InvalidOperationException($"Unknown unit config key '{unitName}' in room '{RoomId}'.");
         var unit = BattleUnitFactory.Create(config, entity.Id, camps, spawnPos);
         _battleScene.AddUnit(unit);
 

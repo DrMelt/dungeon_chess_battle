@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using DungeonChessBattle.Battle.Mod.Manager;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -37,7 +38,10 @@ public sealed class ModCatalog {
     /// <summary>参与装载的启用 mod，按依赖拓扑排序，直接交数据面装配。</summary>
     public IReadOnlyList<LoadedMod> EnabledMods => _load.Mods;
 
-    /// <summary>启用 mod 的展示面声明，顺序与 <see cref="EnabledMods"/> 一致，交展示装配消费。</summary>
+    /// <summary>
+    /// 启用 mod 中声明可用的展示面声明，顺序与 <see cref="EnabledMods"/> 一致，交展示装配消费；
+    /// 声明不可用者不进此列，原因见 <see cref="ModDisplayErrors"/>。
+    /// </summary>
     public IReadOnlyList<ModDisplayDeclaration> EnabledDisplays => _displays.Enabled;
 
     /// <summary>全部 mods 子目录，含启用、停用与被拒载者，按 ID 字母序，供列表展示。</summary>
@@ -89,29 +93,40 @@ public sealed class ModCatalog {
     /// <summary>
     /// 启停一个 mod：以磁盘上的启用集为底改写该 ID 后落盘，并立即重扫使列表与磁盘一致。
     /// 指向已删目录的停用记录原样保留，否则用户删一个 mod 会顺带启回另一个。
-    /// 返回 false 表示该 mod ID 不在当前扫描结果内。变更需重启进程才影响已装配内容。
+    /// 失败以错误返回，只影响本次启停，列表按旧状态继续。变更需重启进程才影响已装配内容。
     /// </summary>
-    public bool SetEnabled(string modId, bool enabled) {
+    public ErrorOr<Success> SetEnabled(string modId, bool enabled) {
         if (!_entries.Any(p => p.Id == modId)) {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("{ModId} 不在当前扫描结果内，启停未落盘", modId);
-            return false;
+            return ModCatalogErrors.NotInScan(modId);
         }
 
-        var disabled = ModEnablement.Load(_modsRootPath) is { } persisted
-            ? persisted.ToHashSet(StringComparer.Ordinal)
-            : new HashSet<string>(StringComparer.Ordinal);
+        var persisted = ModEnablement.Load(_modsRootPath, _logger);
+        if (persisted.IsError) {
+            if (_logger.IsEnabled(LogLevel.Error))
+                _logger.LogError("启用集不可读，启停未落盘：{Reason}", persisted.FirstError.Description);
+            return persisted.FirstError;
+        }
+
+        var disabled = persisted.Value.ToHashSet(StringComparer.Ordinal);
         if (enabled)
             disabled.Remove(modId);
         else
             disabled.Add(modId);
 
-        ModEnablement.Save(_modsRootPath, disabled, _logger);
+        var saved = ModEnablement.Save(_modsRootPath, disabled, _logger);
+        if (saved.IsError) {
+            if (_logger.IsEnabled(LogLevel.Error))
+                _logger.LogError("启用集写入失败，启停未落盘：{Reason}", saved.FirstError.Description);
+            return saved.FirstError;
+        }
+
         Rescan();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("mod {ModId} 已{Action}，装配是一次性的，重启进程后生效",
                 modId, enabled ? "启用" : "停用");
-        return true;
+        return Result.Success;
     }
 
     /// <summary>

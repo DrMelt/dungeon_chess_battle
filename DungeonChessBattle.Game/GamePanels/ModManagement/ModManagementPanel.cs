@@ -127,10 +127,12 @@ public partial class ModManagementPanel : BaseGamePanel {
         ModAssets? assets = ServiceLocator.ModAssets;
         if (assets is null)
             _notice = "mod 内容未装配，启停未落盘";
-        else
-            _notice = assets.Catalog.SetEnabled(modId, enabled)
-                ? $"「{modId}」已{action}，重启游戏与服务器进程后生效"
-                : $"启停未生效：{modId} 不在当前扫描结果内";
+        else {
+            var toggled = assets.Catalog.SetEnabled(modId, enabled);
+            _notice = toggled.IsError
+                ? $"启停未生效：{toggled.FirstError.Description}"
+                : $"「{modId}」已{action}，重启游戏与服务器进程后生效";
+        }
         Refresh();
     }
 

@@ -19,6 +19,12 @@ public interface IClientBattleService {
     event Action<string, IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
 
     /// <summary>
+    /// 本地内容与服务端不一致事件。参数：房间 ID、原因。
+    /// 检测到即放弃本地战斗世界，由装配层退出战斗并提示玩家，本端不做降级。
+    /// </summary>
+    event Action<string, string>? ContentMismatchDetected;
+
+    /// <summary>
     /// 对目标施放技能，客户端发起。经可靠请求通道发送，服务端权威读条与结算。
     /// 施法者不由本方法指定：服务端从请求来源控制器持有的单位推导，杜绝伪造施法者。
     /// 参数展开为值类型，避免接口层依赖轻量实体类型。

@@ -1,3 +1,5 @@
+using ErrorOr;
+
 namespace DungeonChessBattle.Battle.Server.Shared;
 
 /// <summary>
@@ -7,8 +9,8 @@ namespace DungeonChessBattle.Battle.Server.Shared;
 /// 实现由 Server.Battle 的 BattleRoomManager 承担。
 /// </summary>
 public interface IBattleRoomManager {
-    /// <summary>开始战斗：创建房间服务器并等待首帧初始化完成，返回房间监听端口。</summary>
-    int StartRoomBattle(string roomId);
+    /// <summary>开始战斗：解析房间副本配置、创建房间服务器并等待首帧初始化完成，返回房间监听端口。副本缺失与初始化失败以错误返回，房间不留痕。</summary>
+    ErrorOr<int> StartRoomBattle(string roomId);
 
     /// <summary>获取战斗中房间的监听端口；非战斗中的房间返回 false。</summary>
     bool TryGetRoomPort(string roomId, out int port);
