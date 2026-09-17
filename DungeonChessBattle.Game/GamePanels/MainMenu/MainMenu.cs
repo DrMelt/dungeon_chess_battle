@@ -1,6 +1,7 @@
 using Godot;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
+using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Lobby.Protocol;
 
@@ -139,13 +140,11 @@ public partial class MainMenu : BaseGamePanel {
 
     /// <summary>
     /// 连接状态变更回调，延迟到帧末统一处理 UI。
+    /// CallDeferred 只传基本类型，端点读数在此拆开。
     /// </summary>
-    /// <param name="host">服务器地址。</param>
-    /// <param name="port">服务器端口。</param>
-    /// <param name="connected">是否已连接。</param>
-    private void OnConnectionChanged(string host, int port, bool connected) {
+    private void OnConnectionChanged(ConnectionStatus status) {
         // 使用 CallDeferred 确保 UI 操作在 Godot 主线程安全阶段执行
-        CallDeferred(nameof(DeferredConnectionChanged), host, port, connected);
+        CallDeferred(nameof(DeferredConnectionChanged), status.Host, status.Port, status.Connected);
     }
 
     /// <summary>

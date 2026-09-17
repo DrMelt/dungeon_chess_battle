@@ -5,10 +5,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <IsPackable>false</IsPackable>
+        <Description>会话标识：房间标识强类型，供大厅协调、状态存储与客户端会话共同表达房间归属。不对 mod 发布。</Description>
     </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\DungeonChessBattle.Lobby.Shared\DungeonChessBattle.Lobby.Shared.csproj" />
-        <ProjectReference Include="..\DungeonChessBattle.Session.Shared\DungeonChessBattle.Session.Shared.csproj" />
-    </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 using DungeonChessBattle.Replay.Protocol.Dtos;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
+using DungeonChessBattle.Session.Shared;
 
 namespace DungeonChessBattle.Replay.Server;
 
@@ -15,7 +16,7 @@ internal sealed class ReplayServer(IReplayStore replayStore) {
     /// <summary>取该主键参与过的回放摘要列表，最近在前；元数据读不出的归档不列入。</summary>
     public ReplayListResult GetReplays(string recordId) {
         var replays = new List<ReplaySummaryDto>();
-        foreach (string roomId in replayStore.GetRoomIdsByPlayer(recordId)) {
+        foreach (RoomId roomId in replayStore.GetRoomIdsByPlayer(recordId)) {
             if (!replayStore.TryGetArchive(roomId, out byte[] archive))
                 continue;
             var meta = ReplayArchive.TryReadMeta(archive);
@@ -29,12 +30,13 @@ internal sealed class ReplayServer(IReplayStore replayStore) {
     /// <summary>取该主键参与过的回放归档字节流；房间 ID 非法、非参与者或归档不存在时返回 false。</summary>
     public bool TryGetArchive(string recordId, string roomId, out byte[] archive) {
         archive = [];
-        if (string.IsNullOrWhiteSpace(roomId))
+        // 路由参数来自客户端，先过值对象判定：空与超长同「不存在」处理，不让转换校验的异常冒出去
+        if (RoomId.TryCreate(roomId) is not { } id)
             return false;
 
         // 参与关系经该玩家的房间 ID 索引校验：命中即证明回放存在且归属可查
-        if (!replayStore.GetRoomIdsByPlayer(recordId).Any(id => id == roomId))
+        if (!replayStore.GetRoomIdsByPlayer(recordId).Any(room => room == id))
             return false;
-        return replayStore.TryGetArchive(roomId, out archive);
+        return replayStore.TryGetArchive(id, out archive);
     }
 }

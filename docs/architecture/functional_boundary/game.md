@@ -25,5 +25,5 @@
 
 ## 依赖
 
-- Client、Battle.Client、Lobby.Shared、Lobby.Protocol、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Battle.Config.Registry、Battle.Mod.Manager、Replay、Replay.Shared、Replay.Protocol、Replay.Client、Game.Shared、Game.Display.Registry、Game.Mod.Shared、Game.Mod.Manager。
+- Client、Battle.Client、Lobby.Shared、Lobby.Protocol、Session.Shared、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Battle.Config.Registry、Battle.Mod.Manager、Replay、Replay.Shared、Replay.Protocol、Replay.Client、Game.Shared、Game.Display.Registry、Game.Mod.Shared、Game.Mod.Manager。
 - 不直连：Lobby.Client 经 Client 门面组装；Battle.Mod.Interface 与 Battle.Mod.Shared 经 Battle.Mod.Manager 传递可见；Game.Mod.Interface 只面向 mod。

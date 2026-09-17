@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Replay.Protocol、Replay.Shared、Server.DataStore.Shared。
+- Replay.Protocol、Replay.Shared、Server.DataStore.Shared、Session.Shared。

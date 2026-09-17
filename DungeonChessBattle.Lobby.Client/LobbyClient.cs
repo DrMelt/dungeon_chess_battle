@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
@@ -16,39 +17,39 @@ namespace DungeonChessBattle.Lobby.Client;
 /// </summary>
 public class LobbyClient(ILogger<LobbyClient> logger) {
     private readonly ILogger<LobbyClient> _logger = logger;
-    private readonly ConcurrentDictionary<string, RoomSnapshot> _roomSnapshots = new();
+    private readonly ConcurrentDictionary<RoomId, RoomSnapshot> _roomSnapshots = new();
     private HubConnection? _hub;
 
     // 连接代际：每次 Connect 递增，用于隔离过期的异步 StartAsync 回调，
     // 防止旧连接建立成功后干扰新连接，配合旧连接释放。
     private int _connectionVersion;
 
-    /// <summary>成功加入房间事件。参数：房间 ID。</summary>
-    public event Action<string>? OnRoomJoined;
+    /// <summary>成功加入房间事件，参数为房间 ID。</summary>
+    public event Action<RoomId>? OnRoomJoined;
 
-    /// <summary>成功创建房间事件。参数：房间 ID。</summary>
-    public event Action<string>? OnRoomCreated;
+    /// <summary>成功创建房间事件，参数为房间 ID。</summary>
+    public event Action<RoomId>? OnRoomCreated;
 
-    /// <summary>大厅重定向到房间端口事件。参数：房间 ID、端口。</summary>
-    public event Action<string, int>? OnRedirectToRoom;
+    /// <summary>大厅重定向到房间端口事件。</summary>
+    public event Action<RoomRedirect>? OnRedirectToRoom;
 
-    /// <summary>重连失败事件。参数：错误信息。</summary>
+    /// <summary>重连失败事件，参数为失败原因。</summary>
     public event Action<string>? OnReconnectFailed;
 
     /// <summary>招募板房间列表接收事件。</summary>
-    public event Action<List<RoomListing>>? OnRoomListReceived;
+    public event Action<IReadOnlyList<RoomListing>>? OnRoomListReceived;
 
-    /// <summary>准备阶段战斗启动重定向事件。参数：房间 ID、端口。</summary>
-    public event Action<string, int>? OnPrepareBattleRedirect;
+    /// <summary>准备阶段战斗启动重定向事件。</summary>
+    public event Action<RoomRedirect>? OnPrepareBattleRedirect;
 
-    /// <summary>房间快照更新事件，服务端组装单发。参数：房间 ID、完整快照。</summary>
-    public event Action<string, RoomSnapshot>? OnRoomSnapshotUpdated;
+    /// <summary>房间快照更新事件，服务端组装单发。</summary>
+    public event Action<RoomSnapshot>? OnRoomSnapshotUpdated;
 
     /// <summary>大厅完全连接成功事件。</summary>
     public event Action? OnFullyConnected;
 
-    /// <summary>登入结果事件。参数：是否成功、错误信息。</summary>
-    public event Action<bool, string?>? OnLoginResult;
+    /// <summary>登入结果事件。</summary>
+    public event Action<LoginResult>? OnLoginResult;
 
     /// <summary>大厅连接完全关闭事件。</summary>
     public event Action? OnFullyDisconnected;
@@ -110,7 +111,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
 #pragma warning restore S5332
 
         hub.On<RoomSnapshot>(HubMethods.OnRoomSnapshot, HandleRoomSnapshot);
-        hub.On<RoomRedirect>(HubMethods.OnPrepareBattleRedirect, r => OnPrepareBattleRedirect?.Invoke(r.RoomId, r.Port));
+        hub.On<RoomRedirect>(HubMethods.OnPrepareBattleRedirect, r => OnPrepareBattleRedirect?.Invoke(r));
         hub.Closed += OnClosed;
         return hub;
     }
@@ -161,7 +162,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
             var result = await hub.InvokeAsync<LoginResult>(HubMethods.Login, new LoginRequest(playerName));
             if (result.Success)
                 SessionToken = result.SessionToken;
-            OnLoginResult?.Invoke(result.Success, result.Error);
+            OnLoginResult?.Invoke(result);
         });
     }
 
@@ -173,29 +174,39 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
         var dto = new CreateRoomRequest(playerId, roomPassword, config, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.CreateRoom, dto);
-            if (result.Success) {
-                OnRoomCreated?.Invoke(result.RoomId);
+            if (!result.Success) {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("创建房间失败: {Error}", result.Error);
+                return;
             }
-            else if (_logger.IsEnabled(LogLevel.Warning)) {
-                _logger.LogWarning("创建房间失败: {Error}", result.Error);
+            // 回包房间标识先过值对象判定，非法即不对外派发
+            if (RoomId.TryCreate(result.RoomId) is not { } roomId) {
+                _logger.LogWarning("创建房间回包房间标识非法：{RoomId}", result.RoomId);
+                return;
             }
+            OnRoomCreated?.Invoke(roomId);
         });
     }
 
     /// <summary>
     /// 请求加入房间。
     /// </summary>
-    public void RequestJoinRoom(string roomId, string playerId,
+    public void RequestJoinRoom(RoomId roomId, string playerId,
         string? roomPassword, string? serverPassword = null) {
         var dto = new JoinRoomRequest(roomId, playerId, roomPassword, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.JoinRoom, dto);
-            if (result.Success) {
-                OnRoomJoined?.Invoke(result.RoomId);
+            if (!result.Success) {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("加入房间失败: {Error}", result.Error);
+                return;
             }
-            else if (_logger.IsEnabled(LogLevel.Warning)) {
-                _logger.LogWarning("加入房间失败: {Error}", result.Error);
+            // 回包房间标识先过值对象判定，非法即不对外派发
+            if (RoomId.TryCreate(result.RoomId) is not { } roomId) {
+                _logger.LogWarning("加入房间回包房间标识非法：{RoomId}", result.RoomId);
+                return;
             }
+            OnRoomJoined?.Invoke(roomId);
         });
     }
 
@@ -205,7 +216,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
     public void RequestListRooms() {
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<RoomListResult>(HubMethods.ListRooms);
-            OnRoomListReceived?.Invoke([.. result.Rooms]);
+            OnRoomListReceived?.Invoke(result.Rooms);
         });
     }
 
@@ -260,13 +271,13 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
     /// <summary>
     /// 请求重连房间。
     /// </summary>
-    public void RequestReconnectRoom(string roomId, string playerId,
+    public void RequestReconnectRoom(RoomId roomId, string playerId,
         string? roomPassword, string? serverPassword = null) {
         var dto = new ReconnectRoomRequest(roomId, playerId, roomPassword, serverPassword);
         RunHubCall(async hub => {
             var result = await hub.InvokeAsync<LobbyResult>(HubMethods.ReconnectRoom, dto);
             if (result.Success && result.Port is > 0) {
-                OnRedirectToRoom?.Invoke(result.RoomId, result.Port.Value);
+                OnRedirectToRoom?.Invoke(new RoomRedirect(result.RoomId, result.Port.Value));
             }
             else if (!result.Success) {
                 OnReconnectFailed?.Invoke(result.Error ?? "Reconnect failed");
@@ -283,14 +294,19 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
         });
     }
 
-    /// <summary>处理服务端广播的房间快照：缓存并触发更新事件。</summary>
+    /// <summary>处理服务端广播的房间快照：缓存并触发更新事件；房间标识非法即丢弃。</summary>
     private void HandleRoomSnapshot(RoomSnapshot snapshot) {
-        _roomSnapshots[snapshot.RoomId] = snapshot;
-        OnRoomSnapshotUpdated?.Invoke(snapshot.RoomId, snapshot);
+        // 广播房间标识先过值对象判定，非法即不进缓存也不派发
+        if (RoomId.TryCreate(snapshot.RoomId) is not { } roomId) {
+            _logger.LogWarning("丢弃房间标识非法的快照：{RoomId}", snapshot.RoomId);
+            return;
+        }
+        _roomSnapshots[roomId] = snapshot;
+        OnRoomSnapshotUpdated?.Invoke(snapshot);
     }
 
     /// <summary>获取指定房间最近一次快照缓存，进房初始化用；不存在时返回 null。</summary>
-    public RoomSnapshot? TryGetRoomSnapshot(string roomId) {
+    public RoomSnapshot? TryGetRoomSnapshot(RoomId roomId) {
         _roomSnapshots.TryGetValue(roomId, out var snapshot);
         return snapshot;
     }

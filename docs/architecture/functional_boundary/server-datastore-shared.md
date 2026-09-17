@@ -20,4 +20,4 @@
 
 ## 依赖
 
-- Lobby.Shared。
+- Lobby.Shared、Session.Shared。

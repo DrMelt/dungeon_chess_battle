@@ -1,4 +1,5 @@
 using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Session.Shared;
 
 namespace DungeonChessBattle.Client;
 
@@ -9,12 +10,12 @@ namespace DungeonChessBattle.Client;
 /// 与门面的 RoomSession 属性无关：后者是房间 LES 战斗链路接口。
 /// </summary>
 public sealed partial class GameClientService {
-    /// <summary>当前所在房间 ID；未进房间时为 null。</summary>
-    public string? CurrentRoomId => _cachedRoomId;
+    /// <summary>当前所在房间 ID；未进房间时为空标识。</summary>
+    public RoomId CurrentRoomId => _cachedRoomId;
 
     /// <summary>当前房间最近一次权威快照；未进房间或快照未到时为 null。</summary>
     public RoomSnapshot? CurrentRoomSnapshot =>
-        string.IsNullOrEmpty(_cachedRoomId) ? null : GetRoomSnapshot(_cachedRoomId);
+        _cachedRoomId.IsDefault ? null : GetRoomSnapshot(_cachedRoomId);
 
     /// <summary>当前玩家是否为房主（房间未定或快照未到时为 false）。</summary>
     public bool IsCurrentUserHost => CurrentRoomSnapshot is { } s && s.HostName == PlayerName;

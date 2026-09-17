@@ -1,4 +1,5 @@
 using DungeonChessBattle.Lobby.Shared;
+using DungeonChessBattle.Session.Shared;
 
 namespace DungeonChessBattle.Server.DataStore.Shared;
 
@@ -8,9 +9,9 @@ namespace DungeonChessBattle.Server.DataStore.Shared;
 /// 边界约定：招募板字段，Description、MaxPlayers、CurrentPlayers、Password、Status，
 /// 由服务端 Store 层 IGameStateStore 读写，双方不交叉修改。
 /// </summary>
-public class GameRoom(string roomId) {
+public class GameRoom(RoomId roomId) {
     /// <summary>房间唯一 ID。</summary>
-    public string RoomId {
+    public RoomId RoomId {
         get;
     } = roomId;
 

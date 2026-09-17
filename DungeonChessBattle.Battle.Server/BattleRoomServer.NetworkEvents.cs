@@ -49,8 +49,6 @@ public partial class BattleRoomServer {
         else {
             HandleNewPlayerConnect(peer, connectionKey);
         }
-
-        OnClientConnected?.Invoke(peer.Id);
     }
 
     void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
@@ -76,8 +74,6 @@ public partial class BattleRoomServer {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[RoomId: {RoomId}] Peer disconnected: {PeerId}, playerId={PlayerId}, Reason={Reason}",
                 RoomId, peer.Id, playerId, disconnectInfo.Reason);
-
-        OnClientDisconnected?.Invoke(peer.Id);
 
         // 无任何活跃连接且已完成首帧初始化 → 通知大厅销毁房间
         // 断线玩家实体保留：房间仍在、玩家可凭 Store 成员身份重连；

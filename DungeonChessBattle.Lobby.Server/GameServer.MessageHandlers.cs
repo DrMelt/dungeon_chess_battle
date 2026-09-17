@@ -2,6 +2,7 @@ using DungeonChessBattle.Lobby.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Lobby.Server;
@@ -20,9 +21,9 @@ public partial class GameServer {
     /// 校验通过后创建战斗房间服务器，经 <see cref="IBattleRoomManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
     public async Task<LobbyResult> HandleStartBattleAsync(string connectionId) {
-        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (roomId == null || string.IsNullOrEmpty(playerName))
+        if (roomId.IsDefault || string.IsNullOrEmpty(playerName))
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         if (!_stateStore.RoomExists(roomId)) {
@@ -76,29 +77,30 @@ public partial class GameServer {
     /// 处理 reconnect_room：身份从登录会话反查，重连仅恢复既有会话。
     /// </summary>
     public async Task<LobbyResult> HandleReconnectRoomAsync(string connectionId, ReconnectRoomRequest req) {
-        if (string.IsNullOrWhiteSpace(req.RoomId))
-            return new LobbyResult(string.Empty, false, "roomId required.");
+        // 客户端提交的房间 ID 先过值对象判定：空与超长都按非法请求拒绝，不让转换校验的异常冒出去
+        if (RoomId.TryCreate(req.RoomId) is not { } roomId)
+            return new LobbyResult(string.Empty, false, "invalid roomId.");
 
         // 玩家名从登录会话取服务端权威身份，不信任客户端自报
         string? loginName = _stateStore.GetLoginPlayerName(connectionId);
         if (string.IsNullOrEmpty(loginName))
-            return new LobbyResult(req.RoomId, false, "Player not logged in.");
+            return new LobbyResult(roomId, false, "Player not logged in.");
 
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
-        if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
-            return new LobbyResult(req.RoomId, false, "Invalid room password.");
+        if (!_stateStore.ValidateRoomPassword(roomId, actualRoomPassword))
+            return new LobbyResult(roomId, false, "Invalid room password.");
 
-        if (!_battleRoomManager.TryGetRoomPort(req.RoomId, out int port))
-            return new LobbyResult(req.RoomId, false, "Room not in battle.");
+        if (!_battleRoomManager.TryGetRoomPort(roomId, out int port))
+            return new LobbyResult(roomId, false, "Room not in battle.");
 
         // 登记房间成员，供战斗白名单校验；仅房间已有同名会话才允许，杜绝冒用他人 playerId 绑单位
-        if (!_battleRoomManager.RegisterPlayer(req.RoomId, req.PlayerId, loginName))
-            return new LobbyResult(req.RoomId, false, "Reconnect rejected: session mismatch.");
+        if (!_battleRoomManager.RegisterPlayer(roomId, req.PlayerId, loginName))
+            return new LobbyResult(roomId, false, "Reconnect rejected: session mismatch.");
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{PlayerName}' ({PlayerId}) reconnected to room '{RoomId}' on port {Port}.",
-                loginName, req.PlayerId, req.RoomId, port);
+                loginName, req.PlayerId, roomId, port);
 
-        return new LobbyResult(req.RoomId, true, Port: port);
+        return new LobbyResult(roomId, true, Port: port);
     }
 }

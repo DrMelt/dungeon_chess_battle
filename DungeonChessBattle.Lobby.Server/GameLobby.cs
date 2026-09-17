@@ -4,6 +4,7 @@ using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Config.Shared;
 
@@ -35,7 +36,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>
     /// 校验服务器密码；不匹配时返回 false，调用方负责构造失败结果。
     /// </summary>
-    private bool ValidateServerPassword(string? serverPassword, string responseDesc, string? roomId) {
+    private bool ValidateServerPassword(string? serverPassword, string responseDesc, RoomId roomId) {
         if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword) {
             _logger.LogWarning("{Desc}: invalid server password (room '{RoomId}').", responseDesc, roomId);
             return false;
@@ -75,7 +76,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 create_room：注册房间，准备阶段不重定向。
     /// </summary>
     public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req) {
-        if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", null))
+        if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", RoomId.None))
             return new LobbyResult(string.Empty, false, "invalid server password.");
 
         // 房主名从登录会话取服务端权威身份，不信任客户端提交
@@ -84,7 +85,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(string.Empty, false, "Player not logged in.");
 
         // 房间 ID 由服务端权威生成，客户端不提交，避免碰撞与伪造
-        string roomId = Guid.NewGuid().ToString("N");
+        RoomId roomId = Guid.NewGuid().ToString("N");
         string playerId = req.PlayerId;
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
 
@@ -128,40 +129,43 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 join_room：验证房间与密码，准备阶段不重定向。
     /// </summary>
     public async Task<LobbyResult> HandleJoinRoomAsync(string connectionId, JoinRoomRequest req) {
-        if (!ValidateServerPassword(req.ServerPassword, "JoinRoom", null)
-            || string.IsNullOrWhiteSpace(req.RoomId))
-            return new LobbyResult(req.RoomId, false, "roomId is required.");
+        if (!ValidateServerPassword(req.ServerPassword, "JoinRoom", RoomId.None))
+            return new LobbyResult(req.RoomId, false, "invalid server password.");
+
+        // 客户端提交的房间 ID 先过值对象判定：空与超长都按非法请求拒绝，不让转换校验的异常冒出去
+        if (RoomId.TryCreate(req.RoomId) is not { } roomId)
+            return new LobbyResult(req.RoomId, false, "invalid roomId.");
 
         // 仅允许加入等待中的房间；进行中和已结束的房间不可加入
-        var roomConfig = _stateStore.GetRoomConfig(req.RoomId);
+        var roomConfig = _stateStore.GetRoomConfig(roomId);
         if (roomConfig == null)
-            return new LobbyResult(req.RoomId, false, "Room not found.");
+            return new LobbyResult(roomId, false, "Room not found.");
         if (roomConfig.Status != RoomStatus.Waiting)
-            return new LobbyResult(req.RoomId, false, "Room is not available for joining.");
+            return new LobbyResult(roomId, false, "Room is not available for joining.");
 
         string? actualRoomPassword = string.IsNullOrEmpty(req.RoomPassword) ? null : req.RoomPassword;
-        if (!_stateStore.ValidateRoomPassword(req.RoomId, actualRoomPassword))
-            return new LobbyResult(req.RoomId, false, "Invalid room password.");
+        if (!_stateStore.ValidateRoomPassword(roomId, actualRoomPassword))
+            return new LobbyResult(roomId, false, "Invalid room password.");
 
         // 玩家名从登录会话取服务端权威身份，不信任客户端提交；先校验再改状态，失败不留脏状态
         string? displayName = _stateStore.GetLoginPlayerName(connectionId);
         if (string.IsNullOrEmpty(displayName))
-            return new LobbyResult(req.RoomId, false, "Player not logged in.");
+            return new LobbyResult(roomId, false, "Player not logged in.");
 
         // 原子自增玩家数，避免并发 join 时读改写丢失更新
-        _stateStore.IncrementPlayerCount(req.RoomId);
-        await _broadcaster.AddToRoomAsync(connectionId, req.RoomId);
+        _stateStore.IncrementPlayerCount(roomId);
+        await _broadcaster.AddToRoomAsync(connectionId, roomId);
 
         // 登记玩家为房间准备成员，默认未准备，playerId 一并登记用于战斗白名单
-        _stateStore.RegisterRoomPlayer(req.RoomId, displayName, req.PlayerId, connectionId);
+        _stateStore.RegisterRoomPlayer(roomId, displayName, req.PlayerId, connectionId);
 
-        await BroadcastRoomSnapshotAsync(req.RoomId);
+        await BroadcastRoomSnapshotAsync(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Player '{Player}' ({PlayerId}) joined room '{RoomId}' (prepare).",
-                displayName, req.PlayerId, req.RoomId);
+                displayName, req.PlayerId, roomId);
 
-        return new LobbyResult(req.RoomId, true);
+        return new LobbyResult(roomId, true);
     }
 
     /// <summary>
@@ -200,9 +204,9 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (req.UnitConfigKey.Length > UnitConfigKey.MaxLength || string.IsNullOrEmpty(req.CampOptionKey))
             return new LobbyResult(string.Empty, false, "Invalid unit params.");
 
-        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (roomId == null || ownerName == null)
+        if (roomId.IsDefault || ownerName == null)
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         // 反查该玩家的持久 playerId，控制器绑定用权威键，与连接密钥一致
@@ -238,9 +242,9 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (string.IsNullOrEmpty(req.UnitConfigKey))
             return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
-        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? ownerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (roomId == null || string.IsNullOrEmpty(ownerName))
+        if (roomId.IsDefault || string.IsNullOrEmpty(ownerName))
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         bool removed = _stateStore.RemovePrepareUnit(roomId, req.UnitConfigKey, ownerName);
@@ -261,9 +265,9 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 房间与权威玩家名均从连接归属反查，避免伪造他人准备状态或使用不一致的玩家名造成孤立键。
     /// </summary>
     public async Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req) {
-        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
-        if (roomId == null || string.IsNullOrEmpty(playerName))
+        if (roomId.IsDefault || string.IsNullOrEmpty(playerName))
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         if (!_stateStore.RoomExists(roomId))
@@ -293,7 +297,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 将房间完整状态快照，静态配置、准备状态与单位，组装后单次广播给该房间所有连接。
     /// 客户端以该快照为唯一权威视图，无需自行组装。
     /// </summary>
-    public async Task BroadcastRoomSnapshotAsync(string roomId) {
+    public async Task BroadcastRoomSnapshotAsync(RoomId roomId) {
         var roomConfig = _stateStore.GetRoomConfig(roomId);
         var state = _stateStore.GetRoomState(roomId);
         var units = _stateStore.GetPrepareUnits(roomId);

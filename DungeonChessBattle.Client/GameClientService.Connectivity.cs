@@ -1,4 +1,6 @@
 ﻿using DungeonChessBattle.Lobby.Protocol;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Client;
@@ -32,8 +34,8 @@ internal enum ClientConnectionState {
 /// 连接事件回调、超时处理与每帧驱动。
 /// </summary>
 public sealed partial class GameClientService {
-    /// <summary>战斗启动重定向时暂存的 roomId，区别于加入房间重定向 _pendingJoinRoomId。</summary>
-    private string? _pendingBattleRoomId;
+    /// <summary>战斗启动重定向时暂存的房间 ID，区别于加入房间重定向 _pendingJoinRoomId。</summary>
+    private RoomId _pendingBattleRoomId;
 
     /// <summary>自动重连路径：大厅需重新登录，登录结果事件驱动发送重连请求。</summary>
     private bool _reconnectPendingLogin;
@@ -53,6 +55,21 @@ public sealed partial class GameClientService {
     // 房间重定向处理
 
     /// <summary>
+    /// 应用战斗重定向：房间标识来自服务端回包，先过值对象判定，非法即忽略本次重定向。
+    /// 准备阶段开战与战斗重连两条路径共用同一处理。
+    /// </summary>
+    private void ApplyBattleRedirect(RoomRedirect redirect) {
+        if (RoomId.TryCreate(redirect.RoomId) is not { } roomId) {
+            _logger.LogWarning("忽略房间标识非法的重定向：{RoomId}", redirect.RoomId);
+            return;
+        }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("收到战斗重定向: {RoomId} → {Host}:{Port}", roomId, Host, redirect.Port);
+        ReconnectToRoom(Host, redirect.Port, roomId, isBattleStart: true);
+    }
+
+    /// <summary>
     /// 重连到房间端口。大厅连接保持不断开。
     /// 由大厅重定向触发，用于切换到物理隔离的房间 SEM。
     /// 使用客户端持久 _playerId 作为连接密钥，P0-1：playerId 不从服务端回传。
@@ -61,7 +78,7 @@ public sealed partial class GameClientService {
     /// <param name="roomPort">房间端口。</param>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="isBattleStart">是否为战斗启动重定向，区别于加入房间重定向。</param>
-    private void ReconnectToRoom(string host, int roomPort, string roomId, bool isBattleStart = false) {
+    private void ReconnectToRoom(string host, int roomPort, RoomId roomId, bool isBattleStart = false) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("重连至房间端口: {Host}:{Port}, RoomId={RoomId}", host, roomPort, roomId);
 
@@ -71,12 +88,12 @@ public sealed partial class GameClientService {
         if (isBattleStart) {
             // 战斗启动重定向：连接成功后触发 OnBattleStarted，而非 OnRoomJoined
             _pendingBattleRoomId = roomId;
-            _pendingJoinRoomId = null;
+            _pendingJoinRoomId = RoomId.None;
         }
         else {
             // 加入房间重定向：连接成功后触发 OnRoomJoined
             _pendingJoinRoomId = roomId;
-            _pendingBattleRoomId = null;
+            _pendingBattleRoomId = RoomId.None;
         }
 
         SetState(ClientConnectionState.ConnectingRoom);
@@ -87,7 +104,7 @@ public sealed partial class GameClientService {
         catch (Exception ex) {
             SetState(ClientConnectionState.Idle);
             _logger.LogError(ex, "重连至房间端口失败");
-            ConnectionChanged?.Invoke(host, roomPort, false);
+            ConnectionChanged?.Invoke(new ConnectionStatus(host, roomPort, false));
         }
     }
 
@@ -100,8 +117,8 @@ public sealed partial class GameClientService {
     /// <see cref="HandleConnectTimeout"/> 兜底复位，不会卡死。
     /// </summary>
     private void AttemptReconnectToRoom() {
-        if (string.IsNullOrEmpty(_cachedRoomId)) {
-            _logger.LogWarning("无法自动重连：缺少缓存的 roomId");
+        if (_cachedRoomId.IsDefault) {
+            _logger.LogWarning("无法自动重连：缺少缓存的房间 ID");
             ResetToNonRoomState();
             return;
         }
@@ -124,11 +141,8 @@ public sealed partial class GameClientService {
     /// <summary>
     /// 发送重连请求到大厅，需确保大厅已连接且已登入。
     /// </summary>
-    private void SendReconnectRequest() {
-        var cachedRoomId = _cachedRoomId ??
-            throw new InvalidOperationException("cachedRoomId is not set before reconnect request.");
-        _lobbyClient.RequestReconnectRoom(cachedRoomId, PlayerId, _cachedRoomPassword, _serverPassword);
-    }
+    private void SendReconnectRequest() =>
+        _lobbyClient.RequestReconnectRoom(_cachedRoomId, PlayerId, _cachedRoomPassword, _serverPassword);
 
     // 内部连接回调
 
@@ -138,7 +152,7 @@ public sealed partial class GameClientService {
     private void OnConnectionEstablished() {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("已连接到 {Host}:{Port}", Host, Port);
-        ConnectionChanged?.Invoke(Host, Port, true);
+        ConnectionChanged?.Invoke(new ConnectionStatus(Host, Port, true));
     }
 
     /// <summary>
@@ -152,8 +166,8 @@ public sealed partial class GameClientService {
             or ClientConnectionState.Reconnecting;
         ClearRoomReconnectCache();
         _reconnectPendingLogin = false;
-        _pendingJoinRoomId = null;
-        _pendingBattleRoomId = null;
+        _pendingJoinRoomId = RoomId.None;
+        _pendingBattleRoomId = RoomId.None;
         SetState(_lobbyClient.IsConnected ? ClientConnectionState.InLobby : ClientConnectionState.Idle);
         if (wasInRoom)
             OnBattleSessionLost?.Invoke();
@@ -169,7 +183,7 @@ public sealed partial class GameClientService {
 
         ResetToNonRoomState();
         _logger.LogInformation("连接已断开");
-        ConnectionChanged?.Invoke(Host, Port, false);
+        ConnectionChanged?.Invoke(new ConnectionStatus(Host, Port, false));
     }
 
     #region Update
@@ -202,7 +216,7 @@ public sealed partial class GameClientService {
             _logger.LogDebug(ex, "断开连接异常");
         }
         ResetToNonRoomState();
-        ConnectionChanged?.Invoke(Host, Port, false);
+        ConnectionChanged?.Invoke(new ConnectionStatus(Host, Port, false));
     }
 
     /// <summary>

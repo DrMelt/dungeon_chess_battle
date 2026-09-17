@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Client;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Session.Shared;
 using DungeonChessBattle.Battle.Config.Shared.Content;
 
 namespace DungeonChessBattle.Game.GamePanels;
@@ -77,7 +78,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// </summary>
     private void OnBackButtonPressed() {
         // 准备阶段主动退出：仅在身处房间时才通知服务端，随后返回来源面板
-        if (Client.CurrentRoomId != null)
+        if (!Client.CurrentRoomId.IsDefault)
             Client.RequestLeaveRoom();
         GoBack();
     }
@@ -89,7 +90,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// <param name="roomId">房间 ID。</param>
     /// <param name="config">房间配置（可用于快照未到时的乐观展示）。</param>
     /// <param name="isHost">当前玩家是否为房主。</param>
-    public void EnterRoom(string roomId, RoomListing? config = null, bool isHost = false) {
+    public void EnterRoom(RoomId roomId, RoomListing? config = null, bool isHost = false) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("进入房间: {RoomId}, isHost={IsHost}", roomId, isHost);
 
@@ -178,13 +179,13 @@ public partial class RoomPreparation : BaseGamePanel {
     /// 订阅到的房间快照更新（GameClientService 仅转发当前房间快照）。
     /// 事件视为刷新信号，展示数据一律读取客户端当前会话，避免串房。
     /// </summary>
-    private void OnRoomSnapshotUpdated(string eventRoomId, RoomSnapshot snapshot) {
+    private void OnRoomSnapshotUpdated(RoomSnapshot snapshot) {
         // 快照为权威指纹来源，进房乐观配置后仍以快照复核，防止列表迟到信息
         if (!string.IsNullOrEmpty(snapshot.ContentFingerprint)
             && snapshot.ContentFingerprint != ServiceLocator.ContentRegistry.DataRevision) {
             _logger.LogError(
                 "快照内容不一致：房间 {RoomId} 指纹 {RoomFp}，本地 {LocalFp}。",
-                eventRoomId, snapshot.ContentFingerprint, ServiceLocator.ContentRegistry.DataRevision);
+                snapshot.RoomId, snapshot.ContentFingerprint, ServiceLocator.ContentRegistry.DataRevision);
             InterRefs?.StatusLabel?.Text = "内容不一致：缺少 mod 或版本不符，无法继续";
             return;
         }
@@ -200,7 +201,7 @@ public partial class RoomPreparation : BaseGamePanel {
     /// 战斗退出（LeaveRoom）回调：房间已解散，返回来源面板（大厅）。
     /// 该事件仅在离开当前房间时触发，本面板不再跟踪任何房间，直接回退。
     /// </summary>
-    private void OnRoomLeft(string roomId) {
+    private void OnRoomLeft(RoomId roomId) {
         GoBack();
     }
 

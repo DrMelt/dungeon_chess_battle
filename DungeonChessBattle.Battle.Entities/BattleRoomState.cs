@@ -14,7 +14,4 @@ public readonly record struct BattleRoomState(
     string? RoomId,
     string? DungeonKey,
     BattlePhase Phase,
-    long? BattleStartUnixTime) {
-    /// <summary>战斗是否已结束，由阶段推导，避免与 Phase 冗余两处真相。</summary>
-    public bool IsFinished => Phase == BattlePhase.Finished;
-}
+    long? BattleStartUnixTime);

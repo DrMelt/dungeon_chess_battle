@@ -122,16 +122,16 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 启停一个 mod：只落盘启用集并刷新列表。已装配的内容不回滚，
     /// 故新状态要重启进程才生效——服务器子进程同样按重启后的启用集装配。
     /// </summary>
-    private void OnToggleRequested(string modId, bool enabled) {
-        string action = enabled ? "启用" : "停用";
+    private void OnToggleRequested(ModToggleRequest request) {
+        string action = request.Enabled ? "启用" : "停用";
         ModAssets? assets = ServiceLocator.ModAssets;
         if (assets is null)
             _notice = "mod 内容未装配，启停未落盘";
         else {
-            var toggled = assets.Catalog.SetEnabled(modId, enabled);
+            var toggled = assets.Catalog.SetEnabled(request.ModId, request.Enabled);
             _notice = toggled.IsError
                 ? $"启停未生效：{toggled.FirstError.Description}"
-                : $"「{modId}」已{action}，重启游戏与服务器进程后生效";
+                : $"「{request.ModId}」已{action}，重启游戏与服务器进程后生效";
         }
         Refresh();
     }

@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic。
+- Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Logic、Session.Shared。

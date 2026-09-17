@@ -23,6 +23,10 @@ graph TD
         Client["Client<br>门面与连接状态机"]
     end
 
+    subgraph DSession["session：会话标识"]
+        SessionShared["Session.Shared<br>会话标识：房间标识"]
+    end
+
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
         Shared["Battle.Shared<br>共用形状：身份键 / 数据形状 / 行为端口 / 只读视图"]
         Config["Battle.Config.Shared<br>静态配置数据：内容定义 / 注册表查找口"]
@@ -66,6 +70,7 @@ graph TD
     Engine --> LobbyShared
     Engine --> LobbyProtocol
     Engine --> Client
+    Engine --> SessionShared
     Engine --> BattleClient
     Engine --> ConfigRegistry
     Engine --> BattleMod
@@ -103,6 +108,7 @@ graph TD
     GameShared --> Shared
 
     %% client 域：门面组装两端，只给上层抽象
+    Client --> SessionShared
     Client --> LobbyClient
     Client --> BattleClient
     Client --> Entities
@@ -115,6 +121,7 @@ graph TD
     BattleClient --> Shared
     BattleClient --> Config
     BattleClient --> Runtime
+    BattleClient --> SessionShared
     Logic --> Shared
     Logic --> Config
     Logic --> Runtime
@@ -133,9 +140,12 @@ graph TD
     BattleSrv --> BattleSrvShared
     BattleSrv --> StoreAbst
     BattleSrv --> ReplayShared
+    BattleSrv --> SessionShared
+    BattleSrvShared --> SessionShared
 
     %% lobby 域：大厅客户端与业务
     LobbyClient --> LobbyProtocol
+    LobbyClient --> SessionShared
     LobbyProtocol --> LobbyShared
     LobbySrv --> LobbyShared
     LobbySrv --> LobbyProtocol
@@ -143,10 +153,13 @@ graph TD
     LobbySrv --> Config
     LobbySrv --> BattleSrvShared
     LobbySrv --> StoreAbst
+    LobbySrv --> SessionShared
 
-    %% datastore 域：接口只依赖大厅值类型，实现再依赖领域常量与接口层
+    %% datastore 域：接口只依赖大厅值类型与会话标识，实现再依赖领域常量与接口层
     StoreAbst --> LobbyShared
+    StoreAbst --> SessionShared
     Store --> LobbyShared
+    Store --> SessionShared
     Store --> Shared
     Store --> StoreAbst
 
@@ -162,6 +175,7 @@ graph TD
     ReplaySrv --> ReplayProtocol
     ReplaySrv --> ReplayShared
     ReplaySrv --> StoreAbst
+    ReplaySrv --> SessionShared
 
     %% server 域：Host 是装配根，向下依赖各域实现
     Host --> BattleMod
@@ -215,5 +229,6 @@ graph TD
 | `DungeonChessBattle.Replay.Client`           | replay    | [replay-client](functional_boundary/replay-client.md)                     |
 | `DungeonChessBattle.Replay.Server`           | replay    | [replay-server](functional_boundary/replay-server.md)                     |
 | `DungeonChessBattle.Server.Host`             | server    | [server-host](functional_boundary/server-host.md)                         |
+| `DungeonChessBattle.Session.Shared`          | session   | [session-shared](functional_boundary/session-shared.md)                   |
 
 

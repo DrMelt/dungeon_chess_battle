@@ -18,4 +18,4 @@
 
 ## 依赖
 
-- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared、Battle.Config.Shared、Battle.Server.Shared、Battle.Config.Registry。
+- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared、Battle.Config.Shared、Battle.Server.Shared、Battle.Config.Registry、Session.Shared。

@@ -24,7 +24,7 @@ public interface IBattleSessionCommand : ISkillCaster {
 /// 在线命令装配：把聚焦/施法意图经 <see cref="IClientBattleSession"/> 发送，服务端权威校验。
 /// 施法者由服务端从请求来源控制器推导，客户端不指定；本地单位未就绪时不发起。
 /// </summary>
-public sealed class BattleSessionCommand(IClientBattleSession session, string roomId) : IBattleSessionCommand {
+public sealed class BattleSessionCommand(IClientBattleSession session) : IBattleSessionCommand {
     /// <inheritdoc />
     public bool IsInBattle => true;
 
@@ -32,13 +32,13 @@ public sealed class BattleSessionCommand(IClientBattleSession session, string ro
     public void SetLocalFocusTarget(ushort targetNetId) {
         if (session.LocalUnit is null)
             return;
-        session.SetFocusTarget(roomId, targetNetId);
+        session.SetFocusTarget(targetNetId);
     }
 
     /// <inheritdoc />
     public void Cast(SkillKeyId skillKey, ushort targetNetId, float posX, float posZ) {
         if (session.LocalUnit is null)
             return;
-        session.CastSkill(roomId, targetNetId, skillKey.Id, posX, posZ);
+        session.CastSkill(targetNetId, skillKey.Id, posX, posZ);
     }
 }

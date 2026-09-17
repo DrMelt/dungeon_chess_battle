@@ -16,4 +16,4 @@
 
 ## 依赖
 
-- Server.DataStore.Shared、Battle.Shared、Lobby.Shared。
+- Server.DataStore.Shared、Battle.Shared、Lobby.Shared、Session.Shared。

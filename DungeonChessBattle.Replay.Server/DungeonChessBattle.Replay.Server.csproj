@@ -11,6 +11,7 @@
         <ProjectReference Include="..\DungeonChessBattle.Replay.Protocol\DungeonChessBattle.Replay.Protocol.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Replay.Shared\DungeonChessBattle.Replay.Shared.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Server.DataStore.Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Session.Shared\DungeonChessBattle.Session.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -12,6 +12,7 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Config.Shared;
 
@@ -46,23 +47,20 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     private ClientEntityManager? _entityManager;
 
     private BattleRoomEntity? _roomEntity;
-    private string? _currentRoomId;
+    private RoomId _currentRoomId;
     private readonly Lock _lock = new();
 
-    /// <summary>单位创建事件。参数：房间 ID、单位网络实体 ID、单位名称、阵营列表。</summary>
-    public event Action<string, ushort, string, IReadOnlyList<CampId>>? OnUnitCreated;
-
     /// <summary>
-    /// 战斗阶段变化事件，roomId 与 phase。
+    /// 战斗阶段变化事件。
     /// 直读 BattleRoomEntity SyncVar 轮询检测到阶段变化时触发。
     /// </summary>
-    public event Action<string, BattlePhase>? BattlePhaseChanged;
+    public event Action<BattlePhaseChange>? BattlePhaseChanged;
 
-    /// <summary>战斗事件日志事件。参数：房间 ID、本帧领域事件列表。</summary>
-    public event Action<string, IReadOnlyList<IBattleEvent>>? BattleEventsReceived;
+    /// <summary>战斗事件日志事件。</summary>
+    public event Action<BattleEventBatch>? BattleEventsReceived;
 
-    /// <summary>本地内容与服务端不一致事件。参数：房间 ID、原因。</summary>
-    public event Action<string, string>? ContentMismatchDetected;
+    /// <summary>本地内容与服务端不一致事件。</summary>
+    public event Action<BattleContentMismatch>? ContentMismatchDetected;
 
     // 本地玩家的 UnitController，在 OnUnitControllerCreated 回调中识别并缓存
     private UnitController? _localController;
@@ -134,7 +132,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         ResetTrafficCounters();
         lock (_lock) {
             _roomEntity = null;
-            _currentRoomId = null;
+            _currentRoomId = RoomId.None;
         }
     }
 
@@ -183,8 +181,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         if (phase != _lastKnownPhase) {
             _lastKnownPhase = phase;
             var roomId = _currentRoomId;
-            if (roomId != null)
-                BattlePhaseChanged?.Invoke(roomId, phase);
+            if (!roomId.IsDefault)
+                BattlePhaseChanged?.Invoke(new BattlePhaseChange(roomId, phase));
         }
     }
 
@@ -261,8 +259,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
             return;
         _contentMismatchReported = true;
         logger.LogError("本地内容与服务端不一致，不再构建本地战斗世界：{Reason}", reason);
-        if (_currentRoomId is { } roomId)
-            ContentMismatchDetected?.Invoke(roomId, reason);
+        var roomId = _currentRoomId;
+        if (!roomId.IsDefault)
+            ContentMismatchDetected?.Invoke(new BattleContentMismatch(roomId, reason));
     }
 
     /// <inheritdoc />
@@ -316,9 +315,9 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
                 decoded.Add(domainEvent);
         }
         var roomId = _currentRoomId;
-        if (roomId != null) {
+        if (!roomId.IsDefault) {
             _eventLog.Append(decoded, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            BattleEventsReceived?.Invoke(roomId, decoded);
+            BattleEventsReceived?.Invoke(new BattleEventBatch(roomId, decoded));
         }
     }
 
@@ -371,12 +370,11 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 经可靠请求通道向服务端发起施法：服务端输入门面接管该按键，回执 true 仅表示意图已投递，不含可施放性结论。
     /// 施法者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
-    /// <param name="roomId">房间 ID。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，范围伤害技能传 0。</param>
     /// <param name="skillId">技能配置键。</param>
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
-    public void CastSkill(string roomId, ushort targetNetId, string skillId,
+    public void CastSkill(ushort targetNetId, string skillId,
         float targetPosX = 0f, float targetPosZ = 0f) {
         var controller = _localController;
         if (controller == null)
@@ -395,18 +393,12 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         });
     }
 
-    /// <summary>判断当前房间战斗是否已结束。</summary>
-    public bool CheckBattleEnded(string roomId) {
-        return RoomState.IsFinished;
-    }
-
     /// <summary>
     /// 经可靠请求通道请求设置本地玩家单位的聚焦目标，服务端校验并写回权威状态。
     /// 聚焦持有者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
-    /// <param name="roomId">房间 ID。</param>
     /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
-    public void SetFocusTarget(string roomId, ushort targetNetId) {
+    public void SetFocusTarget(ushort targetNetId) {
         var controller = _localController;
         if (controller == null)
             return;

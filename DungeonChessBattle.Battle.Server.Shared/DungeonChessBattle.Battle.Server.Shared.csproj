@@ -8,6 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\DungeonChessBattle.Session.Shared\DungeonChessBattle.Session.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="ErrorOr" />
     </ItemGroup>
 </Project>

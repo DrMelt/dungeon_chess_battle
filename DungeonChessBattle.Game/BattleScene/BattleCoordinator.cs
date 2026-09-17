@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
 using DungeonChessBattle.Battle.Client;
-using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Session.Shared;
 using Godot;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
@@ -33,7 +32,7 @@ public partial class BattleCoordinator : Node {
     private IClientBattleService? _battleService;
 
     /// <summary>当前房间 ID（EnterBattle 时注入，用于阶段事件过滤）。</summary>
-    private string _roomId = "";
+    private RoomId _roomId;
 
     /// <summary>是否已在战斗中（统一数据源与阶段事件已绑定）。</summary>
     public bool IsInBattle {
@@ -46,7 +45,7 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件并绑定统一数据源。</summary>
-    public void EnterBattle(string roomId) {
+    public void EnterBattle(RoomId roomId) {
         if (IsInBattle)
             ExitBattle();
 
@@ -60,7 +59,7 @@ public partial class BattleCoordinator : Node {
         ServiceLocator.ClientService.OnBattleContentMismatch += OnContentMismatch;
         _sessionContext?.Bind(
             new OnlineBattleViewSource(session, ServiceLocator.ContentRegistry),
-            new BattleSessionCommand(session, _roomId));
+            new BattleSessionCommand(session));
         _inputController?.Reset();
 
         IsInBattle = true;
@@ -81,7 +80,7 @@ public partial class BattleCoordinator : Node {
         _inputController?.Reset();
 
         _battleService = null;
-        _roomId = "";
+        _roomId = RoomId.None;
         IsInBattle = false;
     }
 
@@ -98,28 +97,28 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>战斗事件流订阅：交统一数据源入帧缓冲与事件日志。</summary>
-    private void OnBattleEvents(string roomId, IReadOnlyList<IBattleEvent> events) {
-        if (roomId != _roomId)
+    private void OnBattleEvents(BattleEventBatch batch) {
+        if (batch.RoomId != _roomId)
             return;
-        _sessionContext?.AppendEvents(events);
+        _sessionContext?.AppendEvents(batch.Events);
     }
 
     /// <summary>
     /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界，这里交还应用级退出流程。
     /// 按房间 ID 过滤，旧房间的迟到通知不动当前战斗；事实本身由检测层记录，玩家提示由大厅面板承担。
     /// </summary>
-    private void OnContentMismatch(string roomId, string reason) {
-        if (roomId != _roomId)
+    private void OnContentMismatch(BattleContentMismatch mismatch) {
+        if (mismatch.RoomId != _roomId)
             return;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("战斗中止，本地内容与服务端不一致：{RoomId}（{Reason}）", roomId, reason);
+            _logger.LogInformation("战斗中止，本地内容与服务端不一致：{RoomId}（{Reason}）", mismatch.RoomId, mismatch.Reason);
         OnBattleFinished?.Invoke();
     }
 
-    private void OnBattlePhase(string roomId, BattlePhase phase) {
-        if (roomId != _roomId)
+    private void OnBattlePhase(BattlePhaseChange change) {
+        if (change.RoomId != _roomId)
             return;
-        CallDeferred(nameof(DeferredBattlePhase), (int)phase);
+        CallDeferred(nameof(DeferredBattlePhase), (int)change.Phase);
     }
 
     private void DeferredBattlePhase(int phase) {

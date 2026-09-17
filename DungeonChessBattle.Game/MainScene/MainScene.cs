@@ -3,6 +3,7 @@ using DungeonChessBattle.Game.GamePanels;
 using DungeonChessBattle.Game.ReplayUI;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Replay.Shared;
+using DungeonChessBattle.Session.Shared;
 using ErrorOr;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -87,7 +88,7 @@ public partial class MainScene : Node {
     // =============================================================
 
     /// <summary>进入战斗：加载战斗组装场景并驱动其编排器，首次进入隐藏前厅图层。</summary>
-    private void OnBattleStarted(string roomId) {
+    private void OnBattleStarted(RoomId roomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Battle started for room: {RoomId}", roomId);
 

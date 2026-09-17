@@ -20,7 +20,7 @@ public partial class ModRowList : Control {
     private ModRowListInterRefs? _refs;
 
     /// <summary>某一行发出的启停请求，转发给上层面板。</summary>
-    public event Action<string, bool>? ToggleRequested;
+    public event Action<ModToggleRequest>? ToggleRequested;
 
     /// <summary>
     /// 节点就绪：获取引用集合，订阅行容器增删以自动维护空态，并同步一次保证初态正确。
@@ -71,7 +71,8 @@ public partial class ModRowList : Control {
         }
     }
 
-    private void OnToggleRequested(string modId, bool enabled) => ToggleRequested?.Invoke(modId, enabled);
+    private void OnToggleRequested(string modId, bool enabled) =>
+        ToggleRequested?.Invoke(new ModToggleRequest(modId, enabled));
 
     /// <summary>空态即行数为零：空时显示 EmptyHint 并隐藏行容器，有行时相反。</summary>
     private void SyncEmptyState() {

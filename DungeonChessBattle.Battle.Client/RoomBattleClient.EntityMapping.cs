@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Entities;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 using BattlePhase = DungeonChessBattle.Battle.Shared.Combat.BattlePhase;
 
@@ -16,7 +17,8 @@ public partial class RoomBattleClient {
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         lock (_lock) {
             _roomEntity = entity;
-            _currentRoomId = entity.RoomId.Value;
+            // 房间标识随同步线缆到达，先过值对象判定：非法即视为无标识，事件不再外发房间 ID
+            _currentRoomId = RoomId.TryCreate(entity.RoomId.Value) ?? RoomId.None;
         }
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Room entity created: {RoomId}, phase={Phase}, startUnix={StartUnix}, dungeonKey={DungeonKey}",
@@ -30,11 +32,6 @@ public partial class RoomBattleClient {
 
         // 只构建领域单位并注册；位移、生命等状态由 ClientBattleLoop 每渲染帧从 SyncVar 回填。
         AddPawnUnit(pawn);
-
-        // 触发 OnUnitCreated 事件，通知 UI 层
-        var roomId = _currentRoomId;
-        if (roomId != null)
-            OnUnitCreated?.Invoke(roomId, pawn.Id, unitName, pawn.CampTags);
 
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("UnitPawn entity created: {UnitName}, Camps={Camps}, Pos={Position}",

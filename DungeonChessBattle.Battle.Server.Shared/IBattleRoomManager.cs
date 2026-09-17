@@ -1,22 +1,23 @@
+using DungeonChessBattle.Session.Shared;
 using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Server.Shared;
 
 /// <summary>
 /// 战斗房间服务器生命周期接口，协调抽象。
-/// 只暴露原语类型与字符串，不暴露 BattleRoomServer 等实现细节，
+/// 只暴露原语类型与房间标识，不暴露 BattleRoomServer 等实现细节，
 /// 使大厅协调层与战斗实现层互不依赖。
 /// 实现由 Server.Battle 的 BattleRoomManager 承担。
 /// </summary>
 public interface IBattleRoomManager {
     /// <summary>开始战斗：解析房间副本配置、创建房间服务器并等待首帧初始化完成，返回房间监听端口。副本缺失与初始化失败以错误返回，房间不留痕。</summary>
-    ErrorOr<int> StartRoomBattle(string roomId);
+    ErrorOr<int> StartRoomBattle(RoomId roomId);
 
     /// <summary>获取战斗中房间的监听端口；非战斗中的房间返回 false。</summary>
-    bool TryGetRoomPort(string roomId, out int port);
+    bool TryGetRoomPort(RoomId roomId, out int port);
 
     /// <summary>重连登记玩家到房间：仅房间既有同名会话才允许，返回是否成功。</summary>
-    bool RegisterPlayer(string roomId, string playerId, string playerName);
+    bool RegisterPlayer(RoomId roomId, string playerId, string playerName);
 
     /// <summary>消费空房间投递队列并执行房间移除，由协调循环周期调用。</summary>
     void ProcessPendingRoomCleanups();

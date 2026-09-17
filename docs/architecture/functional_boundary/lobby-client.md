@@ -17,4 +17,4 @@
 
 ## 依赖
 
-- Lobby.Protocol。
+- Lobby.Protocol、Session.Shared。

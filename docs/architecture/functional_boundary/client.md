@@ -20,4 +20,4 @@
 
 ## 依赖
 
-- Lobby.Client、Battle.Client、Battle.Entities、Lobby.Protocol、Battle.Config.Shared。
+- Lobby.Client、Battle.Client、Battle.Entities、Lobby.Protocol、Battle.Config.Shared、Session.Shared。

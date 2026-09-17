@@ -1,6 +1,7 @@
 ﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
+using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Config.Shared;
 
@@ -37,7 +38,7 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
     /// <summary>
     /// 向房间内所有成员连接广播消息。
     /// </summary>
-    private async Task BroadcastToRoomAsync<TDto>(string roomId, string hubMethod, TDto dto) {
+    private async Task BroadcastToRoomAsync<TDto>(RoomId roomId, string hubMethod, TDto dto) {
         await _broadcaster.SendToRoomAsync(roomId, hubMethod, dto);
     }
 
@@ -49,8 +50,8 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
         // 登录会话先清理，避免断线残留身份
         _stateStore.RemoveLoginSession(connectionId);
 
-        string? roomId = _stateStore.RemovePlayerByConnection(connectionId);
-        if (roomId == null)
+        RoomId roomId = _stateStore.RemovePlayerByConnection(connectionId);
+        if (roomId.IsDefault)
             return;
 
         await _lobby.BroadcastRoomSnapshotAsync(roomId);
@@ -63,15 +64,15 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
     /// 成员、单位、人数、房主转让与空房删除，并向剩余玩家广播最新房间快照。
     /// </summary>
     public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId) {
-        string? roomId = _stateStore.GetRoomIdForConnection(connectionId);
-        if (roomId == null)
+        RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
+        if (roomId.IsDefault)
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         // 先停止接收该房间广播，再清理状态，清理后最后一人退出时房间已删，无需广播
         await _broadcaster.RemoveFromRoomAsync(connectionId, roomId);
 
-        string? removedRoomId = _stateStore.RemovePlayerByConnection(connectionId);
-        if (removedRoomId == null)
+        RoomId removedRoomId = _stateStore.RemovePlayerByConnection(connectionId);
+        if (removedRoomId.IsDefault)
             return new LobbyResult(roomId, true); // 最后一人退出，房间已删除
 
         await _lobby.BroadcastRoomSnapshotAsync(removedRoomId);

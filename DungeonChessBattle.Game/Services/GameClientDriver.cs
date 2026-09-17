@@ -1,4 +1,5 @@
 using Godot;
+using DungeonChessBattle.Client;
 
 namespace DungeonChessBattle.Game.Services;
 
@@ -28,8 +29,8 @@ public partial class GameClientDriver : Node {
     }
 
     /// <summary>连接断开：通知回放浏览服务取消在途并清空过程状态。</summary>
-    private static void OnConnectionChanged(string host, int port, bool connected) {
-        if (!connected)
+    private static void OnConnectionChanged(ConnectionStatus status) {
+        if (!status.Connected)
             ServiceLocator.ReplayService.OnSessionInvalid();
     }
 

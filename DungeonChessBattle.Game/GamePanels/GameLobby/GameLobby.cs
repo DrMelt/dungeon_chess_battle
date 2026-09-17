@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Microsoft.Extensions.Logging;
+using DungeonChessBattle.Battle.Client;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Game.Services;
+using DungeonChessBattle.Session.Shared;
 using DungeonChessBattle.Game.ReplayUI;
 
 namespace DungeonChessBattle.Game.GamePanels;
@@ -161,14 +163,15 @@ public partial class GameLobby : BaseGamePanel {
     /// 点击加入按钮：校验已选中房间后发送加入请求。
     /// </summary>
     private void OnJoinRoom() {
-        if (string.IsNullOrEmpty(_selectedRoomId)) {
+        // 列表房间标识来自服务端，先过值对象判定再进请求
+        if (RoomId.TryCreate(_selectedRoomId) is not { } roomId) {
             _logger.LogWarning("加入房间失败: 未选中房间");
             return;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("请求加入房间(网络): {RoomId}", _selectedRoomId);
-        ServiceLocator.ClientService.RequestJoinRoom(_selectedRoomId);
+            _logger.LogInformation("请求加入房间(网络): {RoomId}", roomId);
+        ServiceLocator.ClientService.RequestJoinRoom(roomId);
     }
 
     /// <summary>
@@ -182,7 +185,7 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 持久的事件处理器：大厅客户端收到 OnRoomCreated 时触发（网络模式创建房间成功）。
     /// </summary>
-    private void OnRoomCreatedHandler(string createdRoomId) {
+    private void OnRoomCreatedHandler(RoomId createdRoomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("房间创建成功: {RoomId}", createdRoomId);
         OnCreatedDeferred(createdRoomId);
@@ -192,7 +195,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 主线程处理房间创建成功回调，进入准备界面。房间信息不在此猜测，以服务端快照为准。
     /// </summary>
     /// <param name="roomId">创建成功的房间 ID。</param>
-    private void OnCreatedDeferred(string roomId) {
+    private void OnCreatedDeferred(RoomId roomId) {
         if (_roomPreparation != null) {
             _roomPreparation.EnterRoom(roomId, isHost: true);
             NavigateTo(_roomPreparation);
@@ -203,7 +206,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 持久的事件处理器：大厅客户端收到 OnRoomJoined 时触发（网络模式加入房间成功）。
     /// 准备阶段不重定向，直接进入 RoomPreparation 面板。
     /// </summary>
-    private void OnRoomJoinedHandler(string joinedRoomId) {
+    private void OnRoomJoinedHandler(RoomId joinedRoomId) {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
         OnJoinedDeferred(joinedRoomId);
@@ -213,7 +216,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 主线程处理加入房间成功回调，进入准备界面：列表缓存带内容指纹，未命中时交给服务端快照渲染。
     /// </summary>
     /// <param name="joinedRoomId">加入成功的房间 ID。</param>
-    private void OnJoinedDeferred(string joinedRoomId) {
+    private void OnJoinedDeferred(RoomId joinedRoomId) {
         if (_roomPreparation != null) {
             _roomPreparation.EnterRoom(joinedRoomId, _selectedRoomConfig, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))
@@ -226,9 +229,9 @@ public partial class GameLobby : BaseGamePanel {
     /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界、编排层已退出战斗，玩家退回本面板。
     /// 事实与原因由检测层记录，本条把结论写给玩家，日志只留退回上下文。
     /// </summary>
-    private void OnBattleContentMismatch(string roomId, string reason) {
+    private void OnBattleContentMismatch(BattleContentMismatch mismatch) {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("内容不一致，战斗已中止并退回大厅：{RoomId}（{Reason}）", roomId, reason);
+            _logger.LogInformation("内容不一致，战斗已中止并退回大厅：{RoomId}（{Reason}）", mismatch.RoomId, mismatch.Reason);
         if (InterRefs?.DetailLabel != null)
             InterRefs.DetailLabel.Text = "内容不一致：缺少 mod 或版本不符，战斗已中止";
     }

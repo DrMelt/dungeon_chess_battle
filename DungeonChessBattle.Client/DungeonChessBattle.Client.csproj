@@ -13,6 +13,7 @@
         <ProjectReference Include="..\DungeonChessBattle.Battle.Entities\DungeonChessBattle.Battle.Entities.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Battle.Client\DungeonChessBattle.Battle.Client.csproj" />
         <ProjectReference Include="..\DungeonChessBattle.Lobby.Client\DungeonChessBattle.Lobby.Client.csproj" />
+        <ProjectReference Include="..\DungeonChessBattle.Session.Shared\DungeonChessBattle.Session.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

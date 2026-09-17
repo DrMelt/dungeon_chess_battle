@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Entities.SyncData;
+using DungeonChessBattle.Session.Shared;
 using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Server;
@@ -9,17 +10,17 @@ namespace DungeonChessBattle.Battle.Server;
 /// </summary>
 public static class BattleRoomErrors {
     /// <summary>房间引用的副本未注册。</summary>
-    public static Error UnknownDungeon(string roomId, string? dungeonKey) => Error.NotFound(
+    public static Error UnknownDungeon(RoomId roomId, string? dungeonKey) => Error.NotFound(
         code: "BattleRoom.Dungeon.Unknown",
         description: $"房间 '{roomId}' 引用的副本未注册：{dungeonKey}");
 
     /// <summary>房间线程首帧初始化超时。</summary>
-    public static Error InitializeTimeout(string roomId, int timeoutSeconds) => Error.Failure(
+    public static Error InitializeTimeout(RoomId roomId, int timeoutSeconds) => Error.Failure(
         code: "BattleRoom.Initialize.Timeout",
         description: $"房间 '{roomId}' 初始化超时 {timeoutSeconds} 秒");
 
     /// <summary>房间线程首帧初始化未完成，原因取自房间线程报出的失败。</summary>
-    public static Error InitializeFailed(string roomId, string reason) => Error.Failure(
+    public static Error InitializeFailed(RoomId roomId, string reason) => Error.Failure(
         code: "BattleRoom.Initialize.Failed",
         description: $"房间 '{roomId}' 初始化失败：{reason}");
 

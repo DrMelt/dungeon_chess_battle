@@ -6,6 +6,7 @@ using DungeonChessBattle.Battle.Logic.Control;
 using DungeonChessBattle.Battle.Logic.Movement;
 using DungeonChessBattle.Battle.Entities;
 using DungeonChessBattle.Server.DataStore.Shared;
+using DungeonChessBattle.Session.Shared;
 using ErrorOr;
 using LiteEntitySystem;
 using LiteNetLib;
@@ -111,7 +112,7 @@ public partial class BattleRoomServer : INetEventListener {
     }
 
     /// <summary>房间标识。</summary>
-    public string RoomId {
+    public RoomId RoomId {
         get;
     }
 
@@ -127,14 +128,8 @@ public partial class BattleRoomServer : INetEventListener {
     /// <summary>房间服务器是否正在运行。</summary>
     public bool IsRunning => _running;
 
-    /// <summary>客户端连接事件。参数：peer ID。</summary>
-    public event Action<int>? OnClientConnected;
-
-    /// <summary>客户端断开事件。参数：peer ID。</summary>
-    public event Action<int>? OnClientDisconnected;
-
-    /// <summary>房间无任何活跃连接事件，房间线程触发，消费方负责在线程边界外执行销毁。</summary>
-    public event Action<string>? RoomEmpty;
+    /// <summary>房间无任何活跃连接事件，房间线程触发，消费方负责在线程边界外执行销毁；参数为房间 ID。</summary>
+    public event Action<RoomId>? RoomEmpty;
 
     /// <param name="port">监听端口</param>
     /// <param name="roomId">房间标识</param>
@@ -143,7 +138,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="stateStore">大厅级状态存储，房间线程用于自取初始化数据与成员校验。</param>
     /// <param name="content">内容注册表只读视图，单位配置与录制回放修订号来源。</param>
     /// <param name="dungeon">房间选中的副本配置，由调用方在启动前解析并传入，房间据此装配且不回查内容。</param>
-    public BattleRoomServer(int port, string roomId, ILoggerFactory loggerFactory,
+    public BattleRoomServer(int port, RoomId roomId, ILoggerFactory loggerFactory,
         BattleServerConfig config, IGameStateStore stateStore,
         IContentRegistryView content, DungeonConfig dungeon) {
         Port = port;
