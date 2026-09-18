@@ -1,6 +1,6 @@
 # DungeonChessBattle 总体架构
 
-客户端为主工程进程，游戏服务器为独立 .NET 子进程；大厅走长连接通道，战斗走实时传输与实体同步。
+客户端为主工程进程，游戏服务器为独立进程；大厅走长连接通道，战斗走实时传输与实体同步。
 
 本文档给出项目划分与依赖关系。
 
@@ -12,7 +12,7 @@
 graph TD
     subgraph DEngine["engine：主工程装配与表现"]
         Engine["Game<br>场景 / UI / 资源装配"]
-        GameDisplayRegistry["Game.Display.Registry<br>展示数据注册表：条目读写口 / 登记点"]
+        GameDisplayRegistry["Game.Display.Registry<br>展示数据注册表：条目读写接口 / 登记点"]
         GameMod["Game.Mod.Manager<br>mod 管理 / 展示装配"]
         GameIface["Game.Mod.Interface<br>mod 开发锚点：要实现的入口接口"]
         GameModShared["Game.Mod.Shared<br>展示接口：装配上下文 / 表现接口"]
@@ -28,15 +28,15 @@ graph TD
     end
 
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
-        Shared["Battle.Shared<br>共用形状：身份键 / 数据形状 / 行为端口 / 只读视图"]
-        Config["Battle.Config.Shared<br>静态配置数据：内容定义 / 注册表查找口"]
+        Shared["Battle.Shared<br>共用形状：身份键 / 数据形状 / 行为接口 / 只读视图"]
+        Config["Battle.Config.Shared<br>静态配置数据：内容定义 / 注册表查询接口"]
         Runtime["Battle.Runtime.Shared<br>运行时对象：单位权威状态 / 装配 / 意图 / 展示视图"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>实体同步网络实体"]
-        ConfigRegistry["Config.Registry<br>内容注册表 / 登记点"]
+        ConfigRegistry["Battle.Config.Registry<br>内容注册表 / 登记点"]
         BattleMod["Battle.Mod.Manager<br>mod 目录装载 / 启用集 / 内容指纹 / 内容装配"]
         BattleModIface["Battle.Mod.Interface<br>mod 入口接口：要实现的数据入口"]
-        BattleModShared["Battle.Mod.Shared<br>数据面注册面定义：内容注册口 / 引导上下文"]
+        BattleModShared["Battle.Mod.Shared<br>数据面注册接口定义：内容注册接口 / 引导上下文"]
         BattleClient["Battle.Client<br>实体同步房间客户端"]
         BattleSrv["Battle.Server<br>战斗房间服务"]
         BattleSrvShared["Battle.Server.Shared<br>战斗域服务端接口"]
@@ -88,7 +88,7 @@ graph TD
     Engine --> GameModShared
     Engine --> GameShared
 
-    %% mod 接口：mod 只见 Interface，注册面定义经其传递可见
+    %% mod 接口：mod 只见 Interface，注册接口定义经其传递可见
     BattleModIface --> BattleModShared
     BattleModShared --> Config
     GameMod --> BattleMod
@@ -199,7 +199,13 @@ graph TD
 | 模块                                         | 域        | 边界文档                                                                  |
 | -------------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | `DungeonChessBattle.Game`                    | engine    | [game](functional_boundary/game.md)                                       |
+| `DungeonChessBattle.Game.Display.Registry`   | engine    | [game-display-registry](functional_boundary/game-display-registry.md)     |
+| `DungeonChessBattle.Game.Mod.Manager`        | engine    | [game-mod-manager](functional_boundary/game-mod-manager.md)               |
+| `DungeonChessBattle.Game.Mod.Interface`      | engine    | [game-mod-interface](functional_boundary/game-mod-interface.md)           |
+| `DungeonChessBattle.Game.Mod.Shared`         | engine    | [game-mod-shared](functional_boundary/game-mod-shared.md)                 |
+| `DungeonChessBattle.Game.Shared`             | engine    | [game-shared](functional_boundary/game-shared.md)                         |
 | `DungeonChessBattle.Client`                  | client    | [client](functional_boundary/client.md)                                   |
+| `DungeonChessBattle.Session.Shared`          | session   | [session-shared](functional_boundary/session-shared.md)                   |
 | `DungeonChessBattle.Battle.Config.Shared`    | battle    | [battle-config-shared](functional_boundary/battle-config-shared.md)       |
 | `DungeonChessBattle.Battle.Shared`           | battle    | [battle-shared](functional_boundary/battle-shared.md)                     |
 | `DungeonChessBattle.Battle.Runtime.Shared`   | battle    | [battle-runtime-shared](functional_boundary/battle-runtime-shared.md)     |
@@ -209,11 +215,6 @@ graph TD
 | `DungeonChessBattle.Battle.Mod.Manager`      | battle    | [battle-mod-manager](functional_boundary/battle-mod-manager.md)           |
 | `DungeonChessBattle.Battle.Mod.Interface`    | battle    | [battle-mod-interface](functional_boundary/battle-mod-interface.md)       |
 | `DungeonChessBattle.Battle.Mod.Shared`       | battle    | [battle-mod-shared](functional_boundary/battle-mod-shared.md)             |
-| `DungeonChessBattle.Game.Display.Registry`   | engine    | [game-display-registry](functional_boundary/game-display-registry.md)     |
-| `DungeonChessBattle.Game.Mod.Manager`        | engine    | [game-mod-manager](functional_boundary/game-mod-manager.md)               |
-| `DungeonChessBattle.Game.Mod.Interface`      | engine    | [game-mod-interface](functional_boundary/game-mod-interface.md)           |
-| `DungeonChessBattle.Game.Mod.Shared`         | engine    | [game-mod-shared](functional_boundary/game-mod-shared.md)                 |
-| `DungeonChessBattle.Game.Shared`             | engine    | [game-shared](functional_boundary/game-shared.md)                         |
 | `DungeonChessBattle.Battle.Client`           | battle    | [battle-client](functional_boundary/battle-client.md)                     |
 | `DungeonChessBattle.Battle.Server`           | battle    | [battle-server](functional_boundary/battle-server.md)                     |
 | `DungeonChessBattle.Battle.Server.Shared`    | battle    | [battle-server-shared](functional_boundary/battle-server-shared.md)       |
@@ -229,6 +230,5 @@ graph TD
 | `DungeonChessBattle.Replay.Client`           | replay    | [replay-client](functional_boundary/replay-client.md)                     |
 | `DungeonChessBattle.Replay.Server`           | replay    | [replay-server](functional_boundary/replay-server.md)                     |
 | `DungeonChessBattle.Server.Host`             | server    | [server-host](functional_boundary/server-host.md)                         |
-| `DungeonChessBattle.Session.Shared`          | session   | [session-shared](functional_boundary/session-shared.md)                   |
 
 

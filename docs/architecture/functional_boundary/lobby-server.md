@@ -1,6 +1,6 @@
 # DungeonChessBattle.Lobby.Server
 
-大厅服务器。承载大厅长连接端点、业务实现与协调门面，经房间管理接口编排战斗房间生命周期。
+大厅服务器。承载大厅长连接端点、业务实现与协调门面，经房间生命周期接口编排战斗房间。
 
 ## 职责
 
@@ -12,10 +12,10 @@
 ## 边界外
 
 - 不感知数据存储实现，经数据存储接口读写。
-- 战斗房间服务器实现不在本项目，经房间管理接口调用。
-- 不含回放：回放的查询、鉴权与 HTTP 端点全在 Replay.Server；大厅只在登录成功时签发会话凭证，不承载回放请求。
+- 战斗房间服务器实现不在本项目，经房间生命周期接口调用。
+- 不含回放：查询、鉴权与端点归 Replay.Server；本库只在登录成功时签发会话凭证。
 - 不承载进程装配：服务端宿主框架装配与进程看护由服务器宿主承担。
 
 ## 依赖
 
-- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared、Battle.Config.Shared、Battle.Server.Shared、Battle.Config.Registry、Session.Shared。
+- Lobby.Shared、Lobby.Protocol、Server.DataStore.Shared、Battle.Shared、Battle.Config.Shared、Battle.Server.Shared、Session.Shared。

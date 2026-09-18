@@ -5,8 +5,8 @@
 ## 职责
 
 - 单房间战斗服务：独立网络、实体管理与战斗世界。
-- 房间生命周期：创建与销毁、端口分配回收与空房清理。
-- 实现房间管理接口，向外只暴露端口与房间标识。
+- 房间生命周期实现：房间创建与销毁、端口分配回收与空房清理。
+- 实现房间生命周期接口，向外只暴露端口与房间标识。
 - 房间启动失败：副本不在场与首帧初始化超时或失败按原因交回调用方，未登记的房间停止并回收端口。
 - 按副本配置初始化房间的战斗状态。
 - 战斗循环：实体更新后预备本帧意图并推进战斗、权威状态同步与事件外送。
@@ -21,4 +21,4 @@
 
 ## 依赖
 
-- Battle.Logic、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Battle.Config.Registry、Replay.Shared、Battle.Server.Shared、Server.DataStore.Shared、Session.Shared。
+- Battle.Logic、Battle.Shared、Battle.Config.Shared、Battle.Runtime.Shared、Battle.Entities、Replay.Shared、Battle.Server.Shared、Server.DataStore.Shared、Session.Shared。
