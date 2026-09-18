@@ -80,32 +80,32 @@ public sealed class PhysicsMovementScene : IMovementScene {
         var delta = MovementMath.Displacement(intent.Direction, intent.Speed, dt);
         var total = delta.Length();
         if (total <= 1e-6f)
-            return ClampToBounds(start, intent.BodyRadius);
+            return ClampToBounds(start, intent.CollisionRadius);
 
         // 按固定步长细分位移，防快速单位隧穿细薄障碍
         var segments = Math.Max(1, (int)MathF.Ceiling(total / SubStepLength));
         var step = delta * (1f / segments);
         var pos = start;
         for (var i = 0; i < segments; i++)
-            pos = ResolveObstacles(pos + step, intent.BodyRadius);
-        return ClampToBounds(pos, intent.BodyRadius);
+            pos = ResolveObstacles(pos + step, intent.CollisionRadius);
+        return ClampToBounds(pos, intent.CollisionRadius);
     }
 
     /// <summary>竞技场边界约束；无布局即不约束位置。</summary>
-    private Vector2 ClampToBounds(Vector2 pos, float bodyRadius) =>
+    private Vector2 ClampToBounds(Vector2 pos, float collisionRadius) =>
         _layout is { } layout
-            ? MovementMath.ClampToBounds(pos, bodyRadius, layout.HalfWidth, layout.HalfHeight)
+            ? MovementMath.ClampToBounds(pos, collisionRadius, layout.HalfWidth, layout.HalfHeight)
             : pos;
 
     /// <summary>单步静态障碍推挤：Aether 宽相查询命中候选，再做精确圆↔矩形推挤。</summary>
-    private Vector2 ResolveObstacles(Vector2 pos, float bodyRadius) {
+    private Vector2 ResolveObstacles(Vector2 pos, float collisionRadius) {
         var aabb = new AetherAABB(
-            new AetherVector2(pos.X - bodyRadius, pos.Y - bodyRadius),
-            new AetherVector2(pos.X + bodyRadius, pos.Y + bodyRadius));
+            new AetherVector2(pos.X - collisionRadius, pos.Y - collisionRadius),
+            new AetherVector2(pos.X + collisionRadius, pos.Y + collisionRadius));
         _queryResults.Clear();
         _world.QueryAABB(_queryCallback, ref aabb);
         foreach (var rect in _queryResults)
-            pos = MovementMath.PushOutCircleRect(pos, bodyRadius, rect);
+            pos = MovementMath.PushOutCircleRect(pos, collisionRadius, rect);
         return pos;
     }
 

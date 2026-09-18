@@ -84,10 +84,10 @@ public partial class UnitTargetMarks : Node {
         bool isFocus = unit == focusUnit;
         if (isFocus != mark.Visible && _logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Mark unit={UnitId}: visible={Visible}, radius={Radius}",
-                unit.UnitId, isFocus, unit.BodyRadius);
+                unit.UnitId, isFocus, unit.HitRadius);
 
         mark.Visible = isFocus;
-        mark.SetRadius(unit.BodyRadius);
+        mark.SetRadius(unit.HitRadius);
         var relation = session?.ResolveLocalCampRelation(unit.Camps) ?? CampRelation.Unknown;
         mark.SetColor(relation);
         if (relation == CampRelation.Unknown && !_unknownRelationLogged) {

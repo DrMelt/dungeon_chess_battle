@@ -62,8 +62,8 @@ public readonly record struct UnitSnapshot {
         get; init;
     }
 
-    /// <summary>碰撞半径，供技能范围判定使用。</summary>
-    public float BodyRadius {
+    /// <summary>判定半径，供技能范围判定使用。</summary>
+    public float HitRadius {
         get; init;
     }
 }

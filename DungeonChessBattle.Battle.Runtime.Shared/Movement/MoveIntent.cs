@@ -10,10 +10,10 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Movement;
 /// <param name="FromPosition">本帧起始位置。</param>
 /// <param name="Direction">归一化移动方向。</param>
 /// <param name="Speed">移动速度。</param>
-/// <param name="BodyRadius">碰撞半径，供互斥与障碍推挤判定。</param>
+/// <param name="CollisionRadius">碰撞半径，供互斥与障碍推挤判定。</param>
 public readonly record struct MoveIntent(
     ushort ActorId,
     Vector2 FromPosition,
     Vector2 Direction,
     float Speed,
-    float BodyRadius);
+    float CollisionRadius);

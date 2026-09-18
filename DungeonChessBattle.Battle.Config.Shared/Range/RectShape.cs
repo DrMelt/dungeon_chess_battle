@@ -26,7 +26,7 @@ public sealed class RectShape : IRangeShape {
     public float FarReach => FarClamp;
 
     /// <inheritdoc />
-    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float bodyRadius) {
+    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float hitRadius) {
         direction = Vector2.Normalize(direction);
         Vector2 toCheck = point - anchor;
 
@@ -38,6 +38,6 @@ public sealed class RectShape : IRangeShape {
         float dx = tanX - closestX;
         float dy = tanY - closestY;
 
-        return dx * dx + dy * dy <= bodyRadius * bodyRadius;
+        return dx * dx + dy * dy <= hitRadius * hitRadius;
     }
 }

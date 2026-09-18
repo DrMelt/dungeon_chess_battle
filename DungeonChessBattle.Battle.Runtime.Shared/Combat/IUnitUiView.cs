@@ -10,6 +10,11 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 位置语义与 <see cref="ISkillCasterView"/> 一致：Position 即本地 BattleScene 的结算位置，在线随服务端下行校正，回放纯本地重跑。
 /// </summary>
 public interface IUnitUiView : ISkillCasterView {
+    /// <summary>碰撞半径，供展示层读取单位占位体积。</summary>
+    float CollisionRadius {
+        get;
+    }
+
     /// <summary>最大生命值。</summary>
     float MaxHealth {
         get;

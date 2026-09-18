@@ -87,7 +87,10 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     public float BaseSpeed => BaseConfig.BaseSpeed;
 
     /// <summary>碰撞半径，取自配置基础值。</summary>
-    public float BodyRadius => BaseConfig.BodyRadius;
+    public float CollisionRadius => BaseConfig.CollisionRadius;
+
+    /// <summary>判定半径，取自配置基础值。</summary>
+    public float HitRadius => BaseConfig.HitRadius;
 
     /// <summary>当前施法技能，default 表示无施法。</summary>
     public SkillKeyId SkillCasting {
@@ -148,7 +151,7 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
         CureIntensity = CureIntensity,
         MoveSpeed = BaseSpeed,
         Position = Position,
-        BodyRadius = BodyRadius,
+        HitRadius = HitRadius,
     };
 
     /// <inheritdoc />

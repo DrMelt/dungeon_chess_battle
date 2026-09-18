@@ -21,7 +21,7 @@ public static class MovementMath {
         for (int it = 0; it < iterations; it++) {
             for (int i = 0; i < positions.Length; i++) {
                 for (int j = i + 1; j < positions.Length; j++) {
-                    float min = intents[i].BodyRadius + intents[j].BodyRadius;
+                    float min = intents[i].CollisionRadius + intents[j].CollisionRadius;
                     var delta = positions[j] - positions[i];
                     float distSq = delta.LengthSquared();
                     if (distSq >= min * min)
@@ -72,12 +72,12 @@ public static class MovementMath {
         return new Vector2(closestX, closestY) + diff * (radius / MathF.Sqrt(distSq));
     }
 
-    /// <summary>约束位置到竞技场边界内，保持与边界的单位半径间距。</summary>
-    public static Vector2 ClampToBounds(Vector2 pos, float bodyRadius, float halfWidth, float halfHeight) {
-        var minX = -halfWidth + bodyRadius;
-        var maxX = halfWidth - bodyRadius;
-        var minY = -halfHeight + bodyRadius;
-        var maxY = halfHeight - bodyRadius;
+    /// <summary>约束位置到竞技场边界内，保持与边界的碰撞半径间距。</summary>
+    public static Vector2 ClampToBounds(Vector2 pos, float collisionRadius, float halfWidth, float halfHeight) {
+        var minX = -halfWidth + collisionRadius;
+        var maxX = halfWidth - collisionRadius;
+        var minY = -halfHeight + collisionRadius;
+        var maxY = halfHeight - collisionRadius;
         return new Vector2(
             minX > maxX ? 0f : Math.Clamp(pos.X, minX, maxX),
             minY > maxY ? 0f : Math.Clamp(pos.Y, minY, maxY));

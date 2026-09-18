@@ -310,7 +310,7 @@ public sealed partial class BattleScene(
             if (unit.IsDead || unit.MoveInput.LengthSquared() <= 0.0001f || unit.BaseSpeed <= 0f)
                 continue;
             intents.Add(new MoveIntent(unit.UnitId, unit.Position,
-                Vector2.Normalize(unit.MoveInput), unit.BaseSpeed, unit.BodyRadius));
+                Vector2.Normalize(unit.MoveInput), unit.BaseSpeed, unit.CollisionRadius));
         }
 
         var results = _movementScene.Resolve(intents, dt);

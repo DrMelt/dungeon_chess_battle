@@ -39,11 +39,11 @@ public static class SkillCastValidator {
         return true;
     }
 
-    /// <summary>单位目标距离因素：声明了射程时要求中心距含双方碰撞半径不超过射程，未声明射程即不设限。</summary>
+    /// <summary>单位目标距离因素：声明了射程时要求中心距含双方判定半径不超过射程，未声明射程即不设限。</summary>
     private static bool IsUnitTargetInRange(ISkillCasterView caster, ISkillCasterView target, SkillDefinition skill) {
         if (skill.CastRange is not { } castRange)
             return true;
-        float reach = castRange + caster.BodyRadius + target.BodyRadius;
+        float reach = castRange + caster.HitRadius + target.HitRadius;
         return Vector2.Distance(caster.Position, target.Position) <= reach;
     }
 
