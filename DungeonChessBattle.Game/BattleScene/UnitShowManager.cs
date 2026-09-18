@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -68,7 +68,7 @@ public partial class UnitShowManager : Node {
     }
 
     /// <summary>实例化单位视图并登记；可见性不在此决定，由首帧对齐按死亡状态收敛。</summary>
-    private void SpawnUnit(IUnitUiView unit) {
+    private void SpawnUnit(IBattleUnitView unit) {
         string unitName = unit.UnitName;
 
         if (_unitShowScene == null)
@@ -77,7 +77,7 @@ public partial class UnitShowManager : Node {
         if (unitShow == null)
             return;
 
-        // 注入本地展示视图（setter 先于挂载，_Ready 校验不会误报）
+        // 注入本地单位只读视图（setter 先于挂载，_Ready 校验不会误报）
         unitShow.Unit = unit;
 
         AddChild(unitShow);

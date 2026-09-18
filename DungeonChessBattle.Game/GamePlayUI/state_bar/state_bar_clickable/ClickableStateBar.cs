@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -28,8 +28,8 @@ public partial class ClickableStateBar : Control {
     /// <summary>鼠标是否悬停在该状态条上。</summary>
     private bool mouseOn = false;
 
-    /// <summary>当前绑定的单位展示视图。</summary>
-    private IUnitUiView? bindingUnit;
+    /// <summary>当前绑定的单位只读视图。</summary>
+    private IBattleUnitView? bindingUnit;
 
     /// <summary>
     /// 节点就绪：获取引用集合，并监听鼠标悬停与左键点击事件。
@@ -69,8 +69,8 @@ public partial class ClickableStateBar : Control {
     /// <summary>
     /// 绑定要展示的单位视图。
     /// </summary>
-    /// <param name="unit">目标单位展示视图。</param>
-    public void BindUnitState(IUnitUiView unit) {
+    /// <param name="unit">目标单位只读视图。</param>
+    public void BindUnitState(IBattleUnitView unit) {
         bindingUnit = unit;
     }
 

@@ -6,7 +6,6 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Replay;
 using DungeonChessBattle.Battle.Config.Shared;
 
@@ -18,21 +17,21 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 回放装配为 <see cref="ReplayBattleViewSource"/>，两者由各自协调器单独构建注入。
 /// </summary>
 public interface IBattleViewSource {
-    /// <summary>全部展示单位视图。</summary>
-    IReadOnlyList<IUnitUiView> Units {
+    /// <summary>全部单位只读视图。</summary>
+    IReadOnlyList<IBattleUnitView> Units {
         get;
     }
 
-    /// <summary>按单位 ID 查展示单位，不存在返回 null。</summary>
-    IUnitUiView? FindUnit(UnitId unitId);
+    /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
+    IBattleUnitView? FindUnit(UnitId unitId);
 
-    /// <summary>本地玩家单位的展示视图；无本地控制器语义时为 null。</summary>
-    IUnitUiView? LocalUnit {
+    /// <summary>本地玩家单位视图；无本地控制器语义时为 null。</summary>
+    IBattleUnitView? LocalUnit {
         get;
     }
 
-    /// <summary>本地玩家聚焦目标的展示视图；无聚焦目标或无本地控制器时为 null。</summary>
-    IUnitUiView? LocalFocus {
+    /// <summary>本地玩家聚焦目标的视图；无聚焦目标或无本地控制器时为 null。</summary>
+    IBattleUnitView? LocalFocus {
         get;
     }
 
@@ -92,20 +91,20 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     private CampRelationResolver? _relations;
 
     /// <inheritdoc />
-    public abstract IReadOnlyList<IUnitUiView> Units {
+    public abstract IReadOnlyList<IBattleUnitView> Units {
         get;
     }
 
     /// <inheritdoc />
-    public abstract IUnitUiView? FindUnit(UnitId unitId);
+    public abstract IBattleUnitView? FindUnit(UnitId unitId);
 
     /// <inheritdoc />
-    public abstract IUnitUiView? LocalUnit {
+    public abstract IBattleUnitView? LocalUnit {
         get;
     }
 
     /// <inheritdoc />
-    public abstract IUnitUiView? LocalFocus {
+    public abstract IBattleUnitView? LocalFocus {
         get;
     }
 
@@ -197,16 +196,16 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
 public sealed class OnlineBattleViewSource(IClientBattleSession session, IContentRegistryView content)
     : BattleViewSourceBase(content) {
     /// <inheritdoc />
-    public override IReadOnlyList<IUnitUiView> Units => session.Units;
+    public override IReadOnlyList<IBattleUnitView> Units => session.Units;
 
     /// <inheritdoc />
-    public override IUnitUiView? FindUnit(UnitId unitId) => session.FindUnit(unitId);
+    public override IBattleUnitView? FindUnit(UnitId unitId) => session.FindUnit(unitId);
 
     /// <inheritdoc />
-    public override IUnitUiView? LocalUnit => session.LocalUnit;
+    public override IBattleUnitView? LocalUnit => session.LocalUnit;
 
     /// <inheritdoc />
-    public override IUnitUiView? LocalFocus => session.LocalFocus;
+    public override IBattleUnitView? LocalFocus => session.LocalFocus;
 
     /// <inheritdoc />
     public override string? DungeonKey => session.DungeonKey;
@@ -244,16 +243,16 @@ public sealed class ReplayBattleViewSource(ReplayEngine engine, IContentRegistry
     private readonly BattleEventLogStore _eventLog = new();
 
     /// <inheritdoc />
-    public override IReadOnlyList<IUnitUiView> Units => engine.Units;
+    public override IReadOnlyList<IBattleUnitView> Units => engine.Units;
 
     /// <inheritdoc />
-    public override IUnitUiView? FindUnit(UnitId unitId) => engine.FindUnit(unitId);
+    public override IBattleUnitView? FindUnit(UnitId unitId) => engine.FindUnit(unitId);
 
     /// <inheritdoc />
-    public override IUnitUiView? LocalUnit => null;
+    public override IBattleUnitView? LocalUnit => null;
 
     /// <inheritdoc />
-    public override IUnitUiView? LocalFocus => null;
+    public override IBattleUnitView? LocalFocus => null;
 
     /// <inheritdoc />
     public override string? DungeonKey => engine.DungeonKey;

@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Game.Common;
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using Godot;
 
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// Buff 图标容器，同步单位展示视图的 Buff 列表到图标视图。
-/// 数据源为 <see cref="IUnitUiView.Buffs"/>（在线来自领域 BattleUnit，回放来自 BattleUnit），复用 CacheSynchronizer：
+/// Buff 图标容器，同步单位只读视图的 Buff 列表到图标视图。
+/// 数据源为 <see cref="IBuffListView.Buffs"/>，复用 CacheSynchronizer：
 /// 键为 Buff 键，仅在列表增删时建/删图标，内容变化由 update 回调刷新对应图标，
 /// 剩余时间由图标每帧按本地 Buff 剩余时间刷新。
 /// </summary>
@@ -22,8 +22,8 @@ public partial class ContainerBuffs : Control {
     /// <summary>Buff 图标缓存，键为 Buff 键，源列表因 AddBuff 按类型合并而唯一。</summary>
     private readonly CacheSynchronizer<string, IBuffView, TextureRectBuffIcon> _icons;
 
-    /// <summary>当前绑定单位展示视图，update 回调用于来源着色与剩余时间推算。</summary>
-    private IUnitUiView? _focusUnit;
+    /// <summary>当前绑定单位只读视图，update 回调用于来源着色与剩余时间推算。</summary>
+    private IBattleUnitView? _focusUnit;
 
     /// <summary>构造函数：注入键提取、创建、移除与更新回调。</summary>
     public ContainerBuffs() {
@@ -40,8 +40,8 @@ public partial class ContainerBuffs : Control {
     /// <summary>
     /// 按当前单位刷新 Buff 图标：同步源列表，仅增删时建/删图标，内容变化由图标内部短路刷新。
     /// </summary>
-    /// <param name="unit">目标单位展示视图，null 表示清空。</param>
-    public void UpdateUI_WithUnit(IUnitUiView? unit) {
+    /// <param name="unit">目标单位只读视图，null 表示清空。</param>
+    public void UpdateUI_WithUnit(IBattleUnitView? unit) {
         _focusUnit = unit;
         if (InterRefs == null)
             return;

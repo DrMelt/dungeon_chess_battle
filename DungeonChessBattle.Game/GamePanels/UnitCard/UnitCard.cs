@@ -61,7 +61,7 @@ public partial class UnitCard : Control {
 
     /// <summary>
     /// 设置卡片显示的单位信息。可在节点进入场景树前调用，进入后自动生效。
-    /// 职业名取展示视图的显示名，未声明展示数据时回退配置键。
+    /// 职业名取单位展示数据的显示名，未声明展示数据时回退配置键。
     /// HpValueLabel 仅承载 HP 数值，由 HP_Label 提供 "HP: " 前缀。
     /// </summary>
     /// <param name="configKey">单位配置键。</param>

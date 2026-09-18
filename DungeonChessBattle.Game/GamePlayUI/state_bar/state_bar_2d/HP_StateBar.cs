@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Camp;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -7,7 +7,7 @@ using Godot;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 2D 血条组件，直读单位展示视图展示生命值、百分比与阵营关系颜色。
+/// 2D 血条组件，直读单位只读视图展示生命值、百分比与阵营关系颜色。
 /// </summary>
 public partial class HP_StateBar : Control {
     /// <summary>导出引用集合节点。</summary>
@@ -23,11 +23,11 @@ public partial class HP_StateBar : Control {
     }
 
     /// <summary>
-    /// 根据单位展示视图刷新血条数值、百分比、阵营关系颜色与名称。
+    /// 根据单位只读视图刷新血条数值、百分比、阵营关系颜色与名称。
     /// </summary>
-    /// <param name="unit">目标单位展示视图。</param>
+    /// <param name="unit">目标单位只读视图。</param>
     /// <param name="session">战斗会话上下文，用于解析目标相对本地玩家的阵营关系；未就绪时置灰为未知色。</param>
-    public void UpdateUI_WithUnit(IUnitUiView unit, BattleSessionContext? session) {
+    public void UpdateUI_WithUnit(IBattleUnitView unit, BattleSessionContext? session) {
         if (InterRefs == null) {
             return;
         }

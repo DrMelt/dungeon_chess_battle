@@ -1,5 +1,4 @@
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 
 namespace DungeonChessBattle.Battle.Client;
 
@@ -11,21 +10,21 @@ namespace DungeonChessBattle.Battle.Client;
 /// 不含连接生命周期——连接一律由客户端门面状态机发起，消费方拿不到传输对象。
 /// </summary>
 public interface IClientBattleSession : IClientBattleService {
-    /// <summary>全部展示单位视图，读本地回填的战斗世界。</summary>
-    IReadOnlyList<IUnitUiView> Units {
+    /// <summary>全部单位只读视图，读本地回填的战斗世界。</summary>
+    IReadOnlyList<IBattleUnitView> Units {
         get;
     }
 
-    /// <summary>按单位 ID 查展示单位，不存在返回 null。</summary>
-    IUnitUiView? FindUnit(UnitId unitId);
+    /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
+    IBattleUnitView? FindUnit(UnitId unitId);
 
-    /// <summary>本地玩家单位的展示视图，控制器未就绪时返回 null。</summary>
-    IUnitUiView? LocalUnit {
+    /// <summary>本地玩家单位视图，控制器未就绪时返回 null。</summary>
+    IBattleUnitView? LocalUnit {
         get;
     }
 
-    /// <summary>本地玩家聚焦目标单位的展示视图，无聚焦目标时返回 null。</summary>
-    IUnitUiView? LocalFocus {
+    /// <summary>本地玩家聚焦目标单位的视图，无聚焦目标时返回 null。</summary>
+    IBattleUnitView? LocalFocus {
         get;
     }
 

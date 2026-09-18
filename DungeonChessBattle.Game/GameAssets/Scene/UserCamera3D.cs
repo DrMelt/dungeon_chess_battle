@@ -1,4 +1,4 @@
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -49,7 +49,7 @@ public partial class UserCamera3D : Camera3D {
     [Export]
     private bool _rotationEnabled = true;
 
-    /// <summary>战斗会话上下文引用，用于获取本地单位与聚焦目标 Pawn。</summary>
+    /// <summary>战斗会话上下文引用，用于获取本地单位与聚焦目标。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
 
@@ -59,7 +59,7 @@ public partial class UserCamera3D : Camera3D {
     /// <summary>锁定跟随时相机相对本地单位的偏移。</summary>
     private Vector3 _followOffset;
 
-    /// <summary>上一帧是否存在本地单位 Pawn，用于检测进入战斗的上升沿。</summary>
+    /// <summary>上一帧是否存在本地单位，用于检测进入战斗的上升沿。</summary>
     private bool _hadLocalUnit;
 
     /// <summary>上一帧的鼠标位置。</summary>
@@ -81,7 +81,7 @@ public partial class UserCamera3D : Camera3D {
         Vector2 currentMouse = GetViewport().GetMousePosition() * GetViewport().GetVisibleRect().Size;
 
         var localUnit = _sessionRef?.LocalUnit;
-        Vector3? localPos = PawnWorldPos(localUnit);
+        Vector3? localPos = UnitWorldPos(localUnit);
 
         // 本地单位从无到有视为进入战斗，默认进入锁定并立即居中
         if (localPos != null && !_hadLocalUnit) {
@@ -100,7 +100,7 @@ public partial class UserCamera3D : Camera3D {
 
             // 锁定跟随模式下以本地玩家为旋转中心，保证角色始终位于屏幕中心
             var focusUnit = _followPlayerEnabled ? localUnit : _sessionRef?.LocalFocus;
-            Vector3? focusPos = PawnWorldPos(focusUnit);
+            Vector3? focusPos = UnitWorldPos(focusUnit);
             if (focusPos != null) {
                 centerPos = focusPos.Value;
             }
@@ -147,7 +147,7 @@ public partial class UserCamera3D : Camera3D {
 
         // 锁定跟随模式下已居中，跳过聚焦移动
         if (!_followPlayerEnabled && Input.IsActionJustPressed("Camera_MoveToFocus")) {
-            Vector3? focusPos = PawnWorldPos(_sessionRef?.LocalFocus);
+            Vector3? focusPos = UnitWorldPos(_sessionRef?.LocalFocus);
             if (focusPos != null) {
                 Vector3 vecToFocus = focusPos.Value - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));
@@ -170,8 +170,8 @@ public partial class UserCamera3D : Camera3D {
         }
     }
 
-    /// <summary>从本地展示视图位置派生场景坐标（与 UnitGameShow 同一投影公式）。</summary>
-    private static Vector3? PawnWorldPos(IUnitUiView? unit)
+    /// <summary>从单位世界姿态视图位置派生场景坐标（与 UnitGameShow 同一投影公式）。</summary>
+    private static Vector3? UnitWorldPos(IWorldPoseView? unit)
         => unit == null
             ? null
             : new Vector3(unit.Position.X, 0f, unit.Position.Y);

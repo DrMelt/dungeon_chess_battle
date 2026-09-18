@@ -11,11 +11,11 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 战斗单位领域实体：战斗世界自持的全部权威状态。
 /// 属性与技能装配期写入，战斗状态由 BattleScene 推进。
 /// 只读消费经 <see cref="IBattleUnitView"/> 收窄能力；不依赖任何网络与框架类型，服务端、在线与回放共用。
-/// 展示层经 <see cref="IUnitUiView"/> 收窄展示能力，Buff 经 <see cref="IBuffView"/> 供展示层读取。
+/// 展示与结算共用同一只读面，Buff 经 <see cref="IBuffView"/> 供展示层读取。
 /// 在线端本实体是下行回填容器：动态状态与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，
 /// 基础数值经 <see cref="BaseConfig"/> 读取单位基础状态，不参与结算。
 /// </summary>
-public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
+public sealed class BattleUnit : IBattleUnitView {
     /// <summary>单位基础状态，基础数值与基准技能集的唯一来源，装配期注入后不变。</summary>
     public required UnitBaseConfig BaseConfig {
         get; init;
@@ -207,5 +207,5 @@ public sealed class BattleUnit : IBattleUnitView, IUnitUiView {
     public float HateOf(UnitId targetUnitId) => RuntimeState.Hates.ValueOf(targetUnitId);
 
     /// <inheritdoc />
-    IReadOnlyList<IBuffView> IUnitUiView.Buffs => RuntimeState.Buffs;
+    IReadOnlyList<IBuffView> IBuffListView.Buffs => RuntimeState.Buffs;
 }

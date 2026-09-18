@@ -217,7 +217,7 @@ public partial class BattleRoomServer {
     private sealed class BattleStateSynchronizer(BattleRoomServer room) {
         /// <summary>同步战斗世界：单位投影 → 房间阶段。由 BattleLoop.LateUpdate 驱动。</summary>
         public void Sync(BattleScene battleScene) {
-            foreach (var unit in battleScene.BattleUnits)
+            foreach (var unit in battleScene.AuthorityUnits)
                 if (room._pawnByNetId.TryGetValue(unit.UnitId, out var pawn))
                     pawn.SyncFrom(unit);
 

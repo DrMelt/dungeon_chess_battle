@@ -75,7 +75,7 @@ public partial class BattleInputController : Node {
     /// <summary>
     /// 鼠标左键点击：请求设置或清除本地玩家单位的聚焦目标。
     /// 经 RPC 提交服务端，校验后写回服务端权威聚焦目标，
-    /// 由 BattleSessionContext 投影为本地焦点 Pawn。
+    /// 由 BattleSessionContext 投影为本地焦点单位。
     /// </summary>
     public override void _UnhandledInput(InputEvent @event) {
         if (@event.IsActionPressed("SwitchTarget")) {

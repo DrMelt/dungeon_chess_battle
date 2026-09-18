@@ -1,5 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -44,16 +44,16 @@ public partial class TextureRectBuffIcon : TextureRect {
             _logger.LogError("durationLabelRef is not assigned!");
     }
 
-    /// <summary>当前绑定的焦点单位展示视图，用于判断 Buff 来源颜色。</summary>
-    private IUnitUiView? _focusUnit;
+    /// <summary>当前绑定的焦点单位身份视图，用于判断 Buff 来源颜色。</summary>
+    private IUnitIdentityView? _focusUnit;
 
     /// <summary>
     /// 绑定并展示 Buff 信息：设置图标、持续时间、层数及来源颜色。
     /// 同单位且关键字段未变化时跳过，供缓存同步器每帧刷新复用。
     /// </summary>
     /// <param name="buff">要展示的 Buff 视图。</param>
-    /// <param name="focusUnit">当前焦点单位，用于判断 Buff 来源颜色。</param>
-    public void SetBuffIcon(IBuffView buff, IUnitUiView focusUnit) {
+    /// <param name="focusUnit">当前焦点单位身份视图，用于判断 Buff 来源颜色。</param>
+    public void SetBuffIcon(IBuffView buff, IUnitIdentityView focusUnit) {
         bool contentChanged = !(_focusUnit == focusUnit && SameContent(buff));
         BindingBuffData = buff;
         _focusUnit = focusUnit;

@@ -30,7 +30,7 @@ graph TD
     subgraph DBattle["battle：战斗世界、房间服务、在线端与配置登记"]
         Shared["Battle.Shared<br>共用形状：身份键 / 数据形状 / 行为接口 / 只读视图"]
         Config["Battle.Config.Shared<br>静态配置数据：内容定义 / 注册表查询接口"]
-        Runtime["Battle.Runtime.Shared<br>运行时对象：单位权威状态 / 装配 / 意图 / 展示视图"]
+        Runtime["Battle.Runtime.Shared<br>运行时对象：单位权威状态 / 装配 / 意图"]
         Logic["Battle.Logic<br>战斗世界"]
         Entities["Battle.Entities<br>实体同步网络实体"]
         ConfigRegistry["Battle.Config.Registry<br>内容注册表 / 登记点"]

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
 using Godot;
@@ -78,30 +77,30 @@ public partial class UnitStateChangeInfo : Node {
         foreach (var battleEvent in events) {
             switch (battleEvent) {
                 case DamageOccurred dmg:
-                    if (FindUnit(dmg.TargetUnitId) is { } dmgPawn)
-                        ShowDamagePopup(dmgPawn, dmg.AppliedDamage, dmg.DamageType);
+                    if (FindUnit(dmg.TargetUnitId) is { } dmgUnit)
+                        ShowDamagePopup(dmgUnit, dmg.AppliedDamage, dmg.DamageType);
                     break;
 
                 case HealOccurred heal:
-                    if (FindUnit(heal.TargetUnitId) is { } healPawn)
-                        ShowHealPopup(healPawn, heal.ActualHeal);
+                    if (FindUnit(heal.TargetUnitId) is { } healUnit)
+                        ShowHealPopup(healUnit, heal.ActualHeal);
                     break;
 
                 case BuffApplied buff:
-                    if (FindUnit(buff.TargetUnitId) is { } buffPawn)
-                        ShowBuffPopup(buffPawn, buff.BuffTypeId, added: true);
+                    if (FindUnit(buff.TargetUnitId) is { } buffUnit)
+                        ShowBuffPopup(buffUnit, buff.BuffTypeId, added: true);
                     break;
 
                 case BuffExpired expired:
-                    if (FindUnit(expired.TargetUnitId) is { } expPawn)
-                        ShowBuffPopup(expPawn, expired.BuffTypeId, added: false);
+                    if (FindUnit(expired.TargetUnitId) is { } expUnit)
+                        ShowBuffPopup(expUnit, expired.BuffTypeId, added: false);
                     break;
             }
         }
     }
 
-    /// <summary>按单位 ID 查找展示单位，来源为统一数据源。</summary>
-    private IUnitUiView? FindUnit(UnitId unitId) => _sessionRef?.FindUnit(unitId);
+    /// <summary>按单位 ID 查单位世界姿态视图，来源为统一数据源。</summary>
+    private IWorldPoseView? FindUnit(UnitId unitId) => _sessionRef?.FindUnit(unitId);
 
     /// <summary>
     /// 将世界坐标投影为屏幕坐标。
@@ -124,7 +123,7 @@ public partial class UnitStateChangeInfo : Node {
     /// <summary>
     /// 单位受击提示：在单位位置弹出受击伤害浮字。
     /// </summary>
-    private void ShowDamagePopup(IUnitUiView unit, float damage, DamageType damageType) {
+    private void ShowDamagePopup(IWorldPoseView unit, float damage, DamageType damageType) {
         TookDamageInfo tookDamageInfo = NewTookDamageInfo;
         _effects_root?.AddChild(tookDamageInfo);
         ApplyPopupScale(tookDamageInfo);
@@ -137,7 +136,7 @@ public partial class UnitStateChangeInfo : Node {
     /// <summary>
     /// 单位治疗提示：在单位位置弹出治疗浮字。
     /// </summary>
-    private void ShowHealPopup(IUnitUiView unit, float heal) {
+    private void ShowHealPopup(IWorldPoseView unit, float heal) {
         TookDamageInfo healInfo = NewTookDamageInfo;
         _effects_root?.AddChild(healInfo);
         ApplyPopupScale(healInfo);
@@ -150,7 +149,7 @@ public partial class UnitStateChangeInfo : Node {
     /// <summary>
     /// 单位 Buff 提示：在单位位置弹出 Buff 添加/移除浮字，图标按 Buff 键取自展示取数入口。
     /// </summary>
-    private void ShowBuffPopup(IUnitUiView unit, BuffTypeId buffTypeId, bool added) {
+    private void ShowBuffPopup(IWorldPoseView unit, BuffTypeId buffTypeId, bool added) {
         BuffChangeInfo buffChangeInfo = NewBuffChangeInfo;
         _effects_root?.AddChild(buffChangeInfo);
         ApplyPopupScale(buffChangeInfo);
@@ -161,7 +160,7 @@ public partial class UnitStateChangeInfo : Node {
     }
 
     /// <summary>把提示节点定位到单位头顶。</summary>
-    private static void PopupAtUnit(Control info, IUnitUiView unit) {
+    private static void PopupAtUnit(Control info, IWorldPoseView unit) {
         var pos = unit.Position;
         info.GlobalPosition = WorldToScreenPos(info, new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);
     }

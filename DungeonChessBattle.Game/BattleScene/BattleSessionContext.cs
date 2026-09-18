@@ -5,7 +5,6 @@ using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Camp;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -42,17 +41,17 @@ public partial class BattleSessionContext : Node {
     // 只读投影（转发当前装配，未绑定恒空）
     // =============================================================
 
-    /// <summary>全部展示单位视图，未绑定恒空。</summary>
-    public IReadOnlyList<IUnitUiView> Units => _source?.Units ?? [];
+    /// <summary>全部单位只读视图，未绑定恒空。</summary>
+    public IReadOnlyList<IBattleUnitView> Units => _source?.Units ?? [];
 
-    /// <summary>按单位 ID 查展示单位，不存在返回 null。</summary>
-    public IUnitUiView? FindUnit(UnitId unitId) => _source?.FindUnit(unitId);
+    /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
+    public IBattleUnitView? FindUnit(UnitId unitId) => _source?.FindUnit(unitId);
 
-    /// <summary>本地玩家单位的展示视图；回放或未就绪时为 null。</summary>
-    public IUnitUiView? LocalUnit => _source?.LocalUnit;
+    /// <summary>本地玩家单位视图；回放或未就绪时为 null。</summary>
+    public IBattleUnitView? LocalUnit => _source?.LocalUnit;
 
-    /// <summary>本地玩家聚焦目标的展示视图；无聚焦目标或无本地控制器时为 null。</summary>
-    public IUnitUiView? LocalFocus => _source?.LocalFocus;
+    /// <summary>本地玩家聚焦目标的视图；无聚焦目标或无本地控制器时为 null。</summary>
+    public IBattleUnitView? LocalFocus => _source?.LocalFocus;
 
     /// <summary>当前副本键；未就绪时为 null。</summary>
     public string? DungeonKey => _source?.DungeonKey;

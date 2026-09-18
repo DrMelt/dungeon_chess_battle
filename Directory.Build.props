@@ -3,7 +3,7 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 
-    <Version>0.10.2</Version>
+    <Version>0.10.3</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
 
     <IsPackable>false</IsPackable>

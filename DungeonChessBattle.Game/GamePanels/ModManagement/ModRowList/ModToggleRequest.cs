@@ -1,4 +1,4 @@
-namespace DungeonChessBattle.Game.GamePanels;
+namespace DungeonChessBattle.Game.GamePanels.ModManagement.ModRowList;
 
 /// <summary>mod 行发出的启停请求。</summary>
 /// <param name="ModId">mod ID。</param>

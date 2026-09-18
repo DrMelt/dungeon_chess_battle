@@ -57,7 +57,7 @@ public sealed partial class BattleScene(
     public IReadOnlyList<IBattleUnitView> Units => _units;
 
     /// <summary>全部战斗单位的写面枚举，供宿主装配与状态同步遍历；只读消费走 <see cref="Units"/>。</summary>
-    public IReadOnlyList<BattleUnit> BattleUnits => _units;
+    public IReadOnlyList<BattleUnit> AuthorityUnits => _units;
 
     /// <inheritdoc />
     public IBattleUnitView? FindUnit(UnitId unitId) =>

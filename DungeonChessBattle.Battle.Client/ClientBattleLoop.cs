@@ -28,7 +28,7 @@ internal sealed class ClientBattleLoop(RoomBattleClient owner) : ILocalSingleton
         if (scene is null)
             return;
         var pawns = _owner.PawnByNetId;
-        foreach (var unit in scene.BattleUnits)
+        foreach (var unit in scene.AuthorityUnits)
             if (pawns.TryGetValue(unit.UnitId, out var pawn))
                 pawn.SyncInto(unit);
     }

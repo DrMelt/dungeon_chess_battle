@@ -1,17 +1,17 @@
 using System;
 using Godot;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Shared.Display;
 
 namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
 /// 单位 3D 展示组件。
-/// 绑定本地展示视图（<see cref="IUnitUiView"/>），每帧直读位置/朝向驱动网格。
+/// 绑定单位只读视图（<see cref="IBattleUnitView"/>），每帧直读位置/朝向驱动网格。
 /// </summary>
 public partial class UnitGameShow : Node3D {
-    /// <summary>本地展示视图。</summary>
-    public IUnitUiView Unit {
+    /// <summary>绑定的单位只读视图。</summary>
+    public IBattleUnitView Unit {
         get => field ?? throw new InvalidOperationException("Unit has not been assigned.");
         set;
     }
@@ -26,7 +26,7 @@ public partial class UnitGameShow : Node3D {
     public UnitShowArea3D? UnitShowAreaRef => _interRefs?.UnitShowAreaRef;
 
     /// <summary>
-    /// 按单位展示视图落地外观：视图声明模型场景时隐藏内置默认网格并实例化模型挂入本节点，
+    /// 按单位展示数据落地外观：声明模型场景时隐藏内置默认网格并实例化模型挂入本节点，
     /// 声明配色时对生效网格统一覆写材质；未声明任一字段即保持内置模板原样。
     /// 纯客户端展示数据，不参与内容指纹与结算；须在挂入场景树后调用（AddChild 已触发 _Ready）。
     /// </summary>
@@ -71,7 +71,7 @@ public partial class UnitGameShow : Node3D {
     }
 
     /// <summary>
-    /// 每帧从本地展示视图直读位置与朝向（XZ 平面）。
+    /// 每帧从绑定的世界姿态视图直读位置与朝向（XZ 平面）。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {

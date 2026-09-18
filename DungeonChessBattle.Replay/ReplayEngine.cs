@@ -48,11 +48,11 @@ public sealed class ReplayEngine {
     /// <summary>战斗是否已结束。</summary>
     public bool IsFinished => _battleScene.IsFinished;
 
-    /// <summary>战斗世界全部单位，表现层数据源装配的唯一取数口。</summary>
-    public IReadOnlyList<IUnitUiView> Units => _battleScene.BattleUnits;
+    /// <summary>战斗世界全部单位只读视图，表现层数据源装配的唯一取数口。</summary>
+    public IReadOnlyList<IBattleUnitView> Units => _battleScene.Units;
 
-    /// <summary>按单位 ID 查战斗单位，不存在返回 null。</summary>
-    public IUnitUiView? FindUnit(UnitId unitId) => _battleScene.FindUnit(unitId) as IUnitUiView;
+    /// <summary>按单位 ID 查单位只读视图，不存在返回 null。</summary>
+    public IBattleUnitView? FindUnit(UnitId unitId) => _battleScene.FindUnit(unitId);
 
     /// <summary>归档记录的副本键，展示层据此装配副本环境与阵营关系。</summary>
     public string DungeonKey => _meta.DungeonKey;
@@ -269,7 +269,7 @@ public sealed class ReplayEngine {
         _castCursor = 0;
         _focusCursor = 0;
         _frame = 0;
-        foreach (var unit in _battleScene.BattleUnits.ToArray())
+        foreach (var unit in _battleScene.AuthorityUnits.ToArray())
             _battleScene.RemoveUnit(unit);
         BuildUnits();
         _battleScene.CurrentPhase = BattlePhase.Running;

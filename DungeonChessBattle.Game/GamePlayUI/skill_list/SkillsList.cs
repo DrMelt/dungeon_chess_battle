@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using DungeonChessBattle.Battle.Config.Shared.Combat;
 using DungeonChessBattle.Battle.Config.Shared.Range;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Logic.Combat;
 using DungeonChessBattle.Game.GameAssets;
 using DungeonChessBattle.Game.BattleScene;
@@ -122,11 +121,11 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 按本地单位展示视图重建技能按钮列表，无显示单位时清空。
+    /// 按本地单位只读视图重建技能按钮列表，无该单位时清空。
     /// 技能定义取自单位配置，展示数据按技能键取自展示取数入口，未声明时为 null 由按钮侧降级。
     /// </summary>
-    /// <param name="unit">本地单位展示视图，无则清空按钮。</param>
-    private void UpdateSkillsList(IUnitUiView? unit) {
+    /// <param name="unit">本地单位只读视图，无则清空按钮。</param>
+    private void UpdateSkillsList(IBattleUnitView? unit) {
         CancelWait();
 
         var hBox = InterRefs?.HBoxContainerRef;

@@ -12,7 +12,7 @@
     <Project Path="DungeonChessBattle.Game.Mod.Interface\DungeonChessBattle.Game.Mod.Interface.csproj" />
     <Project Path="DungeonChessBattle.Game.Mod.Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
     <Project Path="DungeonChessBattle.Game.Shared\DungeonChessBattle.Game.Shared.csproj" />
-    <Project Path="DungeonChessBattle.Game.Display.Registry\DungeonChessBattle.Game.Display.Registry.csproj"/>
+    <Project Path="DungeonChessBattle.Game.Display.Registry\DungeonChessBattle.Game.Display.Registry.csproj" />
   </Folder>
 
   <Project Path="DungeonChessBattle.Client\DungeonChessBattle.Client.csproj" />

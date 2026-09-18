@@ -9,7 +9,7 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// </summary>
 public partial class StateBar2d_Selected : Control {
 
-    /// <summary>战斗会话上下文引用，提供本地焦点单位 Pawn 并向下传递给血条做阵营关系着色。</summary>
+    /// <summary>战斗会话上下文引用，提供本地焦点单位并向下传递给血条做阵营关系着色。</summary>
     [Export]
     private BattleSessionContext? _sessionRef;
 

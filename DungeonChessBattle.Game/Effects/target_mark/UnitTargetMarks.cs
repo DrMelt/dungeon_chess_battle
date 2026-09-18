@@ -1,6 +1,6 @@
 using System;
 using DungeonChessBattle.Battle.Shared.Camp;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Common;
 using DungeonChessBattle.Game.BattleScene;
 using DungeonChessBattle.Game.Services;
@@ -27,7 +27,7 @@ public partial class UnitTargetMarks : Node {
     private PackedScene? _targetMarkPackedScene;
 
     /// <summary>标记缓存，键为单位网络实体 ID，回调在构造时注入。</summary>
-    private readonly CacheSynchronizer<ushort, IUnitUiView, Node3dTargetMark> _marks;
+    private readonly CacheSynchronizer<ushort, IBattleUnitView, Node3dTargetMark> _marks;
 
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
@@ -58,7 +58,7 @@ public partial class UnitTargetMarks : Node {
     }
 
     /// <summary>提取单位网络实体 ID 作为标记键。</summary>
-    private static ushort GetKey(IUnitUiView unit) => unit.UnitId;
+    private static ushort GetKey(IBattleUnitView unit) => unit.UnitId;
 
     /// <summary>创建目标标记并挂载到本节点。</summary>
     private Node3dTargetMark CreateMark() {
@@ -78,7 +78,7 @@ public partial class UnitTargetMarks : Node {
     /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
     /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
-    private void UpdateMark(Node3dTargetMark mark, IUnitUiView unit) {
+    private void UpdateMark(Node3dTargetMark mark, IBattleUnitView unit) {
         var session = _sessionRef;
         var focusUnit = session?.LocalFocus;
         bool isFocus = unit == focusUnit;

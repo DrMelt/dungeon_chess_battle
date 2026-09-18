@@ -1,3 +1,4 @@
+using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat.Hates;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
 
@@ -21,9 +22,9 @@ public interface IUnitIdentityView {
     }
 }
 
-/// <summary>战斗数值与读条状态只读视图，结算用。</summary>
+/// <summary>战斗数值与读条状态只读视图，追加结算所需聚合快照。</summary>
 /// <remarks>
-/// 标量状态（生命、读条）经 <see cref="ICombatValuesView"/> 收敛；本接口追加结算所需聚合快照。
+/// 标量状态（生命、读条）经 <see cref="ICombatValuesView"/> 收敛，施法校验与展示共用；快照只供结算取数。
 /// </remarks>
 public interface ICombatStatsView : ICombatValuesView {
     /// <summary>当前战斗结算快照，只读输入。</summary>
@@ -67,12 +68,21 @@ public interface IHateActorView {
     }
 }
 
+/// <summary>单位生效 Buff 列表只读视图，展示按列表取图标、层数与剩余时间。</summary>
+public interface IBuffListView {
+    /// <summary>当前生效 Buff 列表，按施加顺序。</summary>
+    IReadOnlyList<IBuffView> Buffs {
+        get;
+    }
+}
+
 /// <summary>
-/// 战斗单位只读视图：自治决策、施法校验与仇恨规则的只读消费入口。
-/// 按角色聚合：<see cref="ISkillCasterView"/>（施法判定子集）、<see cref="ICombatStatsView"/>（结算快照）与
-/// <see cref="IHateActorView"/>（仇恨通道），各消费者按需依赖最小子集。
+/// 战斗单位只读视图：自治决策、施法校验、仇恨规则与展示取数的统一只读消费入口。
+/// 按角色聚合：<see cref="ISkillCasterView"/>（施法判定子集）、<see cref="ICombatStatsView"/>（结算快照）、
+/// <see cref="IHateActorView"/>（仇恨通道）与 <see cref="IBuffListView"/>（生效 Buff）。
+/// 跨多个角色的消费方依赖本聚合面，只需单一角色的消费方依赖该角色接口；集合取数统一为本接口。
 /// 标量状态经公共面（身份、数值、技能源）收敛，不做重复声明。
 /// 读写能力只保留在 <c>BattleUnit</c> 具体类，本接口不暴露任何写通道。
 /// </summary>
-public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView {
+public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView, IBuffListView {
 }

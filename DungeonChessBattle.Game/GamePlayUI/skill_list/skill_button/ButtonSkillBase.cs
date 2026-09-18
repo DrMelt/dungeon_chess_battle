@@ -1,6 +1,6 @@
 using System;
 using DungeonChessBattle.Battle.Config.Shared.Combat;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using DungeonChessBattle.Game.Shared.Display;
 using Godot;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 技能按钮：绑定一个技能定义与其展示数据、施法单位 Pawn，点击时委托给技能列表面板发起施法 RPC。
+/// 技能按钮：绑定一个技能定义与其展示数据、施法单位，点击时委托给技能列表面板发起施法 RPC。
 /// 冷却期间显示灰色遮罩与剩余秒数。
 /// </summary>
 public partial class ButtonSkillBase : Button {
@@ -43,8 +43,8 @@ public partial class ButtonSkillBase : Button {
     /// <summary>绑定的技能展示数据，图标/名称/描述/范围提示场景读它；未声明展示时为 null。</summary>
     public SkillDisplay? BindDisplay => _bindingDisplay;
 
-    /// <summary>绑定技能所属的施法单位展示视图。</summary>
-    public IUnitUiView BindUnit {
+    /// <summary>绑定技能所属的单位只读视图。</summary>
+    public IBattleUnitView BindUnit {
         get => field ?? throw new InvalidOperationException("BindUnit has not been initialized.");
         private set;
     }
@@ -57,11 +57,11 @@ public partial class ButtonSkillBase : Button {
     /// </summary>
     /// <param name="bindSkill">要绑定的技能定义。</param>
     /// <param name="bindDisplay">该技能的展示数据，未声明时为 null。</param>
-    /// <param name="bindUnit">技能所属的施法单位展示视图。</param>
+    /// <param name="bindUnit">技能所属的单位只读视图。</param>
     /// <param name="skillsListRef">技能列表面板引用。</param>
     public void Init(
         SkillDefinition bindSkill, SkillDisplay? bindDisplay,
-        IUnitUiView bindUnit, SkillsList skillsListRef) {
+        IBattleUnitView bindUnit, SkillsList skillsListRef) {
         _bindingSkill = bindSkill;
         _bindingDisplay = bindDisplay;
         BindUnit = bindUnit;

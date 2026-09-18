@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Camp;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 
 namespace DungeonChessBattle.Game.BattleScene;
 
@@ -21,12 +21,12 @@ public sealed class TargetCycleSelector {
     /// <summary>
     /// 计算下一敌方单位网络 ID；无存活敌方目标返回 0。
     /// </summary>
-    /// <param name="units">场景全部单位展示视图。</param>
+    /// <param name="units">场景全部单位只读视图。</param>
     /// <param name="localNetId">本地玩家单位网络 ID。</param>
     /// <param name="focusId">当前本地聚焦目标网络 ID，0 表示无。</param>
     /// <param name="resolveRelation">目标阵营 → 相对本地玩家的关系解析。</param>
     public ushort NextTarget(
-        IReadOnlyList<IUnitUiView> units,
+        IReadOnlyList<IBattleUnitView> units,
         ushort localNetId,
         ushort focusId,
         Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
@@ -42,12 +42,12 @@ public sealed class TargetCycleSelector {
         return next;
     }
 
-    /// <summary>收集与本地玩家阵营敌对且存活（Health&gt;0）的单位，按单位展示列表顺序排列。</summary>
-    private static List<IUnitUiView> CollectLivingEnemies(
-        IReadOnlyList<IUnitUiView> units,
+    /// <summary>收集与本地玩家阵营敌对且存活（Health&gt;0）的单位，按单位列表顺序排列。</summary>
+    private static List<IBattleUnitView> CollectLivingEnemies(
+        IReadOnlyList<IBattleUnitView> units,
         ushort localNetId,
         Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
-        List<IUnitUiView> enemies = [];
+        List<IBattleUnitView> enemies = [];
         foreach (var candidate in units) {
             if (candidate.UnitId == localNetId || candidate.IsDead)
                 continue;

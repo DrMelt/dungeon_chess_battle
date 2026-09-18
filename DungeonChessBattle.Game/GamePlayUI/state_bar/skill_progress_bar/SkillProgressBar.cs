@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Game.Services;
 using Godot;
 using Microsoft.Extensions.Logging;
@@ -8,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 技能施法进度条，直读 Pawn.SkillCasting / SkillCastRemaining 展示当前施法技能名称、剩余时间与进度。
+/// 技能施法进度条，直读单位数值视图展示当前施法技能名称、剩余时间与进度。
 /// 施法总时长取自内容注册表的技能定义，名称取自展示取数入口，未声明展示时回退技能键。
 /// </summary>
 public partial class SkillProgressBar : Control {
@@ -31,10 +30,10 @@ public partial class SkillProgressBar : Control {
     }
 
     /// <summary>
-    /// 根据单位 Pawn 刷新施法进度条；无施法时隐藏。
+    /// 根据单位数值视图刷新施法进度条；无施法时隐藏。
     /// </summary>
-    /// <param name="unit">目标单位展示视图。</param>
-    public void UpdateUI_WithUnit(IUnitUiView unit) {
+    /// <param name="unit">目标单位数值视图。</param>
+    public void UpdateUI_WithUnit(ICombatValuesView unit) {
         if (InterRefs == null)
             return;
 
