@@ -5,7 +5,6 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// <summary>
 /// mod 装载的可预期失败目录：清单、启用集、路径裁决与入口装载。
 /// 描述面向日志与管理面板，归属由 <see cref="ModError"/> 侧按 mod 补上；自带定位所需的路径与原因，不携带异常对象。
-/// 入口装载抛出的异常在装载边界随日志连栈记录，清单与目录读取的异常只取原因文本。
 /// </summary>
 public static class ModLoaderErrors {
     /// <summary>mod 目录根部无清单。</summary>
@@ -56,7 +55,7 @@ public static class ModLoaderErrors {
             ? $"{path}：{ModLayout.EnablementFileName} 解析为空"
             : $"{path}：{reason}");
 
-    /// <summary>启用集写不下去。</summary>
+    /// <summary>启用集写入失败。</summary>
     public static Error EnablementWriteFailed(string path, string reason) => Error.Failure(
         code: "ModLoader.Enablement.WriteFailed", description: $"启用集写入失败：{path}：{reason}");
 

@@ -11,11 +11,8 @@ internal sealed class ModEnablementJson {
 }
 
 /// <summary>
-/// mods 根目录内的启用集：记录被停用的 mod ID。
-/// 放在 mods 目录内而非别处，是因为服务端子进程与客户端读同一 mods 根目录，
-/// 启停裁决无需扩参数通道即两端一致，停用集合变化会联动内容指纹。
-/// 文件名见 <see cref="ModLayout.EnablementFileName"/>。
-/// 读写都以错误返回可预期失败：读侧被 UI 启停与装载共用，抛出去会打断调用方所在的一整步。
+/// mods 根目录内的启用集：记录被停用的 mod ID，文件名见 <see cref="ModLayout.EnablementFileName"/>。
+/// 服务端子进程与客户端读同一 mods 根目录，启停裁决两端一致；停用集合变化会联动内容指纹。
 /// </summary>
 public static class ModEnablement {
     /// <summary>读取启用集；文件缺席或根目录不存在即无停用项，等价于全部启用。不可读以错误返回。</summary>
@@ -42,7 +39,7 @@ public static class ModEnablement {
         return data.Disabled.ToHashSet(StringComparer.Ordinal);
     }
 
-    /// <summary>写入启用集，只落被停用的 ID 并按字母序，保证文件内容对同一状态稳定。写不下去以错误返回。</summary>
+    /// <summary>写入启用集，只落被停用的 ID 并按字母序，保证文件内容对同一状态稳定。写入失败以错误返回。</summary>
     public static ErrorOr<Success> Save(
         string rootPath, IReadOnlyCollection<string> disabledIds, ILogger? logger = null) {
         string path = Path.Combine(rootPath, ModLayout.EnablementFileName);

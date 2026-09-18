@@ -4,10 +4,8 @@ using System.Text.Json.Serialization;
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// manifest.json 的文件结构，camelCase 键。未知键与缺失必填字段一律拒载：
-/// 写错键名或漏写字段会让「配了没生效」比当场报错难查得多，必填字段见 <see cref="ModLoader"/> 的校验。
-/// 本类只描述数据面：展示面声明段按 <see cref="ModLayout.ManifestDisplaySection"/> 登记键的存在，
-/// 段内容由 Game.Mod.Manager 读同一份清单自行解释，本类既不定义也不校验它。
+/// manifest.json 的文件结构，camelCase 键。未知键与缺失必填字段一律拒载，必填字段见 <see cref="ModLoader"/> 的校验。
+/// 本类只描述数据面，展示面声明段按 <see cref="ModLayout.ManifestDisplaySection"/> 登记键的存在。
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 internal sealed class ModManifestJson {
@@ -50,9 +48,8 @@ internal sealed class ModManifestJson {
 }
 
 /// <summary>
-/// 已校验的 mod 清单领域对象，只描述数据面。路径字段一律是相对 mod 目录的路径，未定位也未验存在性：
-/// 入口由声明还原为相对路径，供管理面判定有无数据代码。
-/// 被拒载的目录同样带着它进管理面，清单必须自足。绝对路径见 <see cref="LoadedMod"/>。
+/// 已校验的 mod 清单领域对象，只描述数据面。路径字段一律是相对 mod 目录的路径，未定位也未验存在性，
+/// 入口由声明还原为相对路径供管理面判定有无数据代码；绝对路径见 <see cref="LoadedMod"/>。
 /// </summary>
 public sealed record ModManifest(
     string Id,

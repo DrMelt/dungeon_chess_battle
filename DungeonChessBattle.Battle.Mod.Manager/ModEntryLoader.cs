@@ -36,12 +36,9 @@ public sealed class LoadedModEntries<TEntry> : IDisposable where TEntry : class 
 }
 
 /// <summary>
-/// mod 代码入口装载器：遍历入口来源，逐个装载它声明的入口 DLL，以独立 ALC 找到
-/// 指定的入口接口实现并实例化。数据入口与展示入口共用这一段边界，
-/// 装载器不感知入口接口本身，也不知道注册了什么，更不区分调用方是哪一面。
-/// 入口清单为空即该来源不贡献这类代码，静默跳过；单个 DLL 失败记一条 <see cref="ModError"/> 并继续其余。
-/// 装载与入口执行拆为两阶段：数据面无资源顺序需求，<c>LoadEntries</c> 一步完成；
-/// 展示面先 <c>Load</c>、居中挂载展示资源包、再 <c>Initialize</c> 执行入口。
+/// mod 代码入口装载器：遍历入口来源，逐个装载它声明的入口 DLL，以独立 ALC 找到指定的入口接口实现并实例化；
+/// 装载器不感知入口接口本身，也不知道注册了什么。入口清单为空即该来源不贡献这类代码，静默跳过；
+/// 单个 DLL 失败记一条 <see cref="ModError"/> 并继续其余。装载与入口执行拆为两阶段，展示面在两步之间挂载展示资源包。
 /// </summary>
 public static class ModEntryLoader {
     /// <summary>
@@ -63,9 +60,8 @@ public static class ModEntryLoader {
     }
 
     /// <summary>
-    /// 阶段一：仅装载不执行。逐来源装载入口程序集并实例化，成功装载的 ALC 由返回集合持有，
-    /// 供挂载等中间步骤完成后统一执行入口。
-    /// 入口清单的顺序即装载顺序，装载侧不再枚举目录——枚举顺序由文件系统决定，两端可不一致。
+    /// 阶段一：仅装载不执行。逐来源装载入口程序集并实例化，成功装载的 ALC 由返回集合持有，供中间步骤完成后统一执行入口。
+    /// 入口清单的顺序即装载顺序，装载侧不枚举目录。
     /// </summary>
     public static LoadedModEntries<TEntry> Load<TEntry>(
         IReadOnlyList<ModEntrySource> sources,
@@ -99,7 +95,7 @@ public static class ModEntryLoader {
                     }
                 }
                 catch (Exception ex) {
-                    // mod 自带的 DLL 与入口构造函数抛什么由不得本库，这里收成一条错误并继续其余入口
+                    // mod 自带的 DLL 与入口构造函数抛出的异常不属于本库职责，收成一条错误并继续其余入口
                     AddFailure(ex.Message, ex);
                 }
             }

@@ -2,9 +2,8 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
 /// 已加载的单个 mod 的数据面产物：清单、目录、已定位的数据入口与探测目录、代码摘要。
-/// 路径由 <see cref="ModLoader"/> 在扫描期一次性从 manifest 的相对声明解析而来，下游不再拼路径。
+/// 路径由 <see cref="ModLoader"/> 在扫描期一次性从 manifest 的相对声明解析而来，下游不拼路径。
 /// 展示面产物不在此：展示声明取自同一份清单，由 Game.Mod.Manager 读取定位。
-/// 内容不在此——内容以领域对象在引导装配期注册，无中间文件。
 /// </summary>
 public sealed class LoadedMod {
     /// <summary>manifest.json 校验后的清单。</summary>
@@ -37,7 +36,7 @@ public sealed class LoadedMod {
 }
 
 /// <summary>
-/// 未参与装载的 mod 目录：清单解析失败、Id 无效或重复、依赖缺失/成环/被停用而被拒。
+/// 未参与装载的 mod 目录：清单与产物裁决失败、依赖缺失或成环、依赖被停用、启用集不可读而被拒。
 /// 只供管理面列示与定位，不参与内容装配，也不进内容指纹。
 /// </summary>
 public sealed class UnloadedMod {
@@ -58,7 +57,7 @@ public sealed class UnloadedMod {
 }
 
 /// <summary>
-/// mod 目录扫描结果：参与装载的 mod、被停用的 mod、被拒载的目录、逐 mod 错误。错误不中断其余 mod。
+/// mod 目录扫描结果：参与装载的 mod、被停用的 mod、被拒载的目录、逐 mod 错误。
 /// 根目录本身不可用是另一层：它由 <see cref="RootProblem"/> 承载，此时一个 mod 都没有参与装载。
 /// </summary>
 public sealed class ModLoadResult {

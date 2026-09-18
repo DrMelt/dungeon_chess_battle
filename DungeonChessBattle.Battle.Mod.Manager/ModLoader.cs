@@ -6,18 +6,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// mod 目录加载器：扫描 mods 根目录 → 逐目录校验 manifest.json 必填字段 → 把数据面声明的相对路径定位成
-/// mod 目录内的绝对路径 → 缺失依赖跳过并记错误 → 依赖拓扑排序 → 计算数据代码摘要指纹。
-/// 只处理数据面：清单里的展示面声明段只登记键存在，段内容与裁决归 Game.Mod.Manager。
-/// 数据面路径的合法性与拒载裁决全在这里一次做完，下游只消费 <see cref="LoadedMod"/> 上的绝对路径。
-/// 单个目录解析失败不中断其余 mod，错误以 ModLoadResult 汇总返回。
-/// 根目录本身不可用与启用集不可读属根级问题，记 RootProblem 并一个都不装载。
-/// 清单文件名与启用集文件名见 <see cref="ModLayout"/>，产物位置必须由清单显式声明，无默认目录可回落。
+/// mod 目录装载：扫描 mods 根目录，校验清单并把数据面声明的相对路径定位成绝对路径，
+/// 依赖缺失或成环者拒载并按依赖顺序排列其余 mod。只处理数据面，展示面声明段的解释归 Game.Mod.Manager。
+/// 根级问题不装载任何 mod，仅由 <see cref="ModLoadResult.RootProblem"/> 承载。
 /// </summary>
 public static class ModLoader {
     /// <summary>
     /// 加载 mods 根目录下全部 mod 目录并按启用集分流；根目录不可用返回空结果，原因在 <see cref="ModLoadResult.RootProblem"/>。
-    /// 启用集读自同目录的 <see cref="ModLayout.EnablementFileName"/>，文件缺席即全部启用。
     /// 逐 mod 明细记 Debug，拒载与解析失败记 Error，连带拒载在 <see cref="OrderByDependency"/> 记 Warning。
     /// </summary>
     public static ModLoadResult LoadDirectory(string rootPath, ILoggerFactory? loggerFactory = null) {
@@ -42,7 +37,7 @@ public static class ModLoader {
             directories = Directory.GetDirectories(rootPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
-            // 目录枚举失败属根级问题：记根级原因并一个都不装载，不把整个装配带崩；
+            // 目录枚举失败属根级问题：记根级原因并不装载任何 mod，不中止装配；
             // 原因另以异常连栈落一条日志，根级问题文案本身不含异常对象
             if (logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning(ex, "mods 目录枚举失败，本次不装载任何 mod：{Root}", rootPath);
@@ -51,7 +46,7 @@ public static class ModLoader {
 
         var enablement = ModEnablement.Load(rootPath, logger);
         if (enablement.IsError) {
-            // 启用集读不出来即一个都不装载：不静默、也不拦进程，两端按同一裁决得到同一内容
+            // 启用集读取失败即不装载任何 mod：不静默、也不阻断进程启动，两端按同一裁决得到同一内容
             string problem = enablement.FirstError.Description;
             if (logger.IsEnabled(LogLevel.Error))
                 logger.LogError("启用集不可读，本次不装载任何 mod：{Reason}", problem);
@@ -73,7 +68,7 @@ public static class ModLoader {
         var errors = new List<ModError>();
         foreach (string dir in directories) {
             string id = Path.GetFileName(dir);
-            // 清单与产物的可预期失败都已在 LoadModDirectory 内收成错误，此处不再兜异常
+            // 清单与产物的可预期失败都已在 LoadModDirectory 内收成错误，此处不捕获异常
             ErrorOr<LoadedMod> parsed = LoadModDirectory(dir, errors);
             if (parsed.IsError) {
                 string reason = parsed.FirstError.Description;
@@ -106,7 +101,7 @@ public static class ModLoader {
         };
     }
 
-    /// <summary>根级问题下的空结果：一个个目录都没装载，原因只在 RootProblem，逐目录错误不重复报。</summary>
+    /// <summary>根级问题下的空结果：所有目录均未装载，原因只在 RootProblem，逐目录错误不重复报。</summary>
     private static ModLoadResult EmptyRoot(string problem) =>
         new() {
             Mods = [], Disabled = [], Unloaded = [], Errors = [], RootProblem = problem
@@ -124,7 +119,7 @@ public static class ModLoader {
                 ModJsonContext.Default.ModManifestJson);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
-            // 坏 JSON 与读不动文件由序列化器与文件系统抛出，在本库的裁决点收成错误
+            // 坏 JSON 与读取失败的文件由序列化器与文件系统抛出，在本库的裁决点收成错误
             return ModLoaderErrors.ManifestUnreadable(ex.Message);
         }
         if (manifest is null)
@@ -167,8 +162,7 @@ public static class ModLoader {
     }
 
     /// <summary>
-    /// 数据面必填字段校验。身份与版本字段进指纹，产物字段决定装载什么：缺席即拒载，不接受默认值——
-    /// 默认会让「漏写」与「写了默认值」在两端表现相同，排查只能靠比对磁盘。
+    /// 数据面必填字段校验。身份与版本字段进指纹，产物字段决定装载什么：缺席即拒载，不接受默认值。
     /// 展示面字段不在此列：它们归 Game.Mod.Manager 校验，写错也不该影响两端的装载集合。
     /// </summary>
     private static ErrorOr<Success> ValidateRequired(ModManifestJson manifest) {
@@ -206,9 +200,8 @@ public static class ModLoader {
     }
 
     /// <summary>
-    /// 汇总数据面的依赖探测目录：清单声明的目录 + 各入口文件自身所在目录，按绝对路径去重。
-    /// 声明的探测目录缺席即记错误——声明与包不一致要看得出来，缺了它入口自带的依赖解析不到；
-    /// 路径本身非法是清单写错，整包拒载由调用方裁决。
+    /// 汇总数据面的依赖探测目录：清单声明的目录与各入口文件自身所在目录，按绝对路径去重。
+    /// 声明的探测目录缺席记错误并继续其余，清单声明的路径非法整包拒载。
     /// </summary>
     private static ErrorOr<List<string>> ResolveProbeDirectories(
         string modDirectory, List<string>? declared, IReadOnlyList<string> entries, string fieldName,
@@ -252,8 +245,7 @@ public static class ModLoader {
 
     /// <summary>
     /// 依赖拓扑排序：依赖者排在被依赖者之后，其余按 Id 字母序，保证确定性。
-    /// 被拒载的 mod 一律落进 <paramref name="unloaded"/>，让管理面能列出一个都不漏。
-    /// 入参身份已由 LoadModDirectory 判定：Id 非空且等于目录名，同层目录名唯一，故无身份冲突可判。
+    /// 被拒载的 mod 一律落进 <paramref name="unloaded"/>，让管理面完整列出被拒载者。
     /// </summary>
     private static List<LoadedMod> OrderByDependency(
         IReadOnlyList<LoadedMod> mods, List<ModError> errors, IReadOnlyList<LoadedMod> disabled,
@@ -283,13 +275,13 @@ public static class ModLoader {
             stack.Push(id);
             foreach (var dep in mod.Manifest.Dependencies) {
                 if (!byId.TryGetValue(dep, out var depMod)) {
-                    // 被停用的依赖与被删掉的依赖是两件事，UI 侧要能据此提示用户去开回上游
+                    // 被停用的依赖与被删掉的依赖是两件事，管理面据此提示用户启用上游
                     Reject(mod, disabledIds.Contains(dep) ? $"依赖已停用 {dep}" : $"依赖缺失 {dep}");
                     stack.Pop();
                     return false;
                 }
                 if (!Visit(depMod, stack)) {
-                    // 原因已由被依赖者自己报出，这里只登记连带拒载，不重复报错
+                    // 原因已由被依赖者报出，这里只登记连带拒载
                     Reject(mod, $"依赖未装载 {dep}", report: false);
                     stack.Pop();
                     return false;
@@ -305,7 +297,7 @@ public static class ModLoader {
                 if (report)
                     errors.Add(new ModError(id, reason));
                 else if (logger.IsEnabled(LogLevel.Warning))
-                    // 原因已由被依赖者报出，这里只留可追溯的目录行
+                    // 连带原因已在上游报出，日志仍留目录行便于追溯
                     logger.LogWarning("mod 未装载：{ModId}：{Reason}", id, reason);
                 unloaded.Add(new UnloadedMod {
                     DirectoryPath = rejectedMod.DirectoryPath, Manifest = rejectedMod.Manifest, Reason = reason,
@@ -332,7 +324,7 @@ public static class ModLoader {
             logger.LogError("mod 装载失败：{ModId}：{Reason}", error.ModId, error.Message);
     }
 
-    /// <summary>摘要前 8 位；无代码即无摘要，以「-」占位免得读成截断。</summary>
+    /// <summary>摘要前 8 位；无代码即无摘要，以「-」占位以免误读为截断。</summary>
     private static string HashPrefix(string hash) => hash.Length switch {
         0 => "-",
         <= 8 => hash,

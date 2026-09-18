@@ -2,8 +2,8 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
 /// 由 mod 侧数据提供的一切相对路径的唯一安全闸：manifest 声明的产物路径与 mod 声明的资源寻址共用同一规则。
-/// 只接受 <c>/</c> 分隔的包内相对路径；绝对路径、盘符、UNC、以分隔符开头、含上级跳转一律拒绝。
-/// 冒号在任一段出现即拒绝——NTFS 不允许文件名含冒号，Linux 允许但拒绝它可保证两端同一 manifest 同一裁决。
+/// 只接受 <c>/</c> 分隔的包内相对路径；绝对路径、盘符、UNC、以分隔符开头、含上级跳转、任一段含冒号一律拒绝。
+/// 冒号两侧文件系统语义不同，一并拒绝可保证两端同一清单同一裁决。
 /// </summary>
 public static class ModRelativePath {
     /// <summary>是否为可接受的包内相对路径。</summary>

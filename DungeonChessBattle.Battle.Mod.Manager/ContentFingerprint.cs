@@ -8,9 +8,7 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 public static class ContentFingerprint {
     /// <summary>
     /// 按加载顺序对每个 mod 取 Id / Version / Revision / CodeHash 拼接做 SHA-256。
-    /// 覆盖顺序源于加载顺序，故指纹必须按加载顺序计算而非按 Id 排序。
-    /// 内容即代码：CodeHash 入摘要，改数值必须重编译数据 DLL，逃不过门控。
-    /// 展示 DLL 不进指纹：展示字段不参与结算，两端展示不同不破坏确定性。
+    /// CodeHash 入摘要，内容改动必然引起指纹变化。展示面不在范围内，两端展示不同不破坏确定性。
     /// </summary>
     /// <remarks>无 mod 返回空串：使 <c>DataRevision</c> 在无 mod 时恒等于引擎内容修订号。</remarks>
     public static string Compute(IReadOnlyList<LoadedMod> mods) {
@@ -33,7 +31,7 @@ public static class ContentFingerprint {
         return Convert.ToHexString(hash);
     }
 
-    /// <summary>计算文件字节的 SHA-256 十六进制摘要；读不动以错误返回，原因取自文件系统。</summary>
+    /// <summary>计算文件字节的 SHA-256 十六进制摘要；读取失败以错误返回，原因取自文件系统。</summary>
     private static ErrorOr<string> TryHashFile(string absolutePath) {
         try {
             return Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(absolutePath)));
@@ -45,9 +43,8 @@ public static class ContentFingerprint {
 
     /// <summary>
     /// 计算 mod 数据面指纹：入口文件与各探测目录顶层 DLL 取并集，按「文件名|字节摘要」Ordinal 排序去重后整体摘要。
-    /// 传入的集合必须与装载侧解析到的同一份集合，否则改了未被哈希到的 DLL 就绕过了门控。
-    /// 排序键不含目录，故重排包内布局不改指纹；文件内容一改即变。无 DLL 时返回空串，与「无代码 mod」同值。
-    /// 产物与探测目录读不动都按错误返回：摘要算不出即拒载整个 mod，哈希不到的文件不能放行。
+    /// 传入的集合必须与装载侧解析到的是同一份，否则未被哈希的 DLL 会成为门控缺口；无 DLL 时返回空串。
+    /// 产物与探测目录读取失败都按错误返回：摘要算不出即拒载整个 mod。
     /// </summary>
     public static ErrorOr<string> HashCodeFiles(
         IReadOnlyList<string> entryFiles, IReadOnlyList<string> probeDirectories) {

@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// mod 代码程序集加载器：以可卸载的 AssemblyLoadContext 装载 mod DLL，
-/// 找到指定入口接口实现后实例化并交由调用方初始化。只做装载边界，不承担业务。
+/// mod 代码程序集加载器：以可卸载的 AssemblyLoadContext 装载 mod DLL，找到指定入口接口实现后实例化并交调用方初始化。
 /// 入口接口经泛型指定：数据入口在 Battle.Mod.Interface 定义，展示入口在 Game.Mod.Interface 定义，本类不感知。
 /// </summary>
 public sealed class ModAssemblyLoader : IDisposable {
@@ -16,7 +15,10 @@ public sealed class ModAssemblyLoader : IDisposable {
     private readonly ILogger<ModAssemblyLoader> _logger;
     private bool _loaded;
 
-    /// <summary>装配装载上下文；mod 依赖解析先查宿主上下文（接口程序集已加载处），再回退 mod 同目录 DLL。</summary>
+    /// <summary>登记依赖探测目录，供 <c>Resolving</c> 解析自带依赖。</summary>
+    private readonly List<string> _dependencyDirectories = [];
+
+    /// <summary>装配装载上下文；mod 依赖解析先查进程内已加载副本，再回退登记的依赖探测目录。</summary>
     /// <param name="name">ALC 名，便于诊断区分数据面与展示面上下文。</param>
     /// <param name="logger">依赖解析日志，未注入时静默。</param>
     public ModAssemblyLoader(string? name = null, ILogger<ModAssemblyLoader>? logger = null) {
@@ -30,25 +32,23 @@ public sealed class ModAssemblyLoader : IDisposable {
     /// 装载、类型清单解析与入口构造的异常不在此收口：那是文件系统、CLR 与 mod 自己的代码，交上层装载边界连栈记一条错误。
     /// </summary>
     public ErrorOr<TEntry> LoadEntry<TEntry>(string dllAbsolutePath) where TEntry : class {
-        // 一上下文一程序集是本库的既定时序，用错上下文是调用方的程序错误，不做成返回值
+        // 一上下文一程序集是既定时序，用错上下文是调用方的程序错误，以异常表达
         if (_loaded)
             throw new InvalidOperationException("该装载上下文已使用，一个上下文只装载一个 mod 程序集");
         _loaded = true;
 
-        // 装载异常不在这里收成错误：那是文件系统与 CLR 的交界
         Assembly assembly = _alc.LoadFromAssemblyPath(Path.GetFullPath(dllAbsolutePath));
         Type[] types;
         try {
             types = assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException ex) {
-            // 依赖解析失败会成批出现：把每个失败的依赖名/原因带出，便于定位 Godot 端默认上下文缺哪些接口程序集
+            // 依赖解析失败会成批出现：把每个失败的依赖名与原因带出，便于定位默认上下文缺哪些接口程序集
             string reason = string.Join(" | ",
                 ex.LoaderExceptions
                     .Select(e => e is null ? "<null>" : e.Message)
                     .Distinct()
                     .Take(5));
-            // 类型清单解析失败属 CLR 交界：原因进消息，异常本体交上层装载边界连栈记一条
             throw new InvalidOperationException($"程序集类型加载失败：{reason}", ex);
         }
 
@@ -57,7 +57,7 @@ public sealed class ModAssemblyLoader : IDisposable {
         if (entryType is null)
             return ModLoaderErrors.EntryTypeMissing(typeof(TEntry).Name);
 
-        // 类型筛选已保证可实例化为 TEntry，构造函数抛什么由上层装载边界收成一条错误
+        // 类型筛选已保证可实例化为 TEntry，构造函数抛出的异常由上层装载边界收成一条错误
         return (TEntry)Activator.CreateInstance(entryType)!;
     }
 
@@ -67,7 +67,7 @@ public sealed class ModAssemblyLoader : IDisposable {
     private Assembly? ResolveFallback(AssemblyLoadContext context, AssemblyName name) {
         // mod 与主程序共引的接口程序集与 GodotSharp 由 Godot 运行时加载，可能分布在默认上下文与
         // 工程专用 ALC；按程序集全名匹配进程内已加载副本，避免重复类型。仅 Resolving 兜底路径调用，
-        // 命中一次即被运行时缓存，无性能热点。
+        // 命中一次即被运行时缓存。
         Assembly? fromLoaded = AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(a => string.Equals(a.GetName().FullName, name.FullName, StringComparison.Ordinal));
         if (fromLoaded is not null) {
@@ -76,7 +76,7 @@ public sealed class ModAssemblyLoader : IDisposable {
             return fromLoaded;
         }
 
-        // 接口程序集之外的 mod 自带依赖，尝试在 mod 目录（已注册的目录）查找
+        // 接口程序集之外的 mod 自带依赖，从登记的探测目录查找
         return ResolveFromDirectory(context, name);
     }
 
@@ -93,9 +93,7 @@ public sealed class ModAssemblyLoader : IDisposable {
         return null;
     }
 
-    private readonly List<string> _dependencyDirectories = [];
-
-    /// <summary>登记依赖探测目录（常为 mod 的 code 目录），供 Resolving 解析自带依赖。</summary>
+    /// <summary>登记依赖探测目录，供 <c>Resolving</c> 解析自带依赖。</summary>
     public void AddDependencyDirectory(string absolutePath) {
         if (!_dependencyDirectories.Contains(absolutePath))
             _dependencyDirectories.Add(absolutePath);

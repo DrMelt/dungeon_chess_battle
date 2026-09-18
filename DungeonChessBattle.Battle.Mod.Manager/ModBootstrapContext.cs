@@ -9,10 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>
-/// mod 引导上下文实现：内容注册转发 <see cref="ContentSetRegistry"/>，日志工厂原样交出。
-/// mod 数据代码入口经本上下文把领域定义对象写进注册表，内容全部来自 mod。
-/// 本类只做转发与失败归属：写入规则一律落在注册表，注册表以错误返回空键拒绝，
-/// 这里把它连同当前 mod ID 收成 <see cref="ModError"/> 交装配方，mod 侧签名保持无返回值。
+/// mod 引导上下文实现：内容注册转发 <see cref="ContentSetRegistry"/>，日志工厂原样交出；
+/// 写入规则落在注册表，本类只做转发与失败归属，空键拒绝的错误连同当前 mod ID 收成 <see cref="ModError"/> 交装配方。
 /// </summary>
 public sealed class ModBootstrapContext(ContentSetRegistry registry, ILoggerFactory loggerFactory)
     : IModBootstrapContext {
