@@ -22,9 +22,7 @@ public partial class ModRowList : Control {
     /// <summary>某一行发出的启停请求，转发给上层面板。</summary>
     public event Action<ModToggleRequest>? ToggleRequested;
 
-    /// <summary>
-    /// 节点就绪：获取引用集合，订阅行容器增删以自动维护空态，并同步一次初态。
-    /// </summary>
+    /// <summary>节点就绪：获取引用集合并同步一次初态。</summary>
     public override void _Ready() {
         _refs = GetNode<ModRowListInterRefs>("ModRowListInterRefs");
         if (_refs is null) {
@@ -32,18 +30,17 @@ public partial class ModRowList : Control {
             return;
         }
 
-        _refs.ModRows?.ChildOrderChanged += SyncEmptyState;
         SyncEmptyState();
     }
 
-    /// <summary>按目录条目重建全部行。空目录即清空后停在空态，非空则逐条实例化卡片。</summary>
+    /// <summary>按目录条目重建全部行：空目录即清空后停在空态，非空逐条实例化卡片，末尾按行数同步空态。</summary>
     public void Rebuild(IReadOnlyList<ModEntryView>? mods) {
         Clear();
-        if (mods is null)
-            return;
+        if (mods is not null)
+            foreach (ModEntryView mod in mods)
+                AddRow(mod);
 
-        foreach (ModEntryView mod in mods)
-            AddRow(mod);
+        SyncEmptyState();
     }
 
     private void AddRow(ModEntryView mod) {
