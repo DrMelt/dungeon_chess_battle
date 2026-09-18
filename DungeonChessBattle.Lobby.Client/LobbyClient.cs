@@ -75,7 +75,7 @@ public class LobbyClient(ILogger<LobbyClient> logger) {
         }
 
         int version = ++_connectionVersion;
-        // 新连接尚未登录，旧会话凭证不再有效
+        // 新连接尚未登录，旧会话凭证作废
         SessionToken = null;
         var hub = CreateConnection(host, port);
         _hub = hub;

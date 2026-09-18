@@ -44,7 +44,7 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
 
     /// <summary>
     /// 连接断开清理：移除登录会话与房间归属，并向剩余玩家广播最新房间快照。
-    /// 准备阶段房间的最后一人退出时房间被删除，本方法不再广播。
+    /// 准备阶段房间的最后一人退出时房间被删除，本方法不广播。
     /// </summary>
     public async Task ConnectionLostAsync(string connectionId) {
         // 登录会话先清理，避免断线残留身份

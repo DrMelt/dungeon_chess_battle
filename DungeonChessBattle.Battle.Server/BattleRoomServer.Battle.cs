@@ -24,7 +24,7 @@ namespace DungeonChessBattle.Battle.Server;
 public partial class BattleRoomServer {
     /// <summary>
     /// 房间线程首帧初始化：创建根实体、装配状态同步器、
-    /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不再被其他线程触碰。
+    /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不被其他线程触碰。
     /// 内容与配置裁决不通过以错误返回，调用方据此清理房间；LES 与 CLR 交界的异常不在此收口。
     /// </summary>
     private ErrorOr<Success> InitializeFromStore() {

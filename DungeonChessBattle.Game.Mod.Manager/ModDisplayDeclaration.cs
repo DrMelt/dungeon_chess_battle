@@ -7,7 +7,7 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
 /// manifest.json 中展示面声明段的结构，camelCase 键，未知键与缺失必填字段一律判为声明不可用。
-/// 段名见 <see cref="ModLayout.ManifestDisplaySection"/>；数据面只登记该键存在，段内容由本类解释。
+/// 段名见 <see cref="ModLayout.ManifestDisplaySection"/>。
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 internal sealed class ModDisplayJson {
@@ -60,14 +60,13 @@ public sealed class ModDisplayDeclaration {
 
 /// <summary>
 /// 展示面声明读取器：从 manifest.json 的展示段读出本 mod 的展示产物并定位成绝对路径。
-/// 与数据面各读一次同一份清单，互不传递：数据面只登记段的存在，段内容在这里解释，
-/// 定位规则复用 <see cref="ModRelativePath"/> 这一道安全闸。
-/// 声明不可用以错误返回，不拒载——展示面缺席不该影响两端的装载集合与内容指纹。
+/// 与数据面各读一次同一份清单，互不传递；定位规则复用 <see cref="ModRelativePath"/>。
+/// 声明不可用以错误返回，不拒载，展示面缺席不影响两端的装载集合与内容指纹。
 /// </summary>
 public static class ModDisplayDeclarationReader {
     /// <summary>
-    /// 读一个 mod 的展示声明。段缺席即空声明；清单读不出来、段写错或缺字段以错误返回，调用方据此跳过该 mod 的展示面；
-    /// 段内单个条目非法或缺失不使声明整体失败，逐条记 <paramref name="errors"/> 后其余条目照常可用。
+    /// 读一个 mod 的展示声明。清单读不出来、段写错或缺字段以错误返回，调用方据此跳过该 mod 的展示面。
+    /// 段内单个条目非法不使声明整体失败，逐条记 <paramref name="errors"/>。
     /// </summary>
     /// <param name="mod">已通过数据面校验的 mod，提供 ID、目录与清单路径。</param>
     /// <param name="errors">非致命问题的落点，条目带归属 mod ID。</param>
@@ -151,8 +150,8 @@ public static class ModDisplayDeclarationReader {
     }
 
     /// <summary>
-    /// 汇总展示面的依赖探测目录：清单声明的目录 + 各入口文件自身所在目录，按绝对路径去重。
-    /// 声明的探测目录缺席即记错误——声明与包不一致要看得出来，缺了它入口自带的依赖解析不到。
+    /// 汇总展示面的依赖探测目录：清单声明的目录与各入口文件自身所在目录，按绝对路径去重。
+    /// 声明的探测目录不存在记错误并继续其余。
     /// </summary>
     private static List<string> ResolveProbeDirectories(
         string directory, string modId, IReadOnlyList<string>? declared, IReadOnlyList<string> entries,

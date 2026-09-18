@@ -8,9 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
-/// mod 行列表组件：内部承载行卡片与空态占位，按行数自动切换二者显隐。
-/// 场景内 ModRows 装行卡片、EmptyHint 为占位提示，行数变化即同步，外部只需调用
-/// <see cref="Rebuild"/> 填入目录条目。
+/// mod 行列表组件：内部承载行卡片与空态占位，按行数自动切换二者显隐，
+/// 外部只需调用 <see cref="Rebuild"/> 填入目录条目。
 /// </summary>
 public partial class ModRowList : Control {
     /// <summary>日志记录器。</summary>
@@ -23,8 +22,7 @@ public partial class ModRowList : Control {
     public event Action<ModToggleRequest>? ToggleRequested;
 
     /// <summary>
-    /// 节点就绪：获取引用集合，订阅行容器增删以自动维护空态，并同步一次保证初态正确。
-    /// InterRefs 节点缺失时整个组件无法工作，直接中止。
+    /// 节点就绪：获取引用集合，订阅行容器增删以自动维护空态，并同步一次初态。
     /// </summary>
     public override void _Ready() {
         _refs = GetNode<ModRowListInterRefs>("ModRowListInterRefs");
@@ -60,7 +58,7 @@ public partial class ModRowList : Control {
         row.Setup(mod);
     }
 
-    /// <summary>摘除旧行再排队回收。只 QueueFree 的话，旧行在本帧剩余时间会与新行并排显示。</summary>
+    /// <summary>摘除旧行再排队回收；QueueFree 在本帧末才移除，先摘除使旧行立即退出容器。</summary>
     private void Clear() {
         if (_refs?.ModRows is not { } rows)
             return;

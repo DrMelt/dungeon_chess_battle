@@ -17,7 +17,7 @@ public partial class RoomBattleClient {
     private void OnRoomEntityCreated(BattleRoomEntity entity) {
         lock (_lock) {
             _roomEntity = entity;
-            // 房间标识随同步线缆到达，先过值对象判定：非法即视为无标识，事件不再外发房间 ID
+            // 房间标识随同步线缆到达，先过值对象判定：非法即视为无标识，事件不外发房间 ID
             _currentRoomId = RoomId.TryCreate(entity.RoomId.Value) ?? RoomId.None;
         }
         if (_logger.IsEnabled(LogLevel.Information))

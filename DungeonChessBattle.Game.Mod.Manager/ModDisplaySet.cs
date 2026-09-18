@@ -4,9 +4,8 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.Mod.Manager;
 
 /// <summary>
-/// 一次扫描的展示声明集合：读全部参与扫描的 mod 的展示段，产出装配用的声明序与查询用的归属索引。
-/// 停用者也读：它不进装配，但列表要显示有没有展示代码。
-/// 展示声明只影响展示面，读取失败不进数据面的拒载裁决。
+/// 一次扫描的展示声明集合：读启用与停用 mod 的展示段，产出装配用的声明序与查询用的归属索引。
+/// 停用者也读，供管理面显示有无展示代码。
 /// </summary>
 internal sealed class ModDisplaySet(
     Dictionary<string, ModDisplayDeclaration> byModId,
@@ -18,7 +17,7 @@ internal sealed class ModDisplaySet(
     /// <summary>展示段写错、缺字段或路径非法产生的错误。</summary>
     public IReadOnlyList<ModError> DeclarationErrors { get; } = declarationErrors;
 
-    /// <summary>读装载集与停用集内每个 mod 的展示声明，声明不可用与段内问题逐条落日志。</summary>
+    /// <summary>读启用集与停用集内每个 mod 的展示声明，声明不可用与段内问题逐条落日志。</summary>
     public static ModDisplaySet Read(ModLoadResult load, ILogger logger) {
         var errors = new List<ModError>();
         var byModId = new Dictionary<string, ModDisplayDeclaration>(StringComparer.Ordinal);
@@ -36,7 +35,7 @@ internal sealed class ModDisplaySet(
             foreach (var error in errors)
                 logger.LogError("展示声明读取失败：{ModId}：{Reason}", error.ModId, error.Message);
 
-        // 声明不可用的 mod 不进启用序：装配方按声明缺席处理，原因已在 DeclarationErrors
+        // 声明不可用的 mod 不进启用序，原因已在 DeclarationErrors
         var enabled = new List<ModDisplayDeclaration>();
         foreach (var mod in load.Mods)
             if (byModId.TryGetValue(mod.Manifest.Id, out var display))

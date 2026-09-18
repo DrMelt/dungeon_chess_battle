@@ -2,7 +2,7 @@ using DungeonChessBattle.Battle.Mod.Manager;
 
 namespace DungeonChessBattle.Game.Mod.Manager;
 
-/// <summary>mods 根目录内单个 mod 的管理视图，供 mod 管理界面直接绑定。</summary>
+/// <summary>mods 根目录内单个 mod 的管理视图，供管理面列示。</summary>
 public sealed class ModEntryView {
     /// <summary>mod ID，同时是 mods 根目录下的子目录名。</summary>
     public required string Id {

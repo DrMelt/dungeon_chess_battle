@@ -192,7 +192,7 @@ public partial class BattleRoomServer : INetEventListener {
     /// </summary>
     public bool WaitUntilInitialized(TimeSpan timeout) => _initialized.Wait(timeout);
 
-    /// <summary>房间线程退出的等待上限；超出即视为线程未停，不再触碰线程持有的状态。</summary>
+    /// <summary>房间线程退出的等待上限；超出即视为线程未停，此时不触碰线程持有的状态。</summary>
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(3);
 
     /// <summary>
@@ -224,7 +224,7 @@ public partial class BattleRoomServer : INetEventListener {
         // 销毁全部保留实体，断线玩家实体随房间销毁一并清理，房间线程已退出
         CleanupAllSessions();
 
-        // 释放初始化信号，不再有等待方
+        // 释放初始化信号
         _initialized.Dispose();
 
         if (_logger.IsEnabled(LogLevel.Information))

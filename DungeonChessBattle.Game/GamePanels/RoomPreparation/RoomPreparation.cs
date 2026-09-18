@@ -199,7 +199,7 @@ public partial class RoomPreparation : BaseGamePanel {
 
     /// <summary>
     /// 战斗退出（LeaveRoom）回调：房间已解散，返回来源面板（大厅）。
-    /// 该事件仅在离开当前房间时触发，本面板不再跟踪任何房间，直接回退。
+    /// 该事件仅在离开当前房间时触发，本面板不持房间状态，直接回退。
     /// </summary>
     private void OnRoomLeft(RoomId roomId) {
         GoBack();

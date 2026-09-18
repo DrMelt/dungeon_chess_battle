@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
 /// 单位卡片组件。在房间准备界面中展示可选单位，支持点击选择。
-/// 替代旧版 UnitSelectCard，统一为蓝色主题（Camp A）。
+/// 卡片配色为 Camp A 蓝色主题。
 /// 使用 InterRefs 模式分离 [Export] 引用。
 /// </summary>
 public partial class UnitCard : Control {

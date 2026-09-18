@@ -3,7 +3,7 @@ namespace DungeonChessBattle.Battle.Shared.ValueObjects;
 /// <summary>
 /// Buff 身份强类型键。领域、结算与配置层使用字符串键，杜绝裸字符串造成的类型混淆；
 /// 网络协议与同步实体边界同样以字符串键序列化，BuffTypeId 为跨端一致的唯一标识，
-/// 字段在全链路统一为字符串，不再有 ushort 数值编码。
+/// 字段在全链路统一为字符串。
 /// 仅声明长度上限与语义名，存储与校验复用 <see cref="RestrictedString"/>。
 /// </summary>
 public readonly record struct BuffTypeId {

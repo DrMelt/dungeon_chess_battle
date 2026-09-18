@@ -4,7 +4,7 @@ namespace DungeonChessBattle.Game.Mod.Shared;
 
 /// <summary>
 /// mod 展示装配上下文：宿主递给展示代码入口的一切读数。
-/// <see cref="Registry"/> 是注册表的实时视图，mod 据此改写已声明的条目而不必先验其内容。
+/// <see cref="Registry"/> 是展示注册表的实时视图，含先装载 mod 已注册的条目。
 /// 包内资源不经本上下文传递：mod 自行以 <c>GD.Load</c> 读 <c>res://mods/{mod id}/</c> 下的文件，
 /// 该前缀在 mod 导出资源包时就已固化，宿主只保证入口执行前包已挂载。
 /// </summary>

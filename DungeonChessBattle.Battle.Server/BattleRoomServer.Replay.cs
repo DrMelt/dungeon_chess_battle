@@ -32,7 +32,7 @@ public partial class BattleRoomServer {
 
     /// <summary>
     /// 录制全部单位初始态：按创建顺序遍历房间载体，玩家与敌人同表。
-    /// 重放端据此重建世界，不再从副本配置的生成顺序推演实体 ID；谁是玩家不在此落盘，
+    /// 重放端据此重建世界，不从副本配置的生成顺序推演实体 ID；谁是玩家不在此落盘，
     /// 由元数据玩家表的 NetId 判定。仅房间线程调用。
     /// </summary>
     private void RecordUnitInits() {

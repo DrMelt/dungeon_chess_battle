@@ -88,7 +88,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>在线端战斗世界：领域单位 BattleUnit 作为展示源，状态由 SyncVar 回填。</summary>
     private BattleScene? _battleScene;
 
-    /// <summary>本次房间会话是否已上报内容不一致；上报后不再尝试构建战斗世界，避免逐帧重复。</summary>
+    /// <summary>本次房间会话是否已上报内容不一致；上报后不尝试构建战斗世界。</summary>
     private bool _contentMismatchReported;
 
     /// <summary>网络实体 ID 到领域单位映射，展示回填与取数定位。</summary>
@@ -251,7 +251,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     }
 
     /// <summary>
-    /// 本地内容与服务端不一致：只上报一次，此后不再构建本地战斗世界。
+    /// 本地内容与服务端不一致：只上报一次，此后不构建本地战斗世界。
     /// 由装配层退出战斗并提示玩家，本端保留网络连接，不做缺内容的降级呈现。
     /// </summary>
     private void ReportContentMismatch(string reason) {

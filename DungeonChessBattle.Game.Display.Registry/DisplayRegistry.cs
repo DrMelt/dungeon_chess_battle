@@ -6,7 +6,7 @@ namespace DungeonChessBattle.Game.Display.Registry;
 
 /// <summary>
 /// 展示注册表：<see cref="IDisplayRegistry"/> 条目读面与 <see cref="IDisplayRegistrar"/> 条目写面的实现。
-/// 条目数据同键后写覆盖，且未声明字段沿用被覆盖者，因此后到的注册者只换图标不会清空先到的名称。
+/// 条目数据同键后写覆盖，未声明字段沿用被覆盖者。
 /// 装配在启动期单线程完成，之后只读查询，无锁。
 /// </summary>
 public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry {

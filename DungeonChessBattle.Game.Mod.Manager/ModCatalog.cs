@@ -9,9 +9,8 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// <summary>
 /// mod 管理根：扫描 mods 根目录、读取各 mod 的展示声明、维护启用集、汇总各装配阶段的错误与内容指纹。
 /// 展示声明与数据面清单是同一份 manifest.json 的两个段：数据面读顶层并裁决装载，本库读展示段并据此装配展示面。
-/// 启用集落在 mods 目录内（<see cref="ModLayout.EnablementFileName"/>），
-/// 服务端子进程读同一目录即两端裁决一致，无需额外传参通道。
-/// 启停只改启用集不改内容，装配是一次性的：变更须重启进程才生效。
+/// 启用集落在 mods 根目录，文件名见 <see cref="ModLayout.EnablementFileName"/>；
+/// 启停只改启用集不改内容，装配是一次性的，变更须重启进程才生效。
 /// </summary>
 public sealed class ModCatalog {
     private readonly string _modsRootPath;
@@ -40,11 +39,11 @@ public sealed class ModCatalog {
 
     /// <summary>
     /// 启用 mod 中声明可用的展示面声明，顺序与 <see cref="EnabledMods"/> 一致，交展示装配消费；
-    /// 声明不可用者不进此列，原因见 <see cref="ModDisplayErrors"/>。
+    /// 声明不可用者不进本列，原因见 <see cref="DisplayDeclarationErrors"/>。
     /// </summary>
     public IReadOnlyList<ModDisplayDeclaration> EnabledDisplays => _displays.Enabled;
 
-    /// <summary>全部 mods 子目录，含启用、停用与被拒载者，按 ID 字母序，供列表展示。</summary>
+    /// <summary>全部 mods 子目录，含启用、停用与被拒载者，按 ID 字母序，供管理面列示。</summary>
     public IReadOnlyList<ModEntryView> Entries => _entries;
 
     /// <summary>因启用集而停用的 mod 数量。</summary>
@@ -53,7 +52,7 @@ public sealed class ModCatalog {
     /// <summary>扫描期错误：清单、依赖与启用集裁决的结果。</summary>
     public IReadOnlyList<ModError> Errors => _load.Errors;
 
-    /// <summary>根目录级问题：未提供目录、目录不存在、启用集不可读；非 null 时本次未装载任何 mod。</summary>
+    /// <summary>根目录级问题：非 null 时本次未装载任何 mod，文案直接交管理面显示。</summary>
     public string? RootProblem => _load.RootProblem;
 
     /// <summary>数据面装配期错误：数据代码入口装载失败，由宿主装配后追加。</summary>
@@ -61,20 +60,18 @@ public sealed class ModCatalog {
         get; private set;
     } = [];
 
-    /// <summary>展示面装配期错误：展示代码装载失败与展示键引用不成立，由 <see cref="ModAssets.Assemble"/> 装配后追加。</summary>
+    /// <summary>展示面装配期错误：展示代码装载与入口执行失败、展示键引用不成立，由 <see cref="ModAssets.Assemble"/> 装配后追加。</summary>
     public IReadOnlyList<ModError> DisplayErrors {
         get; private set;
     } = [];
 
-    /// <summary>展示面声明读取错误：展示段写错、缺字段或路径非法。每次扫描重算，不影响数据面装载。</summary>
+    /// <summary>展示面声明读取错误：展示段写错、缺字段或路径非法，每次扫描重算。</summary>
     public IReadOnlyList<ModError> DisplayDeclarationErrors => _displays.DeclarationErrors;
 
     /// <summary>当前启用集对应的内容指纹，房间与回放门控的一致性身份。</summary>
     public string Fingerprint => ContentFingerprint.Compute(_load.Mods);
 
-    /// <summary>
-    /// 重扫 mods 目录，刷新管理视图。只影响列表与错误显示，不重装配内容——装配是一次性的。
-    /// </summary>
+    /// <summary>重扫 mods 目录，刷新管理视图；只影响列表与错误显示，不重装配内容。</summary>
     public void Rescan() {
         Refresh();
         if (_logger.IsEnabled(LogLevel.Information))
@@ -92,8 +89,7 @@ public sealed class ModCatalog {
 
     /// <summary>
     /// 启停一个 mod：以磁盘上的启用集为底改写该 ID 后落盘，并立即重扫使列表与磁盘一致。
-    /// 指向已删目录的停用记录原样保留，否则用户删一个 mod 会顺带启回另一个。
-    /// 失败以错误返回，只影响本次启停，列表按旧状态继续。变更需重启进程才影响已装配内容。
+    /// 指向已删目录的停用记录原样保留。失败以错误返回，只影响本次启停，列表按旧状态继续。
     /// </summary>
     public ErrorOr<Success> SetEnabled(string modId, bool enabled) {
         if (!_entries.Any(p => p.Id == modId)) {
@@ -129,10 +125,7 @@ public sealed class ModCatalog {
         return Result.Success;
     }
 
-    /// <summary>
-    /// 刷新一次扫描的三项结果：装载目录、读展示声明、建条目列表。
-    /// 三步必须同时生效，否则列表会拿旧声明判新装载结果有没有展示代码。
-    /// </summary>
+    /// <summary>刷新一次扫描的三项结果：装载目录、读展示声明、建条目列表；三项同批生效。</summary>
     [MemberNotNull(nameof(_load), nameof(_displays), nameof(_entries))]
     private void Refresh() {
         _load = ModLoader.LoadDirectory(_modsRootPath, _loggerFactory);

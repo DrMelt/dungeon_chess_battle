@@ -216,7 +216,7 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
         _loginSessions.Clear();
         _sessionPlayerNames.Clear();
         _connectionSessions.Clear();
-        // 锁表随状态一并清空，停机后不再有房间，旧锁对象无保留价值
+        // 锁表随状态一并清空
         _roomLocks.Clear();
     }
 

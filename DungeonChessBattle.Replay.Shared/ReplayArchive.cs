@@ -77,11 +77,11 @@ public sealed record ReplayMetaResult(
 /// "DCBR"(4)
 /// </code>
 /// 块负载一律 MessagePack 显式 Key 模型，字段重命名与顺序调整不破坏兼容；重复字符串交给块级
-/// Deflate 吃掉，不再单设字符串表。尾部魔数是完整性判据：半截下载与断文件在此分别，不必靠解码
+/// Deflate 压缩，不单设字符串表。尾部魔数是完整性判据：半截下载与断文件在此分别，不必靠解码
 /// 抛异常反推。校验和算在存储字节上，一并覆盖压缩与传输两段。
 /// </summary>
 public static class ReplayArchive {
-    /// <summary>容器格式版本，块语义变化时递增。v6 起为分块容器，v5 及更早的单包 MessagePack 数组不再可读。</summary>
+    /// <summary>容器格式版本，块语义变化时递增；v6 为分块容器，v5 及更早的单包 MessagePack 数组不可读。</summary>
     public const int FormatVersion = 6;
 
     /// <summary>容器小版本，新增可跳过块时递增，读侧不据此拒绝。</summary>

@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace DungeonChessBattle.Game.GamePlayUI;
 
 /// <summary>
-/// 技能列表面板：按技能目标类型（单位/位置/无目标）分发施法 RPC。
+/// 技能列表面板：按技能目标类型分发施法 RPC，分为单位目标、位置目标与无目标三类。
 /// 每帧从战斗会话上下文直读本地玩家操控角色作为固定显示单位，变化时重建全部按钮。
 /// 本面板只做目标选择，不判可否施放：按键即经战斗会话上下文上行，服务端权威裁定可否施放、
 /// 预输入排队与结算。
@@ -86,7 +86,7 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 每帧处理位置目标选择输入，并对本地玩家角色做脏检查（变化时重建按钮列表）。
+    /// 每帧处理位置目标选择输入，并对本地玩家角色做脏检查，变化时重建按钮列表。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
     public override void _Process(double delta) {
@@ -157,7 +157,7 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>
-    /// 技能按钮点击处理：按技能目标类型分发（单位目标 / 位置目标 / 无目标），并发起施法 RPC。
+    /// 技能按钮点击处理：按技能目标类型分发，并发起施法 RPC。
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
     public void OnSkillButtonPressed(ButtonSkillBase button) {
@@ -225,7 +225,7 @@ public partial class SkillsList : Control {
 
     /// <summary>
     /// 展示范围提示：按按钮携带的范围提示场景创建预览实例，参数取自领域范围形状。
-    /// 初始化延迟到挂载后一帧，经 UpdateRangePreview 执行，保证提示场景 _Ready 已完成。
+    /// 初始化延迟到挂载后一帧执行。
     /// </summary>
     private void ShowRangePreview(ButtonSkillBase button) {
         if (_effectHints == null)

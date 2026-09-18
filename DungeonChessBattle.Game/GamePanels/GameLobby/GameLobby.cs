@@ -12,7 +12,7 @@ namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
 /// 游戏大厅主控脚本，负责房间列表展示（招募板）、创建/加入房间等操作。
-/// 服务从 ServiceLocator 获取，不再由外部注入。
+/// 服务从 ServiceLocator 获取。
 /// 房间列表（招募板）UI 处理见 GameLobby.RoomList。
 /// </summary>
 public partial class GameLobby : BaseGamePanel {
@@ -262,7 +262,7 @@ public partial class GameLobby : BaseGamePanel {
     /// 在主线程处理房间列表推送，直接以 RoomListing DTO 刷新 UI。
     /// </summary>
     private void OnRoomListingsReceived(IReadOnlyList<RoomListing> listings) {
-        // 直接以传输 DTO RoomListing 作为 UI 数据源，不再二次转换为本地模型
+        // 直接以传输 DTO RoomListing 作为 UI 数据源
         RefreshRoomList([.. listings]);
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("招募板列表刷新: {Count} 个房间", listings.Count);

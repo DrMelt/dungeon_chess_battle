@@ -11,9 +11,9 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// <summary>
 /// mod 管理面板：列出 mods 目录下的 mod、切换启用集、呈现装载错误与内容修订号。
 /// 本面板只读不判：mod 的解析、排序、启停落盘与错误汇总全在 <see cref="ModCatalog"/>。
-/// 类内分两层——措辞是只进不出的纯函数，渲染只把文本与条目交给标签和 <see cref="ModRowList"/>；
-/// 列宽、配色与换行都在场景里，这里不碰。
-/// 启停改的是磁盘上的启用集，内容装配是一次性的，故变更需重启进程。
+/// 类内分两层：措辞是只进不出的纯函数，渲染只把文本与条目交给标签和 <see cref="ModRowList"/>；
+/// 列宽、配色与换行都在场景里配置。
+/// 启停改的是磁盘上的启用集，内容装配是一次性的，变更需重启进程。
 /// </summary>
 public partial class ModManagementPanel : BaseGamePanel {
     /// <summary>日志记录器。</summary>
@@ -26,8 +26,8 @@ public partial class ModManagementPanel : BaseGamePanel {
     private string? _notice;
 
     /// <summary>
-    /// 节点就绪：绑定按钮。列表不在此构建——面板隐藏期目录可能已被用户改动，取数只发生在打开时。
-    /// 某个按钮引用缺失只是那一个动作没有入口，不中断其余绑定，故逐条可空。
+    /// 节点就绪：绑定按钮；列表不在此构建，取数只发生在面板打开时。
+    /// 单个按钮引用缺失只是那一个动作没有入口，不中断其余绑定。
     /// </summary>
     public override void _Ready() {
         _refs = GetNode<ModManagementPanelInterRefs>("ModManagementPanelInterRefs");
@@ -52,7 +52,7 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     /// <summary>
     /// 按当前目录重建行列表与面板摘要。
-    /// 行列表与摘要标签缺一即整体不渲染：半张面板会被读成「这里没有 mod」。
+    /// 行列表与摘要标签任缺其一即整体不渲染。
     /// </summary>
     private void Refresh() {
         if (_refs is not { ModRowList: { } rows, StatusLabel: { } status })
@@ -72,9 +72,8 @@ public partial class ModManagementPanel : BaseGamePanel {
 
     /// <summary>
     /// 面板摘要：状态主体在上，装载错误与最近操作提示依次在下，缺哪段就不出现哪段。
-    /// 状态主体是启用集概况、mods 目录位置与运行中的数据修订号——房间与回放门控比的就是这个值。
-    /// 磁盘启用集与装配那一刻的指纹不等时点出来，否则用户会撞上「改了开关却进不了自己的房」。
-    /// 目录未装配时概况与修订号都无从谈起，只留目录位置。
+    /// 状态主体是启用集概况、mods 目录位置与运行中的数据修订号，磁盘启用集与装配那一刻的指纹不等时点出来。
+    /// 目录未装配时只留目录位置。
     /// </summary>
     private string SummaryFor(ModAssets? assets) {
         string body = assets is null
@@ -92,7 +91,7 @@ public partial class ModManagementPanel : BaseGamePanel {
         string stale = catalog.Fingerprint == assets.AssemblyFingerprint
             ? ""
             : "\n磁盘启用集已变更，与运行中内容不一致，重启后才生效";
-        // 根目录不可用时状态主体只是空计数，原因必须显示出来，否则读成「这里没有 mod」
+        // 根目录不可用时状态主体只是空计数，原因单独显示一行
         string root = catalog.RootProblem is { Length: > 0 } problem ? $"\n{problem}" : "";
         return $"启用 {catalog.EnabledMods.Count} 个 · 停用 {catalog.DisabledCount} 个\n"
             + $"mods 目录：{ModManager.ModsRootPath}\n"
@@ -119,8 +118,8 @@ public partial class ModManagementPanel : BaseGamePanel {
     #region Button Handlers
 
     /// <summary>
-    /// 启停一个 mod：只落盘启用集并刷新列表。已装配的内容不回滚，
-    /// 故新状态要重启进程才生效——服务器子进程同样按重启后的启用集装配。
+    /// 启停一个 mod：只落盘启用集并刷新列表，已装配的内容不回滚。
+    /// 新状态重启进程后生效，服务器子进程按同一启用集装配。
     /// </summary>
     private void OnToggleRequested(ModToggleRequest request) {
         string action = request.Enabled ? "启用" : "停用";
@@ -143,7 +142,7 @@ public partial class ModManagementPanel : BaseGamePanel {
         Refresh();
     }
 
-    /// <summary>打开 mods 目录：目录不存在则先建出来，省掉用户手找游戏目录。成功即不留提示。</summary>
+    /// <summary>打开 mods 目录：目录不存在则先建出来。成功即不留提示。</summary>
     private void OnOpenFolderPressed() {
         try {
             Directory.CreateDirectory(ModManager.ModsRootPath);

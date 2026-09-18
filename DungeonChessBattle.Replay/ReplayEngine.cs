@@ -104,7 +104,7 @@ public sealed class ReplayEngine {
         if (tracks.IsError)
             return tracks.FirstError;
 
-        // 单位初始态引用的配置必须在场：重建路径按同一份表取值，不再逐个体复核
+        // 单位初始态引用的配置必须在场；重建路径按同一份表取值，不逐个体复核
         ReplayUnitInit? missing = recording.Units
             .FirstOrDefault(unit => content.GetUnit(unit.UnitConfigKey) is null);
         if (missing is not null)
@@ -139,7 +139,7 @@ public sealed class ReplayEngine {
     /// <summary>
     /// 按录制的单位初始态重建全部单位：ID、阵营与出生点取记录值，战斗属性按配置键取当前配置。
     /// 玩家与敌人同表同序，意图源按录制玩家表分流登记，与服务器生成路径同一判据。
-    /// 单位配置在场由 <see cref="Create"/> 一次裁决，重建路径不再查空。
+    /// 单位配置在场由 <see cref="Create"/> 一次裁决，重建路径不查空。
     /// </summary>
     private void BuildUnits() {
         foreach (var unit in _units) {

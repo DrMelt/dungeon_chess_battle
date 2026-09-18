@@ -8,9 +8,9 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 创建单位与开始战斗的请求已由大厅 SignalR 通道（AddPrepareUnit / StartBattle）承担，
 /// 本实体承载房间级战斗状态的同步目标，由服务端状态同步器写入。
 /// 同步字段全部以服务端写回为准，禁止在 OnConstructed 重置：
-/// LES 1.2.2 客户端先应用初始同步状态再执行 OnConstructed，重置会让一次性写入字段
-/// （BattleStartUnixTime、BattlePhase 等）在客户端丢失且不再回补。
-/// 战斗事件日志经传输层可靠通道外送，本实体不再承载事件 RPC。
+/// LES 1.2.2 客户端先应用初始同步状态再执行 OnConstructed，重置会让 BattleStartUnixTime、
+/// BattlePhase 等一次性写入字段在客户端丢失且不回补。
+/// 战斗事件日志经传输层可靠通道外送，本实体不承载事件 RPC。
 /// </summary>
 public partial class BattleRoomEntity : EntityLogic {
     // 本类同步字段直接作为 public 字段供 LiteEntitySystem 反射发现，禁止改为属性

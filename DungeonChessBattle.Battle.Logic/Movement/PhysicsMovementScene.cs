@@ -66,7 +66,7 @@ public sealed class PhysicsMovementScene : IMovementScene {
         for (var i = 0; i < count; i++)
             positions[i] = intents[i].FromPosition;
 
-        // 单位互斥：在本轮起始位置快照上就地逐对让位，位移途中不再互相检测
+        // 单位互斥：在本轮起始位置快照上就地逐对让位，位移途中不互相检测
         MovementMath.ResolveExclusion(positions, intents);
 
         var results = new Vector2[count];

@@ -10,8 +10,8 @@
     <Description>展示接口层：装配上下文与表现接口，mod 与宿主互调。</Description>
   </PropertyGroup>
 
-  <!-- 注册表读写口随 Game.Display.Registry 发布，本库只留装配上下文与表现接口；
-       本体不再直接用展示形状，形状经注册表库传递可见。 -->
+  <!-- 本库只放装配上下文与表现接口，注册表读写口随 Game.Display.Registry 发布；
+       本库不直接用展示形状，形状经注册表库传递可见。 -->
   <ItemGroup>
     <ProjectReference Include="..\DungeonChessBattle.Game.Display.Registry\DungeonChessBattle.Game.Display.Registry.csproj" />
   </ItemGroup>

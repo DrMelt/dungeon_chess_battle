@@ -34,7 +34,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
-<!-- 游戏服务器以独立子进程方式运行，不再作为 Godot 工程的项目引用。
+<!-- 游戏服务器以独立子进程方式运行，不经 Godot 工程的项目引用。
        Debug 构建前自动构建 Server 工程，保证子进程可执行文件存在且最新。 -->
   <Target Name="BuildGameServer" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <Message Importance="high" Text="构建游戏服务器 (DungeonChessBattle.Server)..." />

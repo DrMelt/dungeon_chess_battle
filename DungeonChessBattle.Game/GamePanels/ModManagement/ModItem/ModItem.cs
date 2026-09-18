@@ -8,7 +8,7 @@ namespace DungeonChessBattle.Game.GamePanels;
 
 /// <summary>
 /// mod 管理面板的单行卡片：整行按钮与 ID、构成、依赖、错误列，启停由独立 CheckBox 只读展示。
-/// 列宽、配色与换行全由 mod_item.tscn 配置，本类只把一条 <see cref="ModEntryView"/> 摊进五个控件。
+/// 列宽、配色与换行全由 mod_item.tscn 配置，本类只把一条 <see cref="ModEntryView"/> 填进各列控件。
 /// 启停语义由 <see cref="ModManagementPanel"/> 裁决，卡片不接触目录与启用集。
 /// </summary>
 public partial class ModItem : Control {
@@ -37,7 +37,7 @@ public partial class ModItem : Control {
     }
 
     /// <summary>
-    /// 写入一行 mod 数据，须在卡片进入场景树后调用——引用在 _Ready 才取到，入树前写入被丢弃。
+    /// 写入一行 mod 数据，须在卡片进入场景树后调用，引用在 _Ready 才取到。
     /// 无内容的列留空文本，显隐由场景决定。
     /// </summary>
     /// <param name="mod">管理视图条目。</param>
@@ -49,7 +49,7 @@ public partial class ModItem : Control {
         if (refs.EnableToggle is { } toggle) {
             // CheckBox 只读展示启停状态：走 no-signal 接口，不接收输入也不会上报
             toggle.SetPressedNoSignal(mod.IsEnabled);
-            // 被拒载的目录启停无意义：它连内容都没读进来，勾选只会掩盖原因
+            // 被拒载的目录启停无意义，勾选框置灰
             toggle.Disabled = mod.Reason is not null;
         }
 
@@ -63,7 +63,7 @@ public partial class ModItem : Control {
             $"代码 {(mod.HasCode ? "有" : "—")}\u3000展示 {(mod.HasDisplayCode ? "有" : "—")}";
         refs.DependencyLabel?.Text =
             mod.Dependencies.Count > 0 ? $"依赖 {string.Join("、", mod.Dependencies)}" : "";
-        // 空集合 join 即空串，正合「没有错误」；只取原因，「modId: 原因」的整条形式留给面板底部汇总
+        // 只取原因；「modId: 原因」的整条形式留给面板底部汇总
         refs.ErrorLabel?.Text = string.Join("；", mod.Errors.Select(error => error.Message));
     }
 

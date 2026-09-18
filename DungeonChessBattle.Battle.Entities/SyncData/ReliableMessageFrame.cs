@@ -5,7 +5,7 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 房间端口服务器可靠消息帧的编解码唯一权威。
-/// 帧布局 [0xDC 包头][消息类型][消息体]，服务端与客户端共读本类，两端不再手写帧偏移。
+/// 帧布局 [0xDC 包头][消息类型][消息体]，服务端与客户端共读本类，不各自手写帧偏移。
 /// </summary>
 public static class ReliableMessageFrame {
     /// <summary>帧头长度：0xDC 包头与消息类型各一字节。</summary>

@@ -16,7 +16,7 @@ public partial class ButtonSkillBase : Button {
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ButtonSkillBase> _logger = ServiceLocator.GetLogger<ButtonSkillBase>();
 
-    /// <summary>玩家操作界面资源引用（用于鼠标悬浮 UI 判定）。</summary>
+    /// <summary>玩家操作界面资源引用，用于鼠标悬浮 UI 判定。</summary>
     [Export]
     private PlayerInterfaceRes? _playerInterfaceRes;
 
@@ -24,17 +24,17 @@ public partial class ButtonSkillBase : Button {
     [Export]
     private Color _coolingColor = new(0.5f, 0.5f, 0.5f, 1.0f);
 
-    /// <summary>冷却时间文本标签引用（可选）。</summary>
+    /// <summary>冷却时间文本标签引用，可空。</summary>
     [Export]
     private Label? _labelCooldownTimeRef;
 
-    /// <summary>绑定的技能定义（由 Init 注入）。</summary>
+    /// <summary>绑定的技能定义，由 Init 注入。</summary>
     private SkillDefinition? _bindingSkill;
 
     /// <summary>绑定的技能展示数据，mod 未声明该技能展示时为 null。</summary>
     private SkillDisplay? _bindingDisplay;
 
-    /// <summary>是否已完成 Init 初始化（未初始化时隐藏，防止悬停误触）。</summary>
+    /// <summary>是否已完成 Init 初始化；未初始化时隐藏。</summary>
     public bool IsInitialized => _bindingSkill != null;
 
     /// <summary>绑定的技能定义，施法规则与冷却匹配读它。</summary>
@@ -49,7 +49,7 @@ public partial class ButtonSkillBase : Button {
         private set;
     }
 
-    /// <summary>技能列表面板引用（用于委托释放逻辑）。</summary>
+    /// <summary>技能列表面板引用，用于委托释放逻辑。</summary>
     private SkillsList? _skillsListRef;
 
     /// <summary>
@@ -76,7 +76,7 @@ public partial class ButtonSkillBase : Button {
     public override void _Ready() {
         ValidateExports();
 
-        // 未调用 Init 的预置按钮（如场景中残留实例）隐藏自身，避免悬停时访问未初始化技能
+        // 未调用 Init 的按钮隐藏自身，避免悬停时访问未初始化技能
         if (!IsInitialized) {
             Visible = false;
             MouseDefaultCursorShape = CursorShape.Arrow;
@@ -106,7 +106,7 @@ public partial class ButtonSkillBase : Button {
         _skillsListRef?.OnSkillButtonPressed(this);
     }
 
-    /// <summary>每帧更新冷却 UI（灰色遮罩与剩余秒数）。数据源为服务端权威冷却。</summary>
+    /// <summary>每帧更新冷却 UI：灰色遮罩与剩余秒数，数据源为服务端权威冷却。</summary>
     public override void _Process(double delta) {
         if (_bindingSkill == null)
             return;

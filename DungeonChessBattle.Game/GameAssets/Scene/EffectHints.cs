@@ -8,9 +8,9 @@ namespace DungeonChessBattle.Game.GameAssets;
 
 /// <summary>
 /// 技能效果提示协调器：按调用方交入的范围提示场景创建、挂载与销毁选目标预览。
-/// 场景模板归属技能展示数据（<c>SkillDisplay.RangeHintScene</c>），实例能否被驱动由是否实现
-/// <see cref="IRectRangeHint"/> 判定，本节点只负责实例生命周期；
-/// 实例初始化延迟到挂载后一帧，保证作用场景的 _Ready 已完成。
+/// 场景模板归属技能展示数据 <c>SkillDisplay.RangeHintScene</c>，实例能否被驱动由是否实现
+/// <see cref="IRectRangeHint"/> 判定，本节点只负责实例生命周期。
+/// 实例初始化延迟到挂载后一帧，作用场景的 _Ready 此时已完成。
 /// </summary>
 public partial class EffectHints : Node {
     /// <summary>日志记录器。</summary>
