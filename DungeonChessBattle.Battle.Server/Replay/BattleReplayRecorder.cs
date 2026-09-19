@@ -1,13 +1,14 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.Replay.Shared;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Server.Replay;
 
 /// <summary>
 /// 战斗输入回放录制器：绝对逻辑帧时间轴 + 移动按玩家分轨的账本与施法、聚焦两本条目账，房间销毁时导出 <see cref="ReplayRecording"/>。
-/// 只收玩家命令；字段拆分、段折叠判据与轨道成型全在 <see cref="ReplayCommands"/>，两项修订号由调用方供给——
-/// 本类既不解释条目形状，也不认识内容版本，只管时间轴推进与账本归属。
+/// 只收玩家命令；字段拆分与段折叠判据在 <see cref="ReplayCommands"/>，账本表与轨道成型在 <see cref="ReplayMoveTracks"/>，
+/// 两项修订号由调用方供给——本类既不解释条目形状，也不认识内容版本，只管时间轴推进与账本归属。
 /// 记录方法仅房间线程调用，导出供外部线程安全读取。
 /// 移动每 tick 至多一条，由 <c>UnitController.BeforeControlledUpdate</c> 每 tick 消费一次输入后经 Pawn 输入事件
 /// 转发到房间 <c>OnPawnInput</c> 提交；单位失去控制或输入断供造成帧空洞，空洞处即段界。
@@ -18,15 +19,28 @@ namespace DungeonChessBattle.Battle.Server.Replay;
 /// <param name="startUnixTime">战斗开始 Unix 秒。</param>
 /// <param name="tickRate">逻辑 tick 频率。</param>
 /// <param name="players">参与玩家表，其下标即条目里的玩家序号。</param>
+/// <param name="tracks">逐玩家移动账本表，玩家数容量在 <see cref="ReplayMoveTracks.Create"/> 裁决。</param>
+/// <param name="playerIndexByUnitId">单位 ID 到玩家序号的反查表。</param>
 internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
-    int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
+    int tickRate, IReadOnlyList<ReplayPlayerInfo> players, ReplayMoveTracks tracks,
+    Dictionary<UnitId, byte> playerIndexByUnitId) {
     private readonly Lock _lock = new();
     private readonly List<ReplayCastEntry> _casts = [];
     private readonly List<ReplayFocusEntry> _focuses = [];
-    private readonly List<ReplayMoveRun>[] _moveRuns = ReplayCommands.CreateMoveTracks(players.Count);
+    private readonly ReplayMoveTracks _tracks = tracks;
 
     /// <summary>单位 ID → 玩家序号；不在表中即非玩家单位，其命令不入记录。</summary>
-    private readonly Dictionary<UnitId, byte> _playerIndexByUnitId = ToIndexByUnitId(players);
+    private readonly Dictionary<UnitId, byte> _playerIndexByUnitId = playerIndexByUnitId;
+
+    /// <summary>创建录制器：玩家数超出移动轨道容量以错误返回，轨道与反查表在此建立。</summary>
+    public static ErrorOr<BattleReplayRecorder> Create(string roomId, string dungeonKey, long startUnixTime,
+        int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
+        var tracks = ReplayMoveTracks.Create(players.Count);
+        if (tracks.IsError)
+            return tracks.FirstError;
+        return new BattleReplayRecorder(roomId, dungeonKey, startUnixTime, tickRate, players,
+            tracks.Value, ToIndexByUnitId(players));
+    }
 
     /// <summary>单位初始态，全部单位创建完成后写入，重放端据此重建世界。</summary>
     private IReadOnlyList<ReplayUnitInit> _units = [];
@@ -71,7 +85,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
             int frame = AdvanceFrame(tick);
             switch (cmd.Kind) {
                 case PlayerCommandKind.Move:
-                    ReplayCommands.AppendMoveRun(_moveRuns[index], cmd, frame);
+                    ReplayCommands.AppendMoveRun(_tracks[index], cmd, frame);
                     break;
                 case PlayerCommandKind.Cast:
                     _casts.Add(cmd.ToCastEntry(frame, index, accepted));
@@ -103,7 +117,7 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
                 Math.Max(_startTick, _endTick >= 0 ? _endTick : lastFrame),
                 dataRevision, logicRevision, players);
 
-            return new ReplayRecording(meta, _units, ReplayCommands.BuildMoveTracks(_moveRuns),
+            return new ReplayRecording(meta, _units, _tracks.Build(),
                 [.. _casts], [.. _focuses]);
         }
     }
@@ -128,11 +142,9 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
 
     /// <summary>
     /// 玩家表下标即玩家序号，反查表用于把命令里的来源单位换成序号。
-    /// 玩家数超出轨道键容量属装配错误，构造期响亮失败；序号由 int 下标降型，容量口径见 <see cref="ReplayMoveTrack.MaxPlayers"/>。
+    /// 序号由 int 下标降型，容量裁决在 <see cref="Create"/> 与 <see cref="ReplayMoveTracks.Create"/>。
     /// </summary>
     private static Dictionary<UnitId, byte> ToIndexByUnitId(IReadOnlyList<ReplayPlayerInfo> players) {
-        if (players.Count > ReplayMoveTrack.MaxPlayers)
-            throw new ArgumentOutOfRangeException(nameof(players), players.Count, "Player count exceeds move track capacity.");
         var indexByUnitId = new Dictionary<UnitId, byte>(players.Count);
         for (int i = 0; i < players.Count; i++)
             indexByUnitId[players[i].NetId] = (byte)i;

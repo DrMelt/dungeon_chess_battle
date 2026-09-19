@@ -43,4 +43,14 @@ public static class BattleRoomErrors {
     public static Error InvalidCamps(string unitConfigKey, int count) => Error.Validation(
         code: "BattleRoom.Camps.Invalid",
         description: $"单位 '{unitConfigKey}' 的阵营列表非法，须为 1..{SyncCampsData.MaxCamps} 个非空阵营标识，实际 {count} 个");
+
+    /// <summary>房间根实体创建失败：LES 实体数量达到上限。</summary>
+    public static Error RoomEntityLimitReached(RoomId roomId) => Error.Failure(
+        code: "BattleRoom.EntityLimit.Room",
+        description: $"房间 '{roomId}' 根实体创建失败：实体数量达到上限");
+
+    /// <summary>单位实体创建失败：LES 实体数量达到上限。</summary>
+    public static Error UnitEntityLimitReached(RoomId roomId, string unitConfigKey) => Error.Failure(
+        code: "BattleRoom.EntityLimit.Unit",
+        description: $"房间 '{roomId}' 单位 '{unitConfigKey}' 实体创建失败：实体数量达到上限");
 }

@@ -4,6 +4,7 @@ using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
 using DungeonChessBattle.Battle.Server.Replay;
 using DungeonChessBattle.Replay.Shared;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 
 namespace DungeonChessBattle.Battle.Server;
@@ -24,10 +25,14 @@ public partial class BattleRoomServer {
     internal ReplayRecording? BuildReplayRecording() => _replayRecorder?.BuildRecording(
         _content.DataRevision, BattleLogicRevision.Value);
 
-    /// <summary>创建回放记录器：玩家表下标即记录里的玩家序号，网络 ID 到序号的反查收在录制器内。</summary>
-    private void CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players) {
-        _replayRecorder = new BattleReplayRecorder(RoomId, _dungeonKey,
+    /// <summary>创建回放记录器：玩家数超出移动轨道容量以错误交回房间初始化。</summary>
+    private ErrorOr<Success> CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players) {
+        var created = BattleReplayRecorder.Create(RoomId, _dungeonKey,
             DateTimeOffset.UtcNow.ToUnixTimeSeconds(), FramesPerSecond, players);
+        if (created.IsError)
+            return created.FirstError;
+        _replayRecorder = created.Value;
+        return Result.Success;
     }
 
     /// <summary>

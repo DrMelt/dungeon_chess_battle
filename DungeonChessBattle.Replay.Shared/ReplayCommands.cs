@@ -1,5 +1,6 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
+using ErrorOr;
 
 namespace DungeonChessBattle.Replay.Shared;
 
@@ -8,7 +9,7 @@ namespace DungeonChessBattle.Replay.Shared;
 /// 键的换算不在此——命令持 <see cref="UnitId"/>，条目持玩家表序号（<see cref="ReplayMeta.Players"/> 下标）
 /// 与 ushort 目标 ID，两端各自反查；命令与条目之间的 ID 升降级只在本类这组映射里发生。
 /// Accepted 只随施法与聚焦条目落盘：移动无拒绝分支；未被权威接管的条目重放时跳过。
-/// 移动段的收拢也在此：账本骨架、续段判据与轨道成型一处收口，录制端只持时间轴与账本。
+/// 移动段的折叠判据在此，账本骨架与轨道成型归 <see cref="ReplayMoveTracks"/>，录制端只持时间轴与账本。
 /// 逐 tick 提交语义不变，收拢只发生在存储侧。
 /// </summary>
 public static class ReplayCommands {
@@ -22,20 +23,6 @@ public static class ReplayCommands {
 
     /// <summary>方向意图段延长一帧，段首帧与方向不动。</summary>
     public static ReplayMoveRun ExtendRun(in ReplayMoveRun run) => run with { Length = run.Length + 1 };
-
-    /// <summary>
-    /// 逐玩家移动账本的骨架：每个玩家序号一条待填轨道。玩家数容量在此守住，
-    /// <see cref="BuildMoveTracks"/> 才敢把数组下标降型成 byte。
-    /// </summary>
-    public static List<ReplayMoveRun>[] CreateMoveTracks(int playerCount) {
-        if (playerCount > ReplayMoveTrack.MaxPlayers)
-            throw new ArgumentOutOfRangeException(nameof(playerCount), playerCount, "Player count exceeds move track capacity.");
-
-        var tracks = new List<ReplayMoveRun>[playerCount];
-        for (int i = 0; i < playerCount; i++)
-            tracks[i] = [];
-        return tracks;
-    }
 
     /// <summary>
     /// 把一条移动命令折进该玩家轨道：帧连续且方向位相同即续段，否则另起一段。
@@ -52,20 +39,6 @@ public static class ReplayCommands {
         }
 
         runs.Add(cmd.NewMoveRun(frame));
-    }
-
-    /// <summary>逐玩家账本折叠为轨道表：空轨不产出，数组下标即玩家序号。</summary>
-    public static ReplayMoveTrack[] BuildMoveTracks(List<ReplayMoveRun>[] runs) {
-        if (runs.Length > ReplayMoveTrack.MaxPlayers)
-            throw new ArgumentOutOfRangeException(nameof(runs), runs.Length, "Track count exceeds move track capacity.");
-
-        var tracks = new List<ReplayMoveTrack>(runs.Length);
-        for (int i = 0; i < runs.Length; i++) {
-            if (runs[i].Count > 0)
-                tracks.Add(new ReplayMoveTrack((byte)i, [.. runs[i]]));
-        }
-
-        return [.. tracks];
     }
 
     /// <summary>施法命令 → 条目，技能键按原样落盘，合法性只体现在接管结论里。</summary>
@@ -89,4 +62,39 @@ public static class ReplayCommands {
         PlayerCommand.Focus(sourceUnitId, entry.TargetNetId);
 
     private static int Bits(float value) => BitConverter.SingleToInt32Bits(value);
+}
+
+/// <summary>
+/// 逐玩家移动账本表：每个玩家序号一条待填轨道，玩家数容量在构造时裁决。
+/// 表长守轨道键容量，索引与成型都在容量内进行，降型不会截断。
+/// </summary>
+public sealed class ReplayMoveTracks {
+    private readonly List<ReplayMoveRun>[] _runs;
+
+    private ReplayMoveTracks(List<ReplayMoveRun>[] runs) => _runs = runs;
+
+    /// <summary>按玩家数建表；超出轨道键容量以错误返回。</summary>
+    public static ErrorOr<ReplayMoveTracks> Create(int playerCount) {
+        if (playerCount > ReplayMoveTrack.MaxPlayers)
+            return ReplaySharedErrors.MoveTrackOverCapacity(playerCount, ReplayMoveTrack.MaxPlayers);
+
+        var runs = new List<ReplayMoveRun>[playerCount];
+        for (int i = 0; i < playerCount; i++)
+            runs[i] = [];
+        return new ReplayMoveTracks(runs);
+    }
+
+    /// <summary>玩家序号对应的移动账本，序号取自玩家表下标。</summary>
+    public List<ReplayMoveRun> this[byte playerIndex] => _runs[playerIndex];
+
+    /// <summary>逐玩家账本折叠为轨道表：空轨不产出，数组下标即玩家序号。</summary>
+    public ReplayMoveTrack[] Build() {
+        var tracks = new List<ReplayMoveTrack>(_runs.Length);
+        for (int i = 0; i < _runs.Length; i++) {
+            if (_runs[i].Count > 0)
+                tracks.Add(new ReplayMoveTrack((byte)i, [.. _runs[i]]));
+        }
+
+        return [.. tracks];
+    }
 }

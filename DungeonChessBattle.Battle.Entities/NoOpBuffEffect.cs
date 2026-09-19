@@ -1,6 +1,7 @@
 using DungeonChessBattle.Battle.Shared.Buffs;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Entities;
 
@@ -10,7 +11,7 @@ internal sealed class NoOpBuffEffect : IBuffEffect {
     public static readonly NoOpBuffEffect Instance = new();
 
     /// <inheritdoc />
-    public IEnumerable<IBattleEvent> Tick(
+    public ErrorOr<IReadOnlyList<IBattleEvent>> Tick(
         double elapsedSeconds, IBuffView instance, UnitSnapshot target) =>
-        [];
+        new List<IBattleEvent>();
 }

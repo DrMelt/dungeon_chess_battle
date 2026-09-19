@@ -86,12 +86,13 @@ public sealed class ServerProcessHost : IServerHost {
     /// <inheritdoc cref="IServerHost.Start"/>
     public void Start(int port, string? serverPassword = null) {
         Process? process = null;
-        CancellationTokenSource? cts = null;
+        CancellationTokenSource cts = new();
         string? error = null;
 
         lock (_lock) {
             if (_process is not null) {
                 _logger.LogWarning("服务器已在运行中");
+                cts.Dispose();
                 return;
             }
 
@@ -145,7 +146,6 @@ public sealed class ServerProcessHost : IServerHost {
                         process = null;
                     }
                     else {
-                        cts = new CancellationTokenSource();
                         _process = process;
                         _cts = cts;
                         _startPort = port;
@@ -164,6 +164,8 @@ public sealed class ServerProcessHost : IServerHost {
         }
 
         if (process is null) {
+            // 启动失败路径：取消源未进字段，就地释放
+            cts.Dispose();
             if (error is not null)
                 SetLastError(error);
             return;
@@ -173,8 +175,7 @@ public sealed class ServerProcessHost : IServerHost {
         process.BeginErrorReadLine();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("服务器进程已启动: {Exe} port={Port}", process.StartInfo.FileName, port);
-        _ = WaitForReadyAsync(process, port, cts?.Token ??
-            throw new InvalidOperationException("服务器进程已启动但取消源缺失，时序错误。"));
+        _ = WaitForReadyAsync(process, port, cts.Token);
     }
 
     /// <inheritdoc cref="IServerHost.Stop"/>

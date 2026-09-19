@@ -279,10 +279,15 @@ public sealed partial class BattleScene(
 
             TryEndBattle();
 
-            // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表
+            // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表，
+            // 操作类型未登记记一条错误并跳过该条效果
             foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, HateFactors, _relations)) {
-                if (_unitById.TryGetValue(effect.HolderUnitId, out var holder))
-                    holder.RuntimeState.Hates.ApplyEffect(effect);
+                if (!_unitById.TryGetValue(effect.HolderUnitId, out var holder))
+                    continue;
+                var applied = holder.RuntimeState.Hates.ApplyEffect(effect);
+                if (applied.IsError && _logger.IsEnabled(LogLevel.Error))
+                    _logger.LogError("仇恨效果未落账：持有者 {HolderUnitId}，操作 {Op}，{Reason}",
+                        effect.HolderUnitId, effect.Op, applied.FirstError.Description);
             }
 
             CleanupDeaths();
@@ -401,7 +406,7 @@ public sealed partial class BattleScene(
         }
     }
 
-    /// <summary>推进 Buff 全局节拍；结构变化时保留存活实例。</summary>
+    /// <summary>推进 Buff 全局节拍；结构变化时保留存活实例，效果结算失败记一条错误，只丢本跳效果事件。</summary>
     private void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
@@ -411,7 +416,12 @@ public sealed partial class BattleScene(
         var snapshot = target.Snapshot;
         var alive = new List<ActiveBuff>(list.Count);
         foreach (var buff in list) {
-            foreach (var e in BuffTickProcessor.Tick(buff, snapshot, deltaTime, tickSeconds)) {
+            var tick = BuffTickProcessor.Tick(buff, snapshot, deltaTime, tickSeconds);
+            if (tick.EffectError is { } error && _logger.IsEnabled(LogLevel.Error))
+                _logger.LogError("Buff 效果结算失败：单位 {UnitId}，Buff {BuffTypeId}，{Reason}",
+                    target.UnitId, buff.Instance.BuffTypeId, error.Description);
+
+            foreach (var e in tick.Events) {
                 ApplyEventEffect(e);
                 log.Append(e);
             }
@@ -425,19 +435,29 @@ public sealed partial class BattleScene(
         }
     }
 
-    /// <summary>读条完成与瞬发立即结算共用：写入权威个体冷却，推进所属全局冷却组，并执行技能多态结算。</summary>
+    /// <summary>
+    /// 读条完成与瞬发立即结算共用：写入权威个体冷却，推进所属全局冷却组，并执行技能多态结算。
+    /// 效果结算失败记一条错误，事件与 Buff 都不产出，读条完成照常落事件。
+    /// </summary>
     private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         ApplyGcdAuthoritative(caster, skill.Gcd);
 
         var resolution = skill.Effect.Resolve(new SkillResolveContext(
             skill.CastArea, caster, target, targetPos, FilterTargets(caster, skill)));
-        foreach (var evt in resolution.Events) {
-            ApplyEventEffect(evt);
-            log.Append(evt);
+        if (resolution.IsError) {
+            if (_logger.IsEnabled(LogLevel.Error))
+                _logger.LogError("技能结算失败：施法者 {CasterUnitId}，技能 {SkillId}，{Reason}",
+                    caster.UnitId, skill.SkillId, resolution.FirstError.Description);
         }
-        foreach (var buff in resolution.Buffs)
-            ApplyBuffToTarget(buff, log);
+        else {
+            foreach (var evt in resolution.Value.Events) {
+                ApplyEventEffect(evt);
+                log.Append(evt);
+            }
+            foreach (var buff in resolution.Value.Buffs)
+                ApplyBuffToTarget(buff, log);
+        }
 
         log.Append(new CastCompleted(caster.UnitId, skill.SkillId, target?.UnitId));
     }

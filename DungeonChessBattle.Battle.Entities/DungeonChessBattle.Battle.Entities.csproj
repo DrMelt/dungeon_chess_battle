@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="ErrorOr" />
         <PackageReference Include="LiteEntitySystem" />
         <PackageReference Include="MessagePack" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />

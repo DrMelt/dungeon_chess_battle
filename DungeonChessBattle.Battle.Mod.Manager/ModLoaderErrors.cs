@@ -62,4 +62,9 @@ public static class ModLoaderErrors {
     /// <summary>DLL 内没有入口接口实现。</summary>
     public static Error EntryTypeMissing(string entryTypeName) => Error.Validation(
         code: "ModLoader.EntryType.Missing", description: $"DLL 未包含入口接口 {entryTypeName} 的实现");
+
+    /// <summary>程序集类型清单读不出来：依赖解析失败或类型加载器抛错。</summary>
+    public static Error AssemblyTypesUnreadable(string dllFileName, string reason) => Error.Failure(
+        code: "ModLoader.Assembly.TypesUnreadable",
+        description: $"{dllFileName} 类型清单读取失败：{reason}");
 }

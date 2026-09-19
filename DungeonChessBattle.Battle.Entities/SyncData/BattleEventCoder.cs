@@ -1,13 +1,14 @@
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Entities.SyncData;
 
 /// <summary>
 /// 领域战斗事件与 SyncBattleEvent 的双向映射，事件类型 tag 与槽位语义唯一权威来源。
 /// 服务端编码整帧事件日志，客户端解码回领域事件；新增领域事件类型只需补充本类 tag 与映射。
-/// 解码遇未知 tag 返回 null，由调用方跳过，网络协议向前兼容。
+/// 编码遇未登记的事件类型以错误返回，解码遇未知 tag 返回 null，两者都由调用方跳过，网络协议向前兼容。
 /// tag 只增不改不复用：7 随单位死亡事件一并退役，死亡由生命值派生。
 /// </summary>
 public static class BattleEventCoder {
@@ -35,8 +36,8 @@ public static class BattleEventCoder {
     /// <summary>施法读条被主动取消，含移动打断。</summary>
     public const byte TypeCastCanceled = 9;
 
-    /// <summary>编码单个领域事件。未知事件类型抛异常，配置故障响亮暴露。</summary>
-    public static SyncBattleEvent Encode(IBattleEvent evt) {
+    /// <summary>编码单个领域事件；未登记映射的事件类型以错误返回，由调用方按丢弃处理。</summary>
+    public static ErrorOr<SyncBattleEvent> Encode(IBattleEvent evt) {
         return evt switch {
             DamageOccurred d => new SyncBattleEvent {
                 Type = TypeDamage, A = d.SourceUnitId, B = d.TargetUnitId,
@@ -62,7 +63,7 @@ public static class BattleEventCoder {
             CastCanceled ccl => new SyncBattleEvent {
                 Type = TypeCastCanceled, A = ccl.CasterUnitId, Key = ccl.SkillId.Id,
             },
-            _ => throw new ArgumentOutOfRangeException(nameof(evt), evt.GetType(), "Unknown battle event type."),
+            _ => BattleEventErrors.UnknownType(evt.GetType().Name),
         };
     }
 

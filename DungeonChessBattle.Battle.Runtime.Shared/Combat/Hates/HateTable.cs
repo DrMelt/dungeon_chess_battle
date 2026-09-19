@@ -1,4 +1,5 @@
 using DungeonChessBattle.Battle.Shared.Combat;
+using ErrorOr;
 
 namespace DungeonChessBattle.Battle.Runtime.Shared.Combat.Hates;
 
@@ -14,8 +15,8 @@ public sealed class HateTable {
     /// <summary>仇恨退场阈值：低于该值视为无仇恨并移除条目，防止脏条目堆积。</summary>
     private const float Epsilon = 0.01f;
 
-    /// <summary>应用单个仇恨修改效果，负增量将按阈值裁剪条目。</summary>
-    public void ApplyEffect(HateEffect effect) {
+    /// <summary>应用单个仇恨修改效果，负增量将按阈值裁剪条目；操作类型未登记以错误返回。</summary>
+    public ErrorOr<Success> ApplyEffect(HateEffect effect) {
         switch (effect.Op) {
             case HateEffectOp.Add:
                 Add(effect.SourceUnitId, effect.Value);
@@ -27,8 +28,9 @@ public sealed class HateTable {
                 SetTop(effect.SourceUnitId, effect.Value);
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(effect), effect.Op, "Unknown hate effect op.");
+                return HateErrors.UnknownEffectOp(effect.Op);
         }
+        return Result.Success;
     }
 
     /// <summary>对目标增量加指定值，内部处理裁剪；零增量直接返回不落账。</summary>

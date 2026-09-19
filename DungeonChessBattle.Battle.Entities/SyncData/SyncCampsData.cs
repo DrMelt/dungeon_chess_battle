@@ -61,7 +61,7 @@ public struct SyncCampsData : ISpanSerializable {
         }
     }
 
-    /// <summary>转为数组投影，仅返回实际数量。</summary>
+    /// <summary>转为数组投影，仅返回实际数量；槽位未填充属写入侧违约，断言暴露。</summary>
     public readonly CampId[] ToArray() {
         var result = new CampId[Count];
         for (int i = 0; i < Count; i++) {
@@ -85,9 +85,11 @@ public struct SyncCampsData : ISpanSerializable {
         writer.Put(Camp2.Value);
     }
 
-    /// <summary>从网络缓冲区反序列化。</summary>
+    /// <summary>从网络缓冲区反序列化；数量越出槽位即畸形帧，在反序列化点响亮失败。</summary>
     public void Deserialize(ref SpanReader reader) {
         Count = reader.GetByte();
+        if (Count is 0 or > MaxCamps)
+            throw new InvalidDataException($"Camps count out of range: {Count}.");
         Camp0 = new CampId(reader.GetString());
         Camp1 = new CampId(reader.GetString());
         Camp2 = new CampId(reader.GetString());

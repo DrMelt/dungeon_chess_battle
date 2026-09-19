@@ -5,6 +5,7 @@ using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using DungeonChessBattle.Session.Shared;
+using ErrorOr;
 using Microsoft.Extensions.Logging;
 using DungeonChessBattle.Battle.Config.Shared;
 
@@ -53,13 +54,16 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         return _content.GetDungeon(key.Value)?.DungeonKey.Value;
     }
 
-    /// <summary>解析房间已持久化的副本键：空或解析不到即房间指向已消失的副本，响亮失败。</summary>
+    /// <summary>解析房间已持久化的副本键：空或解析不到即房间指向已消失的副本，以错误返回。</summary>
+    /// <param name="roomId">房间 ID，仅用于错误描述。</param>
     /// <param name="dungeonKey">房间快照里的副本键。</param>
-    private string ResolveStoredDungeonKey(string? dungeonKey) =>
-        string.IsNullOrEmpty(dungeonKey)
-            ? throw new InvalidOperationException("Room has no dungeon key.")
-            : _content.GetDungeon(dungeonKey)?.DungeonKey
-                ?? throw new InvalidOperationException($"Room references unknown dungeon key '{dungeonKey}'.");
+    private ErrorOr<string> ResolveStoredDungeonKey(RoomId roomId, string? dungeonKey) {
+        if (string.IsNullOrEmpty(dungeonKey))
+            return LobbyErrors.RoomDungeonKeyMissing(roomId);
+        if (_content.GetDungeon(dungeonKey) is not { } dungeon)
+            return LobbyErrors.RoomDungeonKeyUnknown(roomId, dungeonKey);
+        return dungeon.DungeonKey.Value;
+    }
 
     /// <summary>
     /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份，并为其签发会话凭证。
@@ -294,13 +298,27 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     }
 
     /// <summary>
-    /// 将房间完整状态快照，静态配置、准备状态与单位，组装后单次广播给该房间所有连接。
-    /// 客户端以该快照为唯一权威视图，无需自行组装。
+    /// 广播房间完整状态快照给该房间所有连接，客户端以该快照为唯一权威视图。
+    /// 快照送不达只记一条错误：动作已落权威状态，客户端停在旧视图，等下一次广播刷新。
     /// </summary>
     public async Task BroadcastRoomSnapshotAsync(RoomId roomId) {
+        var broadcast = await BuildAndSendRoomSnapshotAsync(roomId);
+        if (broadcast.IsError && _logger.IsEnabled(LogLevel.Error))
+            _logger.LogError("房间快照广播失败，房间 {RoomId}：{Reason}", roomId, broadcast.FirstError.Description);
+    }
+
+    /// <summary>
+    /// 组装房间完整状态快照，静态配置、准备状态与单位，组装后单次广播给该房间所有连接。
+    /// 客户端以该快照为唯一权威视图，无需自行组装；副本键解析不出即不广播，以错误交调用方。
+    /// </summary>
+    private async Task<ErrorOr<Success>> BuildAndSendRoomSnapshotAsync(RoomId roomId) {
         var roomConfig = _stateStore.GetRoomConfig(roomId);
         var state = _stateStore.GetRoomState(roomId);
         var units = _stateStore.GetPrepareUnits(roomId);
+
+        var dungeonKey = ResolveStoredDungeonKey(roomId, state.DungeonKey);
+        if (dungeonKey.IsError)
+            return dungeonKey.FirstError;
 
         var snapshot = new RoomSnapshot(
             roomId,
@@ -308,7 +326,7 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             roomConfig?.MaxPlayers ?? 2,
             roomConfig?.Status ?? RoomStatus.Waiting,
             state.HostName,
-            ResolveStoredDungeonKey(state.DungeonKey),
+            dungeonKey.Value,
             roomConfig?.CurrentPlayers ?? state.Players.Count,
             [.. state.Players.Select(p => new PlayerReadyDto(p.PlayerName, p.Ready))],
             [.. units.Select(u => new PrepareUnitDto(u.UnitConfigKey, u.CampOptionKey, u.PlayerName))],
@@ -319,5 +337,6 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Broadcast room snapshot to room '{RoomId}' ({PlayerCount} players, {UnitCount} units)",
                 roomId, snapshot.Players.Count, snapshot.Units.Count);
+        return Result.Success;
     }
 }

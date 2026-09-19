@@ -279,7 +279,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
             ? FindUnit(unit.FocusTarget)
             : null;
 
-    /// <summary>处理房间端口接收的二进制包：先识别可靠消息帧，其余 0xDC 帧交 LES 反序列化。</summary>
+    /// <summary>
+    /// 处理房间端口接收的二进制包：先识别可靠消息帧，其余 0xDC 帧交 LES 反序列化。
+    /// 反序列化的异常在接收点收口，畸形帧丢弃并记一条警告，不中断主循环。
+    /// </summary>
     protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
         _bytesIn += data.Length;
         _packetsIn++;
@@ -287,9 +290,19 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
             HandleReliableServerMessage(body);
             return;
         }
-        if (data.Length > 0 && data[0] == BattleRoomProtocol.PacketHeader)
+        if (data.Length == 0 || data[0] != BattleRoomProtocol.PacketHeader)
+            return;
+
+        try {
             _entityManager?.Deserialize(data);
+        }
+        catch (Exception ex) when (IsMalformedFrame(ex)) {
+            _logger.LogWarning(ex, "Discard malformed entity sync frame: {Reason}", ex.Message);
+        }
     }
+
+    /// <summary>畸形帧判据：序列化格式违规与超限值构造，两条接收路径共用同一份口径。</summary>
+    private static bool IsMalformedFrame(Exception ex) => ex is InvalidDataException or ArgumentException;
 
     /// <summary>
     /// 处理服务器可靠消息：解码整帧战斗事件日志并触发 <see cref="BattleEventsReceived"/>。
@@ -303,7 +316,7 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
             log = new ReliableBattleEventLog();
             log.Deserialize(body);
         }
-        catch (Exception ex) when (ex is InvalidDataException or ArgumentOutOfRangeException) {
+        catch (Exception ex) when (IsMalformedFrame(ex)) {
             _logger.LogWarning(ex, "Discard malformed reliable battle event log: {Reason}", ex.Message);
             return;
         }

@@ -28,8 +28,8 @@ public sealed class ModAssemblyLoader : IDisposable {
     }
 
     /// <summary>
-    /// 装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现以错误返回。
-    /// 装载、类型清单解析与入口构造的异常不在此收口：那是文件系统、CLR 与 mod 自己的代码，交上层装载边界连栈记一条错误。
+    /// 装载目标 DLL 并返回其首个 <typeparamref name="TEntry"/> 实现；DLL 不含入口实现或类型清单读不出来以错误返回。
+    /// 装载与入口构造的异常不在此收口：那是文件系统、CLR 与 mod 自己的代码，交上层装载边界连栈记一条错误。
     /// </summary>
     public ErrorOr<TEntry> LoadEntry<TEntry>(string dllAbsolutePath) where TEntry : class {
         // 一上下文一程序集是既定时序，用错上下文是调用方的程序错误，以异常表达
@@ -49,7 +49,8 @@ public sealed class ModAssemblyLoader : IDisposable {
                     .Select(e => e is null ? "<null>" : e.Message)
                     .Distinct()
                     .Take(5));
-            throw new InvalidOperationException($"程序集类型加载失败：{reason}", ex);
+            _logger.LogError(ex, "程序集类型加载失败：{Reason}", reason);
+            return ModLoaderErrors.AssemblyTypesUnreadable(Path.GetFileName(dllAbsolutePath), reason);
         }
 
         Type? entryType = types

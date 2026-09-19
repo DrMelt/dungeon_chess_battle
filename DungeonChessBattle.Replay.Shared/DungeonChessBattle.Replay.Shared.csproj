@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="ErrorOr" />
         <PackageReference Include="MessagePack" />
     </ItemGroup>
 

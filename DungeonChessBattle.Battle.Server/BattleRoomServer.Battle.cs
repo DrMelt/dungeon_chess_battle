@@ -25,14 +25,16 @@ public partial class BattleRoomServer {
     /// <summary>
     /// 房间线程首帧初始化：创建根实体、装配状态同步器、
     /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不被其他线程触碰。
-    /// 内容与配置裁决不通过以错误返回，调用方据此清理房间；LES 与 CLR 交界的异常不在此收口。
+    /// 内容与配置裁决、实体数量上限与回放轨道容量不通过都以错误返回，调用方据此清理房间；
+    /// LES 与 CLR 交界的异常不在此收口。
     /// </summary>
     private ErrorOr<Success> InitializeFromStore() {
-        var roomEntity = EntityManager.AddEntity<BattleRoomEntity>(e => {
+        if (EntityManager.AddEntity<BattleRoomEntity>(e => {
             e.RoomId.Value = RoomId;
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
             e.DungeonKey.Value = _dungeonKey;
-        }) ?? throw new InvalidOperationException($"Failed to create BattleRoomEntity for room '{RoomId}'.");
+        }) is not { } roomEntity)
+            return BattleRoomErrors.RoomEntityLimitReached(RoomId);
         _roomEntity = roomEntity;
 
         // 状态同步器在单位创建后装配，读取已建实体映射；由 BattleLoop 每帧在 Tick 之后显式驱动
@@ -70,7 +72,9 @@ public partial class BattleRoomServer {
 
         // 战斗输入回放记录：全部单位创建完成后装配，单位初始态整表落盘，敌人 ID 取记录值；
         // 条目引用了表外单位时门内解析落空，不报错
-        CreateReplayRecorder(playerInfos);
+        var recorder = CreateReplayRecorder(playerInfos);
+        if (recorder.IsError)
+            return recorder.FirstError;
         RecordUnitInits();
 
         // 战斗循环收编进 LES tick 生命周期：LateUpdate=输入预备（刷新意图源 → 投递当帧意图）→ Tick →
@@ -143,13 +147,14 @@ public partial class BattleRoomServer {
         if (config is null)
             return BattleRoomErrors.UnknownUnitConfig(_dungeonKey.Value, unitName.Value);
 
-        var entity = EntityManager.AddEntity<UnitPawn>(e => {
+        if (EntityManager.AddEntity<UnitPawn>(e => {
             e.UnitKeyName.Value = unitName;
             var campsData = new SyncCampsData();
             campsData.Set(camps);
             e.CampsData.Value = campsData;
             e.Position.Value = spawnPos;
-        }) ?? throw new InvalidOperationException($"Failed to create UnitPawn for unit '{unitName}' in room '{RoomId}'.");
+        }) is not { } entity)
+            return BattleRoomErrors.UnitEntityLimitReached(RoomId, unitName.Value);
 
         // 订阅该 Pawn 的玩家输入回调；技能/聚焦请求改经 UnitController 可靠通道进入
         entity.InputHandler = OnPawnInput;
@@ -181,7 +186,7 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>
-    /// 整帧领域事件日志整帧编码经可靠通道外送，空帧不发。
+    /// 整帧领域事件日志整帧编码经可靠通道外送，空帧不发；未登记映射的事件类型记一条错误并跳过该条。
     /// 单位与房间级状态已由 BattleStateSynchronizer 在 Tick 后写 SyncVar；死亡不走事件，
     /// 由生命值下行派生，断线重连后随状态自愈。仅房间线程调用。
     /// </summary>
@@ -189,8 +194,20 @@ public partial class BattleRoomServer {
         if (events.Count == 0)
             return;
         var data = new SyncBattleEvent[events.Count];
-        for (int i = 0; i < events.Count; i++)
-            data[i] = BattleEventCoder.Encode(events[i]);
+        int count = 0;
+        foreach (var e in events) {
+            var encoded = BattleEventCoder.Encode(e);
+            if (encoded.IsError) {
+                if (_logger.IsEnabled(LogLevel.Error))
+                    _logger.LogError("[RoomId: {RoomId}] 事件编码失败：{Reason}", RoomId, encoded.FirstError.Description);
+                continue;
+            }
+            data[count++] = encoded.Value;
+        }
+        if (count == 0)
+            return;
+        if (count < data.Length)
+            data = data[..count];
         SendReliableBattleEvents(data);
     }
 
