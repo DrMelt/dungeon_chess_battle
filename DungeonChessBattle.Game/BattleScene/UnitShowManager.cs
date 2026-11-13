@@ -40,7 +40,7 @@ public partial class UnitShowManager : Node {
 
     /// <summary>
     /// 每帧对齐统一数据源：绑定代次变化先清场，再按 netId 重取单位视图引用、按死亡状态收敛可见性，对新增单位生成视图。
-    /// 在线单位晚到与回放 Seek 重建均在此收敛；死亡不经事件通报，视图只隐藏不销毁。
+    /// 在线单位晚到在此收敛；死亡不经事件通报，视图只隐藏不销毁。
     /// </summary>
     public override void _Process(double delta) {
         var source = _sessionRef;

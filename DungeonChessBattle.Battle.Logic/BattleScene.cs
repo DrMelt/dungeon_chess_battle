@@ -122,6 +122,43 @@ public sealed partial class BattleScene(
         ClearHateEntries(unit);
     }
 
+    /// <summary>
+    /// 捕获世界状态：世界时间态与全部单位的可恢复状态，按注册顺序。
+    /// 副本内一律为独立值，不与活动对象共享可变引用。
+    /// </summary>
+    public BattleWorldState CaptureState() =>
+        new(_buffTickRemaining, ElapsedTime, CurrentPhase, [.. _units.Select(unit => unit.CaptureState())]);
+
+    /// <summary>
+    /// 按副本重写世界状态，单位对象不重建，引用在定位前后保持同一。
+    /// 单位集合与注册顺序必须与副本一致，不一致抛异常。
+    /// </summary>
+    public void RestoreState(BattleWorldState state) {
+        if (state.Units.Count != _units.Count)
+            throw new InvalidOperationException(
+                $"状态副本单位数 {state.Units.Count} 与世界单位数 {_units.Count} 不一致。");
+
+        for (int i = 0; i < _units.Count; i++) {
+            if (_units[i].UnitId != state.Units[i].UnitId)
+                throw new InvalidOperationException(
+                    $"状态副本第 {i} 个单位 {state.Units[i].UnitId} 与世界单位 {_units[i].UnitId} 不一致。");
+            _units[i].RestoreState(state.Units[i], ResolveCastTarget(state.Units[i].Runtime.CastTargetId));
+        }
+
+        _buffTickRemaining = state.BuffTickRemaining;
+        ElapsedTime = state.ElapsedTime;
+        CurrentPhase = state.Phase;
+    }
+
+    /// <summary>读条目标标识解析：无目标返回 null，标识不在世界内抛异常。</summary>
+    private BattleUnit? ResolveCastTarget(UnitId unitId) {
+        if (unitId.IsDefault)
+            return null;
+        if (_unitById.TryGetValue(unitId, out var target))
+            return target;
+        throw new InvalidOperationException($"状态副本读条目标 {unitId} 不在世界内。");
+    }
+
     /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
     private void ClearHateEntries(BattleUnit deadUnit) {
         deadUnit.RuntimeState.Hates.Clear();

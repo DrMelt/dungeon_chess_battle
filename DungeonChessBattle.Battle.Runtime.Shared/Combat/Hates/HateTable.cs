@@ -63,6 +63,13 @@ public sealed class HateTable {
         _hates.Clear();
     }
 
+    /// <summary>按仇恨快照重写整张账本：清空后按原值写入，不做退场阈值裁剪。</summary>
+    public void Restore(IReadOnlyList<HateSnapshot> snapshot) {
+        _hates.Clear();
+        foreach (var entry in snapshot)
+            _hates[entry.TargetUnitId] = entry.Value;
+    }
+
     private void SetInternal(UnitId targetUnitId, float value) {
         if (value <= Epsilon)
             _hates.Remove(targetUnitId);

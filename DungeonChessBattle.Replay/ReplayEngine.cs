@@ -42,6 +42,15 @@ public sealed class ReplayEngine {
     private int _focusCursor;
     private int _frame;
 
+    /// <summary>锚点落点间隔，帧数：定位回退最多重算这么多帧，与录制帧率无关。</summary>
+    private const int AnchorIntervalFrames = 30;
+
+    /// <summary>
+    /// 定位锚点，按逻辑帧升序；第 0 帧锚点在构造期落下。锚点全量常驻，单个锚点持全部单位的状态副本，
+    /// 内存随战斗时长与单位数线性增长。
+    /// </summary>
+    private readonly SortedDictionary<int, Anchor> _anchors = [];
+
     /// <summary>当前逻辑帧，战斗开始后第 N tick。</summary>
     public int Frame => _frame;
 
@@ -134,27 +143,21 @@ public sealed class ReplayEngine {
         _intentHub = new BattleIntentHub(_battleScene, _intentDriver);
         BuildUnits();
         _battleScene.CurrentPhase = BattlePhase.Running;
+        // 起始锚点：定位回退的兜底恢复点
+        _anchors[0] = CaptureAnchor();
     }
 
     /// <summary>
     /// 按录制的单位初始态重建全部单位：ID、阵营与出生点取记录值，战斗属性按配置键取当前配置。
     /// 玩家与敌人同表同序，意图源按录制玩家表分流登记，与服务器生成路径同一判据。
     /// 单位配置在场由 <see cref="Create"/> 一次裁决，重建路径不查空。
+    /// 装配经单位工厂，与服务端生成路径同一份实现。
     /// </summary>
     private void BuildUnits() {
         foreach (var unit in _units) {
             var config = _content.GetUnit(unit.UnitConfigKey)!;
-            var battleUnit = new BattleUnit {
-                UnitId = unit.NetId,
-                UnitName = config.ConfigKey,
-                Camps = [.. unit.Camps.Select(camp => new CampId(camp))],
-                BaseConfig = config.BaseConfig,
-                Skills = config.Skills,
-                HateRule = config.HateRule,
-                HateFactor = config.HateFactor,
-                Health = config.BaseConfig.MaxHealth,
-                Position = new Vector2(unit.SpawnX, unit.SpawnY),
-            };
+            var battleUnit = BattleUnitFactory.Create(config, unit.NetId,
+                [.. unit.Camps.Select(camp => new CampId(camp))], new Vector2(unit.SpawnX, unit.SpawnY));
             AddUnit(battleUnit);
             if (_playerUnitIdByIndex.Contains(unit.NetId))
                 _intentDriver.RegisterPlayer(battleUnit.UnitId);
@@ -194,14 +197,14 @@ public sealed class ReplayEngine {
     private void AddUnit(BattleUnit unit) => _battleScene.AddUnit(unit);
 
     /// <summary>
-    /// 重建战斗世界并推进到指定逻辑帧；目标帧早于当前帧时先重置再快进。
-    /// 拖动与回看共用入口。
+    /// 定位到指定逻辑帧：早于当前帧时回退到不晚于目标的最近锚点再续算，晚于当前帧时直接推进。
+    /// 目标帧夹在录制总帧数与零之间；拖动与回看共用入口。
     /// </summary>
     public void SeekTo(int targetFrame) {
-        if (targetFrame < _frame)
-            Reset();
-        int guard = 0;
-        while (_frame < targetFrame && !_battleScene.IsFinished && guard++ < 1_000_000)
+        int target = Math.Clamp(targetFrame, 0, TotalFrames);
+        if (target < _frame)
+            Restore(NearestAnchor(target));
+        while (_frame < target && !_battleScene.IsFinished)
             Step();
     }
 
@@ -215,6 +218,8 @@ public sealed class ReplayEngine {
         _intentHub.PrepareTick(_dt);
         var events = _battleScene.Tick(_dt);
         _frame++;
+        if (_frame % AnchorIntervalFrames == 0)
+            RecordAnchor();
         return events;
     }
 
@@ -263,16 +268,40 @@ public sealed class ReplayEngine {
     private UnitId UnitIdOf(int playerIndex) =>
         playerIndex < _playerUnitIdByIndex.Length ? _playerUnitIdByIndex[playerIndex] : UnitId.None;
 
-    /// <summary>重置到战斗开始帧：拆除单位后重建，意图源按单位重新登记，在架待决意图随之作废。</summary>
-    private void Reset() {
-        Array.Clear(_moveCursor);
-        _castCursor = 0;
-        _focusCursor = 0;
-        _frame = 0;
-        foreach (var unit in _battleScene.AuthorityUnits.ToArray())
-            _battleScene.RemoveUnit(unit);
-        BuildUnits();
-        _battleScene.CurrentPhase = BattlePhase.Running;
+    /// <summary>按间隔落锚点，同帧已有锚点时不改写。</summary>
+    private void RecordAnchor() {
+        if (!_anchors.ContainsKey(_frame))
+            _anchors[_frame] = CaptureAnchor();
     }
+
+    /// <summary>取不晚于指定帧的最近锚点；第 0 帧锚点恒在，必有结果。</summary>
+    private Anchor NearestAnchor(int frame) {
+        Anchor nearest = _anchors[0];
+        foreach (var (key, anchor) in _anchors) {
+            if (key > frame)
+                break;
+            nearest = anchor;
+        }
+        return nearest;
+    }
+
+    /// <summary>捕获帧末锚点：世界状态、意图源状态与三个输入游标。</summary>
+    private Anchor CaptureAnchor() => new(_frame, _battleScene.CaptureState(), _intentDriver.CaptureState(),
+        [.. _moveCursor], _castCursor, _focusCursor);
+
+    /// <summary>按锚点重写世界、意图源状态与输入游标，单位对象不重建。</summary>
+    private void Restore(Anchor anchor) {
+        _battleScene.RestoreState(anchor.World);
+        _intentDriver.RestoreState(anchor.Intents);
+        _frame = anchor.Frame;
+        Array.Copy(anchor.MoveCursors, _moveCursor, _moveCursor.Length);
+        _castCursor = anchor.CastCursor;
+        _focusCursor = anchor.FocusCursor;
+    }
+
+    /// <summary>第 N 帧末的定位锚点：世界状态、意图源状态与三个游标。</summary>
+    private sealed record Anchor(
+        int Frame, BattleWorldState World, IntentSourcesState Intents,
+        int[] MoveCursors, int CastCursor, int FocusCursor);
 }
 

@@ -38,5 +38,17 @@ public sealed class BuffInstance {
 
     /// <summary>是否仍生效。</summary>
     public bool IsAlive { get; set; } = true;
+
+    /// <summary>复制实例：字段逐项拷贝，副本不与本源共享可变状态。</summary>
+    public BuffInstance Copy() => new() {
+        BuffTypeId = BuffTypeId,
+        TargetUnitId = TargetUnitId,
+        SourceUnitId = SourceUnitId,
+        From = From,
+        Remaining = Remaining,
+        Stacks = Stacks,
+        DamageType = DamageType,
+        IsAlive = IsAlive,
+    };
 }
 

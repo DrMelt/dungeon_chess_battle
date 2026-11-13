@@ -1,4 +1,3 @@
-using System;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Replay;
 using DungeonChessBattle.Game.Services;
@@ -98,12 +97,12 @@ public partial class ReplayCoordinator : Node {
     /// <summary>按进度比例拖动（0~1）。</summary>
     public void SeekToFraction(float fraction) => SeekToFrame((int)(fraction * (_engine?.TotalFrames ?? 0)));
 
-    /// <summary>跳转到指定相对帧，早于当前帧时引擎内部重置快进；播放/暂停态不变。</summary>
+    /// <summary>跳转到指定相对帧，早于当前帧时引擎回退到锚点续算；播放/暂停态不变。</summary>
     public void SeekToFrame(int frame) {
         if (_engine == null)
             return;
         _accumulator = 0;
-        _engine.SeekTo(Math.Clamp(frame, 0, _engine.TotalFrames));
+        _engine.SeekTo(frame);
     }
 
     /// <summary>退出回放：解绑统一数据源，释放引擎并恢复前厅。</summary>

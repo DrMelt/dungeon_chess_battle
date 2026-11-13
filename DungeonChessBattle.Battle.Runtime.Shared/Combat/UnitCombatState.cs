@@ -1,4 +1,5 @@
 using System.Numerics;
+using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Runtime.Shared.Buffs;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat.Hates;
 
@@ -37,4 +38,47 @@ public sealed class UnitCombatState {
         CastTarget = null;
         CastTargetPos = null;
     }
+
+    /// <summary>捕获状态副本：读条目标按单位标识入副本，列表项逐项复制。</summary>
+    public UnitCombatStateCopy CaptureState() => new(
+        CastTarget?.UnitId ?? UnitId.None, CastTargetPos,
+        [.. Buffs.Select(buff => buff.Copy())],
+        [.. Gcds.Select(entry => entry.Copy())],
+        [.. Cooldowns.Select(entry => entry.Copy())],
+        Hates.Snapshot());
+
+    /// <summary>
+    /// 按状态副本重写全部权威状态：读条目标、Buff、冷却与仇恨整体替换，不合并。
+    /// 副本项再复制后写入，副本本身不与活动对象共享可变状态；读条目标由调用方按标识解析后传入。
+    /// </summary>
+    public void RestoreState(UnitCombatStateCopy state, BattleUnit? castTarget) {
+        CastTarget = castTarget;
+        CastTargetPos = state.CastTargetPos;
+
+        Buffs.Clear();
+        foreach (var buff in state.Buffs)
+            Buffs.Add(buff.Copy());
+
+        Gcds.Clear();
+        foreach (var gcd in state.Gcds)
+            Gcds.Add(gcd.Copy());
+
+        Cooldowns.Clear();
+        foreach (var cooldown in state.Cooldowns)
+            Cooldowns.Add(cooldown.Copy());
+
+        Hates.Restore(state.Hates);
+    }
 }
+
+/// <summary>
+/// 运行时状态副本：读条目标以单位标识表达，不持单位引用；
+/// Buff、冷却与仇恨均为独立副本，不与活动对象共享可变状态。
+/// </summary>
+public sealed record UnitCombatStateCopy(
+    UnitId CastTargetId,
+    Vector2? CastTargetPos,
+    IReadOnlyList<ActiveBuff> Buffs,
+    IReadOnlyList<GcdEntry> Gcds,
+    IReadOnlyList<CooldownEntry> Cooldowns,
+    IReadOnlyList<HateSnapshot> Hates);

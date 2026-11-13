@@ -73,4 +73,29 @@ public sealed class UnitIntentDriver(
         if (intent.Cast is { } cast)
             scene.SubmitCastIntent(unitId, cast);
     }
+
+    /// <summary>捕获全部玩家意图源的跨帧状态；自治意图源每帧重算，无跨帧状态。</summary>
+    public IntentSourcesState CaptureState() {
+        var state = new IntentSourcesState();
+        foreach (var (unitId, source) in _sources)
+            if (source is PlayerIntentSource player)
+                state.PerUnit[unitId] = player.CaptureState();
+        return state;
+    }
+
+    /// <summary>按句柄重写玩家意图源的跨帧状态；句柄缺该单位时按默认状态写入。</summary>
+    public void RestoreState(IntentSourcesState state) {
+        foreach (var (unitId, source) in _sources)
+            if (source is PlayerIntentSource player)
+                player.RestoreState(state.PerUnit.GetValueOrDefault(unitId));
+    }
+}
+
+/// <summary>
+/// 意图源状态句柄：单位 ID 到其玩家意图源跨帧状态的映射。
+/// 形状只对意图侧可见，调用方按不透明句柄整存整取。
+/// </summary>
+public sealed class IntentSourcesState {
+    /// <summary>单位 ID 到其玩家意图源的跨帧状态。</summary>
+    internal Dictionary<UnitId, PlayerIntentState> PerUnit { get; } = [];
 }

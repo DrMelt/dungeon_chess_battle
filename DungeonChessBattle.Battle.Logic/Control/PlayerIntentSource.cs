@@ -63,6 +63,18 @@ internal sealed partial class PlayerIntentSource(
     /// <inheritdoc />
     public void Refresh(float deltaTime) => Intent = new UnitIntent(_move, RefreshPendingCast(deltaTime));
 
+    /// <summary>捕获跨帧状态：移动输入槽与待决施法的窗口计时。</summary>
+    internal PlayerIntentState CaptureState() => new(_move, _pendingCast, _pendingRemaining, _pendingFresh);
+
+    /// <summary>按状态副本重写跨帧状态，当帧产出同时归零，等刷新点重新产出。</summary>
+    internal void RestoreState(PlayerIntentState state) {
+        _move = state.Move;
+        _pendingCast = state.PendingCast;
+        _pendingRemaining = state.PendingRemaining;
+        _pendingFresh = state.PendingFresh;
+        Intent = UnitIntent.Idle;
+    }
+
     /// <summary>推进待决施法：施法者消失或已死亡即弃，非首次刷新递减窗口，就绪即转投为本帧施法意图。</summary>
     private UnitCastIntent? RefreshPendingCast(float deltaTime) {
         if (_pendingCast is not { } pending)
@@ -100,3 +112,7 @@ internal sealed partial class PlayerIntentSource(
 
     #endregion
 }
+
+/// <summary>玩家意图源的跨帧状态：移动输入槽与待决施法的窗口计时。</summary>
+internal readonly record struct PlayerIntentState(
+    Vector2 Move, UnitCastIntent? PendingCast, float PendingRemaining, bool PendingFresh);

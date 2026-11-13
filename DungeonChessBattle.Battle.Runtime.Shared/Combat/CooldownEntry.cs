@@ -13,4 +13,7 @@ public sealed class CooldownEntry(SkillKeyId skillKey, float remaining) {
     public float Remaining {
         get; set;
     } = remaining;
+
+    /// <summary>复制条目：技能键与剩余秒数按值拷贝。</summary>
+    public CooldownEntry Copy() => new(SkillKey, Remaining);
 }

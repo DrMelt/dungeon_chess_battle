@@ -29,4 +29,7 @@ public sealed record ActiveBuff(BuffInstance Instance, IBuffEffect Effect) : IBu
 
     /// <inheritdoc />
     public DamageType DamageType => Instance.DamageType;
+
+    /// <summary>复制运行时 Buff：实例按值复制，效果策略按引用承载。</summary>
+    public ActiveBuff Copy() => new(Instance.Copy(), Effect);
 }

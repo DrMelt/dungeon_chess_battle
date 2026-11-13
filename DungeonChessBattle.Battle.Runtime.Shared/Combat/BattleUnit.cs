@@ -206,6 +206,23 @@ public sealed class BattleUnit : IBattleUnitView {
     /// <inheritdoc />
     public float HateOf(UnitId targetUnitId) => RuntimeState.Hates.ValueOf(targetUnitId);
 
+    /// <summary>捕获状态副本：结算可读写标量与运行时状态副本，按帧意图不入副本。</summary>
+    public BattleUnitState CaptureState() => new(UnitId, Health, Position, Direction,
+        SkillCasting, SkillCastRemaining, FocusTarget, RuntimeState.CaptureState());
+
+    /// <summary>按状态副本写回：标量直接覆盖，帧内意图归零，读条目标由调用方按标识解析后传入。</summary>
+    public void RestoreState(BattleUnitState state, BattleUnit? castTarget) {
+        Health = state.Health;
+        Position = state.Position;
+        Direction = state.Direction;
+        SkillCasting = state.SkillCasting;
+        SkillCastRemaining = state.SkillCastRemaining;
+        FocusTarget = state.FocusTarget;
+        MoveInput = Vector2.Zero;
+        CastInput = null;
+        RuntimeState.RestoreState(state.Runtime, castTarget);
+    }
+
     /// <inheritdoc />
     IReadOnlyList<IBuffView> IBuffListView.Buffs => RuntimeState.Buffs;
 }

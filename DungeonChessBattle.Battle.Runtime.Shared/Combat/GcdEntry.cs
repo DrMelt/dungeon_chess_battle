@@ -11,4 +11,7 @@ public sealed class GcdEntry(string groupKey, float remaining) {
     public float Remaining {
         get; set;
     } = remaining;
+
+    /// <summary>复制条目：组键与剩余秒数按值拷贝。</summary>
+    public GcdEntry Copy() => new(GroupKey, Remaining);
 }
