@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// 启用集落在 mods 根目录，文件名见 <see cref="ModLayout.EnablementFileName"/>；
 /// 启停只改启用集不改内容，装配是一次性的，变更须重启进程才生效。
 /// </summary>
-public sealed class ModCatalog {
+public sealed class ModCatalog
+{
     private readonly string _modsRootPath;
     private readonly ILoggerFactory? _loggerFactory;
     private readonly ILogger<ModCatalog> _logger;
@@ -20,7 +21,8 @@ public sealed class ModCatalog {
     private ModDisplaySet _displays;
     private IReadOnlyList<ModEntryView> _entries;
 
-    private ModCatalog(string modsRootPath, ILoggerFactory? loggerFactory) {
+    private ModCatalog(string modsRootPath, ILoggerFactory? loggerFactory)
+    {
         _modsRootPath = modsRootPath;
         _loggerFactory = loggerFactory;
         _logger = loggerFactory?.CreateLogger<ModCatalog>() ?? NullLogger<ModCatalog>.Instance;
@@ -56,12 +58,14 @@ public sealed class ModCatalog {
     public string? RootProblem => _load.RootProblem;
 
     /// <summary>数据面装配期错误：数据代码入口装载失败，由宿主装配后追加。</summary>
-    public IReadOnlyList<ModError> AssemblyErrors {
+    public IReadOnlyList<ModError> AssemblyErrors
+    {
         get; private set;
     } = [];
 
     /// <summary>展示面装配期错误：展示代码装载与入口执行失败、展示键引用不成立，由 <see cref="ModAssets.Assemble"/> 装配后追加。</summary>
-    public IReadOnlyList<ModError> DisplayErrors {
+    public IReadOnlyList<ModError> DisplayErrors
+    {
         get; private set;
     } = [];
 
@@ -72,7 +76,8 @@ public sealed class ModCatalog {
     public string Fingerprint => ContentFingerprint.Compute(_load.Mods);
 
     /// <summary>重扫 mods 目录，刷新管理视图；只影响列表与错误显示，不重装配内容。</summary>
-    public void Rescan() {
+    public void Rescan()
+    {
         Refresh();
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("重扫 mod 目录：启用 {Enabled} 个，停用 {Disabled} 个，拒载 {Rejected} 个",
@@ -91,15 +96,18 @@ public sealed class ModCatalog {
     /// 启停一个 mod：以磁盘上的启用集为底改写该 ID 后落盘，并立即重扫使列表与磁盘一致。
     /// 指向已删目录的停用记录原样保留。失败以错误返回，只影响本次启停，列表按旧状态继续。
     /// </summary>
-    public ErrorOr<Success> SetEnabled(string modId, bool enabled) {
-        if (!_entries.Any(p => p.Id == modId)) {
+    public ErrorOr<Success> SetEnabled(string modId, bool enabled)
+    {
+        if (!_entries.Any(p => p.Id == modId))
+        {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("{ModId} 不在当前扫描结果内，启停未落盘", modId);
             return ModCatalogErrors.NotInScan(modId);
         }
 
         var persisted = ModEnablement.Load(_modsRootPath, _logger);
-        if (persisted.IsError) {
+        if (persisted.IsError)
+        {
             if (_logger.IsEnabled(LogLevel.Error))
                 _logger.LogError("启用集不可读，启停未落盘：{Reason}", persisted.FirstError.Description);
             return persisted.FirstError;
@@ -112,7 +120,8 @@ public sealed class ModCatalog {
             disabled.Add(modId);
 
         var saved = ModEnablement.Save(_modsRootPath, disabled, _logger);
-        if (saved.IsError) {
+        if (saved.IsError)
+        {
             if (_logger.IsEnabled(LogLevel.Error))
                 _logger.LogError("启用集写入失败，启停未落盘：{Reason}", saved.FirstError.Description);
             return saved.FirstError;
@@ -127,7 +136,8 @@ public sealed class ModCatalog {
 
     /// <summary>刷新一次扫描的三项结果：装载目录、读展示声明、建条目列表；三项同批生效。</summary>
     [MemberNotNull(nameof(_load), nameof(_displays), nameof(_entries))]
-    private void Refresh() {
+    private void Refresh()
+    {
         _load = ModLoader.LoadDirectory(_modsRootPath, _loggerFactory);
         _displays = ModDisplaySet.Read(_load, _logger);
         _entries = ModEntryViewBuilder.Build(_load, _displays);

@@ -15,7 +15,8 @@ namespace DungeonChessBattle.Battle.Config.Registry;
 /// 玩家可选性由内容经注册动作写入，不由单位配置表达，也不由引擎按其他字段推断。
 /// </summary>
 /// <remarks>注册表自空开始，内容按写入顺序覆盖。</remarks>
-public sealed class ContentSetRegistry(string engineRevision, string contentFingerprint) : IContentRegistryView {
+public sealed class ContentSetRegistry(string engineRevision, string contentFingerprint) : IContentRegistryView
+{
     private readonly Dictionary<SkillKeyId, SkillDefinition> _skillsByKey = [];
     private readonly Dictionary<BuffTypeId, BuffDefinition> _buffsByKey = [];
     private readonly Dictionary<UnitConfigKey, UnitConfig> _unitsByKey = [];
@@ -25,7 +26,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     private readonly List<UnitConfigKey> _playerSelectable = [];
 
     /// <summary>内容修订：引擎内容修订号 + 装配方传入的内容指纹，内容与布局任何变化都会改变值。</summary>
-    public string DataRevision {
+    public string DataRevision
+    {
         get;
     } = string.IsNullOrEmpty(contentFingerprint)
             ? engineRevision
@@ -63,7 +65,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     public DungeonConfig? GetDungeon(DungeonKeyId dungeonKey) => _dungeonsByKey.GetValueOrDefault(dungeonKey);
 
     /// <summary>注册技能定义：同 SkillId 覆盖，空键拒绝并返回错误。</summary>
-    public ErrorOr<Success> RegisterSkill(SkillDefinition skill) {
+    public ErrorOr<Success> RegisterSkill(SkillDefinition skill)
+    {
         if (skill.SkillId.IsDefault)
             return ContentRegistryErrors.EmptySkillKey;
         _skillsByKey[skill.SkillId] = skill;
@@ -71,7 +74,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     }
 
     /// <summary>注册 Buff 定义：同键覆盖，空键拒绝并返回错误。</summary>
-    public ErrorOr<Success> RegisterBuff(BuffDefinition buff) {
+    public ErrorOr<Success> RegisterBuff(BuffDefinition buff)
+    {
         if (buff.BuffTypeId.IsDefault)
             return ContentRegistryErrors.EmptyBuffKey;
         _buffsByKey[buff.BuffTypeId] = buff;
@@ -79,7 +83,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     }
 
     /// <summary>注册单位配置：同 ConfigKey 覆盖，空键拒绝并返回错误。</summary>
-    public ErrorOr<Success> RegisterUnit(UnitConfig unit) {
+    public ErrorOr<Success> RegisterUnit(UnitConfig unit)
+    {
         if (unit.ConfigKey.IsDefault)
             return ContentRegistryErrors.EmptyUnitKey;
         _unitsByKey[unit.ConfigKey] = unit;
@@ -87,7 +92,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     }
 
     /// <summary>注册玩家可选单位：注册单位并按注册次序登记名册，同键覆盖单位，名册只登记一次，空键拒绝并返回错误。</summary>
-    public ErrorOr<Success> RegisterPlayerSelectableUnit(UnitConfig unit) {
+    public ErrorOr<Success> RegisterPlayerSelectableUnit(UnitConfig unit)
+    {
         ErrorOr<Success> registered = RegisterUnit(unit);
         if (registered.IsError)
             return registered;
@@ -97,7 +103,8 @@ public sealed class ContentSetRegistry(string engineRevision, string contentFing
     }
 
     /// <summary>注册副本配置：同 DungeonKey 覆盖，空键拒绝并返回错误。</summary>
-    public ErrorOr<Success> RegisterDungeon(DungeonConfig dungeon) {
+    public ErrorOr<Success> RegisterDungeon(DungeonConfig dungeon)
+    {
         if (dungeon.DungeonKey.IsDefault)
             return ContentRegistryErrors.EmptyDungeonKey;
         _dungeonsByKey[dungeon.DungeonKey] = dungeon;

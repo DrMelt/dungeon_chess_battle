@@ -19,7 +19,8 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 本节点随 battle_world 场景在场，进出战斗与回放只由编排器 Bind/Unbind，
 /// 其余表现组件直持本节点引用取数，单位视图生命周期归 UnitShowManager。
 /// </summary>
-public partial class BattleSessionContext : Node {
+public partial class BattleSessionContext : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BattleSessionContext> _logger = ServiceLocator.GetLogger<BattleSessionContext>();
 
@@ -30,7 +31,8 @@ public partial class BattleSessionContext : Node {
     private IBattleSessionCommand? _command;
 
     /// <summary>绑定代次，每次 Bind/Unbind 递增。表现组件收不到进出通知，据此自检数据源换向。</summary>
-    public long BindGeneration {
+    public long BindGeneration
+    {
         get; private set;
     }
 
@@ -72,7 +74,8 @@ public partial class BattleSessionContext : Node {
     public long EventLogVersion => _source?.EventLogVersion ?? 0;
 
     /// <summary>获取阵营关系函数用于领域判定；未就绪返回 false。</summary>
-    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations) {
+    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations)
+    {
         if (_source is { } source)
             return source.TryGetCampRelations(out relations);
         relations = null;
@@ -104,27 +107,32 @@ public partial class BattleSessionContext : Node {
     /// 装配注入：设置当前读侧装配与可选命令装配，递增绑定代次令常驻组件自检换向。
     /// 装配对象由调用方（在线/回放编排器）单独构建，换绑即旧装配整体废弃。
     /// </summary>
-    public void Bind(IBattleViewSource source, IBattleSessionCommand? command = null) {
+    public void Bind(IBattleViewSource source, IBattleSessionCommand? command = null)
+    {
         _source = source;
         _command = command;
         BindGeneration++;
     }
 
     /// <summary>退出战斗或回放：释放全部装配引用，回到未绑定恒空态。</summary>
-    public void Unbind() {
+    public void Unbind()
+    {
         _source = null;
         _command = null;
         BindGeneration++;
     }
 
     /// <summary>节点退出场景树：兜底释放（防止战斗中途场景被释放导致引用悬挂）。</summary>
-    public override void _ExitTree() {
+    public override void _ExitTree()
+    {
         Unbind();
     }
 
     /// <summary>战斗阶段 Running 的会话侧响应：战斗已开始仍无阵营判定能力属时序故障，响亮报告。</summary>
-    public void OnBattleRunning() {
-        if (_source != null && !_source.TryGetCampRelations(out _)) {
+    public void OnBattleRunning()
+    {
+        if (_source != null && !_source.TryGetCampRelations(out _))
+        {
             _logger.LogError(
                 "[BattleSessionContext] 战斗 Running 阶段阵营关系仍未装配（DungeonKey 未同步），技能目标选择与聚焦切换将被拒绝。");
         }

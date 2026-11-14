@@ -17,7 +17,8 @@ public sealed record ModEntrySource(
 /// 已装载待执行的 mod 入口集合：持有入口实例与其 ALC 直到入口统一执行完成。
 /// <c>ModEntryLoader.Load</c> 产出、<c>ModEntryLoader.Initialize</c> 消费后由调用方释放。
 /// </summary>
-public sealed class LoadedModEntries<TEntry> : IDisposable where TEntry : class {
+public sealed class LoadedModEntries<TEntry> : IDisposable where TEntry : class
+{
     internal readonly List<(TEntry Entry, string ModId, string DllPath)> Items = [];
     internal readonly List<ModAssemblyLoader> Loaders = [];
     private readonly List<ModError> _errors = [];
@@ -28,7 +29,8 @@ public sealed class LoadedModEntries<TEntry> : IDisposable where TEntry : class 
     internal void AddError(ModError error) => _errors.Add(error);
 
     /// <summary>释放持有的全部 ALC。入口注册的委托强引用其内类型，Unload 不真正回收程序集，实例仍可调用。</summary>
-    public void Dispose() {
+    public void Dispose()
+    {
         foreach (var loader in Loaders)
             loader.Dispose();
         Loaders.Clear();
@@ -40,7 +42,8 @@ public sealed class LoadedModEntries<TEntry> : IDisposable where TEntry : class 
 /// 装载器不感知入口接口本身，也不知道注册了什么。入口清单为空即该来源不贡献这类代码，静默跳过；
 /// 单个 DLL 失败记一条 <see cref="ModError"/> 并继续其余。装载与入口执行拆为两阶段，展示面在两步之间挂载展示资源包。
 /// </summary>
-public static class ModEntryLoader {
+public static class ModEntryLoader
+{
     /// <summary>
     /// 装载并立即执行入口：逐来源装载入口程序集，实例化后交 <paramref name="initialize"/> 初始化。
     /// </summary>
@@ -54,7 +57,8 @@ public static class ModEntryLoader {
         string alcNamePrefix,
         string failureText,
         Action<TEntry, string> initialize,
-        ILoggerFactory? loggerFactory = null) where TEntry : class {
+        ILoggerFactory? loggerFactory = null) where TEntry : class
+    {
         using var loaded = Load<TEntry>(sources, alcNamePrefix, failureText, loggerFactory);
         return [.. loaded.Errors, .. Initialize(loaded, failureText, initialize, loggerFactory)];
     }
@@ -67,21 +71,26 @@ public static class ModEntryLoader {
         IReadOnlyList<ModEntrySource> sources,
         string alcNamePrefix,
         string failureText,
-        ILoggerFactory? loggerFactory = null) where TEntry : class {
+        ILoggerFactory? loggerFactory = null) where TEntry : class
+    {
         var logger = loggerFactory?.CreateLogger(typeof(ModEntryLoader).FullName!) ?? NullLogger.Instance;
         var loaded = new LoadedModEntries<TEntry>();
-        foreach (var source in sources) {
-            foreach (string dll in source.EntryDlls) {
+        foreach (var source in sources)
+        {
+            foreach (string dll in source.EntryDlls)
+            {
                 string alcName = $"{alcNamePrefix}{source.ModId}";
                 var loader = new ModAssemblyLoader(alcName, loggerFactory?.CreateLogger<ModAssemblyLoader>());
-                void AddFailure(string reason, Exception? exception = null) {
+                void AddFailure(string reason, Exception? exception = null)
+                {
                     loader.Dispose();
                     var error = new ModError(source.ModId, $"{failureText} {Path.GetFileName(dll)}: {reason}");
                     loaded.AddError(error);
                     LogEntryLoadFailed(logger, error, exception);
                 }
 
-                try {
+                try
+                {
                     foreach (string directory in source.ProbeDirectories)
                         loader.AddDependencyDirectory(directory);
 
@@ -89,12 +98,14 @@ public static class ModEntryLoader {
                     var entry = loader.LoadEntry<TEntry>(dll);
                     if (entry.IsError)
                         AddFailure(entry.FirstError.Description);
-                    else {
+                    else
+                    {
                         loaded.Items.Add((entry.Value, source.ModId, dll));
                         loaded.Loaders.Add(loader);
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     // mod 自带的 DLL 与入口构造函数抛出的异常不属于本库职责，收成一条错误并继续其余入口
                     AddFailure(ex.Message, ex);
                 }
@@ -111,16 +122,20 @@ public static class ModEntryLoader {
         LoadedModEntries<TEntry> loaded,
         string failureText,
         Action<TEntry, string> initialize,
-        ILoggerFactory? loggerFactory = null) where TEntry : class {
+        ILoggerFactory? loggerFactory = null) where TEntry : class
+    {
         var logger = loggerFactory?.CreateLogger(typeof(ModEntryLoader).FullName!) ?? NullLogger.Instance;
         var errors = new List<ModError>();
-        foreach (var (entry, modId, dll) in loaded.Items) {
+        foreach (var (entry, modId, dll) in loaded.Items)
+        {
             if (logger.IsEnabled(LogLevel.Debug))
                 logger.LogDebug("执行入口 {Dll}：mod {ModId}", Path.GetFileName(dll), modId);
-            try {
+            try
+            {
                 initialize(entry, modId);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 var error = new ModError(
                     modId, $"{failureText} {Path.GetFileName(dll)}: {ex.Message}");
                 errors.Add(error);
@@ -133,13 +148,15 @@ public static class ModEntryLoader {
 
     #region 日志
 
-    private static void LogEntryLoading(ILogger logger, string modId, string dll, string alcName) {
+    private static void LogEntryLoading(ILogger logger, string modId, string dll, string alcName)
+    {
         if (logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("装载入口程序集 {Dll}：mod {ModId}，ALC {AlcName}",
                 Path.GetFileName(dll), modId, alcName);
     }
 
-    private static void LogEntryLoadFailed(ILogger logger, ModError error, Exception? exception = null) {
+    private static void LogEntryLoadFailed(ILogger logger, ModError error, Exception? exception = null)
+    {
         if (logger.IsEnabled(LogLevel.Error))
             logger.LogError(exception, "入口装载失败：{Reason}", error.Message);
     }

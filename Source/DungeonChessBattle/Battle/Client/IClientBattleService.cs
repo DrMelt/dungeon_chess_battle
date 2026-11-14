@@ -4,7 +4,8 @@ namespace DungeonChessBattle.Battle.Client;
 /// 客户端战斗服务接口，仅包含客户端需要的查询与操作。
 /// 一个连接对应一个房间，方法不接收房间标识；房间归属经事件载荷表达。
 /// </summary>
-public interface IClientBattleService {
+public interface IClientBattleService
+{
     /// <summary>战斗阶段变化事件。</summary>
     event Action<BattlePhaseChange>? BattlePhaseChanged;
 

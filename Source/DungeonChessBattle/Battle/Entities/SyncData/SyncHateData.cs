@@ -5,14 +5,17 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// <summary>
 /// 仇恨数据的扁平化同步结构，用于 SyncList 传输。
 /// </summary>
-public struct SyncHateData : ISpanSerializable {
+public struct SyncHateData : ISpanSerializable
+{
     /// <summary>目标单位的网络 ID。</summary>
-    public ushort TargetNetId {
+    public ushort TargetNetId
+    {
         get; set;
     }
 
     /// <summary>仇恨值。</summary>
-    public float HateValue {
+    public float HateValue
+    {
         get; set;
     }
 
@@ -23,7 +26,8 @@ public struct SyncHateData : ISpanSerializable {
     /// 序列化到网络缓冲区。
     /// </summary>
     /// <param name="writer">序列化写入器。</param>
-    public readonly void Serialize(ref SpanWriter writer) {
+    public readonly void Serialize(ref SpanWriter writer)
+    {
         writer.Put(TargetNetId);
         writer.Put(HateValue);
     }
@@ -32,7 +36,8 @@ public struct SyncHateData : ISpanSerializable {
     /// 从网络缓冲区反序列化。
     /// </summary>
     /// <param name="reader">序列化读取器。</param>
-    public void Deserialize(ref SpanReader reader) {
+    public void Deserialize(ref SpanReader reader)
+    {
         TargetNetId = reader.GetUShort();
         HateValue = reader.GetFloat();
     }

@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Battle.Logic.Hates;
 /// 无状态纯函数，只输出效果列表不落账；落账由 BattleScene 按持有者路由到单位仇恨表。
 /// 目标对象为中心：只有规则自身认为与事件相关时才产生效果，且只写本单位自己的仇恨表。
 /// </summary>
-public static class HateDispatcher {
+public static class HateDispatcher
+{
     /// <summary>事件类型到仇恨处理的关注度预筛，与事件无关的类型直接跳过。</summary>
     private static bool IsRelevant(IBattleEvent evt) =>
         evt is DamageOccurred or HealOccurred or HateRequested;
@@ -22,17 +23,20 @@ public static class HateDispatcher {
         IReadOnlyList<IBattleUnitView> units,
         Func<UnitId, IBattleUnitView?> unitOf,
         HateSettings settings,
-        CampRelationResolver relations) {
+        CampRelationResolver relations)
+    {
         if (events.Count == 0 || units.Count == 0)
             return [];
 
         var ctx = new HateContext(settings, unitOf, relations);
 
         var effects = new List<HateEffect>();
-        foreach (var evt in events) {
+        foreach (var evt in events)
+        {
             if (!IsRelevant(evt))
                 continue;
-            foreach (var unit in units) {
+            foreach (var unit in units)
+            {
                 if (unit.IsDead)
                     continue;
                 if (unit.HateRule is not { } rule)

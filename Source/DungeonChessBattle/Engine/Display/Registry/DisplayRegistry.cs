@@ -9,14 +9,16 @@ namespace DungeonChessBattle.Game.Display.Registry;
 /// 条目数据同键后写覆盖，未声明字段沿用被覆盖者。
 /// 装配在启动期单线程完成，之后只读查询，无锁。
 /// </summary>
-public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry {
+public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry
+{
     private readonly Dictionary<SkillKeyId, SkillDisplay> _skills = [];
     private readonly Dictionary<BuffTypeId, BuffDisplay> _buffs = [];
     private readonly Dictionary<UnitConfigKey, UnitDisplay> _units = [];
     private readonly Dictionary<DungeonKeyId, DungeonDisplay> _dungeons = [];
 
     /// <inheritdoc/>
-    public void RegisterSkill(SkillDisplay display) {
+    public void RegisterSkill(SkillDisplay display)
+    {
         if (display.SkillId.IsDefault)
             return;
         _skills[display.SkillId] = _skills.TryGetValue(display.SkillId, out var prev)
@@ -25,7 +27,8 @@ public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry {
     }
 
     /// <inheritdoc/>
-    public void RegisterBuff(BuffDisplay display) {
+    public void RegisterBuff(BuffDisplay display)
+    {
         if (display.BuffTypeId.IsDefault)
             return;
         _buffs[display.BuffTypeId] = _buffs.TryGetValue(display.BuffTypeId, out var prev)
@@ -34,7 +37,8 @@ public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry {
     }
 
     /// <inheritdoc/>
-    public void RegisterUnit(UnitDisplay display) {
+    public void RegisterUnit(UnitDisplay display)
+    {
         if (display.ConfigKey.IsDefault)
             return;
         _units[display.ConfigKey] = _units.TryGetValue(display.ConfigKey, out var prev)
@@ -43,7 +47,8 @@ public sealed class DisplayRegistry : IDisplayRegistrar, IDisplayRegistry {
     }
 
     /// <inheritdoc/>
-    public void RegisterDungeon(DungeonDisplay display) {
+    public void RegisterDungeon(DungeonDisplay display)
+    {
         if (display.DungeonKey.IsDefault)
             return;
         _dungeons[display.DungeonKey] = _dungeons.TryGetValue(display.DungeonKey, out var prev)

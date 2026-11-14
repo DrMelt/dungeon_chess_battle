@@ -16,7 +16,8 @@ internal sealed class BattleLoop(
     BattleScene battleScene,
     BattleIntentHub intentHub,
     Action<BattleScene> battleSyncer,
-    Action<IReadOnlyList<IBattleEvent>> battleEventHandler) : ILocalSingletonWithUpdate {
+    Action<IReadOnlyList<IBattleEvent>> battleEventHandler) : ILocalSingletonWithUpdate
+{
     private readonly BattleScene _battleScene = battleScene;
     private readonly BattleIntentHub _intentHub = intentHub;
     private readonly Action<BattleScene> _battleSyncer = battleSyncer;
@@ -24,14 +25,16 @@ internal sealed class BattleLoop(
     /// <summary>
     /// 逻辑 tick 起始钩子：本帧意图预备须晚于玩家输入到达，故不在此处而收在 <see cref="LateUpdate"/>。
     /// </summary>
-    public void Update(float dt) {
+    public void Update(float dt)
+    {
     }
 
     /// <summary>
     /// 每个逻辑 tick 在实体更新后、发送前执行：预备本帧意图 → 战斗推进 → 状态同步 → 整帧事件一次外送。
     /// 本钩子之前的客户端请求与实体输入只登记意图，裁定在 <see cref="BattleScene.Tick"/> 内单点完成。
     /// </summary>
-    public void LateUpdate(float dt) {
+    public void LateUpdate(float dt)
+    {
         _intentHub.PrepareTick(dt);
         var events = _battleScene.Tick(dt);
         _battleSyncer(_battleScene);
@@ -39,10 +42,12 @@ internal sealed class BattleLoop(
     }
 
     /// <summary>渲染帧回调，服务器端无渲染帧。</summary>
-    public void VisualUpdate(float dt) {
+    public void VisualUpdate(float dt)
+    {
     }
 
     /// <summary>LocalSingleton 随房间对象释放，无需显式清理。</summary>
-    public void Destroy() {
+    public void Destroy()
+    {
     }
 }

@@ -1,9 +1,10 @@
-﻿namespace DungeonChessBattle.Lobby.Protocol;
+namespace DungeonChessBattle.Lobby.Protocol;
 
 /// <summary>
 /// SignalR Hub 方法名常量，客户端与服务端共用，消除硬编码字符串。
 /// </summary>
-public static class HubMethods {
+public static class HubMethods
+{
     // ─── 客户端到服务端 InvokeAsync ───
 
     /// <summary>创建房间。</summary>

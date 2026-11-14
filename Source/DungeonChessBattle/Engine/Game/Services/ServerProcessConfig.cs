@@ -4,9 +4,11 @@ namespace DungeonChessBattle.Game.Services;
 
 /// <summary>服务器子进程启动配置。所有字段均有合理默认值，可在创建
 /// <c>ServerProcessHost</c> 时通过构造参数覆盖。</summary>
-public sealed record ServerProcessConfig {
+public sealed record ServerProcessConfig
+{
     /// <summary>子进程工作目录；为空时使用可执行文件所在目录。</summary>
-    public string? WorkingDirectory {
+    public string? WorkingDirectory
+    {
         get; init;
     }
 
@@ -17,7 +19,8 @@ public sealed record ServerProcessConfig {
     public TimeSpan ReadyPollInterval { get; init; } = TimeSpan.FromMilliseconds(200);
 
     /// <summary>mods 根目录绝对路径，经环境变量注入子进程；为空时服务器按无 mod 内容启动。</summary>
-    public string? ModDirectory {
+    public string? ModDirectory
+    {
         get; init;
     }
 }

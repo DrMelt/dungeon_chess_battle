@@ -7,16 +7,19 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// 单个单位的 2D 状态标记，投影单位位置到屏幕并同步刷新状态条。
 /// </summary>
-public partial class StateBarMark2d : Control {
+public partial class StateBarMark2d : Control
+{
     /// <summary>导出引用集合节点。</summary>
-    public StateBarMark2dInterRefs? InterRefs {
+    public StateBarMark2dInterRefs? InterRefs
+    {
         get; private set;
     }
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<StateBarMark2dInterRefs>("StateBarMark2dInterRefs");
     }
 
@@ -25,7 +28,8 @@ public partial class StateBarMark2d : Control {
     /// </summary>
     /// <param name="unit">目标单位只读视图。</param>
     /// <param name="session">战斗会话上下文，向下传递给血条做阵营关系着色。</param>
-    public void UpdateUI_WithUnit(IBattleUnitView unit, BattleSessionContext? session) {
+    public void UpdateUI_WithUnit(IBattleUnitView unit, BattleSessionContext? session)
+    {
         var camera3D = GetViewport().GetCamera3D();
         var pos = unit.Position;
         var screenPos = camera3D.UnprojectPosition(new Vector3(pos.X, 0f, pos.Y) + Vector3.Up * 2.2f);

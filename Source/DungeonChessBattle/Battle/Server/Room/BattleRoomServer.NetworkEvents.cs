@@ -12,31 +12,38 @@ namespace DungeonChessBattle.Battle.Server;
 /// 断线模型：玩家断开仅清空会话连接状态并保留单位与战斗状态，玩家可随时重连；
 /// 全部活跃连接断开后触发 RoomEmpty 由大厅线程销毁房间。
 /// </summary>
-public partial class BattleRoomServer {
-    void INetEventListener.OnConnectionRequest(ConnectionRequest request) {
+public partial class BattleRoomServer
+{
+    void INetEventListener.OnConnectionRequest(ConnectionRequest request)
+    {
         string incomingKey = request.Data.GetString();
 
         // 验证：房间存在的登记成员或使用服务器连接密钥，向后兼容或调试模式
         // 连接资格实时查询 Store：房间存在期间登记成员可连接，房间销毁后拒绝
-        if (incomingKey == _connectionKey || _stateStore.IsRoomMember(RoomId, incomingKey)) {
+        if (incomingKey == _connectionKey || _stateStore.IsRoomMember(RoomId, incomingKey))
+        {
             _acceptedKeys.Enqueue(incomingKey);
             request.Accept();
         }
-        else {
+        else
+        {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("[RoomId: {RoomId}] Connection rejected: invalid key '{Key}' from {RemoteEP}", RoomId, incomingKey, request.RemoteEndPoint);
             request.Reject();
         }
     }
 
-    void INetEventListener.OnPeerConnected(NetPeer peer) {
+    void INetEventListener.OnPeerConnected(NetPeer peer)
+    {
         // 提取连接时使用的密钥，即 playerId 或默认密钥
         _acceptedKeys.TryDequeue(out string? connectionKey);
 
         // P1 修复：同一 playerId 已有活跃连接时，关闭旧连接接受新连接
         if (connectionKey != null && connectionKey != _connectionKey
-            && _sessions.TryGetValue(connectionKey, out var existingSession)) {
-            if (existingSession.IsConnected) {
+            && _sessions.TryGetValue(connectionKey, out var existingSession))
+        {
+            if (existingSession.IsConnected)
+            {
                 // 替换：清理旧 peer，用新 peer 重连
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("[RoomId: {RoomId}] Duplicate connection for playerId '{PlayerId}', replacing old peer.",
@@ -46,15 +53,18 @@ public partial class BattleRoomServer {
             // 执行重连流程，断开恢复或替换后重新绑定
             HandlePlayerReconnect(peer, connectionKey);
         }
-        else {
+        else
+        {
             HandleNewPlayerConnect(peer, connectionKey);
         }
     }
 
-    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
+    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+    {
         // 查找该 peer 对应的 playerId，通过反向索引
         _peerToPlayerId.TryRemove(peer.Id, out string? playerId);
-        if (playerId != null && _sessions.TryGetValue(playerId, out var session)) {
+        if (playerId != null && _sessions.TryGetValue(playerId, out var session))
+        {
             // 解绑控制先于移除玩家：否则 LES 连带销毁该玩家的单位载体，重连也救不回输入通道
             ReleaseControlledPawn(session);
 
@@ -82,19 +92,23 @@ public partial class BattleRoomServer {
             RoomEmpty?.Invoke(RoomId);
     }
 
-    void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError) {
+    void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError)
+    {
         _logger.LogError("[RoomId: {RoomId}] Error: {SocketError} from {EndPoint}", RoomId, socketError, endPoint);
     }
 
-    void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod) {
+    void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
+    {
         var data = reader.GetRemainingBytes();
         if (data.Length > 0 && data[0] == BattleRoomProtocol.PacketHeader && peer.Tag is LiteNetLibNetPeer lesPeer)
             EntityManager.Deserialize(lesPeer, data);
         // 房间端口不处理 JSON 自定义包，所有逻辑走 LES RPC
     }
 
-    void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) {
+    void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
+    {
     }
-    void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency) {
+    void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency)
+    {
     }
 }

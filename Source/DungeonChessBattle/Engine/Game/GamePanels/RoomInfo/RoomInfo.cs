@@ -10,7 +10,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 房间信息卡片 UI 组件。显示副本名、房主、人数、状态与密码标记，支持点击选中。
 /// 使用 InterRefs 模式分离 [Export] 引用。
 /// </summary>
-public partial class RoomInfo : Container {
+public partial class RoomInfo : Container
+{
     /// <summary>房间被点击选中时发出的信号，参数为房间 ID。</summary>
     [Signal]
     public delegate void RoomSelectedEventHandler(string roomId);
@@ -48,14 +49,17 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 节点就绪：获取引用集合、缓存正常背景色、应用暂存文本并连接鼠标交互事件。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _refs = GetNode<RoomInfoInterRefs>("RoomInfoInterRefs");
-        if (_refs is null) {
+        if (_refs is null)
+        {
             _logger.LogError("RoomInfoInterRefs node not found.");
             return;
         }
 
-        if (_refs.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_refs.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat)
+        {
             _normalBgColor = flat.BgColor;
         }
 
@@ -70,7 +74,8 @@ public partial class RoomInfo : Container {
     /// 设置房间数据显示。
     /// </summary>
     /// <param name="room">房间列表条目。</param>
-    public void Setup(RoomListing room) {
+    public void Setup(RoomListing room)
+    {
         UpdateListing(room);
     }
 
@@ -78,7 +83,8 @@ public partial class RoomInfo : Container {
     /// 全量刷新房间卡片显示。
     /// </summary>
     /// <param name="room">房间列表条目。</param>
-    public void UpdateListing(RoomListing room) {
+    public void UpdateListing(RoomListing room)
+    {
         RoomId = room.RoomId;
         _dungeonText = ServiceLocator.ModAssets?.Registry.GetDungeon(room.DungeonKey)?.DisplayLabel ?? room.DungeonKey;
         _passwordText = room.HasPassword ? "🔒" : "";
@@ -92,7 +98,8 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 将暂存文本应用到实际标签（引用未就绪时静默，_Ready 后再次调用）。
     /// </summary>
-    private void ApplyTexts() {
+    private void ApplyTexts()
+    {
         if (_refs is null)
             return;
         _refs.DungeonLabel?.SetText(_dungeonText);
@@ -113,7 +120,8 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 设置选中高亮状态。
     /// </summary>
-    public void SetSelected(bool selected) {
+    public void SetSelected(bool selected)
+    {
         _isSelected = selected;
         UpdateVisualState();
     }
@@ -121,14 +129,17 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 根据选中状态刷新背景高亮。
     /// </summary>
-    private void UpdateVisualState() {
+    private void UpdateVisualState()
+    {
         if (_refs?.BgPanel?.GetThemeStylebox("panel") is not StyleBoxFlat flat)
             return;
 
-        if (_isSelected) {
+        if (_isSelected)
+        {
             flat.BgColor = SelectedBgColor;
         }
-        else {
+        else
+        {
             flat.BgColor = _normalBgColor;
         }
     }
@@ -137,10 +148,12 @@ public partial class RoomInfo : Container {
     /// 处理鼠标左键点击，发出选中信号。
     /// </summary>
     /// <param name="event">输入事件。</param>
-    private void OnGuiInput(InputEvent @event) {
+    private void OnGuiInput(InputEvent @event)
+    {
         if (@event is InputEventMouseButton mouseBtn
             && mouseBtn.ButtonIndex == MouseButton.Left
-            && mouseBtn.Pressed) {
+            && mouseBtn.Pressed)
+        {
             EmitSignal(SignalName.RoomSelected, RoomId);
             AcceptEvent();
         }
@@ -149,11 +162,13 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 鼠标移入时轻微提亮背景色（未选中状态下）。
     /// </summary>
-    private void OnMouseEntered() {
+    private void OnMouseEntered()
+    {
         if (_isSelected)
             return;
 
-        if (_refs?.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat) {
+        if (_refs?.BgPanel?.GetThemeStylebox("panel") is StyleBoxFlat flat)
+        {
             flat.BgColor = _normalBgColor.Lightened(0.15f);
         }
     }
@@ -161,8 +176,10 @@ public partial class RoomInfo : Container {
     /// <summary>
     /// 鼠标移出时恢复原始背景色。
     /// </summary>
-    private void OnMouseExited() {
-        if (!_isSelected) {
+    private void OnMouseExited()
+    {
+        if (!_isSelected)
+        {
             UpdateVisualState();
         }
     }

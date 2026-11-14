@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Client.Diagnostics;
 /// 仅委托 <see cref="AbstractNetPeer"/> 的四个发送相关方法，不影响实体同步。
 /// </summary>
 /// <param name="inner">被包装的内部传输 peer，通常为 <see cref="LiteNetLibNetPeer"/>。</param>
-public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer {
+public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer
+{
     private readonly AbstractNetPeer _inner = inner;
 
     /// <summary>累计出站字节数。</summary>
@@ -24,14 +25,16 @@ public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer {
     public int PacketsOut => _packetsOut;
 
     /// <summary>清零出站计数，每秒结算或断开重连时调用。</summary>
-    public void ResetTraffic() {
+    public void ResetTraffic()
+    {
         _bytesOut = 0;
         _packetsOut = 0;
     }
 
     /// <summary>发送可靠有序数据并累计出站流量。</summary>
     /// <param name="data">待发送的字节数据。</param>
-    public override void SendReliableOrdered(ReadOnlySpan<byte> data) {
+    public override void SendReliableOrdered(ReadOnlySpan<byte> data)
+    {
         _bytesOut += data.Length;
         _packetsOut++;
         _inner.SendReliableOrdered(data);
@@ -39,7 +42,8 @@ public sealed class CountingNetPeer(AbstractNetPeer inner) : AbstractNetPeer {
 
     /// <summary>发送不可靠数据并累计出站流量。</summary>
     /// <param name="data">待发送的字节数据。</param>
-    public override void SendUnreliable(ReadOnlySpan<byte> data) {
+    public override void SendUnreliable(ReadOnlySpan<byte> data)
+    {
         _bytesOut += data.Length;
         _packetsOut++;
         _inner.SendUnreliable(data);

@@ -14,7 +14,8 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 单位数据查询与玩家操作归 BattleSessionContext，本组件无绑定生命周期：
 /// 收不到进出通知，按数据源绑定代次自检换向并清场旧视图。
 /// </summary>
-public partial class UnitShowManager : Node {
+public partial class UnitShowManager : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitShowManager> _logger = ServiceLocator.GetLogger<UnitShowManager>();
 
@@ -33,7 +34,8 @@ public partial class UnitShowManager : Node {
     private long _bindGeneration;
 
     /// <summary>节点就绪：校验导出引用。</summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (_sessionRef == null)
             _logger.LogError("_sessionRef is not assigned!");
     }
@@ -42,20 +44,24 @@ public partial class UnitShowManager : Node {
     /// 每帧对齐统一数据源：绑定代次变化先清场，再按 netId 重取单位视图引用、按死亡状态收敛可见性，对新增单位生成视图。
     /// 在线单位晚到在此收敛；死亡不经事件通报，视图只隐藏不销毁。
     /// </summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var source = _sessionRef;
         if (source == null)
             return;
 
         // 常驻节点收不到进出通知：换绑与解绑由绑定代次自检，未绑定态取数恒空故清场后自然空转
-        if (source.BindGeneration != _bindGeneration) {
+        if (source.BindGeneration != _bindGeneration)
+        {
             _bindGeneration = source.BindGeneration;
             ClearUnits();
         }
 
-        foreach (var (netId, show) in _unitShows) {
+        foreach (var (netId, show) in _unitShows)
+        {
             var unit = source.FindUnit(netId);
-            if (unit == null) {
+            if (unit == null)
+            {
                 show.Visible = false;
                 continue;
             }
@@ -68,7 +74,8 @@ public partial class UnitShowManager : Node {
     }
 
     /// <summary>实例化单位视图并登记；可见性不在此决定，由首帧对齐按死亡状态收敛。</summary>
-    private void SpawnUnit(IBattleUnitView unit) {
+    private void SpawnUnit(IBattleUnitView unit)
+    {
         string unitName = unit.UnitName;
 
         if (_unitShowScene == null)
@@ -89,8 +96,10 @@ public partial class UnitShowManager : Node {
             _logger.LogInformation("Spawned unit '{UnitName}' at {Position}", unitName, unit.Position);
     }
 
-    private void ClearUnits() {
-        foreach (var (_, unitShow) in _unitShows) {
+    private void ClearUnits()
+    {
+        foreach (var (_, unitShow) in _unitShows)
+        {
             unitShow.QueueFree();
         }
         _unitShows.Clear();

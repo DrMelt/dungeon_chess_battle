@@ -19,7 +19,8 @@ namespace DungeonChessBattle.Battle.Logic.Movement;
 /// 宽相查询，不运行动态模拟，天然适配 LES 回滚重放。
 /// 解算只消费本轮 <see cref="MoveIntent"/> 快照，不持有单位引用，顺序无关。
 /// </summary>
-public sealed class PhysicsMovementScene : IMovementScene {
+public sealed class PhysicsMovementScene : IMovementScene
+{
     /// <summary>单次推挤结算的最大位移步长，防止快速单位穿透细薄障碍。</summary>
     private const float SubStepLength = 0.5f;
 
@@ -38,14 +39,16 @@ public sealed class PhysicsMovementScene : IMovementScene {
     private readonly AetherQueryReport _queryCallback;
 
     /// <summary>从布局构建物理场景：静态障碍写入 Aether World，布局留作边界约束来源。</summary>
-    public PhysicsMovementScene(BattlefieldLayout? layout) {
+    public PhysicsMovementScene(BattlefieldLayout? layout)
+    {
         _layout = layout;
         _world = new AetherWorld(AetherVector2.Zero);
         _queryCallback = QueryFixtures;
         if (layout is null)
             return;
 
-        foreach (var rect in layout.Obstacles) {
+        foreach (var rect in layout.Obstacles)
+        {
             var width = rect.MaxX - rect.MinX;
             var height = rect.MaxY - rect.MinY;
             if (width <= 0f || height <= 0f)
@@ -60,7 +63,8 @@ public sealed class PhysicsMovementScene : IMovementScene {
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<Vector2> Resolve(IReadOnlyList<MoveIntent> intents, float dt) {
+    public IReadOnlyList<Vector2> Resolve(IReadOnlyList<MoveIntent> intents, float dt)
+    {
         var count = intents.Count;
         var positions = new Vector2[count];
         for (var i = 0; i < count; i++)
@@ -76,7 +80,8 @@ public sealed class PhysicsMovementScene : IMovementScene {
     }
 
     /// <summary>单单位推进：位移增量细分步进，每步先静态障碍推挤，末段边界约束。</summary>
-    private Vector2 Advance(MoveIntent intent, Vector2 start, float dt) {
+    private Vector2 Advance(MoveIntent intent, Vector2 start, float dt)
+    {
         var delta = MovementMath.Displacement(intent.Direction, intent.Speed, dt);
         var total = delta.Length();
         if (total <= 1e-6f)
@@ -98,7 +103,8 @@ public sealed class PhysicsMovementScene : IMovementScene {
             : pos;
 
     /// <summary>单步静态障碍推挤：Aether 宽相查询命中候选，再做精确圆↔矩形推挤。</summary>
-    private Vector2 ResolveObstacles(Vector2 pos, float collisionRadius) {
+    private Vector2 ResolveObstacles(Vector2 pos, float collisionRadius)
+    {
         var aabb = new AetherAABB(
             new AetherVector2(pos.X - collisionRadius, pos.Y - collisionRadius),
             new AetherVector2(pos.X + collisionRadius, pos.Y + collisionRadius));
@@ -110,7 +116,8 @@ public sealed class PhysicsMovementScene : IMovementScene {
     }
 
     /// <summary>宽相查询回调：收集命中布局障碍的矩形几何。</summary>
-    private bool QueryFixtures(AetherFixture fixture) {
+    private bool QueryFixtures(AetherFixture fixture)
+    {
         if (_obstacleByFixture.TryGetValue(fixture, out var rect))
             _queryResults.Add(rect);
         return true;

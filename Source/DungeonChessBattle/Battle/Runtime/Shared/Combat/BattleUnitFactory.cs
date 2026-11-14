@@ -10,10 +10,12 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 只做装配不查注册表，配置解析由调用方完成。无状态，服务端与回放预演可复用。
 /// 装配只写状态与意图，单位驱动的意图源由宿主按配置声明另行登记给意图驱动。
 /// </summary>
-public static class BattleUnitFactory {
+public static class BattleUnitFactory
+{
     /// <summary>按配置创建战斗单位，生命初始为满血，阵营与位置为装配期运行时参数。</summary>
     public static BattleUnit Create(
-        UnitConfig config, UnitId unitId, IReadOnlyList<CampId> camps, Vector2 spawnPos) => new() {
+        UnitConfig config, UnitId unitId, IReadOnlyList<CampId> camps, Vector2 spawnPos) => new()
+        {
             UnitId = unitId,
             UnitName = config.ConfigKey,
             Camps = camps,

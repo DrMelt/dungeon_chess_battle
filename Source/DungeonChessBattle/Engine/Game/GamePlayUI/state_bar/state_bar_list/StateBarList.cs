@@ -12,9 +12,11 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 状态条列表容器，按阵营展示所有单位的迷你状态条。
 /// 每帧从战斗会话上下文直读单位集合与本地阵营，签名变化时重建列表。
 /// </summary>
-public partial class StateBarList : Control {
+public partial class StateBarList : Control
+{
     /// <summary>导出引用集合节点。</summary>
-    public StateBarListInterRefs? InterRefs {
+    public StateBarListInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -32,14 +34,16 @@ public partial class StateBarList : Control {
     private readonly List<IBattleUnitView> _filteredUnits = [];
 
     /// <summary>构造函数：注入键提取、创建、移除与更新回调。</summary>
-    public StateBarList() {
+    public StateBarList()
+    {
         _bars = new(GetKey, CreateBar, RemoveBar, UpdateBar);
     }
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<StateBarListInterRefs>("StateBarListInterRefs");
     }
 
@@ -47,7 +51,8 @@ public partial class StateBarList : Control {
     private static ushort GetKey(IBattleUnitView unit) => unit.UnitId;
 
     /// <summary>创建可点击状态条并挂载到列表容器。</summary>
-    private ClickableStateBar CreateBar() {
+    private ClickableStateBar CreateBar()
+    {
         var bar = InterRefsOrThrow.ClickableStateBarPKS?.Instantiate<ClickableStateBar>()
             ?? throw new InvalidOperationException("[StateBarList] ClickableStateBarPKS is not assigned or instantiation failed.");
         var container = InterRefsOrThrow.VBoxContainerRef
@@ -67,7 +72,8 @@ public partial class StateBarList : Control {
     /// 每帧直读单位集合，过滤本地阵营后同步状态条缓存，单位增删时自动建/删条。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var session = _sessionRef;
         if (session == null || InterRefs == null)
             return;

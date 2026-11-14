@@ -14,37 +14,43 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 本文件仅保留涉及战斗房间生命周期的协调编排：开始战斗、断线重连。
 /// 战斗房间生命周期服务经 <see cref="IBattleRoomManager"/> 接口调用，不感知具体实现。
 /// </summary>
-public partial class GameServer {
+public partial class GameServer
+{
     /// <summary>
     /// 处理 prepare_start_battle：仅房主可发起，且需除房主外所有玩家已准备。
     /// 房间与发起者身份均从连接归属反查，不信任客户端提交。
     /// 校验通过后创建战斗房间服务器，经 <see cref="IBattleRoomManager"/>，并向房间内所有玩家广播重定向端口。
     /// </summary>
-    public async Task<LobbyResult> HandleStartBattleAsync(string connectionId) {
+    public async Task<LobbyResult> HandleStartBattleAsync(string connectionId)
+    {
         RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
         if (roomId.IsDefault || string.IsNullOrEmpty(playerName))
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
-        if (!_stateStore.RoomExists(roomId)) {
+        if (!_stateStore.RoomExists(roomId))
+        {
             _logger.LogWarning("start_battle: room '{RoomId}' not found.", roomId);
             return new LobbyResult(roomId, false, "Room not found.");
         }
 
         // 校验发起者必须是房主，基于连接归属表，不信任客户端提交
-        if (!_stateStore.IsConnectionRoomHost(connectionId, roomId)) {
+        if (!_stateStore.IsConnectionRoomHost(connectionId, roomId))
+        {
             _logger.LogWarning("start_battle: connection of room '{RoomId}' is not the host, rejected.", roomId);
             return new LobbyResult(roomId, false, "Only room host can start battle.");
         }
 
         // 校验除房主外所有玩家已准备
-        if (!_stateStore.IsAllOthersReady(roomId)) {
+        if (!_stateStore.IsAllOthersReady(roomId))
+        {
             _logger.LogWarning("start_battle: room '{RoomId}' has not-ready players, rejected.", roomId);
             return new LobbyResult(roomId, false, "Not all players ready.");
         }
 
         // 校验所有玩家（含房主）都已选择角色
-        if (!_stateStore.AreAllPlayersUnitSelected(roomId)) {
+        if (!_stateStore.AreAllPlayersUnitSelected(roomId))
+        {
             _logger.LogWarning("start_battle: room '{RoomId}' has players without unit selection, rejected.", roomId);
             return new LobbyResult(roomId, false, "Not all players selected a unit.");
         }
@@ -52,7 +58,8 @@ public partial class GameServer {
         // 创建 BattleRoomServer：初始化，根实体与单位迁移，由房间线程从 Store 自取完成。
         // 副本缺失与初始化失败以错误交回，房间未进入战斗即拒绝本次请求
         var started = _battleRoomManager.StartRoomBattle(roomId);
-        if (started.IsError) {
+        if (started.IsError)
+        {
             _logger.LogError("start_battle: room '{RoomId}' 战斗房间未启动：{Reason}",
                 roomId, started.FirstError.Description);
             return new LobbyResult(roomId, false, "Failed to start battle room.");
@@ -76,7 +83,8 @@ public partial class GameServer {
     /// <summary>
     /// 处理 reconnect_room：身份从登录会话反查，重连仅恢复既有会话。
     /// </summary>
-    public async Task<LobbyResult> HandleReconnectRoomAsync(string connectionId, ReconnectRoomRequest req) {
+    public async Task<LobbyResult> HandleReconnectRoomAsync(string connectionId, ReconnectRoomRequest req)
+    {
         // 客户端提交的房间 ID 先过值对象判定：空与超长都按非法请求拒绝，不让转换校验的异常冒出去
         if (RoomId.TryCreate(req.RoomId) is not { } roomId)
             return new LobbyResult(string.Empty, false, "invalid roomId.");

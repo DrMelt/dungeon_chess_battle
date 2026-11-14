@@ -6,9 +6,11 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// 管理列表条目构建：把一次扫描的装载结果与展示声明汇成按 ID 字母序的条目。
 /// 启用、停用与被拒载的目录都出行，被拒载者按目录名立条目并带上拒载原因。
 /// </summary>
-internal static class ModEntryViewBuilder {
+internal static class ModEntryViewBuilder
+{
     /// <summary>用同一次扫描的装载结果与展示声明构建全部条目。</summary>
-    public static IReadOnlyList<ModEntryView> Build(ModLoadResult load, ModDisplaySet displays) {
+    public static IReadOnlyList<ModEntryView> Build(ModLoadResult load, ModDisplaySet displays)
+    {
         var entries = new List<ModEntryView>();
         entries.AddRange(load.Mods.Select(mod => From(load, displays, mod, enabled: true)));
         entries.AddRange(load.Disabled.Select(mod => From(load, displays, mod, enabled: false)));
@@ -18,7 +20,8 @@ internal static class ModEntryViewBuilder {
     }
 
     private static ModEntryView From(
-        ModLoadResult load, ModDisplaySet displays, LoadedMod mod, bool enabled) => new() {
+        ModLoadResult load, ModDisplaySet displays, LoadedMod mod, bool enabled) => new()
+        {
             Id = mod.Manifest.Id,
             Version = mod.Manifest.Version,
             IsEnabled = enabled,
@@ -30,11 +33,13 @@ internal static class ModEntryViewBuilder {
         };
 
     /// <summary>被拒载的目录不读展示声明，展示入口一栏恒为假。</summary>
-    private static ModEntryView From(ModLoadResult load, UnloadedMod mod) {
+    private static ModEntryView From(ModLoadResult load, UnloadedMod mod)
+    {
         string directoryName = Path.GetFileName(mod.DirectoryPath);
         string id = mod.Manifest?.Id ?? directoryName;
         var error = load.Errors.FirstOrDefault(e => e.ModId == id) ?? new ModError(id, mod.Reason);
-        return new ModEntryView {
+        return new ModEntryView
+        {
             Id = id,
             Version = mod.Manifest?.Version ?? "",
             IsEnabled = false,

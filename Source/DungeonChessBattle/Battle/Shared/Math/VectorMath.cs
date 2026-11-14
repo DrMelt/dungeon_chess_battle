@@ -3,7 +3,8 @@ using System.Numerics;
 namespace DungeonChessBattle.Battle.Shared.Math;
 
 /// <summary>2D 向量数学工具。</summary>
-public static class VectorMath {
+public static class VectorMath
+{
     /// <summary>叉积 Z 分量，用于 2D 向量夹角方向判断。</summary>
     public static float Cross(Vector2 a, Vector2 b) => a.X * b.Y - a.Y * b.X;
 

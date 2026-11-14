@@ -5,34 +5,41 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// 帧内顺序即服务端产出顺序。Type 为事件类型 tag，A/B/C 为 ushort 槽位，Value 为 float 槽位，
 /// Key 为带字符串身份的事件专用槽位；槽位语义由 BattleEventCoder 集中映射。
 /// </summary>
-public struct SyncBattleEvent {
+public struct SyncBattleEvent
+{
     /// <summary>事件类型 tag，对应 BattleEventCoder.Type* 常量。</summary>
-    public byte Type {
+    public byte Type
+    {
         get; set;
     }
 
     /// <summary>语义随 Type：来源/目标/持有者/施法者/单位网络 ID。</summary>
-    public ushort A {
+    public ushort A
+    {
         get; set;
     }
 
     /// <summary>语义随 Type：目标/操作码。</summary>
-    public ushort B {
+    public ushort B
+    {
         get; set;
     }
 
     /// <summary>语义随 Type：伤害类型/仇恨操作/叠加层数/施法目标，0 表示无。</summary>
-    public ushort C {
+    public ushort C
+    {
         get; set;
     }
 
     /// <summary>数值槽位：伤害量/治疗量/仇恨值。</summary>
-    public float Value {
+    public float Value
+    {
         get; set;
     }
 
     /// <summary>字符串身份槽位：技能事件的技能键、Buff 事件的 Buff 键，其余事件为空字符串。</summary>
-    public string Key {
+    public string Key
+    {
         get; set;
     }
 }

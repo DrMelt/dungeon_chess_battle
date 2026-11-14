@@ -6,21 +6,25 @@ namespace DungeonChessBattle.Game.Display.Registry;
 /// 同键展示数据的字段级合并：后写者声明了什么就改什么，未声明字段沿用被覆盖者。
 /// 空串与 null 即未声明，与 <c>Game.Shared</c> 的展示数据语义同一套。
 /// </summary>
-internal static class DisplayMerge {
-    internal static SkillDisplay Merge(this SkillDisplay previous, SkillDisplay next) => previous with {
+internal static class DisplayMerge
+{
+    internal static SkillDisplay Merge(this SkillDisplay previous, SkillDisplay next) => previous with
+    {
         Name = TextOr(next.Name, previous.Name),
         Description = TextOr(next.Description, previous.Description),
         Icon = next.Icon ?? previous.Icon,
         RangeHintScene = next.RangeHintScene ?? previous.RangeHintScene,
     };
 
-    internal static BuffDisplay Merge(this BuffDisplay previous, BuffDisplay next) => previous with {
+    internal static BuffDisplay Merge(this BuffDisplay previous, BuffDisplay next) => previous with
+    {
         Name = TextOr(next.Name, previous.Name),
         Description = TextOr(next.Description, previous.Description),
         Icon = next.Icon ?? previous.Icon,
     };
 
-    internal static UnitDisplay Merge(this UnitDisplay previous, UnitDisplay next) => previous with {
+    internal static UnitDisplay Merge(this UnitDisplay previous, UnitDisplay next) => previous with
+    {
         DisplayName = TextOr(next.DisplayName, previous.DisplayName),
         Description = TextOr(next.Description, previous.Description),
         Icon = next.Icon ?? previous.Icon,
@@ -28,7 +32,8 @@ internal static class DisplayMerge {
         BodyColor = next.BodyColor ?? previous.BodyColor,
     };
 
-    internal static DungeonDisplay Merge(this DungeonDisplay previous, DungeonDisplay next) => previous with {
+    internal static DungeonDisplay Merge(this DungeonDisplay previous, DungeonDisplay next) => previous with
+    {
         DisplayName = TextOr(next.DisplayName, previous.DisplayName),
         Description = TextOr(next.Description, previous.Description),
         EnvScene = next.EnvScene ?? previous.EnvScene,

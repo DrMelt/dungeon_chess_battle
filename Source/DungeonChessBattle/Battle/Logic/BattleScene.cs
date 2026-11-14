@@ -31,7 +31,8 @@ namespace DungeonChessBattle.Battle.Logic;
 public sealed partial class BattleScene(
     CampRelationResolver relations,
     IMovementScene movementScene,
-    ILogger<BattleScene>? logger = null) : IBattleSceneView {
+    ILogger<BattleScene>? logger = null) : IBattleSceneView
+{
     /// <summary>副本配置的阵营关系函数，敌我判定的唯一来源。</summary>
     private readonly CampRelationResolver _relations = relations;
 
@@ -64,14 +65,16 @@ public sealed partial class BattleScene(
         _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
     /// <inheritdoc />
-    public bool CanCast(UnitId casterUnitId, SkillKeyId skillKey, UnitId? targetUnitId, Vector2? targetPos) {
+    public bool CanCast(UnitId casterUnitId, SkillKeyId skillKey, UnitId? targetUnitId, Vector2? targetPos)
+    {
         if (!_unitById.TryGetValue(casterUnitId, out var caster))
             return false;
         if (caster.GetSkill(skillKey) is not { } skill)
             return false;
 
         BattleUnit? target = null;
-        if (targetUnitId is { } targetId) {
+        if (targetUnitId is { } targetId)
+        {
             if (!_unitById.TryGetValue(targetId, out var targetUnit))
                 return false;
             target = targetUnit;
@@ -85,12 +88,14 @@ public sealed partial class BattleScene(
         _unitById.TryGetValue(unitId, out var unit) ? unit : null;
 
     /// <summary>战斗开始 Unix 秒，取战斗世界构造时刻；无开战重置点，准备期耗时计入其中。</summary>
-    public long BattleStartUnixTime {
+    public long BattleStartUnixTime
+    {
         get; private set;
     } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
     /// <summary>战斗已运行的秒数，Running 期间累加。</summary>
-    public float ElapsedTime {
+    public float ElapsedTime
+    {
         get; private set;
     }
 
@@ -107,16 +112,19 @@ public sealed partial class BattleScene(
     private double _buffTickRemaining = BuffTickInterval;
 
     /// <summary>注册一个战斗单位到战斗世界。</summary>
-    public void AddUnit(BattleUnit unit) {
+    public void AddUnit(BattleUnit unit)
+    {
         ArgumentNullException.ThrowIfNull(unit);
-        if (!_units.Contains(unit)) {
+        if (!_units.Contains(unit))
+        {
             _units.Add(unit);
             _unitById[unit.UnitId] = unit;
         }
     }
 
     /// <summary>移除已注册的战斗单位，并清空其仇恨条目。</summary>
-    public void RemoveUnit(BattleUnit unit) {
+    public void RemoveUnit(BattleUnit unit)
+    {
         _units.Remove(unit);
         _unitById.Remove(unit.UnitId);
         ClearHateEntries(unit);
@@ -133,12 +141,14 @@ public sealed partial class BattleScene(
     /// 按副本重写世界状态，单位对象不重建，引用在定位前后保持同一。
     /// 单位集合与注册顺序必须与副本一致，不一致抛异常。
     /// </summary>
-    public void RestoreState(BattleWorldState state) {
+    public void RestoreState(BattleWorldState state)
+    {
         if (state.Units.Count != _units.Count)
             throw new InvalidOperationException(
                 $"状态副本单位数 {state.Units.Count} 与世界单位数 {_units.Count} 不一致。");
 
-        for (int i = 0; i < _units.Count; i++) {
+        for (int i = 0; i < _units.Count; i++)
+        {
             if (_units[i].UnitId != state.Units[i].UnitId)
                 throw new InvalidOperationException(
                     $"状态副本第 {i} 个单位 {state.Units[i].UnitId} 与世界单位 {_units[i].UnitId} 不一致。");
@@ -151,7 +161,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>读条目标标识解析：无目标返回 null，标识不在世界内抛异常。</summary>
-    private BattleUnit? ResolveCastTarget(UnitId unitId) {
+    private BattleUnit? ResolveCastTarget(UnitId unitId)
+    {
         if (unitId.IsDefault)
             return null;
         if (_unitById.TryGetValue(unitId, out var target))
@@ -160,7 +171,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>清空单位自身仇恨表，并从其他所有单位表中移除其条目；死亡或移除时调用。</summary>
-    private void ClearHateEntries(BattleUnit deadUnit) {
+    private void ClearHateEntries(BattleUnit deadUnit)
+    {
         deadUnit.RuntimeState.Hates.Clear();
         foreach (var unit in _units.Where(u => u != deadUnit))
             unit.RuntimeState.Hates.RemoveTarget(deadUnit.UnitId);
@@ -170,7 +182,8 @@ public sealed partial class BattleScene(
     /// 死者仇恨账本清理：每帧对全部死者执行，故置于仇恨推衍之后，避免死者因自身伤害事件被重写。
     /// 死亡不产出事件，一切死亡后续处理依 IsDead 派生。
     /// </summary>
-    private void CleanupDeaths() {
+    private void CleanupDeaths()
+    {
         foreach (var unit in _units.ToArray())
             if (unit.IsDead)
                 ClearHateEntries(unit);
@@ -180,8 +193,10 @@ public sealed partial class BattleScene(
     /// 维持「聚焦目标必存活」不变式：聚焦指向不存在或已死亡单位时清除。
     /// 与 <see cref="SubmitFocus"/> 的设置期校验同源，死亡不产出事件，故随本帧生命值结果收敛。
     /// </summary>
-    private void ClearDeadFocusTargets() {
-        foreach (var unit in _units) {
+    private void ClearDeadFocusTargets()
+    {
+        foreach (var unit in _units)
+        {
             if (unit.FocusTarget.IsDefault || FindBattleUnit(unit.FocusTarget) is { IsDead: false })
                 continue;
             unit.FocusTarget = UnitId.None;
@@ -192,7 +207,8 @@ public sealed partial class BattleScene(
     /// 提交移动意图：写入该单位本帧移动输入，单位不存在即丢弃。调用者是意图驱动，玩家与自治同路。
     /// </summary>
     /// <returns>单位存在并已写入意图返回 true。</returns>
-    internal bool SubmitMove(UnitId sourceUnitId, Vector2 moveDirection) {
+    internal bool SubmitMove(UnitId sourceUnitId, Vector2 moveDirection)
+    {
         if (!_unitById.TryGetValue(sourceUnitId, out var unit))
             return false;
         unit.MoveInput = moveDirection;
@@ -204,12 +220,14 @@ public sealed partial class BattleScene(
     /// 只写意图不做裁定，射程与冷却一律在 <see cref="Tick"/> 的读条推进段按当时状态判，口径见 <see cref="SkillCastValidator"/>。
     /// </summary>
     /// <returns>已写入意图返回 true。</returns>
-    internal bool SubmitCastIntent(UnitId casterUnitId, in UnitCastIntent cast) {
+    internal bool SubmitCastIntent(UnitId casterUnitId, in UnitCastIntent cast)
+    {
         if (!_unitById.TryGetValue(casterUnitId, out var caster))
             return false;
 
         BattleUnit? target = null;
-        if (caster.GetSkill(cast.Skill) is { NeedUnitTarget: true }) {
+        if (caster.GetSkill(cast.Skill) is { NeedUnitTarget: true })
+        {
             if (!_unitById.TryGetValue(cast.TargetUnitId, out var targetUnit))
                 return false;
             target = targetUnit;
@@ -224,10 +242,12 @@ public sealed partial class BattleScene(
     /// 提交者或目标不合法即不接管。
     /// </summary>
     /// <returns>已写入返回 true。</returns>
-    internal bool SubmitFocus(UnitId sourceUnitId, UnitId targetUnitId) {
+    internal bool SubmitFocus(UnitId sourceUnitId, UnitId targetUnitId)
+    {
         if (!_unitById.TryGetValue(sourceUnitId, out var unit))
             return false;
-        if (targetUnitId.IsDefault) {
+        if (targetUnitId.IsDefault)
+        {
             unit.FocusTarget = UnitId.None;
             return true;
         }
@@ -242,21 +262,25 @@ public sealed partial class BattleScene(
     /// 否则写入读条状态与目标，事件直写本帧日志。未通过只记日志不改状态，意图不退回——重新产出由意图源负责。
     /// </summary>
     private void AttemptCast(BattleUnit caster, SkillKeyId skillKey, BattleUnit? target, Vector2? targetPos,
-        BattleEventLog log) {
+        BattleEventLog log)
+    {
         string targetName = target?.UnitName ?? "(position)";
         var skill = caster.GetSkill(skillKey);
-        if (skill == null) {
+        if (skill == null)
+        {
             LogSkillNotFound(caster.UnitName, skillKey.Id);
             return;
         }
 
-        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations)) {
+        if (!SkillCastValidator.CanCast(caster, skill, target, targetPos, _relations))
+        {
             LogCastRejected(caster.UnitName, skillKey.Id, targetName);
             return;
         }
 
         // 瞬发技能：校验通过即立即结算，不进入读条状态机，无读条可被打断
-        if (skill.SpellTime <= 0f) {
+        if (skill.SpellTime <= 0f)
+        {
             ResolveCast(caster, skill, target, targetPos, log);
             return;
         }
@@ -272,7 +296,8 @@ public sealed partial class BattleScene(
     /// 取消单位当前读条施法：产生 CastCanceled 事件并清理读条状态；无读条为空操作。
     /// 唯一触发路径是读条推进段的"本帧有位移意图"判定。
     /// </summary>
-    private static void CancelCast(BattleUnit unit, BattleEventLog log) {
+    private static void CancelCast(BattleUnit unit, BattleEventLog log)
+    {
         if (unit.SkillCasting == default)
             return;
         log.Append(new CastCanceled(unit.UnitId, unit.SkillCasting));
@@ -285,16 +310,19 @@ public sealed partial class BattleScene(
     /// 按帧推进位移解算、施法裁定与读条、冷却与 Buff，返回本帧领域事件；仅在 Running 阶段推进，结束条件满足时切 Finished。
     /// 单出口：两类意图在末尾统一作废。作废点必须晚于读条推进段——它是移动意图的最后一个读者。
     /// </summary>
-    public IReadOnlyList<IBattleEvent> Tick(float deltaTime) {
+    public IReadOnlyList<IBattleEvent> Tick(float deltaTime)
+    {
         _eventLog.Clear();
 
-        if (CurrentPhase == BattlePhase.Running) {
+        if (CurrentPhase == BattlePhase.Running)
+        {
             ElapsedTime += deltaTime;
 
             // 全局 Buff 节拍：每满一个间隔所有 Buff 同时结算一跳
             _buffTickRemaining -= deltaTime;
             int buffJumps = 0;
-            while (_buffTickRemaining <= 0) {
+            while (_buffTickRemaining <= 0)
+            {
                 _buffTickRemaining += BuffTickInterval;
                 buffJumps++;
             }
@@ -302,15 +330,18 @@ public sealed partial class BattleScene(
             // 位移解算在前：其后的施法裁定与结算一律读本帧新位置
             ResolveMovement(deltaTime);
 
-            foreach (var unit in _units.ToArray()) {
+            foreach (var unit in _units.ToArray())
+            {
                 TickCasting(unit, deltaTime, _eventLog);
             }
 
-            foreach (var unit in _units.ToArray()) {
+            foreach (var unit in _units.ToArray())
+            {
                 TickCooldowns(unit, deltaTime);
             }
 
-            foreach (var unit in _units.ToArray()) {
+            foreach (var unit in _units.ToArray())
+            {
                 TickBuffs(unit, deltaTime, _eventLog, buffJumps);
             }
 
@@ -318,7 +349,8 @@ public sealed partial class BattleScene(
 
             // 事件流单一消费点：先按单位自身仇恨规则求效果并落账；落账路由到持有者仇恨表，
             // 操作类型未登记记一条错误并跳过该条效果
-            foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, HateFactors, _relations)) {
+            foreach (var effect in HateDispatcher.Dispatch(_eventLog, _units, _unitById.GetValueOrDefault, HateFactors, _relations))
+            {
                 if (!_unitById.TryGetValue(effect.HolderUnitId, out var holder))
                     continue;
                 var applied = holder.RuntimeState.Hates.ApplyEffect(effect);
@@ -334,7 +366,8 @@ public sealed partial class BattleScene(
         }
 
         // 本帧意图统一作废，下一帧由意图源重新产出
-        foreach (var unit in _units) {
+        foreach (var unit in _units)
+        {
             unit.MoveInput = Vector2.Zero;
             unit.CastInput = null;
         }
@@ -346,9 +379,11 @@ public sealed partial class BattleScene(
     /// 位移解算：本帧移动意图本帧生效，服务端、在线与回放同源同序；只读不清理，作废在 <see cref="Tick"/> 末。
     /// 静止与死亡单位不入意图集，既不被推开也不构成他人障碍；遍历按注册顺序，保证互斥让位的解算顺序三端一致。
     /// </summary>
-    private void ResolveMovement(float dt) {
+    private void ResolveMovement(float dt)
+    {
         var intents = new List<MoveIntent>(_units.Count);
-        foreach (var unit in _units) {
+        foreach (var unit in _units)
+        {
             if (unit.IsDead || unit.MoveInput.LengthSquared() <= 0.0001f || unit.BaseSpeed <= 0f)
                 continue;
             intents.Add(new MoveIntent(unit.UnitId, unit.Position,
@@ -356,7 +391,8 @@ public sealed partial class BattleScene(
         }
 
         var results = _movementScene.Resolve(intents, dt);
-        for (var i = 0; i < intents.Count; i++) {
+        for (var i = 0; i < intents.Count; i++)
+        {
             if (!_unitById.TryGetValue(intents[i].ActorId, out var unit))
                 continue;
             unit.Position = results[i];
@@ -368,7 +404,8 @@ public sealed partial class BattleScene(
     /// <summary>
     /// 判定战斗是否结束：任一阵营无存活单位则结束；满足条件时切换 Finished，每场仅执行一次。
     /// </summary>
-    private void TryEndBattle() {
+    private void TryEndBattle()
+    {
         if (CurrentPhase == BattlePhase.Finished)
             return;
 
@@ -387,7 +424,8 @@ public sealed partial class BattleScene(
     /// 施法裁定与读条推进，逐单位三步：消费本帧施法意图 → 本帧有非零位移意图且在读条则取消 → 推进读条，扣完即结算。
     /// 消费排在打断判定之前，故同 tick 内「起读条 + 位移」当帧即被打断；三步都在位移解算之后，射程判定与结算读同一份本帧位置。
     /// </summary>
-    private void TickCasting(BattleUnit unit, float deltaTime, BattleEventLog log) {
+    private void TickCasting(BattleUnit unit, float deltaTime, BattleEventLog log)
+    {
         // 意图不在此清理，作废收在 Tick 末
         if (unit.CastInput is { } cast)
             AttemptCast(unit, cast.Skill, cast.Target, cast.TargetPos, log);
@@ -415,12 +453,15 @@ public sealed partial class BattleScene(
     /// 推进个体冷却与全局冷却组：剩余秒数递减，个体冷却到期移除条目，全局冷却组到期移除条目。
     /// 二者一律只存剩余秒，截止 tick 由同步通道折算。
     /// </summary>
-    private static void TickCooldowns(BattleUnit unit, double deltaTime) {
+    private static void TickCooldowns(BattleUnit unit, double deltaTime)
+    {
         float dt = (float)deltaTime;
 
         var gcds = unit.RuntimeState.Gcds;
-        if (gcds.Count > 0) {
-            for (int i = gcds.Count - 1; i >= 0; i--) {
+        if (gcds.Count > 0)
+        {
+            for (int i = gcds.Count - 1; i >= 0; i--)
+            {
                 GcdEntry entry = gcds[i];
                 float remaining = entry.Remaining - dt;
                 if (remaining <= 0f)
@@ -433,7 +474,8 @@ public sealed partial class BattleScene(
         var entries = unit.RuntimeState.Cooldowns;
         if (entries.Count == 0)
             return;
-        for (int i = entries.Count - 1; i >= 0; i--) {
+        for (int i = entries.Count - 1; i >= 0; i--)
+        {
             CooldownEntry entry = entries[i];
             float remaining = entry.Remaining - dt;
             if (remaining <= 0f)
@@ -444,7 +486,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>推进 Buff 全局节拍；结构变化时保留存活实例，效果结算失败记一条错误，只丢本跳效果事件。</summary>
-    private void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps) {
+    private void TickBuffs(BattleUnit target, double deltaTime, BattleEventLog log, int buffJumps)
+    {
         var list = target.RuntimeState.Buffs;
         if (list.Count == 0)
             return;
@@ -452,13 +495,15 @@ public sealed partial class BattleScene(
         double tickSeconds = buffJumps * BuffTickInterval;
         var snapshot = target.Snapshot;
         var alive = new List<ActiveBuff>(list.Count);
-        foreach (var buff in list) {
+        foreach (var buff in list)
+        {
             var tick = BuffTickProcessor.Tick(buff, snapshot, deltaTime, tickSeconds);
             if (tick.EffectError is { } error && _logger.IsEnabled(LogLevel.Error))
                 _logger.LogError("Buff 效果结算失败：单位 {UnitId}，Buff {BuffTypeId}，{Reason}",
                     target.UnitId, buff.Instance.BuffTypeId, error.Description);
 
-            foreach (var e in tick.Events) {
+            foreach (var e in tick.Events)
+            {
                 ApplyEventEffect(e);
                 log.Append(e);
             }
@@ -466,7 +511,8 @@ public sealed partial class BattleScene(
                 alive.Add(buff);
         }
 
-        if (alive.Count != list.Count) {
+        if (alive.Count != list.Count)
+        {
             list.Clear();
             list.AddRange(alive);
         }
@@ -476,19 +522,23 @@ public sealed partial class BattleScene(
     /// 读条完成与瞬发立即结算共用：写入权威个体冷却，推进所属全局冷却组，并执行技能多态结算。
     /// 效果结算失败记一条错误，事件与 Buff 都不产出，读条完成照常落事件。
     /// </summary>
-    private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log) {
+    private void ResolveCast(BattleUnit caster, SkillDefinition skill, BattleUnit? target, Vector2? targetPos, BattleEventLog log)
+    {
         SetCooldownAuthoritative(caster, skill.SkillId, skill.CooldownTime);
         ApplyGcdAuthoritative(caster, skill.Gcd);
 
         var resolution = skill.Effect.Resolve(new SkillResolveContext(
             skill.CastArea, caster, target, targetPos, FilterTargets(caster, skill)));
-        if (resolution.IsError) {
+        if (resolution.IsError)
+        {
             if (_logger.IsEnabled(LogLevel.Error))
                 _logger.LogError("技能结算失败：施法者 {CasterUnitId}，技能 {SkillId}，{Reason}",
                     caster.UnitId, skill.SkillId, resolution.FirstError.Description);
         }
-        else {
-            foreach (var evt in resolution.Value.Events) {
+        else
+        {
+            foreach (var evt in resolution.Value.Events)
+            {
                 ApplyEventEffect(evt);
                 log.Append(evt);
             }
@@ -503,9 +553,11 @@ public sealed partial class BattleScene(
     /// 技能可作用目标表：排除施法者自身，按技能目标阵营策略与副本敌我关系过滤。
     /// 判据与 <see cref="SkillCastValidator"/> 同源，敌我裁定不留给内容侧策略对象，遍历序即单位注册序。
     /// </summary>
-    private List<IBattleUnitView> FilterTargets(BattleUnit caster, SkillDefinition skill) {
+    private List<IBattleUnitView> FilterTargets(BattleUnit caster, SkillDefinition skill)
+    {
         var targets = new List<IBattleUnitView>(_units.Count);
-        foreach (var unit in _units) {
+        foreach (var unit in _units)
+        {
             if (unit == caster)
                 continue;
             if (!SkillTargetValidator.CanAffect(caster, unit, skill.TargetPolicy, _relations))
@@ -516,9 +568,11 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>写入单位的权威个体冷却，同技能已有冷却时刷新取较大值。</summary>
-    private static void SetCooldownAuthoritative(BattleUnit unit, SkillKeyId skillKey, float remaining) {
+    private static void SetCooldownAuthoritative(BattleUnit unit, SkillKeyId skillKey, float remaining)
+    {
         var entries = unit.RuntimeState.Cooldowns;
-        foreach (var entry in entries) {
+        foreach (var entry in entries)
+        {
             if (entry.SkillKey != skillKey)
                 continue;
             if (remaining <= entry.Remaining)
@@ -530,11 +584,13 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>按配置写入单位的权威全局冷却：同组已有条目时刷新取较大值，无条目则新建；配置为空、组键为空或时长非正不写入。</summary>
-    private static void ApplyGcdAuthoritative(BattleUnit unit, GcdDefinition? gcd) {
+    private static void ApplyGcdAuthoritative(BattleUnit unit, GcdDefinition? gcd)
+    {
         if (gcd == null || string.IsNullOrEmpty(gcd.GroupKey) || gcd.Time <= 0f)
             return;
         var entries = unit.RuntimeState.Gcds;
-        foreach (var entry in entries) {
+        foreach (var entry in entries)
+        {
             if (entry.GroupKey != gcd.GroupKey)
                 continue;
             if (gcd.Time <= entry.Remaining)
@@ -546,7 +602,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>领域事件副作用统一应用：伤害/治疗落到目标生命值，单位已移除则忽略；新副作用在此扩展。</summary>
-    private void ApplyEventEffect(IBattleEvent evt) {
+    private void ApplyEventEffect(IBattleEvent evt)
+    {
         if (evt is DamageOccurred dmg && _unitById.TryGetValue(dmg.TargetUnitId, out var unit))
             ApplyHealthDelta(unit, -dmg.AppliedDamage);
         else if (evt is HealOccurred heal && _unitById.TryGetValue(heal.TargetUnitId, out unit))
@@ -554,19 +611,22 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>施加 Buff 到目标：叠加或新建运行时实例，产出 BuffApplied 事件。</summary>
-    private void ApplyBuffToTarget(BuffToApply buff, BattleEventLog log) {
+    private void ApplyBuffToTarget(BuffToApply buff, BattleEventLog log)
+    {
         if (!_unitById.TryGetValue(buff.TargetUnitId, out var target))
             return;
 
         var list = target.RuntimeState.Buffs;
         var existing = list.FirstOrDefault(b => b.Instance.BuffTypeId == buff.Definition.BuffTypeId);
         int stacks;
-        if (existing != null) {
+        if (existing != null)
+        {
             existing.Instance.Remaining = Math.Max(existing.Instance.Remaining, buff.Definition.Duration);
             existing.Instance.Stacks = Math.Min(existing.Instance.Stacks + 1, buff.Definition.MaxStacks);
             stacks = existing.Instance.Stacks;
         }
-        else {
+        else
+        {
             list.Add(new ActiveBuff(BuffService.CreateInstance(buff.Definition, target.UnitId, buff.From, buff.SourceUnitId),
                 buff.Definition.Effect));
             stacks = 1;
@@ -576,7 +636,8 @@ public sealed partial class BattleScene(
     }
 
     /// <summary>生命值增量修正，钳制到 [0, MaxHealth]。</summary>
-    private static void ApplyHealthDelta(BattleUnit unit, float delta) {
+    private static void ApplyHealthDelta(BattleUnit unit, float delta)
+    {
         unit.Health = Math.Clamp(unit.Health + delta, 0f, unit.MaxHealth);
     }
 

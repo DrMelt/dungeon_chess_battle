@@ -14,7 +14,8 @@ public sealed record DungeonDisplay(
     DungeonKeyId DungeonKey,
     string DisplayName,
     string Description,
-    PackedScene? EnvScene) {
+    PackedScene? EnvScene)
+{
     /// <summary>展示用名称：显示名未声明时取副本键。</summary>
     public string DisplayLabel => string.IsNullOrEmpty(DisplayName) ? DungeonKey.Value : DisplayName;
 }

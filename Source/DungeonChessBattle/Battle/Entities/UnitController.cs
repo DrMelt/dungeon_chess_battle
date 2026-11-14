@@ -10,7 +10,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 服务端侧：BeforeControlledUpdate 每逻辑 tick 读取 CurrentInput 并转发给受控单位，
 /// BindServer*Handler 订阅客户端事件请求，处理委托由房间注入。
 /// </summary>
-public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
+public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn>
+{
     /// <summary>服务端：施放技能请求处理委托，由房间注入。</summary>
     private Func<CastSkillRequest, bool>? _castHandler;
 
@@ -29,7 +30,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// </summary>
     /// <param name="request">施法请求载荷。</param>
     /// <param name="onResult">服务端回执回调，true 表示施法已接受。</param>
-    public void SendCastSkillRequest(CastSkillRequest request, Action<bool>? onResult = null) {
+    public void SendCastSkillRequest(CastSkillRequest request, Action<bool>? onResult = null)
+    {
         if (onResult == null)
             SendRequestStruct(request);
         else
@@ -41,7 +43,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// </summary>
     /// <param name="request">聚焦目标请求载荷。</param>
     /// <param name="onResult">服务端回执回调，true 表示目标已接受。</param>
-    public void SendSetFocusTargetRequest(SetFocusTargetRequest request, Action<bool>? onResult = null) {
+    public void SendSetFocusTargetRequest(SetFocusTargetRequest request, Action<bool>? onResult = null)
+    {
         if (onResult == null)
             SendRequestStruct(request);
         else
@@ -53,7 +56,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// 仅在服务端注册订阅，客户端实例不接收请求。
     /// </summary>
     /// <param name="handler">返回 true 表示接受施放。</param>
-    public void BindServerCastHandler(Func<CastSkillRequest, bool> handler) {
+    public void BindServerCastHandler(Func<CastSkillRequest, bool> handler)
+    {
         _castHandler = handler;
         if (IsServer)
             SubscribeToClientRequestStruct<CastSkillRequest>(OnCastSkillRequest);
@@ -63,7 +67,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// 服务端调用：绑定聚焦目标请求处理，仅服务端生效。
     /// </summary>
     /// <param name="handler">返回 true 表示目标已接受。</param>
-    public void BindServerFocusHandler(Func<SetFocusTargetRequest, bool> handler) {
+    public void BindServerFocusHandler(Func<SetFocusTargetRequest, bool> handler)
+    {
         _focusHandler = handler;
         if (IsServer)
             SubscribeToClientRequestStruct<SetFocusTargetRequest>(OnSetFocusTargetRequest);
@@ -78,7 +83,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// 内部通过 <c>ModifyPendingInput()</c> 写入待发送缓冲，随下一网络包发往服务端。
     /// </summary>
     /// <param name="moveDir">移动方向向量。</param>
-    public void SubmitInput(Vector2 moveDir) {
+    public void SubmitInput(Vector2 moveDir)
+    {
         ref UnitInputPacket pending = ref ModifyPendingInput();
         pending = UnitInputPacket.Create(moveDir);
     }
@@ -86,7 +92,8 @@ public class UnitController : HumanControllerLogic<UnitInputPacket, UnitPawn> {
     /// <summary>
     /// 服务端每逻辑 tick 调用：把服务端收到的玩家输入转给受控单位，由单位领域逻辑消费。
     /// </summary>
-    protected override void BeforeControlledUpdate() {
+    protected override void BeforeControlledUpdate()
+    {
         base.BeforeControlledUpdate();
         if (ControlledEntity == null)
             return;

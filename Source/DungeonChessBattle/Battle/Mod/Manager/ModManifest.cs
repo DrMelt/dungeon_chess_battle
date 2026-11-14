@@ -8,19 +8,23 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// 本类只描述数据面，展示面声明段按 <see cref="ModLayout.ManifestDisplaySection"/> 登记键的存在。
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-internal sealed class ModManifestJson {
+internal sealed class ModManifestJson
+{
     /// <summary>mod 唯一 ID，同时是 mods 根目录下的目录名；必填。</summary>
-    public string? Id {
+    public string? Id
+    {
         get; set;
     }
 
     /// <summary>语义版本号，进内容指纹；必填。</summary>
-    public string? Version {
+    public string? Version
+    {
         get; set;
     }
 
     /// <summary>该 mod 的内容修订号，内容变更时递增，进内容指纹；必填。</summary>
-    public string? Revision {
+    public string? Revision
+    {
         get; set;
     }
 
@@ -28,12 +32,14 @@ internal sealed class ModManifestJson {
     public List<string> Dependencies { get; set; } = [];
 
     /// <summary>数据入口 DLL，相对 mod 目录，数组顺序即装载顺序；必填，无数据代码时写 <c>[]</c>。</summary>
-    public List<string>? Code {
+    public List<string>? Code
+    {
         get; set;
     }
 
     /// <summary>数据面额外的依赖探测目录；入口 DLL 所在目录自动附加，依赖与入口同目录时无需声明。</summary>
-    public List<string>? CodeLibraries {
+    public List<string>? CodeLibraries
+    {
         get; set;
     }
 
@@ -42,7 +48,8 @@ internal sealed class ModManifestJson {
     /// 段内容归 Game.Mod.Manager，数据面不读也不对外传递。
     /// </summary>
     [JsonPropertyName(ModLayout.ManifestDisplaySection)]
-    public JsonElement? Display {
+    public JsonElement? Display
+    {
         get; set;
     }
 }

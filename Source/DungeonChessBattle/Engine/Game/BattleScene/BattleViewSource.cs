@@ -16,9 +16,11 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 一律由当前装配源提供。在线装配为 <see cref="OnlineBattleViewSource"/>，
 /// 回放装配为 <see cref="ReplayBattleViewSource"/>，两者由各自协调器单独构建注入。
 /// </summary>
-public interface IBattleViewSource {
+public interface IBattleViewSource
+{
     /// <summary>全部单位只读视图。</summary>
-    IReadOnlyList<IBattleUnitView> Units {
+    IReadOnlyList<IBattleUnitView> Units
+    {
         get;
     }
 
@@ -26,42 +28,50 @@ public interface IBattleViewSource {
     IBattleUnitView? FindUnit(UnitId unitId);
 
     /// <summary>本地玩家单位视图；无本地控制器语义时为 null。</summary>
-    IBattleUnitView? LocalUnit {
+    IBattleUnitView? LocalUnit
+    {
         get;
     }
 
     /// <summary>本地玩家聚焦目标的视图；无聚焦目标或无本地控制器时为 null。</summary>
-    IBattleUnitView? LocalFocus {
+    IBattleUnitView? LocalFocus
+    {
         get;
     }
 
     /// <summary>当前副本键。</summary>
-    string? DungeonKey {
+    string? DungeonKey
+    {
         get;
     }
 
     /// <summary>战斗开始时刻，UTC Unix 秒。</summary>
-    long? BattleStartUnixTime {
+    long? BattleStartUnixTime
+    {
         get;
     }
 
     /// <summary>战斗已运行秒数；未就绪时为 null。</summary>
-    double? BattleElapsed {
+    double? BattleElapsed
+    {
         get;
     }
 
     /// <summary>会话事件日志的只读视图。</summary>
-    IReadOnlyList<BattleEventLogEntry> EventLog {
+    IReadOnlyList<BattleEventLogEntry> EventLog
+    {
         get;
     }
 
     /// <summary>事件日志会话版本，装配重建时归零重计，消费方据此归零游标重同步。</summary>
-    long EventLogVersion {
+    long EventLogVersion
+    {
         get;
     }
 
     /// <summary>本装配是否在场（装配对象存在即在战斗/回放中）。</summary>
-    bool IsInBattle {
+    bool IsInBattle
+    {
         get;
     }
 
@@ -83,7 +93,8 @@ public interface IBattleViewSource {
 /// 日志落账时机由子类 <see cref="AppendEventLog"/> 决定。
 /// </summary>
 /// <param name="content">内容注册表只读视图，阵营关系按权威副本键解析的来源。</param>
-public abstract class BattleViewSourceBase(IContentRegistryView content) : IBattleViewSource {
+public abstract class BattleViewSourceBase(IContentRegistryView content) : IBattleViewSource
+{
     /// <summary>帧事件缓冲，AppendEvents 追加、DrainFrameEvents 取走。</summary>
     private List<IBattleEvent> _frameEvents = [];
 
@@ -91,7 +102,8 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     private CampRelationResolver? _relations;
 
     /// <inheritdoc />
-    public abstract IReadOnlyList<IBattleUnitView> Units {
+    public abstract IReadOnlyList<IBattleUnitView> Units
+    {
         get;
     }
 
@@ -99,37 +111,44 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     public abstract IBattleUnitView? FindUnit(UnitId unitId);
 
     /// <inheritdoc />
-    public abstract IBattleUnitView? LocalUnit {
+    public abstract IBattleUnitView? LocalUnit
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract IBattleUnitView? LocalFocus {
+    public abstract IBattleUnitView? LocalFocus
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract string? DungeonKey {
+    public abstract string? DungeonKey
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract long? BattleStartUnixTime {
+    public abstract long? BattleStartUnixTime
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract double? BattleElapsed {
+    public abstract double? BattleElapsed
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract IReadOnlyList<BattleEventLogEntry> EventLog {
+    public abstract IReadOnlyList<BattleEventLogEntry> EventLog
+    {
         get;
     }
 
     /// <inheritdoc />
-    public abstract long EventLogVersion {
+    public abstract long EventLogVersion
+    {
         get;
     }
 
@@ -140,7 +159,8 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     protected abstract void AppendEventLog(IReadOnlyList<IBattleEvent> events);
 
     /// <inheritdoc />
-    public void AppendEvents(IReadOnlyList<IBattleEvent> events) {
+    public void AppendEvents(IReadOnlyList<IBattleEvent> events)
+    {
         if (events.Count == 0)
             return;
         _frameEvents.AddRange(events);
@@ -148,7 +168,8 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<IBattleEvent> DrainFrameEvents() {
+    public IReadOnlyList<IBattleEvent> DrainFrameEvents()
+    {
         if (_frameEvents.Count == 0)
             return [];
         var frame = _frameEvents;
@@ -157,14 +178,16 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     }
 
     /// <inheritdoc />
-    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations) {
+    public bool TryGetCampRelations([NotNullWhen(true)] out CampRelationResolver? relations)
+    {
         var resolved = RelationsOrResolve();
         relations = resolved;
         return resolved != null;
     }
 
     /// <inheritdoc />
-    public CampRelation ResolveLocalCampRelation(IReadOnlyList<CampId> targetCamps) {
+    public CampRelation ResolveLocalCampRelation(IReadOnlyList<CampId> targetCamps)
+    {
         var relations = RelationsOrResolve();
         var localUnit = LocalUnit;
         if (relations == null || localUnit == null)
@@ -177,7 +200,8 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
     /// 由会话层的内容不一致上报中止战斗。副本键来自服务端同步或归档，进查询前先过值对象约束，
     /// 不让转换校验的异常冒到查询。
     /// </summary>
-    private CampRelationResolver? RelationsOrResolve() {
+    private CampRelationResolver? RelationsOrResolve()
+    {
         if (_relations is { } relations)
             return relations;
         var dungeonKey = DungeonKey;
@@ -194,7 +218,8 @@ public abstract class BattleViewSourceBase(IContentRegistryView content) : IBatt
 /// 运行时长由本地时钟相对权威开始时刻推算，事件已在会话侧带接收时刻入库，不重复落账。
 /// </summary>
 public sealed class OnlineBattleViewSource(IClientBattleSession session, IContentRegistryView content)
-    : BattleViewSourceBase(content) {
+    : BattleViewSourceBase(content)
+{
     /// <inheritdoc />
     public override IReadOnlyList<IBattleUnitView> Units => session.Units;
 
@@ -214,8 +239,10 @@ public sealed class OnlineBattleViewSource(IClientBattleSession session, IConten
     public override long? BattleStartUnixTime => session.BattleStartUnixTime;
 
     /// <inheritdoc />
-    public override double? BattleElapsed {
-        get {
+    public override double? BattleElapsed
+    {
+        get
+        {
             if (session.BattleStartUnixTime is not { } start || start <= 0)
                 return null;
             return (DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(start)).TotalSeconds;
@@ -229,7 +256,8 @@ public sealed class OnlineBattleViewSource(IClientBattleSession session, IConten
     public override long EventLogVersion => session.GetEventLogVersion();
 
     /// <inheritdoc />
-    protected override void AppendEventLog(IReadOnlyList<IBattleEvent> events) {
+    protected override void AppendEventLog(IReadOnlyList<IBattleEvent> events)
+    {
     }
 }
 
@@ -238,7 +266,8 @@ public sealed class OnlineBattleViewSource(IClientBattleSession session, IConten
 /// 事件按引擎帧轴折算接收时刻落本装配自持的日志仓库，与在线同数轴。
 /// </summary>
 public sealed class ReplayBattleViewSource(ReplayEngine engine, IContentRegistryView content)
-    : BattleViewSourceBase(content) {
+    : BattleViewSourceBase(content)
+{
     /// <summary>回放事件日志仓库，随本装配生死。</summary>
     private readonly BattleEventLogStore _eventLog = new();
 

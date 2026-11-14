@@ -4,7 +4,8 @@ namespace DungeonChessBattle.Battle.Shared.ValueObjects;
 /// 副本键强类型，与 Buff 键、单位配置键同款：仅声明长度上限与语义名，存储与校验复用 <see cref="RestrictedString"/>。
 /// 网络协议与持久化边界仍以字符串携带副本键，DungeonKeyId 是内容侧唯一身份。
 /// </summary>
-public readonly record struct DungeonKeyId {
+public readonly record struct DungeonKeyId
+{
     /// <summary>副本键最大字符数，与其余内容键同长。</summary>
     public const ushort MaxLength = 32;
 

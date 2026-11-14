@@ -15,7 +15,8 @@ namespace DungeonChessBattle.Replay.Client;
 /// <param name="sessionToken">会话凭证提供者；无凭证时不出网。</param>
 /// <param name="logger">日志记录器，用非泛型口以共用消费方的日志类别。</param>
 internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> sessionToken, ILogger logger)
-    : IDisposable {
+    : IDisposable
+{
     /// <summary>请求超时，含建连与读流；用户取消不并入此超时。</summary>
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromMinutes(5);
 
@@ -25,16 +26,19 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
 
     /// <summary>取服务端回放摘要列表。无凭证或凭证失效 → Unauthorized，响应不可解或传输失败 → NetworkError。</summary>
     public async Task<(ReplayTransportStatus Status, IReadOnlyList<ReplaySummaryDto> Replays)> TryListAsync(
-        CancellationToken cancellationToken) {
+        CancellationToken cancellationToken)
+    {
         var (status, data) = await GetAsync(ReplayHttpRoutes.BuildListUri(serverBase()), null, cancellationToken);
         if (status != ReplayTransportStatus.Success || data is null)
             return (status, []);
 
-        try {
+        try
+        {
             var result = JsonSerializer.Deserialize<ReplayListResult>(data, ReplayJson.Options);
             return (ReplayTransportStatus.Success, result?.Replays ?? []);
         }
-        catch (JsonException ex) {
+        catch (JsonException ex)
+        {
             logger.LogWarning(ex, "回放列表响应解析失败");
             return (ReplayTransportStatus.NetworkError, []);
         }
@@ -42,7 +46,8 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
 
     /// <summary>下载回放字节流，边读边回报进度；服务端 404 归 NotFound。</summary>
     public async Task<ReplayDownloadResult> DownloadAsync(string roomId,
-        IProgress<ReplayDownloadProgress>? progress, CancellationToken cancellationToken) {
+        IProgress<ReplayDownloadProgress>? progress, CancellationToken cancellationToken)
+    {
         var (status, data) = await GetAsync(ReplayHttpRoutes.BuildDownloadUri(serverBase(), roomId), progress, cancellationToken);
         return new ReplayDownloadResult(status, data);
     }
@@ -51,14 +56,16 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
     public void Dispose() => _http.Dispose();
 
     private async Task<(ReplayTransportStatus Status, byte[]? Data)> GetAsync(Uri url,
-        IProgress<ReplayDownloadProgress>? progress, CancellationToken cancellationToken) {
+        IProgress<ReplayDownloadProgress>? progress, CancellationToken cancellationToken)
+    {
         string? session = sessionToken();
         if (string.IsNullOrEmpty(session))
             return (ReplayTransportStatus.Unauthorized, null);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.TryAddWithoutValidation(ReplayHttpRoutes.SessionHeader, session);
-        try {
+        try
+        {
             using var response = await _http.SendAsync(request,
                 HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -72,18 +79,21 @@ internal sealed class ReplayHttpTransport(Func<Uri> serverBase, Func<string?> se
             using var buffer = new MemoryStream(total is > 0 ? (int)Math.Min(total.Value, int.MaxValue) : ChunkSize);
             var chunk = new byte[ChunkSize];
             int read;
-            while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0) {
+            while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0)
+            {
                 await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken);
                 progress?.Report(new ReplayDownloadProgress(buffer.Length, total));
             }
             return (ReplayTransportStatus.Success, buffer.ToArray());
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested) {
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
             // HttpClient 超时走此分支；用户取消时令牌已置位，继续上抛
             logger.LogWarning(ex, "回放请求超时: {Url}", url);
             return (ReplayTransportStatus.NetworkError, null);
         }
-        catch (HttpRequestException ex) {
+        catch (HttpRequestException ex)
+        {
             logger.LogWarning(ex, "回放请求失败: {Url}", url);
             return (ReplayTransportStatus.NetworkError, null);
         }

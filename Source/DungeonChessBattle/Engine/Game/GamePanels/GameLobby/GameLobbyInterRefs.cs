@@ -7,60 +7,71 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// <summary>
 /// GameLobby 的导出引用集合，将 [Export] 字段从主脚本分离到独立节点。
 /// </summary>
-public partial class GameLobbyInterRefs : Node {
+public partial class GameLobbyInterRefs : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<GameLobbyInterRefs> _logger = ServiceLocator.GetLogger<GameLobbyInterRefs>();
 
     /// <summary>副本选择下拉框，创建房间时选定敌人与环境。</summary>
     [Export]
-    public OptionButton? DungeonSelect {
+    public OptionButton? DungeonSelect
+    {
         get; private set;
     }
     /// <summary>创建房间按钮。</summary>
     [Export]
-    public Button? CreateButton {
+    public Button? CreateButton
+    {
         get; private set;
     }
     /// <summary>刷新房间列表按钮。</summary>
     [Export]
-    public Button? RefreshButton {
+    public Button? RefreshButton
+    {
         get; private set;
     }
     /// <summary>加入房间按钮。</summary>
     [Export]
-    public Button? JoinButton {
+    public Button? JoinButton
+    {
         get; private set;
     }
     /// <summary>展示房间详情信息的标签。</summary>
     [Export]
-    public Label? DetailLabel {
+    public Label? DetailLabel
+    {
         get; private set;
     }
     /// <summary>房间列表容器。</summary>
     [Export]
-    public BoxContainer? RoomListContainer {
+    public BoxContainer? RoomListContainer
+    {
         get; private set;
     }
     /// <summary>单个房间卡片使用的场景资源。</summary>
     [Export]
-    public PackedScene? RoomInfoScene {
+    public PackedScene? RoomInfoScene
+    {
         get; private set;
     }
     /// <summary>返回主菜单按钮。</summary>
     [Export]
-    public Button? BackButton {
+    public Button? BackButton
+    {
         get; private set;
     }
     /// <summary>回放列表面板入口按钮。</summary>
     [Export]
-    public Button? PlaybackListButton {
+    public Button? PlaybackListButton
+    {
         get; private set;
     }
 
     /// <summary>
     /// 节点就绪时校验所有导出引用是否已赋值，缺失时打印错误日志。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (DungeonSelect == null)
             _logger.LogError("DungeonSelect is not assigned!");
         if (CreateButton == null)

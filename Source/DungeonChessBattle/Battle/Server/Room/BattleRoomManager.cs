@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using DungeonChessBattle.Replay.Shared;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
@@ -27,7 +27,8 @@ namespace DungeonChessBattle.Battle.Server;
 /// <param name="content">内容注册表只读视图，房间副本配置、单位配置与录制回放修订号来源。</param>
 public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     BattleServerConfig config, IReplayStore replayStore,
-    IContentRegistryView content) : IBattleRoomManager {
+    IContentRegistryView content) : IBattleRoomManager
+{
     private readonly ILogger<BattleRoomManager> _logger = loggerFactory.CreateLogger<BattleRoomManager>();
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameStateStore _stateStore = stateStore;
@@ -58,7 +59,8 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// <summary>
     /// 从端口池获取或递增分配一个房间端口。仅协调线程调用。
     /// </summary>
-    private int AllocatePort() {
+    private int AllocatePort()
+    {
         if (_portPool.TryDequeue(out int port))
             return port;
         return Interlocked.Increment(ref _nextPort);
@@ -67,14 +69,16 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// <summary>
     /// 回收房间端口到端口池。仅协调线程调用。
     /// </summary>
-    private void RecyclePort(int port) {
+    private void RecyclePort(int port)
+    {
         _portPool.Enqueue(port);
     }
 
     /// <summary>
     /// 消费空房间投递队列并执行房间移除。由协调线程每轮循环调用。
     /// </summary>
-    public void ProcessPendingRoomCleanups() {
+    public void ProcessPendingRoomCleanups()
+    {
         while (_pendingEmptyRooms.TryDequeue(out RoomId roomId))
             RemoveRoom(roomId);
     }
@@ -85,7 +89,8 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 初始化完成后、注册前客户端连入又断开，预检会丢弃事件导致
     /// 空房间永久泄漏。RemoveRoom 本身幂等，重复入队无害。
     /// </summary>
-    private void OnRoomEmptied(RoomId roomId) {
+    private void OnRoomEmptied(RoomId roomId)
+    {
         _pendingEmptyRooms.Enqueue(roomId);
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -102,7 +107,8 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// </summary>
     /// <param name="roomId">房间 ID。</param>
     /// <returns>房间监听端口。</returns>
-    public ErrorOr<int> StartRoomBattle(RoomId roomId) {
+    public ErrorOr<int> StartRoomBattle(RoomId roomId)
+    {
         // 副本配置先解析：房间引用的副本必须在场，缺失即拒绝启动，不把失败带进房间线程。
         // Store 中的副本键由大厅经内容注册表校验后写入，长度必在值对象约束内，查询不会因转换校验抛异常
         string? dungeonKey = _stateStore.GetRoomConfig(roomId)?.DungeonKey;
@@ -118,13 +124,15 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
 
         // 等待首帧初始化完成，保证客户端连入时根实体已就绪。
         // 超时与初始化失败都同步清理，否则会留下没有实体的空房间与泄漏的端口
-        if (!server.WaitUntilInitialized(InitializeTimeout)) {
+        if (!server.WaitUntilInitialized(InitializeTimeout))
+        {
             DiscardRoom(server, port);
             return BattleRoomErrors.InitializeTimeout(roomId, (int)InitializeTimeout.TotalSeconds);
         }
 
         var initialized = server.InitializeResult;
-        if (initialized.IsError) {
+        if (initialized.IsError)
+        {
             DiscardRoom(server, port);
             return BattleRoomErrors.InitializeFailed(roomId, initialized.FirstError.Description);
         }
@@ -142,9 +150,11 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 丢弃未登记的房间服务器：退订空房事件、停止房间线程，线程停稳才回收端口。
     /// 线程未停时端口仍被它使用，回收会让下一个房间与它争用。仅协调线程调用。
     /// </summary>
-    private void DiscardRoom(BattleRoomServer server, int port) {
+    private void DiscardRoom(BattleRoomServer server, int port)
+    {
         server.RoomEmpty -= OnRoomEmptied;
-        if (!server.Stop()) {
+        if (!server.Stop())
+        {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("Room '{RoomId}' 线程未在期限内停止，端口 {Port} 不回收", server.RoomId, port);
             return;
@@ -156,13 +166,15 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// <summary>
     /// 获取房间服务器，仅战斗中的房间有此数据。
     /// </summary>
-    public BattleRoomServer? GetRoomServer(RoomId roomId) {
+    public BattleRoomServer? GetRoomServer(RoomId roomId)
+    {
         _roomServers.TryGetValue(roomId, out var server);
         return server;
     }
 
     /// <summary>查询战斗中房间的监听端口；非战斗中的房间返回 false。</summary>
-    public bool TryGetRoomPort(RoomId roomId, out int port) {
+    public bool TryGetRoomPort(RoomId roomId, out int port)
+    {
         var server = GetRoomServer(roomId);
         port = server?.Port ?? 0;
         return server != null;
@@ -173,7 +185,8 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
         => GetRoomServer(roomId)?.RegisterPlayer(playerId, playerName) ?? false;
 
     /// <summary>归档一次回放到存储：容器字节流与参与者记录主键。元数据由归档自身携带，本层不另存摘要。</summary>
-    private void ArchiveReplay(ReplayRecording recording) {
+    private void ArchiveReplay(ReplayRecording recording)
+    {
         var participants = new List<string>(recording.Meta.Players.Count);
         foreach (var player in recording.Meta.Players)
             participants.Add(_stateStore.ResolvePlayerRecordId(player.PlayerName));
@@ -184,8 +197,10 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 停止房间服务器并回收端口；房间线程已退出，回放内容稳定，归档供大厅查询与下载。
     /// 线程未在期限内退出即不回收端口也不归档，回放内容仍归它。仅协调线程调用。
     /// </summary>
-    private void StopAndArchive(BattleRoomServer server) {
-        if (!server.Stop()) {
+    private void StopAndArchive(BattleRoomServer server)
+    {
+        if (!server.Stop())
+        {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning("Room '{RoomId}' 线程未在期限内停止，端口与回放归档跳过", server.RoomId);
             return;
@@ -200,16 +215,19 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// 移除并停止房间服务器，同时清理 store 中的房间状态。
     /// 由后台清理循环调用，等待初始化成功后房间线程已可安全 Join。
     /// </summary>
-    public bool RemoveRoom(RoomId roomId) {
+    public bool RemoveRoom(RoomId roomId)
+    {
         bool removed;
-        if (_roomServers.TryRemove(roomId, out var server)) {
+        if (_roomServers.TryRemove(roomId, out var server))
+        {
             server.RoomEmpty -= OnRoomEmptied;
             StopAndArchive(server);
             removed = true;
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("Room '{RoomId}' removed on port {Port}", roomId, server.Port);
         }
-        else {
+        else
+        {
             removed = false;
         }
 
@@ -220,10 +238,14 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// <summary>
     /// 停止所有房间服务器并清空大厅状态。
     /// </summary>
-    public void StopAll() {
-        while (!_roomServers.IsEmpty) {
-            foreach (var (roomId, server) in _roomServers) {
-                if (_roomServers.TryRemove(roomId, out _)) {
+    public void StopAll()
+    {
+        while (!_roomServers.IsEmpty)
+        {
+            foreach (var (roomId, server) in _roomServers)
+            {
+                if (_roomServers.TryRemove(roomId, out _))
+                {
                     server.RoomEmpty -= OnRoomEmptied;
                     StopAndArchive(server);
                 }
@@ -236,8 +258,10 @@ public sealed class BattleRoomManager(ILoggerFactory loggerFactory, IGameStateSt
     /// <summary>
     /// 输出所有房间的基本信息，用于控制台命令 rooms。
     /// </summary>
-    public void ListRooms() {
-        foreach (var room in _stateStore.ListActiveRooms()) {
+    public void ListRooms()
+    {
+        foreach (var room in _stateStore.ListActiveRooms())
+        {
             bool isBattle = _roomServers.ContainsKey(room.RoomId);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("  {RoomId}: Phase={Phase}, HasPassword={HasPwd}",

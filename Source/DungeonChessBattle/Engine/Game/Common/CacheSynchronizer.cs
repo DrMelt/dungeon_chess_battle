@@ -23,7 +23,8 @@ public class CacheSynchronizer<TKey, TItem, TValue>(
     Action<TValue, TItem> update)
     where TKey : notnull
     where TItem : notnull
-    where TValue : class {
+    where TValue : class
+{
     /// <summary>键 → 缓存对象映射。</summary>
     private readonly Dictionary<TKey, TValue> _cache = [];
 
@@ -43,7 +44,8 @@ public class CacheSynchronizer<TKey, TItem, TValue>(
     /// 同步缓存集合：先创建新增缓存对象并清理已移除对象，最后统一更新全部缓存对象。
     /// </summary>
     /// <param name="source">数据源条目列表。</param>
-    public void Sync(IReadOnlyList<TItem> source) {
+    public void Sync(IReadOnlyList<TItem> source)
+    {
         var newKeys = new HashSet<TKey>(source.Count);
         foreach (var item in source)
             newKeys.Add(_getKey(item));
@@ -59,7 +61,8 @@ public class CacheSynchronizer<TKey, TItem, TValue>(
             _cache[key] = _create();
 
         // 清理已移除条目的缓存对象
-        foreach (var key in removedKeys) {
+        foreach (var key in removedKeys)
+        {
             _remove(_cache[key]);
             _cache.Remove(key);
         }

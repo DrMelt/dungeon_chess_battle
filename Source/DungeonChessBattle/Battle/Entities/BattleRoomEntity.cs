@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// BattlePhase 等一次性写入字段在客户端丢失且不回补。
 /// 战斗事件日志经传输层可靠通道外送，本实体不承载事件 RPC。
 /// </summary>
-public partial class BattleRoomEntity : EntityLogic {
+public partial class BattleRoomEntity : EntityLogic
+{
     // 本类同步字段直接作为 public 字段供 LiteEntitySystem 反射发现，禁止改为属性
 #pragma warning disable S1104 // LES 反射 GetFields 读取同步字段
     /// <summary>

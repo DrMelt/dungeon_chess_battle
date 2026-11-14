@@ -19,7 +19,8 @@ namespace DungeonChessBattle.Game.Services;
 /// 两次装配的产物分别写入 <see cref="ServiceLocator.ContentRegistry"/> 与 <see cref="ServiceLocator.ModAssets"/>，
 /// 展示装配内部的先后次序不在这里，见 <see cref="ModAssets.Assemble"/>。
 /// </summary>
-public static class ModManager {
+public static class ModManager
+{
     /// <summary>mods 目录名，未被启动参数覆盖时位于游戏可执行文件所在目录下。</summary>
     private const string ModsDirName = "mods";
 
@@ -42,7 +43,8 @@ public static class ModManager {
     /// 参数缺席或值为空即回落默认推导，生效目录由下层扫描日志体现。
     /// 解析期不取用本类日志通道：本方法可能经 <c>Logger</c> 自身的初始化链进入。
     /// </summary>
-    private static string ResolveModsRootPath() {
+    private static string ResolveModsRootPath()
+    {
         string? arg = GetArgValue(OS.GetCmdlineUserArgs(), ModsDirArg);
         return string.IsNullOrEmpty(arg)
             ? OS.GetExecutablePath().GetBaseDir().PathJoin(ModsDirName)
@@ -50,8 +52,10 @@ public static class ModManager {
     }
 
     /// <summary>取 args 中 name 后紧跟的值，name 不区分大小写；无该参数返回 null。</summary>
-    private static string? GetArgValue(string[] args, string name) {
-        for (int i = 0; i < args.Length - 1; i++) {
+    private static string? GetArgValue(string[] args, string name)
+    {
+        for (int i = 0; i < args.Length - 1; i++)
+        {
             if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
                 return args[i + 1];
         }
@@ -63,11 +67,13 @@ public static class ModManager {
     /// 扫描、装配与展示装配的过程日志由下层按自身类别名记录，本类只注入通道并补记展示覆盖巡检结果。
     /// 幂等标志在装配成功后置位，装配中断可以重试。
     /// </summary>
-    public static void EnsureInitialized() {
+    public static void EnsureInitialized()
+    {
         if (_initialized)
             return;
 
-        try {
+        try
+        {
             var catalog = ModCatalog.Scan(ModsRootPath, ServiceLocator.LoggerFactory);
             // 复用同一次扫描结果装配数据面；Load(扫描结果) 只带回装配期新增错误，扫描期错误已在 catalog.Errors
             var boot = ContentBootstrapper.Load(catalog.ScanResult, ServiceLocator.LoggerFactory);
@@ -85,7 +91,8 @@ public static class ModManager {
 
             LogDisplayCoverage(boot.Registry, assets.Registry);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             // 补上装配层上下文后继续上抛，幂等标志保持未置位
             throw new InvalidOperationException("mod 装配失败，内容未就绪。", ex);
         }
@@ -98,7 +105,8 @@ public static class ModManager {
     /// 缺席不阻断装配，消费方按内容键回退显示名、图标留空、无范围提示与环境场景。
     /// 规模按内容条目数报；mod 可声明内容里没有的展示键，那部分不进内容计数。
     /// </summary>
-    private static void LogDisplayCoverage(ContentSetRegistry registry, IDisplayRegistry display) {
+    private static void LogDisplayCoverage(ContentSetRegistry registry, IDisplayRegistry display)
+    {
         var missing =
             registry.Skills.Where(skill => display.GetSkill(skill.SkillId) is null)
                 .Select(skill => $"技能 {skill.SkillId.Id}")
@@ -122,15 +130,20 @@ public static class ModManager {
     /// <summary>逐 mod 挂载它声明的展示资源包，并把该 mod 展示程序集里的脚本类注册进 Godot 脚本系统。
     /// 挂载失败只记日志，不中止装配；脚本类注册须在入口执行之前完成，
     /// 包内 <c>.tres</c>/<c>.tscn</c> 引用的脚本类未注册时，实例化按类型查找失败。</summary>
-    private static void MountAssetPacks(IReadOnlyList<ModDisplayDeclaration> displays) {
-        foreach (var display in displays) {
-            foreach (string pck in display.ResourcePacks) {
+    private static void MountAssetPacks(IReadOnlyList<ModDisplayDeclaration> displays)
+    {
+        foreach (var display in displays)
+        {
+            foreach (string pck in display.ResourcePacks)
+            {
                 // 展示资源包只存在于客户端目录，缺席在挂载处记错误
-                if (ProjectSettings.LoadResourcePack(Path.GetFullPath(pck))) {
+                if (ProjectSettings.LoadResourcePack(Path.GetFullPath(pck)))
+                {
                     if (Logger.IsEnabled(LogLevel.Information))
                         Logger.LogInformation("已挂载展示资源包：{Pck}", pck);
                 }
-                else {
+                else
+                {
                     Logger.LogError("展示资源包挂载失败：{Pck}", pck);
                 }
             }
@@ -144,12 +157,15 @@ public static class ModManager {
     /// 展示 DLL 走独立 <c>AssemblyLoadContext</c> 装载，Godot 不会自行发现其中的脚本类；
     /// 按程序集名匹配进程内已加载副本。
     /// </summary>
-    private static void RegisterDisplayScripts(ModDisplayDeclaration display) {
-        foreach (string dll in display.EntryDlls) {
+    private static void RegisterDisplayScripts(ModDisplayDeclaration display)
+    {
+        foreach (string dll in display.EntryDlls)
+        {
             string assemblyName = Path.GetFileNameWithoutExtension(dll);
             var assembly = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => string.Equals(a.GetName().Name, assemblyName, StringComparison.Ordinal));
-            if (assembly is null) {
+            if (assembly is null)
+            {
                 Logger.LogError("展示程序集未在进程中加载，包内脚本类不会注册：{ModId} {Dll}",
                     display.ModId, dll);
                 continue;

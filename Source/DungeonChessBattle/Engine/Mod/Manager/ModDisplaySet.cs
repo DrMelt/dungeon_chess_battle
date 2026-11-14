@@ -10,7 +10,8 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 internal sealed class ModDisplaySet(
     Dictionary<string, ModDisplayDeclaration> byModId,
     IReadOnlyList<ModDisplayDeclaration> enabled,
-    IReadOnlyList<ModError> declarationErrors) {
+    IReadOnlyList<ModError> declarationErrors)
+{
     /// <summary>参与装载且声明可用的启用 mod 声明，顺序与 <see cref="ModLoadResult.Mods"/> 一致。</summary>
     public IReadOnlyList<ModDisplayDeclaration> Enabled { get; } = enabled;
 
@@ -18,12 +19,15 @@ internal sealed class ModDisplaySet(
     public IReadOnlyList<ModError> DeclarationErrors { get; } = declarationErrors;
 
     /// <summary>读启用集与停用集内每个 mod 的展示声明，声明不可用与段内问题逐条落日志。</summary>
-    public static ModDisplaySet Read(ModLoadResult load, ILogger logger) {
+    public static ModDisplaySet Read(ModLoadResult load, ILogger logger)
+    {
         var errors = new List<ModError>();
         var byModId = new Dictionary<string, ModDisplayDeclaration>(StringComparer.Ordinal);
-        foreach (var mod in load.Mods.Concat(load.Disabled)) {
+        foreach (var mod in load.Mods.Concat(load.Disabled))
+        {
             var read = ModDisplayDeclarationReader.Read(mod, errors);
-            if (read.IsError) {
+            if (read.IsError)
+            {
                 errors.Add(new ModError(mod.Manifest.Id, read.FirstError.Description));
                 continue;
             }

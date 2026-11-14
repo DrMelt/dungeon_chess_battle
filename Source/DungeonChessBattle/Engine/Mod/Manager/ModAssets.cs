@@ -15,19 +15,23 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// <param name="registry">本次装配的展示注册表，条目展示数据所在。</param>
 /// <param name="catalog">本次装配所用的 mod 管理根。</param>
 /// <param name="assemblyFingerprint">装配那一刻的启用集指纹。</param>
-public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, string assemblyFingerprint) {
+public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, string assemblyFingerprint)
+{
     /// <summary>展示注册表：条目展示数据的唯一读面，按内容键查询。</summary>
-    public IDisplayRegistry Registry {
+    public IDisplayRegistry Registry
+    {
         get;
     } = registry;
 
     /// <summary>本次装配所用的 mod 管理根。</summary>
-    public ModCatalog Catalog {
+    public ModCatalog Catalog
+    {
         get;
     } = catalog;
 
     /// <summary>装配那一刻的启用集指纹；与 <see cref="ModCatalog.Fingerprint"/> 不等即说明磁盘已改动而未重启。</summary>
-    public string AssemblyFingerprint {
+    public string AssemblyFingerprint
+    {
         get;
     } = assemblyFingerprint;
 
@@ -49,7 +53,8 @@ public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, stri
         ModCatalog catalog,
         IContentRegistryView content,
         Action<IReadOnlyList<ModDisplayDeclaration>> mountResourcePacks,
-        ILoggerFactory? loggerFactory = null) {
+        ILoggerFactory? loggerFactory = null)
+    {
         var logger = loggerFactory?.CreateLogger<ModAssets>() ?? NullLogger<ModAssets>.Instance;
         var registry = new DisplayRegistry();
 
@@ -85,7 +90,8 @@ public sealed class ModAssets(DisplayRegistry registry, ModCatalog catalog, stri
     }
 
     /// <summary>一条展示装配问题：原因已含 mod 归属，条目同时进管理面。</summary>
-    private static void LogDisplayFailed(ILogger logger, ModError error) {
+    private static void LogDisplayFailed(ILogger logger, ModError error)
+    {
         if (logger.IsEnabled(LogLevel.Error))
             logger.LogError("展示装配失败：{ModId}：{Reason}", error.ModId, error.Message);
     }

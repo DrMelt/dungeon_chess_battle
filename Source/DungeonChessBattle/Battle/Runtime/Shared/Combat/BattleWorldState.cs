@@ -1,6 +1,5 @@
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
-using DungeonChessBattle.Battle.Shared.ValueObjects;
 
 namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 

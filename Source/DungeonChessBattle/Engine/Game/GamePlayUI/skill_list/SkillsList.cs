@@ -18,12 +18,14 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 本面板只做目标选择，不判可否施放：按键即经战斗会话上下文上行，服务端权威裁定可否施放、
 /// 预输入排队与结算。
 /// </summary>
-public partial class SkillsList : Control {
+public partial class SkillsList : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<SkillsList> _logger = ServiceLocator.GetLogger<SkillsList>();
 
     /// <summary>节点引用容器。</summary>
-    public SkillsListInterRefs? InterRefs {
+    public SkillsListInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -33,7 +35,8 @@ public partial class SkillsList : Control {
 
     /// <summary>玩家交互状态引用，用于位置目标瞄准时读取鼠标地面位置并写等待标志。</summary>
     [Export]
-    public PlayerInterfaceRes? PlayerInterfaceRes {
+    public PlayerInterfaceRes? PlayerInterfaceRes
+    {
         get; private set;
     }
 
@@ -42,7 +45,8 @@ public partial class SkillsList : Control {
     private EffectHints? _effectHints;
 
     /// <summary>技能释放状态机状态。</summary>
-    private enum SkillReleaseState {
+    private enum SkillReleaseState
+    {
         /// <summary>空闲。</summary>
         Idle,
         /// <summary>等待玩家选择位置目标。</summary>
@@ -70,13 +74,16 @@ public partial class SkillsList : Control {
     /// <summary>
     /// 节点就绪：获取引用集合节点并校验导出引用。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<SkillsListInterRefs>("SkillsListInterRefs");
-        if (InterRefs == null) {
+        if (InterRefs == null)
+        {
             _logger.LogError("SkillsListInterRefs node not found.");
             return;
         }
-        if (_sessionRef == null) {
+        if (_sessionRef == null)
+        {
             _logger.LogError("_sessionRef is not assigned!");
             return;
         }
@@ -88,7 +95,8 @@ public partial class SkillsList : Control {
     /// 每帧处理位置目标选择输入，并对本地玩家角色做脏检查，变化时重建按钮列表。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         HandleWaitPosTargetInput();
         UpdateRangePreview();
 
@@ -101,18 +109,22 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>处理等待位置目标时的确认/取消输入。</summary>
-    private void HandleWaitPosTargetInput() {
+    private void HandleWaitPosTargetInput()
+    {
         if (_state != SkillReleaseState.WaitingPosTarget || _waitingButton == null)
             return;
 
-        if (Input.IsActionJustPressed("Skill_UnSelectTarget")) {
+        if (Input.IsActionJustPressed("Skill_UnSelectTarget"))
+        {
             CancelWait();
             return;
         }
 
-        if (Input.IsActionJustPressed("Skill_SelectTarget")) {
+        if (Input.IsActionJustPressed("Skill_SelectTarget"))
+        {
             var targetPos = PlayerInterfaceRes?.MouseGroundPosition;
-            if (targetPos != null) {
+            if (targetPos != null)
+            {
                 var v = targetPos.Value;
                 SubmitCast(_waitingButton.BindSkill, 0, v.X, v.Z, _waitingButton);
             }
@@ -125,7 +137,8 @@ public partial class SkillsList : Control {
     /// 技能定义取自单位配置，展示数据按技能键取自展示取数入口，未声明时为 null 由按钮侧降级。
     /// </summary>
     /// <param name="unit">本地单位只读视图，无则清空按钮。</param>
-    private void UpdateSkillsList(IBattleUnitView? unit) {
+    private void UpdateSkillsList(IBattleUnitView? unit)
+    {
         CancelWait();
 
         var hBox = InterRefs?.HBoxContainerRef;
@@ -133,7 +146,8 @@ public partial class SkillsList : Control {
             return;
 
         var children = hBox.GetChildren();
-        foreach (var child in children) {
+        foreach (var child in children)
+        {
             child.QueueFree();
         }
         _skillButtonList.Clear();
@@ -146,7 +160,8 @@ public partial class SkillsList : Control {
         if (config == null)
             return;
 
-        foreach (var skillDefinition in config.Skills) {
+        foreach (var skillDefinition in config.Skills)
+        {
             var display = ServiceLocator.ModAssets?.Registry.GetSkill(skillDefinition.SkillId);
             var buttonSkill = packedScene.Instantiate<ButtonSkillBase>();
             buttonSkill.Init(skillDefinition, display, unit, this);
@@ -159,29 +174,34 @@ public partial class SkillsList : Control {
     /// 技能按钮点击处理：按技能目标类型分发，并发起施法 RPC。
     /// </summary>
     /// <param name="button">被点击的技能按钮。</param>
-    public void OnSkillButtonPressed(ButtonSkillBase button) {
+    public void OnSkillButtonPressed(ButtonSkillBase button)
+    {
         var skill = button.BindSkill;
         var session = _sessionRef;
-        if (session == null) {
+        if (session == null)
+        {
             button.ButtonPressed = false;
             return;
         }
 
         // NeedUnitTarget：优先使用已锁定的本地焦点单位，目标阵营需满足技能目标策略
-        if (skill.NeedUnitTarget) {
+        if (skill.NeedUnitTarget)
+        {
             var focusUnit = session.LocalFocus;
             var selfUnit = session.LocalUnit;
 
             // 焦点目标合法时直接施放到焦点目标
             if (focusUnit != null
                 && session.TryGetCampRelations(out var relations)
-                && SkillTargetValidator.CanAffect(button.BindUnit, focusUnit, skill.TargetPolicy, relations)) {
+                && SkillTargetValidator.CanAffect(button.BindUnit, focusUnit, skill.TargetPolicy, relations))
+            {
                 SubmitCast(skill, focusUnit.UnitId, 0f, 0f, button);
                 return;
             }
 
             // 无焦点目标或焦点目标不合法：允许对友方释放的技能回退为对自身施放
-            if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfUnit != null) {
+            if (skill.TargetPolicy.HasFlag(SkillTargetPolicy.Same) && selfUnit != null)
+            {
                 SubmitCast(skill, selfUnit.UnitId, 0f, 0f, button);
                 return;
             }
@@ -191,7 +211,8 @@ public partial class SkillsList : Control {
         }
 
         // NeedPosTarget：进入等待状态，按钮保持按下
-        if (skill.NeedPosTarget) {
+        if (skill.NeedPosTarget)
+        {
             _state = SkillReleaseState.WaitingPosTarget;
             _waitingButton = button;
             PlayerInterfaceRes?.IsWaitingSkillTarget = true;
@@ -204,7 +225,8 @@ public partial class SkillsList : Control {
     }
 
     /// <summary>提交施法意图：按键即上行，能否施放与预输入排队全由权威裁定。</summary>
-    private void SubmitCast(SkillDefinition skill, ushort targetNetId, float posX, float posZ, ButtonSkillBase button) {
+    private void SubmitCast(SkillDefinition skill, ushort targetNetId, float posX, float posZ, ButtonSkillBase button)
+    {
         _sessionRef?.Command?.Cast(skill.SkillId, targetNetId, posX, posZ);
         button.ButtonPressed = false;
     }
@@ -212,7 +234,8 @@ public partial class SkillsList : Control {
     /// <summary>
     /// 取消等待位置目标状态并通知交互状态，同时销毁范围提示。
     /// </summary>
-    private void CancelWait() {
+    private void CancelWait()
+    {
         _waitingButton?.ButtonPressed = false;
         _waitingButton = null;
         _state = SkillReleaseState.Idle;
@@ -226,7 +249,8 @@ public partial class SkillsList : Control {
     /// 展示范围提示：按按钮携带的范围提示场景创建预览实例，参数取自领域范围形状。
     /// 初始化延迟到挂载后一帧执行。
     /// </summary>
-    private void ShowRangePreview(ButtonSkillBase button) {
+    private void ShowRangePreview(ButtonSkillBase button)
+    {
         if (_effectHints == null)
             return;
         if (button.BindSkill.CastArea is not RectShape shape)
@@ -245,7 +269,8 @@ public partial class SkillsList : Control {
     /// 按施法单位位置与鼠标地面位置刷新范围提示的位置与朝向。
     /// 提示尚未就绪或读数缺失时跳过本帧。
     /// </summary>
-    private void UpdateRangePreview() {
+    private void UpdateRangePreview()
+    {
         var hint = _rangeHint;
         var shape = _rangeRect;
         if (hint == null || shape == null)

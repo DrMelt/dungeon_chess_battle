@@ -46,7 +46,8 @@ public sealed record BattleEntityMetrics(
     int StateSize,
     int PendingToRemoveEntities,
     float StateSpreadAvg,
-    int StateSpreadMax) {
+    int StateSpreadMax)
+{
     /// <summary>单个 tick 的毫秒宽度，<see cref="Tickrate"/> 未定时为 0。</summary>
     public float TickMs => Tickrate == 0 ? 0f : 1000f / Tickrate;
 
@@ -74,8 +75,10 @@ public sealed record BattleEntityMetrics(
     /// <see cref="AckLagTicks"/> 取自 state A 的回显，A 本身可能已积压，故两者必须分开读。
     /// 不可信或欠账估计偏大时钳到 0。
     /// </summary>
-    public int NetAckLagTicks {
-        get {
+    public int NetAckLagTicks
+    {
+        get
+        {
             if (!TickLagTrusted)
                 return 0;
             int net = AckLagTicks - PlaybackDebtTicks;
@@ -87,8 +90,10 @@ public sealed record BattleEntityMetrics(
     public float NetAckLagMs => NetAckLagTicks * TickMs;
 
     /// <summary>三段分解是否可信：回显到位、无倒挂、累计不超一秒。为假时三段读数无意义。</summary>
-    public bool TickLagTrusted {
-        get {
+    public bool TickLagTrusted
+    {
+        get
+        {
             if (Tickrate == 0 || SrvAckTick == 0 || SrvRecvTick == 0)
                 return false;
             int uplink = UplinkTicks;

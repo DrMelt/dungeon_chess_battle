@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Game.GamePlayUI.skill_list;
 /// 技能施放动作抽象：把已确定的施放意图提交给战斗服务。
 /// 施放意图统一为扁平参数，本接口与网络载体解耦。
 /// </summary>
-public interface ISkillCaster {
+public interface ISkillCaster
+{
     /// <summary>施放技能。</summary>
     /// <param name="skillKey">技能配置键。</param>
     /// <param name="targetNetId">目标单位网络 ID，无目标传 0。</param>

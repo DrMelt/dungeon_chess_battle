@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Battle.Server.Shared;
 /// 使大厅协调层与战斗实现层互不依赖。
 /// 实现由 Server.Battle 的 BattleRoomManager 承担。
 /// </summary>
-public interface IBattleRoomManager {
+public interface IBattleRoomManager
+{
     /// <summary>开始战斗：解析房间副本配置、创建房间服务器并等待首帧初始化完成，返回房间监听端口。副本缺失与初始化失败以错误返回，房间不留痕。</summary>
     ErrorOr<int> StartRoomBattle(RoomId roomId);
 

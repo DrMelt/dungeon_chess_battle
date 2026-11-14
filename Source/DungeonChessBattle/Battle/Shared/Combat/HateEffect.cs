@@ -1,7 +1,8 @@
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>仇恨账本的修改操作。</summary>
-public enum HateEffectOp : byte {
+public enum HateEffectOp : byte
+{
     /// <summary>在既有仇恨上加量。</summary>
     Add = 0,
     /// <summary>既有仇恨乘倍率。</summary>

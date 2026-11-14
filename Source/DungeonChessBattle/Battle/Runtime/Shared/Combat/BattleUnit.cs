@@ -15,29 +15,35 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 在线端本实体是下行回填容器：动态状态与 <see cref="RuntimeState"/> 由 <c>UnitPawn.SyncInto</c> 覆写，
 /// 基础数值经 <see cref="BaseConfig"/> 读取单位基础状态，不参与结算。
 /// </summary>
-public sealed class BattleUnit : IBattleUnitView {
+public sealed class BattleUnit : IBattleUnitView
+{
     /// <summary>单位基础状态，基础数值与基准技能集的唯一来源，装配期注入后不变。</summary>
-    public required UnitBaseConfig BaseConfig {
+    public required UnitBaseConfig BaseConfig
+    {
         get; init;
     }
 
     /// <inheritdoc />
-    public required UnitId UnitId {
+    public required UnitId UnitId
+    {
         get; init;
     }
 
     /// <inheritdoc />
-    public required string UnitName {
+    public required string UnitName
+    {
         get; init;
     }
 
     /// <inheritdoc />
-    public required IReadOnlyList<CampId> Camps {
+    public required IReadOnlyList<CampId> Camps
+    {
         get; init;
     }
 
     /// <summary>单位装备的技能定义，装配期写入后不变。</summary>
-    public required IReadOnlyList<SkillDefinition> Skills {
+    public required IReadOnlyList<SkillDefinition> Skills
+    {
         get; init;
     }
 
@@ -45,7 +51,8 @@ public sealed class BattleUnit : IBattleUnitView {
     private SkillKeyId[]? _skillKeys;
 
     /// <summary>仇恨规则，装配期直传配置；null 表示不参与仇恨计算。</summary>
-    public IHateRule? HateRule {
+    public IHateRule? HateRule
+    {
         get; init;
     }
 
@@ -53,7 +60,8 @@ public sealed class BattleUnit : IBattleUnitView {
     IHateRule? IHateActorView.HateRule => HateRule;
 
     /// <inheritdoc />
-    public float HateFactor {
+    public float HateFactor
+    {
         get; init;
     } = 1f;
 
@@ -61,7 +69,8 @@ public sealed class BattleUnit : IBattleUnitView {
     public float MaxHealth => BaseConfig.MaxHealth;
 
     /// <summary>当前生命值。</summary>
-    public float Health {
+    public float Health
+    {
         get; set;
     }
 
@@ -93,12 +102,14 @@ public sealed class BattleUnit : IBattleUnitView {
     public float HitRadius => BaseConfig.HitRadius;
 
     /// <summary>当前施法技能，default 表示无施法。</summary>
-    public SkillKeyId SkillCasting {
+    public SkillKeyId SkillCasting
+    {
         get; set;
     }
 
     /// <summary>当前施法剩余读条时间，秒。</summary>
-    public float SkillCastRemaining {
+    public float SkillCastRemaining
+    {
         get; set;
     }
 
@@ -106,12 +117,14 @@ public sealed class BattleUnit : IBattleUnitView {
     public UnitCombatState RuntimeState { get; } = new();
 
     /// <summary>当前世界位置，XZ 平面。</summary>
-    public Vector2 Position {
+    public Vector2 Position
+    {
         get; set;
     }
 
     /// <summary>当前朝向方向向量，XZ 平面。</summary>
-    public Vector2 Direction {
+    public Vector2 Direction
+    {
         get; set;
     }
 
@@ -120,7 +133,8 @@ public sealed class BattleUnit : IBattleUnitView {
     /// 本帧两个读者：位移解算取方向，读条推进据其非零与否判打断。
     /// 非同步字段，不进 <c>UnitPawn.SyncFrom/SyncInto</c> 清单，在线端恒零。
     /// </summary>
-    public Vector2 MoveInput {
+    public Vector2 MoveInput
+    {
         get; set;
     }
 
@@ -128,7 +142,8 @@ public sealed class BattleUnit : IBattleUnitView {
     /// 本帧施法意图，null 表示无。写者全在 Battle.Logic，由 <c>BattleScene.Tick</c> 的读条推进段消费、末尾作废；
     /// 一帧一份，后写覆盖先写。非同步字段，裁定通过后才转为读条状态并投影。
     /// </summary>
-    public CastIntent? CastInput {
+    public CastIntent? CastInput
+    {
         get; set;
     }
 
@@ -136,12 +151,14 @@ public sealed class BattleUnit : IBattleUnitView {
     /// 聚焦目标，<see cref="UnitId.None"/> 表示无。持续展示态，非逐帧意图：由输入门面设定后保持，
     /// 目标死亡或消失随 <c>BattleScene.Tick</c> 清零。只影响展示，不参与结算，在线端随同步通道回填。
     /// </summary>
-    public UnitId FocusTarget {
+    public UnitId FocusTarget
+    {
         get; set;
     }
 
     /// <inheritdoc />
-    public UnitSnapshot Snapshot => new() {
+    public UnitSnapshot Snapshot => new()
+    {
         Health = Health,
         MaxHealth = MaxHealth,
         PhysicalAttackBase = PhysicalAttackBase,
@@ -155,8 +172,10 @@ public sealed class BattleUnit : IBattleUnitView {
     };
 
     /// <inheritdoc />
-    public IReadOnlyList<SkillKeyId> SkillKeys {
-        get {
+    public IReadOnlyList<SkillKeyId> SkillKeys
+    {
+        get
+        {
             if (_skillKeys != null)
                 return _skillKeys;
             var keys = new SkillKeyId[Skills.Count];
@@ -170,8 +189,10 @@ public sealed class BattleUnit : IBattleUnitView {
     public bool HasSkill(SkillKeyId skillKey) => GetSkill(skillKey) != null;
 
     /// <summary>按技能键取技能定义，单位未装备该技能时返回 null。</summary>
-    public SkillDefinition? GetSkill(SkillKeyId skillKey) {
-        foreach (var skill in Skills) {
+    public SkillDefinition? GetSkill(SkillKeyId skillKey)
+    {
+        foreach (var skill in Skills)
+        {
             if (skill.SkillId == skillKey)
                 return skill;
         }
@@ -179,9 +200,11 @@ public sealed class BattleUnit : IBattleUnitView {
     }
 
     /// <inheritdoc />
-    public float GetTotalCooldownRemaining(SkillKeyId skillKey) {
+    public float GetTotalCooldownRemaining(SkillKeyId skillKey)
+    {
         float remaining = GcdRemainingOf(GetSkill(skillKey)?.Gcd?.GroupKey);
-        foreach (var cd in RuntimeState.Cooldowns) {
+        foreach (var cd in RuntimeState.Cooldowns)
+        {
             if (cd.SkillKey != skillKey)
                 continue;
             return MathF.Max(remaining, cd.Remaining);
@@ -190,10 +213,12 @@ public sealed class BattleUnit : IBattleUnitView {
     }
 
     /// <summary>指定全局冷却组的剩余秒数；组键为空或该组无条目返回 0。</summary>
-    private float GcdRemainingOf(string? groupKey) {
+    private float GcdRemainingOf(string? groupKey)
+    {
         if (string.IsNullOrEmpty(groupKey))
             return 0f;
-        foreach (var gcd in RuntimeState.Gcds) {
+        foreach (var gcd in RuntimeState.Gcds)
+        {
             if (gcd.GroupKey == groupKey)
                 return gcd.Remaining;
         }
@@ -211,7 +236,8 @@ public sealed class BattleUnit : IBattleUnitView {
         SkillCasting, SkillCastRemaining, FocusTarget, RuntimeState.CaptureState());
 
     /// <summary>按状态副本写回：标量直接覆盖，帧内意图归零，读条目标由调用方按标识解析后传入。</summary>
-    public void RestoreState(BattleUnitState state, BattleUnit? castTarget) {
+    public void RestoreState(BattleUnitState state, BattleUnit? castTarget)
+    {
         Health = state.Health;
         Position = state.Position;
         Direction = state.Direction;

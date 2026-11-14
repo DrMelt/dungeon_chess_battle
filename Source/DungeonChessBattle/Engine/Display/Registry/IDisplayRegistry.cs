@@ -10,7 +10,8 @@ namespace DungeonChessBattle.Game.Display.Registry;
 /// 场景模板与图标纹理都随条目数据以对象直接携带，不经本口登记或解析，mod 引自己包内的
 /// <c>res://mods/{mod id}/</c> 资源即可，无须全局名。
 /// </summary>
-public interface IDisplayRegistry {
+public interface IDisplayRegistry
+{
     /// <summary>按技能键取展示数据；未注册返回 null。</summary>
     SkillDisplay? GetSkill(SkillKeyId skillId);
 

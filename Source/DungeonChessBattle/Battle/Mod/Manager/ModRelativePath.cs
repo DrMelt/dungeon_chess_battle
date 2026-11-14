@@ -5,9 +5,11 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// 只接受 <c>/</c> 分隔的包内相对路径；绝对路径、盘符、UNC、以分隔符开头、含上级跳转、任一段含冒号一律拒绝。
 /// 冒号两侧文件系统语义不同，一并拒绝可保证两端同一清单同一裁决。
 /// </summary>
-public static class ModRelativePath {
+public static class ModRelativePath
+{
     /// <summary>是否为可接受的包内相对路径。</summary>
-    public static bool IsSafe(string? relative) {
+    public static bool IsSafe(string? relative)
+    {
         if (string.IsNullOrEmpty(relative) || relative[0] is '/' or '\\')
             return false;
         if (Path.IsPathRooted(relative) || relative.Contains("..", StringComparison.Ordinal))
@@ -16,7 +18,8 @@ public static class ModRelativePath {
     }
 
     /// <summary>解析为 rootDirectory 内的绝对路径；非法或解析后越出该目录返回 false。</summary>
-    public static bool TryResolve(string rootDirectory, string? relative, out string? absolutePath) {
+    public static bool TryResolve(string rootDirectory, string? relative, out string? absolutePath)
+    {
         absolutePath = null;
         if (!IsSafe(relative))
             return false;

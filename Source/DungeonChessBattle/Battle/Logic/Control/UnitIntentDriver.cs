@@ -17,7 +17,8 @@ namespace DungeonChessBattle.Battle.Logic.Control;
 /// <param name="relations">副本阵营关系函数，注入自治意图源。</param>
 /// <param name="loggerFactory">玩家意图源日志工厂，可选注入。</param>
 public sealed class UnitIntentDriver(
-    BattleScene scene, CampRelationResolver relations, ILoggerFactory? loggerFactory = null) {
+    BattleScene scene, CampRelationResolver relations, ILoggerFactory? loggerFactory = null)
+{
     /// <summary>单位 ID 到意图源，同一单位重复登记覆盖。</summary>
     private readonly Dictionary<UnitId, IUnitIntentSource> _sources = [];
 
@@ -31,8 +32,10 @@ public sealed class UnitIntentDriver(
 
     /// <summary>把玩家移动输入转写到该单位玩家意图源的输入槽。</summary>
     /// <returns>单位由玩家控制并已写入返回 true。</returns>
-    public bool SubmitMove(UnitId unitId, Vector2 moveDirection) {
-        if (_sources.TryGetValue(unitId, out var source) && source is PlayerIntentSource player) {
+    public bool SubmitMove(UnitId unitId, Vector2 moveDirection)
+    {
+        if (_sources.TryGetValue(unitId, out var source) && source is PlayerIntentSource player)
+        {
             player.SubmitMove(moveDirection);
             return true;
         }
@@ -41,8 +44,10 @@ public sealed class UnitIntentDriver(
 
     /// <summary>把玩家施法意图转写到该单位玩家意图源的待决槽。</summary>
     /// <returns>单位由玩家控制并已写入返回 true。</returns>
-    public bool SubmitCast(UnitId unitId, in UnitCastIntent cast) {
-        if (_sources.TryGetValue(unitId, out var source) && source is PlayerIntentSource player) {
+    public bool SubmitCast(UnitId unitId, in UnitCastIntent cast)
+    {
+        if (_sources.TryGetValue(unitId, out var source) && source is PlayerIntentSource player)
+        {
             player.SubmitCast(cast);
             return true;
         }
@@ -54,7 +59,8 @@ public sealed class UnitIntentDriver(
     /// 遍历按世界注册顺序，两端同序；投递的意图由 <see cref="BattleScene.Tick"/> 末统一作废。
     /// </summary>
     /// <param name="deltaTime">距上一逻辑帧的间隔秒数。</param>
-    public void Advance(float deltaTime) {
+    public void Advance(float deltaTime)
+    {
         if (scene.CurrentPhase != BattlePhase.Running)
             return;
 
@@ -63,7 +69,8 @@ public sealed class UnitIntentDriver(
     }
 
     /// <summary>刷新一个单位的意图源并投递其当帧意图：未登记意图源即不推进，移动总投，无施法意图即不投施法。</summary>
-    private void RefreshAndApply(UnitId unitId, float deltaTime) {
+    private void RefreshAndApply(UnitId unitId, float deltaTime)
+    {
         if (!_sources.TryGetValue(unitId, out var source))
             return;
 
@@ -75,7 +82,8 @@ public sealed class UnitIntentDriver(
     }
 
     /// <summary>捕获全部玩家意图源的跨帧状态；自治意图源每帧重算，无跨帧状态。</summary>
-    public IntentSourcesState CaptureState() {
+    public IntentSourcesState CaptureState()
+    {
         var state = new IntentSourcesState();
         foreach (var (unitId, source) in _sources)
             if (source is PlayerIntentSource player)
@@ -84,7 +92,8 @@ public sealed class UnitIntentDriver(
     }
 
     /// <summary>按句柄重写玩家意图源的跨帧状态；句柄缺该单位时按默认状态写入。</summary>
-    public void RestoreState(IntentSourcesState state) {
+    public void RestoreState(IntentSourcesState state)
+    {
         foreach (var (unitId, source) in _sources)
             if (source is PlayerIntentSource player)
                 player.RestoreState(state.PerUnit.GetValueOrDefault(unitId));
@@ -95,7 +104,8 @@ public sealed class UnitIntentDriver(
 /// 意图源状态句柄：单位 ID 到其玩家意图源跨帧状态的映射。
 /// 形状只对意图侧可见，调用方按不透明句柄整存整取。
 /// </summary>
-public sealed class IntentSourcesState {
+public sealed class IntentSourcesState
+{
     /// <summary>单位 ID 到其玩家意图源的跨帧状态。</summary>
     internal Dictionary<UnitId, PlayerIntentState> PerUnit { get; } = [];
 }

@@ -6,24 +6,29 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace DungeonChessBattle.Battle.Mod.Manager;
 
 /// <summary>内容装配结果：装配产出的内容、参与内容的 mod 与装配期错误；装配不因个别 mod 失败而中止。</summary>
-public sealed class ContentBootResult {
+public sealed class ContentBootResult
+{
     /// <summary>成功装载并参与内容的 mod。</summary>
-    public required IReadOnlyList<LoadedMod> Mods {
+    public required IReadOnlyList<LoadedMod> Mods
+    {
         get; init;
     }
 
     /// <summary>装配期新增错误：数据代码入口装载失败与内容注册被拒。扫描期错误由装载结果携带，不在此重复。</summary>
-    public required IReadOnlyList<ModError> Errors {
+    public required IReadOnlyList<ModError> Errors
+    {
         get; init;
     }
 
     /// <summary>本次装配的内容指纹；无 mod 时为空串。</summary>
-    public required string Fingerprint {
+    public required string Fingerprint
+    {
         get; init;
     }
 
     /// <summary>本次装配产出的内容注册表，由调用方持有。</summary>
-    public required ContentSetRegistry Registry {
+    public required ContentSetRegistry Registry
+    {
         get; init;
     }
 }
@@ -33,7 +38,8 @@ public sealed class ContentBootResult {
 /// 引擎无内置内容，注册表每次装配新建；单个 mod 失败不中止装配。服务端与客户端共用本装配，两端内容同源。
 /// 产物以 <see cref="ContentSetRegistry"/> 交回调用方持有，本类不持全局状态。
 /// </summary>
-public static class ContentBootstrapper {
+public static class ContentBootstrapper
+{
     /// <summary>引擎内容修订号：引擎侧无内置内容，修订由装配方传入的内容指纹承担，此值保持稳定。</summary>
     public const string EngineRevision = "0";
 
@@ -41,7 +47,8 @@ public static class ContentBootstrapper {
     /// 用已完成扫描的结果装配：新建空注册表，再逐 mod 装载数据入口。
     /// 装配的起止与数据面条目计数记 Information，两端同形便于按指纹比对。
     /// </summary>
-    public static ContentBootResult Load(ModLoadResult result, ILoggerFactory? loggerFactory = null) {
+    public static ContentBootResult Load(ModLoadResult result, ILoggerFactory? loggerFactory = null)
+    {
         var logger = loggerFactory?.CreateLogger(typeof(ContentBootstrapper).FullName!) ?? NullLogger.Instance;
         string fingerprint = ContentFingerprint.Compute(result.Mods);
 
@@ -57,7 +64,8 @@ public static class ContentBootstrapper {
             .ToList();
         var entryErrors = ModEntryLoader.LoadEntries<IModEntry>(
             sources, "mod_", "数据代码入口装载失败",
-            (entry, modId) => {
+            (entry, modId) =>
+            {
                 context.BeginMod(modId);
                 entry.Initialize(context);
             }, loggerFactory);
@@ -71,7 +79,8 @@ public static class ContentBootstrapper {
                 registry.Skills.Count, registry.Buffs.Count, registry.Units.Count,
                 registry.GetPlayerSelectableUnits().Count, registry.Dungeons.Count);
 
-        return new ContentBootResult {
+        return new ContentBootResult
+        {
             Mods = result.Mods,
             Errors = errors,
             Fingerprint = fingerprint,
@@ -80,7 +89,8 @@ public static class ContentBootstrapper {
     }
 
     /// <summary>注册被拒的一条：原因已含 mod 归属，条目同时进产物供管理面展示。</summary>
-    private static void LogBootFailed(ILogger logger, ModError error) {
+    private static void LogBootFailed(ILogger logger, ModError error)
+    {
         if (logger.IsEnabled(LogLevel.Error))
             logger.LogError("内容装配失败：{ModId}：{Reason}", error.ModId, error.Message);
     }

@@ -5,19 +5,23 @@ using DungeonChessBattle.Battle.Shared.ValueObjects;
 namespace DungeonChessBattle.Battle.Shared.Combat;
 
 /// <summary>单位身份与阵营只读视图，敌我判定与展示用。</summary>
-public interface IUnitIdentityView {
+public interface IUnitIdentityView
+{
     /// <summary>单位名称，供调试与展示使用。</summary>
-    string UnitName {
+    string UnitName
+    {
         get;
     }
 
     /// <summary>单位网络实体 ID，房间内唯一，领域事件标识用。</summary>
-    UnitId UnitId {
+    UnitId UnitId
+    {
         get;
     }
 
     /// <summary>单位所属阵营列表。</summary>
-    IReadOnlyList<CampId> Camps {
+    IReadOnlyList<CampId> Camps
+    {
         get;
     }
 }
@@ -26,20 +30,24 @@ public interface IUnitIdentityView {
 /// <remarks>
 /// 标量状态（生命、读条）经 <see cref="ICombatValuesView"/> 收敛，施法校验与展示共用；快照只供结算取数。
 /// </remarks>
-public interface ICombatStatsView : ICombatValuesView {
+public interface ICombatStatsView : ICombatValuesView
+{
     /// <summary>当前战斗结算快照，只读输入。</summary>
-    UnitSnapshot Snapshot {
+    UnitSnapshot Snapshot
+    {
         get;
     }
 }
 
 /// <summary>技能来源只读视图：技能键集与冷却查询。</summary>
-public interface ISkillSource {
+public interface ISkillSource
+{
     /// <summary>单位是否拥有该技能。</summary>
     bool HasSkill(SkillKeyId skillKey);
 
     /// <summary>单位装备的全部技能键，按装配顺序；自治决策按此顺序枚举。</summary>
-    IReadOnlyList<SkillKeyId> SkillKeys {
+    IReadOnlyList<SkillKeyId> SkillKeys
+    {
         get;
     }
 
@@ -48,14 +56,17 @@ public interface ISkillSource {
 }
 
 /// <summary>仇恨消费只读视图：仇恨快照与单点查询、生成倍率与规则。</summary>
-public interface IHateActorView {
+public interface IHateActorView
+{
     /// <summary>当前仇恨快照，按仇恨值降序；状态同步器比对与下发用。按目标取值走 <see cref="HateOf"/>。</summary>
-    IReadOnlyList<HateSnapshot> Hates {
+    IReadOnlyList<HateSnapshot> Hates
+    {
         get;
     }
 
     /// <summary>仇恨生成倍率，作用于该单位造成的伤害与治疗仇恨。</summary>
-    float HateFactor {
+    float HateFactor
+    {
         get;
     }
 
@@ -63,15 +74,18 @@ public interface IHateActorView {
     float HateOf(UnitId targetUnitId);
 
     /// <summary>仇恨规则，以自身为中心评估事件产生仇恨；null 表示不参与仇恨计算。</summary>
-    IHateRule? HateRule {
+    IHateRule? HateRule
+    {
         get;
     }
 }
 
 /// <summary>单位生效 Buff 列表只读视图，展示按列表取图标、层数与剩余时间。</summary>
-public interface IBuffListView {
+public interface IBuffListView
+{
     /// <summary>当前生效 Buff 列表，按施加顺序。</summary>
-    IReadOnlyList<IBuffView> Buffs {
+    IReadOnlyList<IBuffView> Buffs
+    {
         get;
     }
 }
@@ -84,5 +98,6 @@ public interface IBuffListView {
 /// 标量状态经公共面（身份、数值、技能源）收敛，不做重复声明。
 /// 读写能力只保留在 <c>BattleUnit</c> 具体类，本接口不暴露任何写通道。
 /// </summary>
-public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView, IBuffListView {
+public interface IBattleUnitView : ISkillCasterView, ICombatStatsView, IHateActorView, IBuffListView
+{
 }

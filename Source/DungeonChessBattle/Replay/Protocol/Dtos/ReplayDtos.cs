@@ -26,7 +26,8 @@ public sealed record ReplaySummaryDto(
     int DurationTicks,
     string DataVersion,
     string LogicVersion,
-    IReadOnlyList<ReplayPlayerDto> Players) {
+    IReadOnlyList<ReplayPlayerDto> Players)
+{
     /// <summary>归档元数据 → 摘要条目：帧轴折成时长，玩家表丢掉不上线的 NetId。</summary>
     public static ReplaySummaryDto From(ReplayMeta meta) => new(
         meta.RoomId,

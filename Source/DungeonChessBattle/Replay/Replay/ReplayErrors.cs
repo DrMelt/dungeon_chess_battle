@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Replay;
 /// 回放构建的可预期失败：归档不合规范，或归档引用的内容与当前装配不符。
 /// 描述面向日志与界面提示，自带定位所需的键与值，不携带异常对象。
 /// </summary>
-public static class ReplayErrors {
+public static class ReplayErrors
+{
     /// <summary>归档声明的 tick 率非法。</summary>
     public static Error InvalidTickRate(int tickRate) => Error.Validation(
         code: "Replay.TickRate.Invalid", description: $"回放 tick 率非法：{tickRate}");

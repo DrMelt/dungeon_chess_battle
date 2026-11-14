@@ -14,7 +14,8 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 同时负责 3D 交互拾取（更新鼠标悬停单位/地面瞄准点、左键聚焦目标）写入共享交互状态。
 /// 由 BattleCoordinator 在每帧 _Process 中调度 Tick；等待目标选择时暂缓提交移动输入。
 /// </summary>
-public partial class BattleInputController : Node {
+public partial class BattleInputController : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BattleInputController> _logger = ServiceLocator.GetLogger<BattleInputController>();
 
@@ -44,7 +45,8 @@ public partial class BattleInputController : Node {
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (playerInterfaceResRef == null)
             _logger.LogError("playerInterfaceResRef is not assigned!");
         if (sessionRef == null)
@@ -61,7 +63,8 @@ public partial class BattleInputController : Node {
     /// 每帧采集输入并提交到战斗服务；先更新 3D 拾取，等待目标选择时跳过移动输入提交。
     /// </summary>
     /// <param name="service">当前战斗服务。</param>
-    public void Tick(IClientBattleService service) {
+    public void Tick(IClientBattleService service)
+    {
         UpdateRaycast();
 
         // 等待技能目标选择中，暂停提交战斗输入
@@ -77,15 +80,18 @@ public partial class BattleInputController : Node {
     /// 经 RPC 提交服务端，校验后写回服务端权威聚焦目标，
     /// 由 BattleSessionContext 投影为本地焦点单位。
     /// </summary>
-    public override void _UnhandledInput(InputEvent @event) {
-        if (@event.IsActionPressed("SwitchTarget")) {
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event.IsActionPressed("SwitchTarget"))
+        {
             SwitchToNextEnemy();
             return;
         }
 
         if (@event is not InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: true })
             return;
-        if (sessionRef == null) {
+        if (sessionRef == null)
+        {
             _logger.LogWarning("sessionRef is not assigned!");
             return;
         }
@@ -100,8 +106,10 @@ public partial class BattleInputController : Node {
     /// <summary>
     /// 切换到下一个敌方聚焦目标；等待技能位置目标选择时不触发，避免与位置瞄准冲突。
     /// </summary>
-    private void SwitchToNextEnemy() {
-        if (sessionRef == null) {
+    private void SwitchToNextEnemy()
+    {
+        if (sessionRef == null)
+        {
             _logger.LogWarning("sessionRef is not assigned!");
             return;
         }
@@ -110,7 +118,8 @@ public partial class BattleInputController : Node {
 
         var session = sessionRef;
         var localUnit = session.LocalUnit;
-        if (localUnit == null) {
+        if (localUnit == null)
+        {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("SwitchToNextEnemy: no local unit.");
             return;
@@ -121,7 +130,8 @@ public partial class BattleInputController : Node {
             localUnit.UnitId,
             session.LocalFocus?.UnitId ?? 0,
             session.ResolveLocalCampRelation);
-        if (next == 0) {
+        if (next == 0)
+        {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("SwitchToNextEnemy: no living enemy targets.");
             return;
@@ -136,7 +146,8 @@ public partial class BattleInputController : Node {
     /// 更新鼠标悬停单位与地面瞄准点写入共享交互状态。
     /// MouseOnUnit 驱动轮廓高亮；MouseGroundPosition 供位置型技能瞄准使用。
     /// </summary>
-    private void UpdateRaycast() {
+    private void UpdateRaycast()
+    {
         if (playerInterfaceResRef == null || cameraRef == null)
             return;
 
@@ -146,7 +157,8 @@ public partial class BattleInputController : Node {
     }
 
     /// <summary>从相机经鼠标位置发射线，命中单位交互层时返回对应的交互区域。</summary>
-    private UnitShowArea3D? RaycastUnitFromCamera() {
+    private UnitShowArea3D? RaycastUnitFromCamera()
+    {
         if (cameraRef == null)
             return null;
 
@@ -163,7 +175,8 @@ public partial class BattleInputController : Node {
     }
 
     /// <summary>射线与地面平面（Y=0）的交点；无交点或朝下不交时返回 null。</summary>
-    private Vector3? RaycastGroundPosition() {
+    private Vector3? RaycastGroundPosition()
+    {
         if (cameraRef == null)
             return null;
 
@@ -180,7 +193,8 @@ public partial class BattleInputController : Node {
     }
 
     /// <summary>退出战斗时清零输入缓冲并重置目标循环游标。</summary>
-    public void Reset() {
+    public void Reset()
+    {
         _moveDir = Vector2.Zero;
         _targetCycle.Reset();
     }

@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Client;
 /// </summary>
 /// <param name="content">内容注册表只读视图，房间客户端装配领域单位与副本布局的来源。</param>
 public sealed class DefaultClientConnectionFactory(IContentRegistryView content)
-    : IClientConnectionFactory {
+    : IClientConnectionFactory
+{
     /// <inheritdoc />
     public LobbyClient CreateLobbyClient(ILogger<LobbyClient> logger) => new(logger);
 

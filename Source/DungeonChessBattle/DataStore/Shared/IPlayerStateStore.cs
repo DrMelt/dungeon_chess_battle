@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Server.DataStore.Shared;
 /// 以 connectionId 为连接身份键，以 displayName 为房间成员键。
 /// 并发语义：任何线程都可安全调用；同一房间内的读改写由实现保证原子性。
 /// </summary>
-public interface IPlayerStateStore {
+public interface IPlayerStateStore
+{
     /// <summary>设置房间房主，并将房主登记为房间成员，默认未准备。</summary>
     void SetRoomHost(RoomId roomId, string hostName);
 

@@ -30,7 +30,8 @@ namespace DungeonChessBattle.Battle.Client;
 /// 实体创建回调与模型构建见 RoomBattleClient.EntityMapping。
 /// </summary>
 public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
-    IContentRegistryView content) : NetworkClientBase(logger), IClientBattleSession {
+    IContentRegistryView content) : NetworkClientBase(logger), IClientBattleSession
+{
     /// <summary>
     /// LES 两级缓冲目标水位下界，秒。<c>PreloadNextState</c> 按 <c>NetworkJitter × 1.5</c> 加本值
     /// 同时约束下行插值缓冲与服务端输入队列，水位除以 tick 宽度即 <c>TickLag</c> 的 debt 与 queue 两段。
@@ -119,7 +120,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     private ushort _localNetId;
 
     /// <summary>清理房间会话本地状态：实体缓存、战斗世界、阶段检测基准与传输统计。</summary>
-    private void ClearRoomSessionState() {
+    private void ClearRoomSessionState()
+    {
         _entityManager = null;
         _localController = null;
         _battleScene = null;
@@ -130,26 +132,30 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
         _eventLog.Clear();
         _lastKnownPhase = BattlePhase.Waiting;
         ResetTrafficCounters();
-        lock (_lock) {
+        lock (_lock)
+        {
             _roomEntity = null;
             _currentRoomId = RoomId.None;
         }
     }
 
     /// <summary>重连时清理房间会话状态。</summary>
-    protected override void OnReconnectCleanup() {
+    protected override void OnReconnectCleanup()
+    {
         base.OnReconnectCleanup();
         ClearRoomSessionState();
     }
 
     /// <summary>断开连接时清理房间会话状态。</summary>
-    protected override void OnDisconnectCleanup() {
+    protected override void OnDisconnectCleanup()
+    {
         base.OnDisconnectCleanup();
         ClearRoomSessionState();
     }
 
     /// <summary>轮询网络事件后驱动实体同步与展示回填，结算每秒流量并检测战斗阶段变化。</summary>
-    protected override void UpdateAfterPollEvents(float delta) {
+    protected override void UpdateAfterPollEvents(float delta)
+    {
         // 副本键同步后构建战斗世界；未同步时为空操作，随下一帧重试
         EnsureBattleScene();
         _entityManager?.Update();
@@ -160,7 +166,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
 
         // 每秒流量统计结算，每秒一次，换算并重置累加器
         _secondAccumulator += delta;
-        if (_secondAccumulator >= 1f) {
+        if (_secondAccumulator >= 1f)
+        {
             _secondAccumulator -= 1f;
             _bytesInPerSecond = _bytesIn;
             _packetsInPerSecond = _packetsIn;
@@ -178,7 +185,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
 
         // 检测 BattlePhase 投影变化，LES 无公开 Changed 事件，通过轮询检测
         var phase = RoomState.Phase;
-        if (phase != _lastKnownPhase) {
+        if (phase != _lastKnownPhase)
+        {
             _lastKnownPhase = phase;
             var roomId = _currentRoomId;
             if (!roomId.IsDefault)
@@ -191,7 +199,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 副本键未同步返回并随下一帧重试；构建时补注册已到达的单位。
     /// 副本不在本地内容中即本地内容与服务端漂移：放弃构建并上报，由装配层退出战斗。
     /// </summary>
-    private void EnsureBattleScene() {
+    private void EnsureBattleScene()
+    {
         if (_battleScene != null || _contentMismatchReported)
             return;
         if (_roomEntity is not { } room || string.IsNullOrWhiteSpace(room.DungeonKey.Value))
@@ -199,12 +208,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
 
         var dungeonKey = room.DungeonKey.Value;
         // 同步键来自服务端，进查询前先过值对象约束：超限即漂移，不让转换校验的异常冒到查询
-        if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is null) {
+        if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is null)
+        {
             ReportContentMismatch($"invalid dungeon key '{dungeonKey}'");
             return;
         }
 
-        if (content.GetDungeon(dungeonKey) is not { } dungeon) {
+        if (content.GetDungeon(dungeonKey) is not { } dungeon)
+        {
             ReportContentMismatch($"unknown dungeon key '{dungeonKey}'");
             return;
         }
@@ -218,23 +229,27 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
 
     /// <summary>Pawn 创建时构建领域单位并注册；战斗世界未就绪时先存映射，构建时统一补注册。
     /// 本地 <c>BattleScene</c> 只作回填容器，<c>Tick</c> 在在线端没有调用点，配置字段不参与本端结算。</summary>
-    private void AddPawnUnit(UnitPawn pawn) {
+    private void AddPawnUnit(UnitPawn pawn)
+    {
         if (_battleUnitByNetId.ContainsKey(pawn.Id))
             return;
 
         string unitKey = pawn.UnitKeyName.Value;
         // 同步键同样先过值对象约束再进查询
-        if (RestrictedString.TryCreate(unitKey, UnitConfigKey.MaxLength) is null) {
+        if (RestrictedString.TryCreate(unitKey, UnitConfigKey.MaxLength) is null)
+        {
             ReportContentMismatch($"invalid unit config key '{unitKey}'");
             return;
         }
 
         // 基础数值经内容只读视图共享服务端同份配置；未知配置键即本地内容与服务端漂移，与副本键一致地上报
-        if (content.GetUnit(unitKey) is not { } config) {
+        if (content.GetUnit(unitKey) is not { } config)
+        {
             ReportContentMismatch($"unknown unit config key '{unitKey}'");
             return;
         }
-        var unit = new BattleUnit {
+        var unit = new BattleUnit
+        {
             UnitId = pawn.Id,
             UnitName = pawn.UnitKeyName.Value,
             Camps = pawn.CampTags,
@@ -254,7 +269,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 本地内容与服务端不一致：只上报一次，此后不构建本地战斗世界。
     /// 由装配层退出战斗并提示玩家，本端保留网络连接，不做缺内容的降级呈现。
     /// </summary>
-    private void ReportContentMismatch(string reason) {
+    private void ReportContentMismatch(string reason)
+    {
         if (_contentMismatchReported)
             return;
         _contentMismatchReported = true;
@@ -283,20 +299,24 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 处理房间端口接收的二进制包：先识别可靠消息帧，其余 0xDC 帧交 LES 反序列化。
     /// 反序列化的异常在接收点收口，畸形帧丢弃并记一条警告，不中断主循环。
     /// </summary>
-    protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data) {
+    protected override void OnNetworkReceiveInternal(ReadOnlySpan<byte> data)
+    {
         _bytesIn += data.Length;
         _packetsIn++;
-        if (ReliableMessageFrame.TryReadBody(data, out var body)) {
+        if (ReliableMessageFrame.TryReadBody(data, out var body))
+        {
             HandleReliableServerMessage(body);
             return;
         }
         if (data.Length == 0 || data[0] != BattleRoomProtocol.PacketHeader)
             return;
 
-        try {
+        try
+        {
             _entityManager?.Deserialize(data);
         }
-        catch (Exception ex) when (IsMalformedFrame(ex)) {
+        catch (Exception ex) when (IsMalformedFrame(ex))
+        {
             _logger.LogWarning(ex, "Discard malformed entity sync frame: {Reason}", ex.Message);
         }
     }
@@ -308,27 +328,32 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 处理服务器可靠消息：解码整帧战斗事件日志并触发 <see cref="BattleEventsReceived"/>。
     /// 消息体已由 <see cref="ReliableMessageFrame"/> 从帧中提取；连接内可靠有序，断线重连期间的事件不补发。
     /// </summary>
-    private void HandleReliableServerMessage(NetDataReader body) {
+    private void HandleReliableServerMessage(NetDataReader body)
+    {
         if (_roomEntity == null)
             return;
         ReliableBattleEventLog log;
-        try {
+        try
+        {
             log = new ReliableBattleEventLog();
             log.Deserialize(body);
         }
-        catch (Exception ex) when (IsMalformedFrame(ex)) {
+        catch (Exception ex) when (IsMalformedFrame(ex))
+        {
             _logger.LogWarning(ex, "Discard malformed reliable battle event log: {Reason}", ex.Message);
             return;
         }
         if (log.Events is not { Length: > 0 })
             return;
         var decoded = new List<IBattleEvent>(log.Events.Length);
-        foreach (var e in log.Events) {
+        foreach (var e in log.Events)
+        {
             if (BattleEventCoder.Decode(e) is { } domainEvent)
                 decoded.Add(domainEvent);
         }
         var roomId = _currentRoomId;
-        if (!roomId.IsDefault) {
+        if (!roomId.IsDefault)
+        {
             _eventLog.Append(decoded, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             BattleEventsReceived?.Invoke(new BattleEventBatch(roomId, decoded));
         }
@@ -338,12 +363,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 连接建立时创建客户端实体管理器并订阅各实体类型的创建事件。
     /// 用计数装饰器包装 LES peer，采集出站流量。
     /// </summary>
-    protected override void OnPeerConnectedInternal(NetPeer peer) {
+    protected override void OnPeerConnectedInternal(NetPeer peer)
+    {
         var lesPeer = new LiteNetLibNetPeer(peer, assignToTag: true);
         var countingPeer = new CountingNetPeer(lesPeer);
         _countingPeer = countingPeer;
         var typesMap = EntityTypesRegistry.EntityTypesMap;
-        _entityManager = new ClientEntityManager(typesMap, countingPeer, BattleRoomProtocol.PacketHeader) {
+        _entityManager = new ClientEntityManager(typesMap, countingPeer, BattleRoomProtocol.PacketHeader)
+        {
             // 重设两级缓冲水位：默认值在 128 Hz 下折成 3.2/6.4 tick，本地回环的 TickLag 几乎全由此撑起。
             // 该水位只够本地链路，公网部署需按 RTT 与抖动分档，否则插值饥饿。
             PreferredBufferTimeLowest = BufferLowestSeconds,
@@ -368,7 +395,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>对端断开时清理房间会话状态。</summary>
     /// <param name="peer">断开的对端。</param>
     /// <param name="disconnectInfo">断开信息。</param>
-    protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo disconnectInfo) {
+    protected override void OnPeerDisconnectedInternal(NetPeer peer, DisconnectInfo disconnectInfo)
+    {
         base.OnPeerDisconnectedInternal(peer, disconnectInfo);
         ClearRoomSessionState();
     }
@@ -388,18 +416,21 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <param name="targetPosX">位置目标 X，范围伤害技能使用。</param>
     /// <param name="targetPosZ">位置目标 Z，范围伤害技能使用。</param>
     public void CastSkill(ushort targetNetId, string skillId,
-        float targetPosX = 0f, float targetPosZ = 0f) {
+        float targetPosX = 0f, float targetPosZ = 0f)
+    {
         var controller = _localController;
         if (controller == null)
             return;
 
-        var req = new CastSkillRequest {
+        var req = new CastSkillRequest
+        {
             SkillKey = skillId,
             TargetNetId = targetNetId,
             TargetPosX = targetPosX,
             TargetPosZ = targetPosZ,
         };
-        controller.SendCastSkillRequest(req, onResult => {
+        controller.SendCastSkillRequest(req, onResult =>
+        {
             if (!onResult && _logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("CastSkill rejected by server: skill={SkillId}, target={TargetId}",
                     skillId, targetNetId);
@@ -411,12 +442,14 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 聚焦持有者由服务端从请求来源控制器携带的单位推导，不接收客户端指定。
     /// </summary>
     /// <param name="targetNetId">目标单位网络实体 ID，传 0 表示清除聚焦目标。</param>
-    public void SetFocusTarget(ushort targetNetId) {
+    public void SetFocusTarget(ushort targetNetId)
+    {
         var controller = _localController;
         if (controller == null)
             return;
 
-        controller.SendSetFocusTargetRequest(new SetFocusTargetRequest { TargetNetId = targetNetId }, onResult => {
+        controller.SendSetFocusTargetRequest(new SetFocusTargetRequest { TargetNetId = targetNetId }, onResult =>
+        {
             if (!onResult && _logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("SetFocusTarget rejected by server: target={TargetId}", targetNetId);
         });
@@ -428,27 +461,33 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>Godot UI 层调用，提交当前帧的移动输入到 LES 框架。
     /// 框架自动进行 Delta 编码、UDP 发送、预测回滚。
     /// </summary>
-    public void SubmitPlayerInput(System.Numerics.Vector2 moveDir) {
-        if (_localController != null) {
+    public void SubmitPlayerInput(System.Numerics.Vector2 moveDir)
+    {
+        if (_localController != null)
+        {
             _localController.SubmitInput(moveDir);
             if (_logger.IsEnabled(LogLevel.Trace))
                 _logger.LogTrace("Input submitted: dir={MoveDir}", moveDir);
         }
-        else if (_logger.IsEnabled(LogLevel.Warning) && moveDir != System.Numerics.Vector2.Zero) {
+        else if (_logger.IsEnabled(LogLevel.Warning) && moveDir != System.Numerics.Vector2.Zero)
+        {
             _logger.LogWarning("Local controller not ready, input dropped: dir={MoveDir}", moveDir);
         }
     }
 
     /// <summary>IClientBattleService 接口的输入提交实现，float 参数版。</summary>
-    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY) {
+    void IClientBattleService.SubmitPlayerInput(float moveX, float moveY)
+    {
         SubmitPlayerInput(new System.Numerics.Vector2(moveX, moveY));
     }
 
     #region 网络状态统计
 
     /// <summary>获取传输层指标快照：往返与单向延迟、每秒收发、累计丢包率、本端出站可靠队列积压。</summary>
-    public TransportMetrics TransportMetrics {
-        get {
+    public TransportMetrics TransportMetrics
+    {
+        get
+        {
             var peer = _serverPeer;
             return new TransportMetrics(
                 peer?.RoundTripTime ?? 0, peer?.Ping ?? 0,
@@ -462,8 +501,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 获取 LES 实体同步的原始读数；未连接或未进入战斗时返回 null。
     /// 只搬运 <c>ClientEntityManager</c> 直读值，换算与可信判据在 <see cref="BattleEntityMetrics"/>。
     /// </summary>
-    public BattleEntityMetrics? BattleEntityMetrics {
-        get {
+    public BattleEntityMetrics? BattleEntityMetrics
+    {
+        get
+        {
             var em = _entityManager;
             if (em == null)
                 return null;
@@ -482,7 +523,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// 每帧采样正在播的 A 与目标 B 之间的服务端 tick 差。该差是 LES 插值节拍的乘数：
     /// 恒为 1 说明状态连续，跳到 2 以上即下行状态缺号，消费速率跌到 tickrate/倍。
     /// </summary>
-    private void SampleStateSpread() {
+    private void SampleStateSpread()
+    {
         if (_entityManager is not { } em)
             return;
         int spread = Utils.SequenceDiff(em.RawTargetServerTick, em.RawServerTick);
@@ -497,8 +539,10 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     /// <summary>
     /// 获取完整网络状态快照，对外唯一入口。
     /// </summary>
-    public NetworkStatusSnapshot NetworkStatus {
-        get {
+    public NetworkStatusSnapshot NetworkStatus
+    {
+        get
+        {
             var peer = _serverPeer;
             string host = peer?.Address.ToString() ?? "";
             int port = peer?.Port ?? 0;
@@ -507,7 +551,8 @@ public partial class RoomBattleClient(ILogger<RoomBattleClient> logger,
     }
 
     /// <summary>清零传输与状态流统计，每秒结算由 UpdateAfterPollEvents 处理，此处仅全量清零。</summary>
-    private void ResetTrafficCounters() {
+    private void ResetTrafficCounters()
+    {
         _bytesIn = 0;
         _packetsIn = 0;
         _secondAccumulator = 0;

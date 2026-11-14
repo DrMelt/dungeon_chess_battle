@@ -1,7 +1,5 @@
 using System.Numerics;
-using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.ValueObjects;
-using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using LiteEntitySystem;
 using LiteEntitySystem.Extensions;
 using DungeonChessBattle.Battle.Entities.SyncData;
@@ -13,7 +11,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 自身不做位移与结算：服务端经 <c>SyncFrom</c> 写入权威值，在线端经 <c>SyncInto</c> 回填领域单位。
 /// 载体读数一律取 <c>Value</c>，本实体未标注插值同步标志。死亡状态不设字段，由 Health 派生。
 /// </summary>
-public partial class UnitPawn : PawnLogic {
+public partial class UnitPawn : PawnLogic
+{
     /// <summary>
     /// 初始化单位 Pawn 实体。
     /// </summary>
@@ -65,7 +64,8 @@ public partial class UnitPawn : PawnLogic {
 #pragma warning restore S1104
 
     /// <summary>玩家输入处理回调。参数：实体、输入包、帧间隔。</summary>
-    public Action<UnitPawn, UnitInputPacket, float>? InputHandler {
+    public Action<UnitPawn, UnitInputPacket, float>? InputHandler
+    {
         get;
         set;
     }
@@ -76,7 +76,8 @@ public partial class UnitPawn : PawnLogic {
     /// </summary>
     /// <param name="input">玩家输入包。</param>
     /// <param name="deltaTime">距上一逻辑帧的间隔时间，秒。</param>
-    public void ServerApplyInput(UnitInputPacket input, float deltaTime) {
+    public void ServerApplyInput(UnitInputPacket input, float deltaTime)
+    {
         if (!IsServer)
             return;
         InputHandler?.Invoke(this, input, deltaTime);

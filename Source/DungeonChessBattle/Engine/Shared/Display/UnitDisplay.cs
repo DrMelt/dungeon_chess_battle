@@ -18,7 +18,8 @@ public sealed record UnitDisplay(
     string Description,
     Texture2D? Icon,
     PackedScene? ModelScene,
-    Color? BodyColor) {
+    Color? BodyColor)
+{
     /// <summary>展示用名称：显示名未声明时取单位配置键。</summary>
     public string DisplayLabel => string.IsNullOrEmpty(DisplayName) ? ConfigKey.Value : DisplayName;
 }

@@ -5,7 +5,8 @@ namespace DungeonChessBattle.Battle.Shared.ValueObjects;
 /// 一个单位可属于多个阵营，阵营列表即本类型的列表；取值由内容包定义，引擎不持有取值白名单。
 /// 网络协议、回放归档与日志边界仍以字符串携带阵营标识。
 /// </summary>
-public readonly record struct CampId {
+public readonly record struct CampId
+{
     /// <summary>阵营标识最大字符数，与其余内容键同长。</summary>
     public const ushort MaxLength = 32;
 

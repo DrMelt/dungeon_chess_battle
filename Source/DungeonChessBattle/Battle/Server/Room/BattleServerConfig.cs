@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Battle.Server;
 /// 战斗模块不感知大厅密码等大厅侧配置。
 /// 战斗机制参数（如施法预输入窗口）不在此列：那些值必须服务端与回放同值，属领域常量。
 /// </summary>
-public sealed record BattleServerConfig {
+public sealed record BattleServerConfig
+{
     /// <summary>房间端口默认握手指纹，服务端未配置密码时使用；客户端连接房间须与之相符。</summary>
     public const string DefaultConnectionKey = "DungeonChessBattle";
 

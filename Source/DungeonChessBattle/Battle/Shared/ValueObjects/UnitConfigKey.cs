@@ -4,7 +4,8 @@ namespace DungeonChessBattle.Battle.Shared.ValueObjects;
 /// 单位配置键强类型，键长与配置表 UnitConfig.ConfigKey 对齐。
 /// 仅声明长度上限与语义名，存储与校验复用 <see cref="RestrictedString"/>。
 /// </summary>
-public readonly record struct UnitConfigKey {
+public readonly record struct UnitConfigKey
+{
     /// <summary>单位配置键最大字符数，与配置表键长对齐。</summary>
     public const ushort MaxLength = 32;
 

@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// 编码遇未登记的事件类型以错误返回，解码遇未知 tag 返回 null，两者都由调用方跳过，网络协议向前兼容。
 /// tag 只增不改不复用：7 随单位死亡事件一并退役，死亡由生命值派生。
 /// </summary>
-public static class BattleEventCoder {
+public static class BattleEventCoder
+{
     /// <summary>单位受到伤害。</summary>
     public const byte TypeDamage = 1;
 
@@ -37,44 +38,75 @@ public static class BattleEventCoder {
     public const byte TypeCastCanceled = 9;
 
     /// <summary>编码单个领域事件；未登记映射的事件类型以错误返回，由调用方按丢弃处理。</summary>
-    public static ErrorOr<SyncBattleEvent> Encode(IBattleEvent evt) {
-        return evt switch {
-            DamageOccurred d => new SyncBattleEvent {
-                Type = TypeDamage, A = d.SourceUnitId, B = d.TargetUnitId,
-                C = (byte)d.DamageType, Value = d.AppliedDamage,
+    public static ErrorOr<SyncBattleEvent> Encode(IBattleEvent evt)
+    {
+        return evt switch
+        {
+            DamageOccurred d => new SyncBattleEvent
+            {
+                Type = TypeDamage,
+                A = d.SourceUnitId,
+                B = d.TargetUnitId,
+                C = (byte)d.DamageType,
+                Value = d.AppliedDamage,
             },
-            HealOccurred h => new SyncBattleEvent {
-                Type = TypeHeal, A = h.SourceUnitId, B = h.TargetUnitId, Value = h.ActualHeal,
+            HealOccurred h => new SyncBattleEvent
+            {
+                Type = TypeHeal,
+                A = h.SourceUnitId,
+                B = h.TargetUnitId,
+                Value = h.ActualHeal,
             },
-            HateRequested hr => new SyncBattleEvent {
-                Type = TypeHateRequested, A = hr.HolderUnitId, B = hr.SourceUnitId,
-                C = (byte)hr.Op, Value = hr.Value,
+            HateRequested hr => new SyncBattleEvent
+            {
+                Type = TypeHateRequested,
+                A = hr.HolderUnitId,
+                B = hr.SourceUnitId,
+                C = (byte)hr.Op,
+                Value = hr.Value,
             },
-            BuffApplied ba => new SyncBattleEvent {
-                Type = TypeBuffApplied, A = ba.TargetUnitId, C = (ushort)ba.StackCount, Key = ba.BuffTypeId.Value,
+            BuffApplied ba => new SyncBattleEvent
+            {
+                Type = TypeBuffApplied,
+                A = ba.TargetUnitId,
+                C = (ushort)ba.StackCount,
+                Key = ba.BuffTypeId.Value,
             },
             BuffExpired be => new SyncBattleEvent { Type = TypeBuffExpired, A = be.TargetUnitId, Key = be.BuffTypeId.Value },
-            CastCompleted cc => new SyncBattleEvent {
-                Type = TypeCastCompleted, A = cc.CasterUnitId, C = cc.TargetUnitId?.Value ?? 0, Key = cc.SkillId.Id,
+            CastCompleted cc => new SyncBattleEvent
+            {
+                Type = TypeCastCompleted,
+                A = cc.CasterUnitId,
+                C = cc.TargetUnitId?.Value ?? 0,
+                Key = cc.SkillId.Id,
             },
-            CastStarted cs => new SyncBattleEvent {
-                Type = TypeCastStarted, A = cs.CasterUnitId, C = cs.TargetUnitId?.Value ?? 0, Key = cs.SkillId.Id,
+            CastStarted cs => new SyncBattleEvent
+            {
+                Type = TypeCastStarted,
+                A = cs.CasterUnitId,
+                C = cs.TargetUnitId?.Value ?? 0,
+                Key = cs.SkillId.Id,
             },
-            CastCanceled ccl => new SyncBattleEvent {
-                Type = TypeCastCanceled, A = ccl.CasterUnitId, Key = ccl.SkillId.Id,
+            CastCanceled ccl => new SyncBattleEvent
+            {
+                Type = TypeCastCanceled,
+                A = ccl.CasterUnitId,
+                Key = ccl.SkillId.Id,
             },
             _ => BattleEventErrors.UnknownType(evt.GetType().Name),
         };
     }
 
     /// <summary>解码单个同步事件为领域事件；未知 tag 或字符串身份键非法返回 null，由调用方按丢弃处理。</summary>
-    public static IBattleEvent? Decode(SyncBattleEvent e) {
+    public static IBattleEvent? Decode(SyncBattleEvent e)
+    {
         if ((e.Type is TypeCastStarted or TypeCastCompleted or TypeCastCanceled)
             && !IsUsableKey(e.Key, SkillKeyId.MaxKeyLength))
             return null;
         if (e.Type is TypeBuffApplied or TypeBuffExpired && !IsUsableKey(e.Key, BuffTypeId.MaxLength))
             return null;
-        return e.Type switch {
+        return e.Type switch
+        {
             TypeDamage => new DamageOccurred(e.A, e.B, e.Value, (DamageType)e.C),
             TypeHeal => new HealOccurred(e.A, e.B, e.Value),
             TypeHateRequested => new HateRequested(e.A, e.B, (HateEffectOp)e.C, e.Value),

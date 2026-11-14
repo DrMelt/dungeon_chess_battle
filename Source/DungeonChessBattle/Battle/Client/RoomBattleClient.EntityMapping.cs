@@ -9,13 +9,16 @@ namespace DungeonChessBattle.Battle.Client;
 /// RoomBattleClient 的 LES 实体创建回调。
 /// 实体创建时构建领域 BattleUnit，展示层经统一数据源投影取数。
 /// </summary>
-public partial class RoomBattleClient {
+public partial class RoomBattleClient
+{
     /// <summary>当前房间的副本键，来自服务端权威 BattleRoomEntity.DungeonKey 同步。</summary>
     public string? DungeonKey => RoomState.DungeonKey;
 
     /// <summary>房间实体创建回调：缓存房间与当前房间 ID，日志读取投影状态。</summary>
-    private void OnRoomEntityCreated(BattleRoomEntity entity) {
-        lock (_lock) {
+    private void OnRoomEntityCreated(BattleRoomEntity entity)
+    {
+        lock (_lock)
+        {
             _roomEntity = entity;
             // 房间标识随同步线缆到达，先过值对象判定：非法即视为无标识，事件不外发房间 ID
             _currentRoomId = RoomId.TryCreate(entity.RoomId.Value) ?? RoomId.None;
@@ -27,7 +30,8 @@ public partial class RoomBattleClient {
     }
 
     /// <summary>单位实体创建回调：构建本地领域单位注册。</summary>
-    private void OnPawnEntityCreated(UnitPawn pawn) {
+    private void OnPawnEntityCreated(UnitPawn pawn)
+    {
         var unitName = pawn.UnitKeyName.Value;
 
         // 只构建领域单位并注册；位移、生命等状态由 ClientBattleLoop 每渲染帧从 SyncVar 回填。
@@ -44,7 +48,8 @@ public partial class RoomBattleClient {
     /// 不依赖 IsLocalControlled——该判断在构造回调时序上可能尚未同步完成，
     /// 误判会导致 _localController 恒为 null、输入被静默丢弃，Position 恒为 0。
     /// </summary>
-    private void OnUnitControllerCreated(UnitController controller) {
+    private void OnUnitControllerCreated(UnitController controller)
+    {
         var pawnName = controller.ControlledEntity?.UnitKeyName.Value ?? "(null)";
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(

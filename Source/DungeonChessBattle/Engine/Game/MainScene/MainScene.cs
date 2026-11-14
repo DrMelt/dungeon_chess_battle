@@ -17,7 +17,8 @@ namespace DungeonChessBattle.Game.MainScene;
 /// （根即 ReplayCoordinator，自带回放表现），退出即释放，同一时刻至多存在一套。
 /// 战斗子系统生命周期编排归 BattleCoordinator，回放引擎生命周期归 ReplayCoordinator，本节点不碰其内部。
 /// </summary>
-public partial class MainScene : Node {
+public partial class MainScene : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<MainScene> _logger = ServiceLocator.GetLogger<MainScene>();
 
@@ -54,14 +55,16 @@ public partial class MainScene : Node {
     /// `_Ready` 自底向上触发，子面板的 `_Ready` 早于主场景的 `_Ready` 取数（GameLobby 就在其 `_Ready`
     /// 里填副本下拉），故装配必须挂在 `_EnterTree`——父节点先于全部子节点进入场景树，这才真是最早时机。
     /// </summary>
-    public override void _EnterTree() {
+    public override void _EnterTree()
+    {
         ModManager.EnsureInitialized();
     }
 
     /// <summary>
     /// 节点就绪：校验导出引用、订阅战斗服务事件、构造前厅图层仲裁。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         ValidateExports();
 
         // 订阅战斗启动事件（服务层事实源，GameLobby 为纯显示层不桥接）
@@ -74,7 +77,8 @@ public partial class MainScene : Node {
         _logger.LogInformation("_Ready Initialized.");
     }
 
-    private void ValidateExports() {
+    private void ValidateExports()
+    {
         if (_frontUI == null)
             _logger.LogError("_frontUI is not assigned!");
         if (_battleAssembleScene == null)
@@ -88,7 +92,8 @@ public partial class MainScene : Node {
     // =============================================================
 
     /// <summary>进入战斗：加载战斗组装场景并驱动其编排器，首次进入隐藏前厅图层。</summary>
-    private void OnBattleStarted(RoomId roomId) {
+    private void OnBattleStarted(RoomId roomId)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Battle started for room: {RoomId}", roomId);
 
@@ -106,7 +111,8 @@ public partial class MainScene : Node {
     }
 
     /// <summary>战斗组装场景在场则复用，缺席即实例化并挂到本节点下。</summary>
-    private BattleCoordinator? EnsureBattleAssembly() {
+    private BattleCoordinator? EnsureBattleAssembly()
+    {
         if (_battleCoordinator != null)
             return _battleCoordinator;
         if (_battleAssembleScene == null)
@@ -120,7 +126,8 @@ public partial class MainScene : Node {
     }
 
     /// <summary>退出战斗：解绑编排器、释放战斗组装场景并恢复前厅。</summary>
-    private void ExitBattle() {
+    private void ExitBattle()
+    {
         var coordinator = _battleCoordinator;
         // 幂等保护：战斗结束回调与会话终结可能先后触发，仅首次生效
         if (coordinator == null || !coordinator.IsInBattle)
@@ -140,7 +147,8 @@ public partial class MainScene : Node {
     }
 
     /// <summary>战斗会话终结：重连失败或完全断开时退出战斗，避免被困在无响应的战斗画面。</summary>
-    private void OnBattleSessionLost() {
+    private void OnBattleSessionLost()
+    {
         if (_battleCoordinator == null || !_battleCoordinator.IsInBattle)
             return;
         _logger.LogInformation("战斗会话终结，退出战斗。");
@@ -155,8 +163,10 @@ public partial class MainScene : Node {
     /// 启动回放：实例化回放组装场景并加载记录，成功返回 <c>Result.Success</c> 供入口面板决定导航去向。
     /// 本层拒绝与引擎门控不通过都以错误交回调用方提示，失败即回收场景，不留半启动态。
     /// </summary>
-    public ErrorOr<Success> StartReplay(ReplayRecording recording) {
-        if (_replayCoordinator != null) {
+    public ErrorOr<Success> StartReplay(ReplayRecording recording)
+    {
+        if (_replayCoordinator != null)
+        {
             _logger.LogWarning("回放已在进行中，忽略重复启动。");
             return MainSceneErrors.AssemblyBusy("回放");
         }
@@ -168,7 +178,8 @@ public partial class MainScene : Node {
         replay.ReplayStarted += OnReplayStarted;
         replay.ReplayFinished += OnReplayFinished;
         var loaded = replay.LoadReplay(recording);
-        if (loaded.IsError) {
+        if (loaded.IsError)
+        {
             // 门控原因由回放编排层记录并随错误带出，这里只回收场景
             replay.QueueFree();
             return loaded.FirstError;
@@ -182,7 +193,8 @@ public partial class MainScene : Node {
     private void OnReplayStarted() => _frontLayer?.EnterReplay();
 
     /// <summary>回放结束：释放回放组装场景并恢复前厅。</summary>
-    private void OnReplayFinished() {
+    private void OnReplayFinished()
+    {
         var replay = _replayCoordinator;
         if (replay == null)
             return;
@@ -197,7 +209,8 @@ public partial class MainScene : Node {
     /// <summary>
     /// 节点退出场景树：取消战斗服务事件订阅。
     /// </summary>
-    public override void _ExitTree() {
+    public override void _ExitTree()
+    {
         ServiceLocator.ClientService.OnBattleStarted -= OnBattleStarted;
         ServiceLocator.ClientService.OnBattleSessionLost -= OnBattleSessionLost;
     }

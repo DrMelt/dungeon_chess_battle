@@ -16,7 +16,8 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 展示组件自持统一数据源取数与自取帧事件，本组件不碰传输对象、不逐组件接线。
 /// 组装场景由 MainScene 进战斗时实例化、退出时释放，帧循环经 _Process 推进。
 /// </summary>
-public partial class BattleCoordinator : Node {
+public partial class BattleCoordinator : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BattleCoordinator> _logger = ServiceLocator.GetLogger<BattleCoordinator>();
 
@@ -35,17 +36,20 @@ public partial class BattleCoordinator : Node {
     private RoomId _roomId;
 
     /// <summary>是否已在战斗中（统一数据源与阶段事件已绑定）。</summary>
-    public bool IsInBattle {
+    public bool IsInBattle
+    {
         get; private set;
     }
 
     /// <summary>战斗完成或不可继续时回调，由 MainScene 注入应用级退出流程。</summary>
-    public Action? OnBattleFinished {
+    public Action? OnBattleFinished
+    {
         get; set;
     }
 
     /// <summary>进入战斗：重连时先退出旧绑定，再订阅阶段事件并绑定统一数据源。</summary>
-    public void EnterBattle(RoomId roomId) {
+    public void EnterBattle(RoomId roomId)
+    {
         if (IsInBattle)
             ExitBattle();
 
@@ -69,7 +73,8 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>退出战斗：退订阶段事件、解绑统一数据源。</summary>
-    public void ExitBattle() {
+    public void ExitBattle()
+    {
         if (!IsInBattle)
             return;
 
@@ -85,19 +90,22 @@ public partial class BattleCoordinator : Node {
     }
 
     /// <summary>每帧推进战斗输入采集，未在战斗中为空操作；单位视图对齐由 UnitShowManager 自身帧循环负责。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         if (!IsInBattle || _battleService == null)
             return;
         _inputController?.Tick(_battleService);
     }
 
     /// <summary>节点退出场景树：兜底退出战斗（防止中途释放导致事件悬挂）。</summary>
-    public override void _ExitTree() {
+    public override void _ExitTree()
+    {
         ExitBattle();
     }
 
     /// <summary>战斗事件流订阅：交统一数据源入帧缓冲与事件日志。</summary>
-    private void OnBattleEvents(BattleEventBatch batch) {
+    private void OnBattleEvents(BattleEventBatch batch)
+    {
         if (batch.RoomId != _roomId)
             return;
         _sessionContext?.AppendEvents(batch.Events);
@@ -107,7 +115,8 @@ public partial class BattleCoordinator : Node {
     /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界，这里交还应用级退出流程。
     /// 按房间 ID 过滤，旧房间的迟到通知不动当前战斗；事实本身由检测层记录，玩家提示由大厅面板承担。
     /// </summary>
-    private void OnContentMismatch(BattleContentMismatch mismatch) {
+    private void OnContentMismatch(BattleContentMismatch mismatch)
+    {
         if (mismatch.RoomId != _roomId)
             return;
         if (_logger.IsEnabled(LogLevel.Information))
@@ -115,19 +124,23 @@ public partial class BattleCoordinator : Node {
         OnBattleFinished?.Invoke();
     }
 
-    private void OnBattlePhase(BattlePhaseChange change) {
+    private void OnBattlePhase(BattlePhaseChange change)
+    {
         if (change.RoomId != _roomId)
             return;
         CallDeferred(nameof(DeferredBattlePhase), (int)change.Phase);
     }
 
-    private void DeferredBattlePhase(int phase) {
-        if (phase == (int)BattlePhase.Running) {
+    private void DeferredBattlePhase(int phase)
+    {
+        if (phase == (int)BattlePhase.Running)
+        {
             // 战斗真正开始时房间实体已同步，阵营关系未装配属时序故障，经会话侧响应校验后响亮报告
             _sessionContext?.OnBattleRunning();
         }
 
-        if (phase == (int)BattlePhase.Finished) {
+        if (phase == (int)BattlePhase.Finished)
+        {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("Battle finished detected via LES sync.");
             OnBattleFinished?.Invoke();

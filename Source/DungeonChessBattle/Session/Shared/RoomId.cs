@@ -4,14 +4,16 @@ namespace DungeonChessBattle.Session.Shared;
 /// 房间标识强类型。会话期由大厅端生成，长度与 Guid "N" 格式对齐；
 /// 协议 DTO、实体同步线缆、回放归档与 HTTP 路由仍以字符串携带房间标识，本类型是会话侧唯一身份。
 /// </summary>
-public readonly record struct RoomId {
+public readonly record struct RoomId
+{
     /// <summary>房间标识最大字符数，与 Guid "N" 格式对齐。</summary>
     public const ushort MaxLength = 32;
 
     private readonly string? _value;
 
     /// <summary>构造房间标识；长度不得超过 <see cref="MaxLength"/>，超限抛异常响亮暴露。null 视为无标识。</summary>
-    public RoomId(string? value) {
+    public RoomId(string? value)
+    {
         if ((value?.Length ?? 0) > MaxLength)
             throw new ArgumentException($"房间标识长度 {value?.Length ?? 0} 超过上限 {MaxLength}。", nameof(value));
         _value = value;
@@ -19,7 +21,8 @@ public readonly record struct RoomId {
 
     /// <summary>尝试构造房间标识；空或超长返回 null，不抛异常。供客户端提交、线缆同步与路由参数等不可信输入在转换前判定。</summary>
     /// <param name="value">房间标识字符串，null 视为空。</param>
-    public static RoomId? TryCreate(string? value) {
+    public static RoomId? TryCreate(string? value)
+    {
         if (string.IsNullOrEmpty(value) || value.Length > MaxLength)
             return null;
         return new RoomId(value);

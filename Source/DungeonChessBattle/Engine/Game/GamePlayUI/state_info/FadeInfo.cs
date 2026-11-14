@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// 淡出信息基类，按曲线驱动透明度变化并在结束后自动销毁。
 /// </summary>
-public partial class FadeInfo : Control {
+public partial class FadeInfo : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<FadeInfo> _logger = ServiceLocator.GetLogger<FadeInfo>();
 
@@ -23,7 +24,8 @@ public partial class FadeInfo : Control {
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (fadeCurve == null)
             _logger.LogError("fadeCurve is not assigned!");
     }
@@ -32,14 +34,16 @@ public partial class FadeInfo : Control {
     /// 按曲线更新透明度，淡出结束后销毁自身。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    protected void UpdateFade(double delta) {
+    protected void UpdateFade(double delta)
+    {
         if (fadeCurve == null)
             return;
         fadeTime += (float)delta * fadeTimeScale;
         var value = fadeCurve.Sample(fadeTime);
         Modulate = new Color(1.0f, 1.0f, 1.0f, value);
 
-        if (fadeTime > 1.0f) {
+        if (fadeTime > 1.0f)
+        {
             QueueFree();
         }
     }

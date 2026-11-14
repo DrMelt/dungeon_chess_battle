@@ -5,14 +5,17 @@ using DungeonChessBattle.Battle.Shared.Range;
 namespace DungeonChessBattle.Battle.Config.Shared.Range;
 
 /// <summary>矩形范围：以锚点为近端起点、沿朝向向前延伸的矩形。</summary>
-public sealed class RectShape : IRangeShape {
+public sealed class RectShape : IRangeShape
+{
     /// <summary>近端沿朝向的边界。</summary>
-    public required float NearClamp {
+    public required float NearClamp
+    {
         get; init;
     }
 
     /// <summary>远端沿朝向的边界。</summary>
-    public required float FarClamp {
+    public required float FarClamp
+    {
         get; init;
     }
 
@@ -26,7 +29,8 @@ public sealed class RectShape : IRangeShape {
     public float FarReach => FarClamp;
 
     /// <inheritdoc />
-    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float hitRadius) {
+    public bool Contains(Vector2 point, Vector2 anchor, Vector2 direction, float hitRadius)
+    {
         direction = Vector2.Normalize(direction);
         Vector2 toCheck = point - anchor;
 

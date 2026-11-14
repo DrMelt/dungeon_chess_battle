@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 状态标记容器，为场景中所有单位生成对应的 2D 状态标记。
 /// 复用已创建的状态标记，仅在单位增删时创建或销毁。
 /// </summary>
-public partial class StateBarMark : Control {
+public partial class StateBarMark : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<StateBarMark> _logger = ServiceLocator.GetLogger<StateBarMark>();
 
@@ -29,14 +30,16 @@ public partial class StateBarMark : Control {
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
     /// </summary>
-    public StateBarMark() {
+    public StateBarMark()
+    {
         _marks = new(GetKey, CreateMark, RemoveMark, UpdateMark);
     }
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (_sessionRef == null)
             _logger.LogError("_sessionRef is not assigned!");
         if (stateBarSimple2d_PKD == null)
@@ -47,7 +50,8 @@ public partial class StateBarMark : Control {
     /// 每帧同步所有单位的状态标记，并为新增单位创建标记、为移除单位清理标记。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         _marks.Sync(_sessionRef?.Units ?? []);
     }
 
@@ -55,7 +59,8 @@ public partial class StateBarMark : Control {
     private static ushort GetKey(IBattleUnitView unit) => unit.UnitId;
 
     /// <summary>创建状态标记并挂载到本节点。</summary>
-    private StateBarMark2d CreateMark() {
+    private StateBarMark2d CreateMark()
+    {
         var mark = stateBarSimple2d_PKD?.Instantiate<StateBarMark2d>()
             ?? throw new InvalidOperationException("[StateBarMark] stateBarSimple2d_PKD is not assigned!");
         AddChild(mark);
@@ -66,7 +71,8 @@ public partial class StateBarMark : Control {
     private static void RemoveMark(StateBarMark2d mark) => mark.QueueFree();
 
     /// <summary>更新状态标记的位置与血条显示。</summary>
-    private void UpdateMark(StateBarMark2d mark, IBattleUnitView unit) {
+    private void UpdateMark(StateBarMark2d mark, IBattleUnitView unit)
+    {
         mark.UpdateUI_WithUnit(unit, _sessionRef);
     }
 }

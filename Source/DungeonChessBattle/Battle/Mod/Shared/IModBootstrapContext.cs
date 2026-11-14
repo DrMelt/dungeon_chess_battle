@@ -10,9 +10,11 @@ namespace DungeonChessBattle.Battle.Mod.Shared;
 /// 内容按领域对象直接注册，同键后写覆盖；Buff 以 <see cref="BuffDefinition.BuffTypeId"/> 为身份键。
 /// 空键写入被拒：该条不生效，其余注册照常执行，宿主按归属 mod 记为装配期错误并展示。
 /// </summary>
-public interface IModBootstrapContext {
+public interface IModBootstrapContext
+{
     /// <summary>宿主注入的日志工厂，mod 据此按自身类别名建记录器。</summary>
-    ILoggerFactory LoggerFactory {
+    ILoggerFactory LoggerFactory
+    {
         get;
     }
 

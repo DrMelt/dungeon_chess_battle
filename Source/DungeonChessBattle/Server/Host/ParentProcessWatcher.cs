@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Server.Host;
 /// 采用独立组件：探测函数与退出动作均为注入点，便于单元测试与替换宿主实现。
 /// 未配置父 PID，即服务器独立手动运行时，不启用。
 /// </summary>
-public sealed class ParentProcessWatcher {
+public sealed class ParentProcessWatcher
+{
     /// <summary>父进程 PID 探测周期。</summary>
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(1);
 
@@ -23,7 +24,8 @@ public sealed class ParentProcessWatcher {
     private Thread? _thread;
 
     private ParentProcessWatcher(int parentPid, DateTime parentStartTime, TimeSpan interval,
-        Func<int, DateTime?> getStartTime, Action onParentGone, ILogger logger) {
+        Func<int, DateTime?> getStartTime, Action onParentGone, ILogger logger)
+    {
         _parentPid = parentPid;
         _parentStartTime = parentStartTime;
         _interval = interval;
@@ -48,12 +50,14 @@ public sealed class ParentProcessWatcher {
     /// <param name="logger">日志记录器。</param>
     /// <param name="interval">看护间隔；为空使用默认值。</param>
     public static ParentProcessWatcher? Create(ServerConfig config, GameServerHost host, ILogger logger,
-        TimeSpan? interval = null) {
+        TimeSpan? interval = null)
+    {
         if (config.ParentPid is not { } parentPid)
             return null;
 
         DateTime? startTime = TryGetStartTime(parentPid);
-        if (startTime == null) {
+        if (startTime == null)
+        {
             // 竞态窗口：入口预检通过后宿主构建期间父进程消失，服务器不应继续运行
             logger.LogWarning("父进程 {Pid} 已不存在，服务器自动停止。", parentPid);
             host.Stop();
@@ -66,11 +70,14 @@ public sealed class ParentProcessWatcher {
     }
 
     /// <summary>启动看护后台线程，幂等。</summary>
-    public void Start() {
-        lock (_lock) {
+    public void Start()
+    {
+        lock (_lock)
+        {
             if (_thread != null)
                 return;
-            _thread = new Thread(WatchLoop) {
+            _thread = new Thread(WatchLoop)
+            {
                 IsBackground = true,
                 Name = "ParentProcessWatcher",
             };
@@ -81,11 +88,14 @@ public sealed class ParentProcessWatcher {
     /// <summary>
     /// 看护循环：周期探测父进程。父进程消失或 PID 被系统复用，启动时间不一致，时触发退出动作。
     /// </summary>
-    private void WatchLoop() {
-        while (true) {
+    private void WatchLoop()
+    {
+        while (true)
+        {
             Thread.Sleep(_interval);
             DateTime? current = _getStartTime(_parentPid);
-            if (current == null || current != _parentStartTime) {
+            if (current == null || current != _parentStartTime)
+            {
                 _logger.LogWarning("父进程 {Pid} 已退出，服务器自动停止。", _parentPid);
                 _onParentGone();
                 return;
@@ -94,11 +104,14 @@ public sealed class ParentProcessWatcher {
     }
 
     /// <summary>探测指定进程的启动时间；进程不存在或访问失败返回 null，视为父进程已消失。</summary>
-    private static DateTime? TryGetStartTime(int pid) {
-        try {
+    private static DateTime? TryGetStartTime(int pid)
+    {
+        try
+        {
             return Process.GetProcessById(pid).StartTime;
         }
-        catch (Exception) {
+        catch (Exception)
+        {
             return null;
         }
     }

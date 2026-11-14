@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Lobby.Server;
 
@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <see cref="GameLobby"/> 处理。
 /// 战斗编排，开始战斗与断线重连，见 GameServer.MessageHandlers。
 /// </summary>
-public partial class GameServer {
+public partial class GameServer
+{
     /// <summary>创建房间，大厅业务。</summary>
     public Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req)
         => _lobby.HandleCreateRoomAsync(connectionId, req);

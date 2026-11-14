@@ -13,12 +13,14 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// 写入规则落在注册表，本类只做转发与失败归属，空键拒绝的错误连同当前 mod ID 收成 <see cref="ModError"/> 交装配方。
 /// </summary>
 public sealed class ModBootstrapContext(ContentSetRegistry registry, ILoggerFactory loggerFactory)
-    : IModBootstrapContext {
+    : IModBootstrapContext
+{
     private readonly List<ModError> _errors = [];
     private string _modId = string.Empty;
 
     /// <inheritdoc/>
-    public ILoggerFactory LoggerFactory {
+    public ILoggerFactory LoggerFactory
+    {
         get;
     } = loggerFactory;
 
@@ -48,7 +50,8 @@ public sealed class ModBootstrapContext(ContentSetRegistry registry, ILoggerFact
     public void RegisterDungeon(DungeonConfig dungeon) =>
         Collect(registry.RegisterDungeon(dungeon));
 
-    private void Collect(ErrorOr<Success> result) {
+    private void Collect(ErrorOr<Success> result)
+    {
         if (result.IsError)
             _errors.Add(new ModError(_modId, result.FirstError.Description));
     }

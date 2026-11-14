@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Replay.Shared;
 /// 回放容器的块类型。未知块读侧跳过：新增块只升 <see cref="ReplayArchive.MinorVersion"/>，
 /// 既有块的语义变化才升 <see cref="ReplayArchive.FormatVersion"/>。
 /// </summary>
-public enum ReplayChunkType : ushort {
+public enum ReplayChunkType : ushort
+{
     /// <summary>元数据，恒为首块且不压缩，供前缀读取。</summary>
     Meta = 1,
 
@@ -30,7 +31,8 @@ public enum ReplayChunkType : ushort {
 }
 
 /// <summary>块负载的存储编码。</summary>
-public enum ReplayChunkCodec : byte {
+public enum ReplayChunkCodec : byte
+{
     /// <summary>原样存储。</summary>
     Raw = 0,
 
@@ -39,7 +41,8 @@ public enum ReplayChunkCodec : byte {
 }
 
 /// <summary>容器读取结论。</summary>
-public enum ReplayArchiveStatus {
+public enum ReplayArchiveStatus
+{
     /// <summary>读取成功。</summary>
     Ok,
 
@@ -80,7 +83,8 @@ public sealed record ReplayMetaResult(
 /// Deflate 压缩，不单设字符串表。尾部魔数是完整性判据：半截下载与断文件在此分别，不必靠解码
 /// 抛异常反推。校验和算在存储字节上，一并覆盖压缩与传输两段。
 /// </summary>
-public static class ReplayArchive {
+public static class ReplayArchive
+{
     /// <summary>容器格式版本，块语义变化时递增；v6 为分块容器，v5 及更早的单包 MessagePack 数组不可读。</summary>
     public const int FormatVersion = 6;
 
@@ -105,7 +109,8 @@ public static class ReplayArchive {
     private static ReadOnlySpan<byte> Magic => "DCBR"u8;
 
     /// <summary>把一场回放编码为归档字节流。</summary>
-    public static byte[] Encode(ReplayRecording recording) {
+    public static byte[] Encode(ReplayRecording recording)
+    {
         ArgumentNullException.ThrowIfNull(recording);
         using var stream = new MemoryStream();
         WriteMagic(stream);
@@ -128,7 +133,8 @@ public static class ReplayArchive {
     /// 解码整档：容器头尾、逐块长度与校验和全部通过才算成功，未知块跳过。
     /// 不校验内容修订号与逻辑修订号，那是重放端的门控。
     /// </summary>
-    public static ReplayDecodeResult Decode(ReadOnlyMemory<byte> data) {
+    public static ReplayDecodeResult Decode(ReadOnlyMemory<byte> data)
+    {
         var (Status, _, Reason) = ReadHeader(data);
         if (Status != ReplayArchiveStatus.Ok)
             return new ReplayDecodeResult(Status, Reason: Reason);
@@ -143,7 +149,8 @@ public static class ReplayArchive {
         bool unitsSeen = false, movesSeen = false, castsSeen = false, focusesSeen = false;
         int offset = HeaderBytes;
 
-        while (data.Length - offset > TrailerBytes) {
+        while (data.Length - offset > TrailerBytes)
+        {
             if (!TryReadChunkHeader(data.Span[offset..], out var type, out var codec,
                     out int storedLen, out int rawLen, out uint crc))
                 return Bad("块头不完整或长度越界");
@@ -159,7 +166,8 @@ public static class ReplayArchive {
             if (payload is null)
                 return Bad(expandError);
 
-            switch (type) {
+            switch (type)
+            {
                 case ReplayChunkType.Meta:
                     if (meta is not null)
                         return Bad("元数据块重复");
@@ -220,7 +228,8 @@ public static class ReplayArchive {
     /// 只读元数据块：前缀够长就能拿到摘要，不触碰输入轨道，本地缓存枚举因此不必整档解码。
     /// 刻意不门控内容与逻辑修订号——列表只负责展示，能否重放由 <see cref="Decode"/> 与重放端裁决。
     /// </summary>
-    public static ReplayMetaResult TryReadMeta(ReadOnlyMemory<byte> prefix) {
+    public static ReplayMetaResult TryReadMeta(ReadOnlyMemory<byte> prefix)
+    {
         var (Status, RequiredBytes, Reason) = ReadHeader(prefix);
         if (Status != ReplayArchiveStatus.Ok)
             return new ReplayMetaResult(Status, RequiredBytes: RequiredBytes, Reason: Reason);
@@ -247,7 +256,8 @@ public static class ReplayArchive {
     }
 
     // 容器头三道关：长度、魔数、格式版本。RequiredBytes 只在前缀不足时有意义
-    private static (ReplayArchiveStatus Status, int RequiredBytes, string? Reason) ReadHeader(ReadOnlyMemory<byte> data) {
+    private static (ReplayArchiveStatus Status, int RequiredBytes, string? Reason) ReadHeader(ReadOnlyMemory<byte> data)
+    {
         if (data.Length < HeaderBytes)
             return (ReplayArchiveStatus.NeedMoreData, HeaderBytes, null);
         if (!data.Span[..Magic.Length].SequenceEqual(Magic))
@@ -261,7 +271,8 @@ public static class ReplayArchive {
 
     // 块头解析，入参是自块首起的可读区间；块体长度由调用方校验
     private static bool TryReadChunkHeader(ReadOnlySpan<byte> span, out ReplayChunkType type, out ReplayChunkCodec codec,
-        out int storedLen, out int rawLen, out uint crc) {
+        out int storedLen, out int rawLen, out uint crc)
+    {
         type = default;
         codec = default;
         storedLen = rawLen = 0;
@@ -284,10 +295,13 @@ public static class ReplayArchive {
 
     // 按块头声明还原负载：还原后的长度必须与声明一致，多解少解都是损坏
     private static ReadOnlyMemory<byte>? ExpandPayload(ReplayChunkCodec codec, int rawLen,
-        ReadOnlyMemory<byte> stored, out string? error) {
+        ReadOnlyMemory<byte> stored, out string? error)
+    {
         error = null;
-        if (codec == ReplayChunkCodec.Raw) {
-            if (stored.Length != rawLen) {
+        if (codec == ReplayChunkCodec.Raw)
+        {
+            if (stored.Length != rawLen)
+            {
                 error = "原样块的存储长度与声明不符";
                 return null;
             }
@@ -296,15 +310,18 @@ public static class ReplayArchive {
         }
 
         var output = new byte[rawLen];
-        try {
+        try
+        {
             using var source = new MemoryStream(stored.ToArray());
             using var deflate = new DeflateStream(source, CompressionMode.Decompress);
-            if (deflate.ReadAtLeast(output, rawLen, throwOnEndOfStream: false) != rawLen) {
+            if (deflate.ReadAtLeast(output, rawLen, throwOnEndOfStream: false) != rawLen)
+            {
                 error = "压缩块提前耗尽";
                 return null;
             }
         }
-        catch (Exception ex) when (ex is InvalidDataException or IOException) {
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
             error = "压缩块解码失败";
             return null;
         }
@@ -313,12 +330,15 @@ public static class ReplayArchive {
     }
 
     private static bool TryDeserialize<T>(ReadOnlyMemory<byte> payload,
-        [NotNullWhen(true)] out T? value) {
-        try {
+        [NotNullWhen(true)] out T? value)
+    {
+        try
+        {
             value = MessagePackSerializer.Deserialize<T>(payload);
             return value is not null;
         }
-        catch (Exception ex) when (ex is MessagePackSerializationException or InvalidDataException) {
+        catch (Exception ex) when (ex is MessagePackSerializationException or InvalidDataException)
+        {
             value = default;
             return false;
         }
@@ -326,7 +346,8 @@ public static class ReplayArchive {
 
     private static void WriteMagic(Stream stream) => stream.Write(Magic);
 
-    private static void WriteChunk(Stream stream, ReplayChunkType type, byte[] payload, ReplayChunkCodec codec) {
+    private static void WriteChunk(Stream stream, ReplayChunkType type, byte[] payload, ReplayChunkCodec codec)
+    {
         byte[] stored = codec == ReplayChunkCodec.Deflate ? Compress(payload) : payload;
         WriteUInt16(stream, (ushort)type);
         stream.WriteByte((byte)codec);
@@ -336,22 +357,26 @@ public static class ReplayArchive {
         stream.Write(stored);
     }
 
-    private static byte[] Compress(byte[] payload) {
+    private static byte[] Compress(byte[] payload)
+    {
         using var output = new MemoryStream(payload.Length / 2 + 256);
-        using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true)) {
+        using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
+        {
             deflate.Write(payload);
         }
 
         return output.ToArray();
     }
 
-    private static void WriteUInt16(Stream stream, int value) {
+    private static void WriteUInt16(Stream stream, int value)
+    {
         Span<byte> buffer = stackalloc byte[2];
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)value);
         stream.Write(buffer);
     }
 
-    private static void WriteUInt32(Stream stream, uint value) {
+    private static void WriteUInt32(Stream stream, uint value)
+    {
         Span<byte> buffer = stackalloc byte[4];
         BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
         stream.Write(buffer);

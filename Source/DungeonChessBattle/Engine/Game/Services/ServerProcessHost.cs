@@ -18,7 +18,8 @@ namespace DungeonChessBattle.Game.Services;
 /// 端口通过命令行参数 <c>--port</c> 传入；密码通过环境变量
 /// <see cref="ServerProcessEnv.Password"/> 传入（避免密码暴露在进程命令行）。
 /// </summary>
-public sealed class ServerProcessHost : IServerHost {
+public sealed class ServerProcessHost : IServerHost
+{
     /// <summary>终止子进程等待超时。</summary>
     private static readonly TimeSpan KillWaitTimeout = TimeSpan.FromSeconds(5);
 
@@ -36,32 +37,40 @@ public sealed class ServerProcessHost : IServerHost {
     private CancellationTokenSource? _cts;
 
     /// <inheritdoc cref="IServerHost.Status"/>
-    public ServerHostStatus Status {
-        get {
+    public ServerHostStatus Status
+    {
+        get
+        {
             lock (_lock)
                 return _status;
         }
     }
 
     /// <inheritdoc cref="IServerHost.IsRunning"/>
-    public bool IsRunning {
-        get {
+    public bool IsRunning
+    {
+        get
+        {
             lock (_lock)
                 return _status != ServerHostStatus.Stopped;
         }
     }
 
     /// <inheritdoc cref="IServerHost.Port"/>
-    public int Port {
-        get {
+    public int Port
+    {
+        get
+        {
             lock (_lock)
                 return _port;
         }
     }
 
     /// <inheritdoc cref="IServerHost.LastError"/>
-    public string? LastError {
-        get {
+    public string? LastError
+    {
+        get
+        {
             lock (_lock)
                 return _lastError;
         }
@@ -73,7 +82,8 @@ public sealed class ServerProcessHost : IServerHost {
     /// <param name="logger">日志记录器。</param>
     /// <param name="config">启动配置；为空时使用默认值。</param>
     /// <param name="readyProbe">就绪探测委托；为空时使用 TCP 端口探测。便于单元测试注入。</param>
-    public ServerProcessHost(ILogger<ServerProcessHost> logger, ServerProcessConfig? config = null, Func<int, bool>? readyProbe = null) {
+    public ServerProcessHost(ILogger<ServerProcessHost> logger, ServerProcessConfig? config = null, Func<int, bool>? readyProbe = null)
+    {
         _logger = logger;
         _config = config ?? new ServerProcessConfig();
         _readyProbe = readyProbe ?? TryConnectPort;
@@ -84,29 +94,35 @@ public sealed class ServerProcessHost : IServerHost {
     }
 
     /// <inheritdoc cref="IServerHost.Start"/>
-    public void Start(int port, string? serverPassword = null) {
+    public void Start(int port, string? serverPassword = null)
+    {
         Process? process = null;
         CancellationTokenSource cts = new();
         string? error = null;
 
-        lock (_lock) {
-            if (_process is not null) {
+        lock (_lock)
+        {
+            if (_process is not null)
+            {
                 _logger.LogWarning("服务器已在运行中");
                 cts.Dispose();
                 return;
             }
 
             string exe = ResolveExecutablePath();
-            if (string.IsNullOrEmpty(exe) || !File.Exists(exe)) {
+            if (string.IsNullOrEmpty(exe) || !File.Exists(exe))
+            {
                 error = $"服务器可执行文件不存在: {exe}。请先构建 DungeonChessBattle.Server 工程。";
                 _logger.LogError("{Error}", error);
             }
-            else {
+            else
+            {
                 string workingDir = string.IsNullOrEmpty(_config.WorkingDirectory)
                     ? (Path.GetDirectoryName(exe) ?? string.Empty)
                     : _config.WorkingDirectory;
 
-                var psi = new ProcessStartInfo {
+                var psi = new ProcessStartInfo
+                {
                     UseShellExecute = false,
                     // 隐藏子进程控制台窗口（Server 为控制台 apphost / dotnet 启动 dll）。
                     // 仅当 UseShellExecute=false 时有效，且不影响 stdout/stderr 重定向。
@@ -117,11 +133,13 @@ public sealed class ServerProcessHost : IServerHost {
                 };
 
                 bool isDll = exe.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
-                if (isDll) {
+                if (isDll)
+                {
                     psi.FileName = ResolveDotnetExecutablePath();
                     psi.ArgumentList.Add(exe);
                 }
-                else {
+                else
+                {
                     psi.FileName = exe;
                 }
                 psi.ArgumentList.Add("--port");
@@ -138,14 +156,17 @@ public sealed class ServerProcessHost : IServerHost {
                 process.ErrorDataReceived += (_, e) => ForwardLog(e.Data, isError: true);
                 process.Exited += OnProcessExited;
 
-                try {
-                    if (!process.Start()) {
+                try
+                {
+                    if (!process.Start())
+                    {
                         error = "服务器进程启动失败（Start 返回 false）";
                         _logger.LogError("{Error}", error);
                         process.Dispose();
                         process = null;
                     }
-                    else {
+                    else
+                    {
                         _process = process;
                         _cts = cts;
                         _startPort = port;
@@ -154,7 +175,8 @@ public sealed class ServerProcessHost : IServerHost {
                         SetStatusLocked(ServerHostStatus.Starting);
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     error = $"服务器进程启动异常: {ex.Message}";
                     _logger.LogError(ex, "服务器进程启动异常");
                     process?.Dispose();
@@ -163,7 +185,8 @@ public sealed class ServerProcessHost : IServerHost {
             }
         }
 
-        if (process is null) {
+        if (process is null)
+        {
             // 启动失败路径：取消源未进字段，就地释放
             cts.Dispose();
             if (error is not null)
@@ -179,10 +202,13 @@ public sealed class ServerProcessHost : IServerHost {
     }
 
     /// <inheritdoc cref="IServerHost.Stop"/>
-    public void Stop() {
-        lock (_lock) {
+    public void Stop()
+    {
+        lock (_lock)
+        {
             var process = _process;
-            if (process is null) {
+            if (process is null)
+            {
                 _logger.LogWarning("服务器未在运行");
                 return;
             }
@@ -199,12 +225,15 @@ public sealed class ServerProcessHost : IServerHost {
     /// 子进程退出回调（线程池线程）。仅更新内部状态，不触碰任何 UI/事件。
     /// 主动停止（<see cref="Stop"/>）时不记"意外退出"日志，避免误导。
     /// </summary>
-    private void OnProcessExited(object? sender, EventArgs e) {
-        lock (_lock) {
+    private void OnProcessExited(object? sender, EventArgs e)
+    {
+        lock (_lock)
+        {
             if (!ReferenceEquals(sender, _process))
                 return;
 
-            if (!_stopRequested && _status != ServerHostStatus.Stopped) {
+            if (!_stopRequested && _status != ServerHostStatus.Stopped)
+            {
                 int exitCode = (sender as Process)?.ExitCode ?? -1;
                 _logger.LogWarning("服务器进程意外退出，退出码 {ExitCode}", exitCode);
                 SetStatusLocked(ServerHostStatus.Stopped, "服务器进程异常退出");
@@ -217,13 +246,19 @@ public sealed class ServerProcessHost : IServerHost {
     /// 就绪探测循环：轮询探测端口直至成功（转为 <see cref="ServerHostStatus.Running"/>），
     /// 超时则终止进程并置为 <see cref="ServerHostStatus.Stopped"/>。
     /// </summary>
-    private async Task WaitForReadyAsync(Process process, int port, CancellationToken ct) {
+    private async Task WaitForReadyAsync(Process process, int port, CancellationToken ct)
+    {
         var deadline = DateTime.UtcNow + _config.ReadyTimeout;
-        try {
-            while (!ct.IsCancellationRequested && DateTime.UtcNow < deadline) {
-                if (_readyProbe(port)) {
-                    lock (_lock) {
-                        if (ReferenceEquals(process, _process) && _status == ServerHostStatus.Starting) {
+        try
+        {
+            while (!ct.IsCancellationRequested && DateTime.UtcNow < deadline)
+            {
+                if (_readyProbe(port))
+                {
+                    lock (_lock)
+                    {
+                        if (ReferenceEquals(process, _process) && _status == ServerHostStatus.Starting)
+                        {
                             SetStatusLocked(ServerHostStatus.Running);
                             if (_logger.IsEnabled(LogLevel.Information))
                                 _logger.LogInformation("服务器就绪，监听端口 {Port}", port);
@@ -234,9 +269,12 @@ public sealed class ServerProcessHost : IServerHost {
                 await Task.Delay(_config.ReadyPollInterval, ct);
             }
 
-            if (!ct.IsCancellationRequested) {
-                lock (_lock) {
-                    if (ReferenceEquals(process, _process)) {
+            if (!ct.IsCancellationRequested)
+            {
+                lock (_lock)
+                {
+                    if (ReferenceEquals(process, _process))
+                    {
                         _logger.LogError("服务器就绪超时（{Timeout}s），正在终止进程", _config.ReadyTimeout.TotalSeconds);
                         KillProcess(process);
                         SetStatusLocked(ServerHostStatus.Stopped, $"服务器就绪超时（{_config.ReadyTimeout.TotalSeconds}s）");
@@ -245,25 +283,30 @@ public sealed class ServerProcessHost : IServerHost {
                 }
             }
         }
-        catch (OperationCanceledException) {
+        catch (OperationCanceledException)
+        {
             // 主动停止：由 Stop 负责清理与状态
         }
     }
 
     /// <summary>默认就绪探测：尝试连接本机指定端口，判断服务器是否已开始监听。</summary>
-    private static bool TryConnectPort(int port) {
+    private static bool TryConnectPort(int port)
+    {
         using var client = new TcpClient();
-        try {
+        try
+        {
             client.Connect(IPAddress.Loopback, port);
             return client.Connected;
         }
-        catch (SocketException) {
+        catch (SocketException)
+        {
             return false;
         }
     }
 
     /// <summary>将子进程输出转发到 Godot 日志（错误输出走 Error 等级）。</summary>
-    private void ForwardLog(string? line, bool isError = false) {
+    private void ForwardLog(string? line, bool isError = false)
+    {
         if (string.IsNullOrWhiteSpace(line))
             return;
         if (isError)
@@ -273,19 +316,23 @@ public sealed class ServerProcessHost : IServerHost {
     }
 
     /// <summary>终止子进程并等待其退出。</summary>
-    private void KillProcess(Process process) {
-        try {
+    private void KillProcess(Process process)
+    {
+        try
+        {
             if (!process.HasExited)
                 process.Kill();
             process.WaitForExit(KillWaitTimeout);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogDebug(ex, "终止服务器进程异常");
         }
     }
 
     /// <summary>清理进程字段与取消源（调用方须持有锁）。</summary>
-    private void ClearProcessLocked() {
+    private void ClearProcessLocked()
+    {
         _cts?.Dispose();
         _cts = null;
         _process?.Dispose();
@@ -299,7 +346,8 @@ public sealed class ServerProcessHost : IServerHost {
     /// </summary>
     /// <param name="next">目标状态。</param>
     /// <param name="error">可选失败原因，写入 <see cref="LastError"/>。</param>
-    private void SetStatusLocked(ServerHostStatus next, string? error = null) {
+    private void SetStatusLocked(ServerHostStatus next, string? error = null)
+    {
         if (error is not null)
             _lastError = error;
         if (_status == next)
@@ -315,33 +363,39 @@ public sealed class ServerProcessHost : IServerHost {
     }
 
     /// <summary>加锁更新最近错误（不改变运行状态）。</summary>
-    private void SetLastError(string? error) {
+    private void SetLastError(string? error)
+    {
         lock (_lock)
             _lastError = error;
     }
 
     /// <summary>Godot 退出时尽力清理子进程，避免孤儿进程。</summary>
-    private void KillChildBestEffort() {
+    private void KillChildBestEffort()
+    {
         Process? process;
-        lock (_lock) {
+        lock (_lock)
+        {
             process = _process;
             _cts?.Cancel();
             _process = null;
         }
         if (process is null)
             return;
-        try {
+        try
+        {
             if (!process.HasExited)
                 process.Kill();
         }
-        catch (Exception) {
+        catch (Exception)
+        {
             // 进程可能已退出，忽略
         }
         process.Dispose();
     }
 
     /// <summary>解析服务器可执行文件路径：相对 Godot 工程目录的 Server 工程 Debug 输出目录。</summary>
-    private static string ResolveExecutablePath() {
+    private static string ResolveExecutablePath()
+    {
         string projectDir = ProjectSettings.GlobalizePath("res://");
         string outDir = Path.Combine(projectDir, "..", "..", "Server", "Host", "bin", "Debug", "net10.0");
         string exe = Path.Combine(outDir, "DungeonChessBattle.Server.Host.exe");
@@ -349,9 +403,11 @@ public sealed class ServerProcessHost : IServerHost {
     }
 
     /// <summary>解析 dotnet 可执行文件绝对路径：优先 DOTNET_ROOT 下的 dotnet.exe，兜底按 PATH 名解析。</summary>
-    private static string ResolveDotnetExecutablePath() {
+    private static string ResolveDotnetExecutablePath()
+    {
         string? dotnetRoot = System.Environment.GetEnvironmentVariable("DOTNET_ROOT");
-        if (!string.IsNullOrEmpty(dotnetRoot)) {
+        if (!string.IsNullOrEmpty(dotnetRoot))
+        {
             string candidate = Path.Combine(dotnetRoot, "dotnet.exe");
             if (File.Exists(candidate))
                 return candidate;

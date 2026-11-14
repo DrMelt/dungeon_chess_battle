@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Movement;
 /// 解算只读取传入的 <see cref="MoveIntent"/> 快照，不读取单位可变状态；
 /// 避让为就地迭代，结果取决于传入顺序，故调用方须保证三端意图序一致。
 /// </summary>
-public interface IMovementScene {
+public interface IMovementScene
+{
     /// <summary>
     /// 批量结算一次移动：对全部意图做单位互斥、静态障碍推挤与竞技场边界约束。
     /// 意图集合外的单位不参与互斥，既不被推开也不构成他人障碍。

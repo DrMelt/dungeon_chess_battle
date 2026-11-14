@@ -12,11 +12,14 @@ namespace DungeonChessBattle.Replay.Server;
 /// 摘要不另存，从归档的元数据块现读：列表展示的就是重放端将来读到的那一份元数据。
 /// </summary>
 /// <param name="replayStore">回放归档存储。</param>
-internal sealed class ReplayServer(IReplayStore replayStore) {
+internal sealed class ReplayServer(IReplayStore replayStore)
+{
     /// <summary>取该主键参与过的回放摘要列表，最近在前；元数据读不出的归档不列入。</summary>
-    public ReplayListResult GetReplays(string recordId) {
+    public ReplayListResult GetReplays(string recordId)
+    {
         var replays = new List<ReplaySummaryDto>();
-        foreach (RoomId roomId in replayStore.GetRoomIdsByPlayer(recordId)) {
+        foreach (RoomId roomId in replayStore.GetRoomIdsByPlayer(recordId))
+        {
             if (!replayStore.TryGetArchive(roomId, out byte[] archive))
                 continue;
             var meta = ReplayArchive.TryReadMeta(archive);
@@ -28,7 +31,8 @@ internal sealed class ReplayServer(IReplayStore replayStore) {
     }
 
     /// <summary>取该主键参与过的回放归档字节流；房间 ID 非法、非参与者或归档不存在时返回 false。</summary>
-    public bool TryGetArchive(string recordId, string roomId, out byte[] archive) {
+    public bool TryGetArchive(string recordId, string roomId, out byte[] archive)
+    {
         archive = [];
         // 路由参数来自客户端，先过值对象判定：空与超长同「不存在」处理，不让转换校验的异常冒出去
         if (RoomId.TryCreate(roomId) is not { } id)

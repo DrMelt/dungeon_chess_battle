@@ -10,12 +10,14 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 反算出的剩余秒便恒等于该落后量、永不收敛。哨兵与 tick 自然回绕的 0 相撞，代价是每 65536 tick
 /// 一个 tick 宽度内被读成无倒计时，为此不值得扩字段宽。
 /// </summary>
-public static class SyncTickHelper {
+public static class SyncTickHelper
+{
     /// <summary>无倒计时哨兵。</summary>
     private const ushort NoDeadline = 0;
 
     /// <summary>距截止 tick 的剩余秒数；客户端用插值 ServerTick，服务端用 Tick。哨兵与已到期均返回 0。</summary>
-    public static float RemainingSeconds(EntityManager em, ushort endServerTick) {
+    public static float RemainingSeconds(EntityManager em, ushort endServerTick)
+    {
         if (endServerTick == NoDeadline)
             return 0f;
         ushort now = em.IsClient ? ((ClientEntityManager)em).ServerTick : em.Tick;
@@ -24,7 +26,8 @@ public static class SyncTickHelper {
     }
 
     /// <summary>把剩余秒数换算为截止 tick，服务端写入用。向上取整避免提前归零；非正剩余落哨兵。</summary>
-    public static ushort EndTick(EntityManager em, float remainingSeconds) {
+    public static ushort EndTick(EntityManager em, float remainingSeconds)
+    {
         if (remainingSeconds <= 0f)
             return NoDeadline;
         int ticks = (int)MathF.Ceiling(remainingSeconds * em.Tickrate);

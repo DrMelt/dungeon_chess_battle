@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// 本类型不得进 SyncVar 与 MessagePack：LES 只注册了 ushort 值处理器，包装类型无法序列化，
 /// 故线协议、同步实体与回放条目一律以原生 ushort 承载，进出领域经双向隐式转换收放。
 /// </summary>
-public readonly record struct UnitId {
+public readonly record struct UnitId
+{
     private readonly ushort _value;
 
     /// <summary>构造单位网络实体 ID。</summary>

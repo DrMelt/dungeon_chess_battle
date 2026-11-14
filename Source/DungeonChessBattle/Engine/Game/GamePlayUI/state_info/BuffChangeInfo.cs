@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// Buff 增减提示浮字，带淡出效果，展示 Buff 图标与变化符号。
 /// </summary>
-public partial class BuffChangeInfo : FadeInfo {
+public partial class BuffChangeInfo : FadeInfo
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<BuffChangeInfo> _logger = ServiceLocator.GetLogger<BuffChangeInfo>();
 
@@ -24,7 +25,8 @@ public partial class BuffChangeInfo : FadeInfo {
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         base._Ready();
         if (label_ChangeRef == null)
             _logger.LogError("label_ChangeRef is not assigned!");
@@ -37,7 +39,8 @@ public partial class BuffChangeInfo : FadeInfo {
     /// </summary>
     /// <param name="buffTypeId">要展示的 Buff 键。</param>
     /// <param name="changeType">变化类型（添加/移除）。</param>
-    public void Init(BuffTypeId buffTypeId, BuffChangeType changeType) {
+    public void Init(BuffTypeId buffTypeId, BuffChangeType changeType)
+    {
         if (label_ChangeRef == null || textureRectRef == null)
             return;
 
@@ -52,7 +55,8 @@ public partial class BuffChangeInfo : FadeInfo {
     /// 每帧更新淡出动画。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         UpdateFade(delta);
     }
 }

@@ -16,7 +16,8 @@ public sealed record SkillDisplay(
     string Name,
     string Description,
     Texture2D? Icon,
-    PackedScene? RangeHintScene) {
+    PackedScene? RangeHintScene)
+{
     /// <summary>展示用名称：名称未声明时取技能键。</summary>
     public string DisplayLabel => string.IsNullOrEmpty(Name) ? SkillId.Id : Name;
 }

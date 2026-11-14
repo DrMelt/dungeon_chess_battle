@@ -9,16 +9,19 @@ namespace DungeonChessBattle.Battle.Logic.Buffs;
 /// 无状态 Buff 推进规则：按全局结算节拍求效果事件，并递减剩余时间。
 /// 效果结算失败随结果交回调用方，时间推进与失效判定照常，到期事件照常产出。
 /// </summary>
-public static class BuffTickProcessor {
+public static class BuffTickProcessor
+{
     /// <summary>按帧推进一个 Buff：返回本帧领域事件与效果错误。失效 Buff 的 IsAlive 会被置为 false。</summary>
-    public static BuffTickResult Tick(ActiveBuff buff, UnitSnapshot target, double deltaTime, double tickSeconds) {
+    public static BuffTickResult Tick(ActiveBuff buff, UnitSnapshot target, double deltaTime, double tickSeconds)
+    {
         BuffInstance instance = buff.Instance;
         if (!instance.IsAlive)
             return new BuffTickResult([], null);
 
         Error? effectError = null;
         IReadOnlyList<IBattleEvent> effectEvents = [];
-        if (tickSeconds > 0) {
+        if (tickSeconds > 0)
+        {
             var effect = buff.Effect.Tick(tickSeconds, buff, target);
             if (effect.IsError)
                 effectError = effect.FirstError;

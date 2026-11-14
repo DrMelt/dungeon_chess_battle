@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Battle.Shared.ValueObjects;
 /// 字段在全链路统一为字符串。
 /// 仅声明长度上限与语义名，存储与校验复用 <see cref="RestrictedString"/>。
 /// </summary>
-public readonly record struct BuffTypeId {
+public readonly record struct BuffTypeId
+{
     /// <summary>Buff 键最大字符数，与技能键、单位配置键同长。</summary>
     public const ushort MaxLength = 32;
 

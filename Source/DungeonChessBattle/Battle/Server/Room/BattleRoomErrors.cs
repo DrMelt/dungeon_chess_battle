@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Server;
 /// 战斗房间启动的可预期失败：房间引用的副本不在场，或房间线程首帧初始化未完成。
 /// 描述面向日志与大厅应答，自带房间 ID 与定位所需的键，不携带异常对象；交界异常的现场原因在房间线程日志。
 /// </summary>
-public static class BattleRoomErrors {
+public static class BattleRoomErrors
+{
     /// <summary>房间引用的副本未注册。</summary>
     public static Error UnknownDungeon(RoomId roomId, string? dungeonKey) => Error.NotFound(
         code: "BattleRoom.Dungeon.Unknown",

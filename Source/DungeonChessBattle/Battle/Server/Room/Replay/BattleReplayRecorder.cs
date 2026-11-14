@@ -23,7 +23,8 @@ namespace DungeonChessBattle.Battle.Server.Replay;
 /// <param name="playerIndexByUnitId">单位 ID 到玩家序号的反查表。</param>
 internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, long startUnixTime,
     int tickRate, IReadOnlyList<ReplayPlayerInfo> players, ReplayMoveTracks tracks,
-    Dictionary<UnitId, byte> playerIndexByUnitId) {
+    Dictionary<UnitId, byte> playerIndexByUnitId)
+{
     private readonly Lock _lock = new();
     private readonly List<ReplayCastEntry> _casts = [];
     private readonly List<ReplayFocusEntry> _focuses = [];
@@ -34,7 +35,8 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
 
     /// <summary>创建录制器：玩家数超出移动轨道容量以错误返回，轨道与反查表在此建立。</summary>
     public static ErrorOr<BattleReplayRecorder> Create(string roomId, string dungeonKey, long startUnixTime,
-        int tickRate, IReadOnlyList<ReplayPlayerInfo> players) {
+        int tickRate, IReadOnlyList<ReplayPlayerInfo> players)
+    {
         var tracks = ReplayMoveTracks.Create(players.Count);
         if (tracks.IsError)
             return tracks.FirstError;
@@ -60,15 +62,19 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     private bool _frameInitialized;
 
     /// <summary>记录战斗开始逻辑帧，StartBattle 时由房间线程写入。</summary>
-    public void SetStartTick(int startTick) {
-        lock (_lock) {
+    public void SetStartTick(int startTick)
+    {
+        lock (_lock)
+        {
             _startTick = startTick;
         }
     }
 
     /// <summary>记录全部单位初始态，单位创建完成后由房间线程写入一次。</summary>
-    public void SetUnits(IReadOnlyList<ReplayUnitInit> units) {
-        lock (_lock) {
+    public void SetUnits(IReadOnlyList<ReplayUnitInit> units)
+    {
+        lock (_lock)
+        {
             _units = units;
         }
     }
@@ -77,13 +83,16 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// 记录一条玩家命令：按命令类型落到对应轨道，帧由原始 tick 推进而来。
     /// 非玩家单位的命令直接忽略；<paramref name="accepted"/> 是权威投递结论，只有施法与聚焦条目携带。
     /// </summary>
-    public void Record(ushort tick, in PlayerCommand cmd, bool accepted) {
-        lock (_lock) {
+    public void Record(ushort tick, in PlayerCommand cmd, bool accepted)
+    {
+        lock (_lock)
+        {
             if (!_playerIndexByUnitId.TryGetValue(cmd.SourceUnitId, out byte index))
                 return;
 
             int frame = AdvanceFrame(tick);
-            switch (cmd.Kind) {
+            switch (cmd.Kind)
+            {
                 case PlayerCommandKind.Move:
                     ReplayCommands.AppendMoveRun(_tracks[index], cmd, frame);
                     break;
@@ -98,8 +107,10 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     }
 
     /// <summary>记录战斗结束逻辑帧，首写生效：结束之后的帧不进回放。</summary>
-    public void MarkEnd(ushort tick) {
-        lock (_lock) {
+    public void MarkEnd(ushort tick)
+    {
+        lock (_lock)
+        {
             if (_endTick >= 0)
                 return;
             _endTick = AdvanceFrame(tick);
@@ -110,8 +121,10 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// 导出可编码的回放内容；战斗未打完时结束帧退到最后一条记录帧。
     /// 两项修订号由调用方读好交进来，本类只把它们写进元数据，不决定其值。
     /// </summary>
-    public ReplayRecording BuildRecording(string dataRevision, string logicRevision) {
-        lock (_lock) {
+    public ReplayRecording BuildRecording(string dataRevision, string logicRevision)
+    {
+        lock (_lock)
+        {
             int lastFrame = _frameInitialized ? _absoluteFrame : _startTick;
             var meta = new ReplayMeta(roomId, dungeonKey, startUnixTime, tickRate, _startTick,
                 Math.Max(_startTick, _endTick >= 0 ? _endTick : lastFrame),
@@ -127,12 +140,15 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// 施法与聚焦可在同一 tick 各来一条，移动每 tick 至多一条，故同帧多条命令必分属不同轨道。
     /// ushort 无符号减法回绕安全，前提是相邻记录间隔小于 32768 tick。
     /// </summary>
-    private int AdvanceFrame(ushort tick) {
-        if (!_frameInitialized) {
+    private int AdvanceFrame(ushort tick)
+    {
+        if (!_frameInitialized)
+        {
             _absoluteFrame = tick;
             _frameInitialized = true;
         }
-        else {
+        else
+        {
             _absoluteFrame += (ushort)(tick - _lastTick);
         }
 
@@ -144,7 +160,8 @@ internal sealed class BattleReplayRecorder(string roomId, string dungeonKey, lon
     /// 玩家表下标即玩家序号，反查表用于把命令里的来源单位换成序号。
     /// 序号由 int 下标降型，容量裁决在 <see cref="Create"/> 与 <see cref="ReplayMoveTracks.Create"/>。
     /// </summary>
-    private static Dictionary<UnitId, byte> ToIndexByUnitId(IReadOnlyList<ReplayPlayerInfo> players) {
+    private static Dictionary<UnitId, byte> ToIndexByUnitId(IReadOnlyList<ReplayPlayerInfo> players)
+    {
         var indexByUnitId = new Dictionary<UnitId, byte>(players.Count);
         for (int i = 0; i < players.Count; i++)
             indexByUnitId[players[i].NetId] = (byte)i;

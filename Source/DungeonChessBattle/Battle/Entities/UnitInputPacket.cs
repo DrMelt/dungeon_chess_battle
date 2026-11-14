@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 采用顺序布局以支持非托管传输。
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public struct UnitInputPacket {
+public struct UnitInputPacket
+{
     /// <summary>移动方向 X 分量。</summary>
     public float MoveX;
 
@@ -24,8 +25,10 @@ public struct UnitInputPacket {
     /// </summary>
     /// <param name="moveDir">移动方向向量。</param>
     /// <returns>打包后的 <see cref="UnitInputPacket"/>。</returns>
-    public static UnitInputPacket Create(Vector2 moveDir) {
-        return new UnitInputPacket {
+    public static UnitInputPacket Create(Vector2 moveDir)
+    {
+        return new UnitInputPacket
+        {
             MoveX = moveDir.X,
             MoveY = moveDir.Y,
         };

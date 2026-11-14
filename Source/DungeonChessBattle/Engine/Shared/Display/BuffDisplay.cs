@@ -15,7 +15,8 @@ public sealed record BuffDisplay(
     BuffTypeId BuffTypeId,
     string Name,
     string Description,
-    Texture2D? Icon) {
+    Texture2D? Icon)
+{
     /// <summary>展示用名称：名称未声明时取 Buff 键。</summary>
     public string DisplayLabel => string.IsNullOrEmpty(Name) ? BuffTypeId.Value : Name;
 }

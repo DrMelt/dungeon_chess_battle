@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Server.DataStore;
 /// 基于进程内 ConcurrentDictionary 的状态存储实现。
 /// 收敛大厅级房间状态、玩家状态与准备单位数据的存储逻辑。
 /// </summary>
-public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGameStateStore, IDisposable {
+public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGameStateStore, IDisposable
+{
     private readonly ILogger<InMemoryGameStateStore> _logger = loggerFactory.CreateLogger<InMemoryGameStateStore>();
 
     /// <summary>房间配置注册表，招募板使用。</summary>
@@ -60,8 +61,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     /// 供外部以只读方式消费，避免绕过房间锁修改 Store 内可变对象。
     /// 战斗单位状态由 Logic 层权威持有，不进入 Store 深拷贝。
     /// </summary>
-    private static GameRoom CloneRoom(GameRoom source) {
-        var copy = new GameRoom(source.RoomId) {
+    private static GameRoom CloneRoom(GameRoom source)
+    {
+        var copy = new GameRoom(source.RoomId)
+        {
             DungeonKey = source.DungeonKey,
             Description = source.Description,
             HostName = source.HostName,
@@ -77,8 +80,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     // ─── IRoomStateStore ───
 
     /// <inheritdoc />
-    public bool TryRegisterRoom(RoomId roomId, string? password, GameRoom config) {
-        lock (GetRoomLock(roomId)) {
+    public bool TryRegisterRoom(RoomId roomId, string? password, GameRoom config)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomConfigs.TryAdd(roomId, config))
                 return false;
 
@@ -96,8 +101,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
     /// <inheritdoc />
     public bool TryRegisterRoomWithHost(RoomId roomId, string? password, GameRoom config,
-        string hostName, string hostPlayerId, string hostConnectionId) {
-        lock (GetRoomLock(roomId)) {
+        string hostName, string hostPlayerId, string hostConnectionId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!TryRegisterRoom(roomId, password, config))
                 return false;
 
@@ -121,8 +128,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     public bool RoomExists(RoomId roomId) => _roomConfigs.ContainsKey(roomId);
 
     /// <inheritdoc />
-    public GameRoom? GetRoomConfig(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public GameRoom? GetRoomConfig(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomConfigs.TryGetValue(roomId, out var config))
                 return null;
             // 深拷贝：阻止调用方绕过房间锁直接改写 Store 内的可变配置对象
@@ -131,8 +140,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool IsRoomMember(RoomId roomId, string playerId) {
-        lock (GetRoomLock(roomId)) {
+    public bool IsRoomMember(RoomId roomId, string playerId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomPlayerIds.TryGetValue(roomId, out var ids))
                 return false;
             return ids.Values.Any(id => id == playerId);
@@ -140,7 +151,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<GameRoom> ListActiveRooms() {
+    public IReadOnlyList<GameRoom> ListActiveRooms()
+    {
         // 跨房间枚举统一不加锁，避免多锁获取顺序造成死锁，
         // 依赖 ConcurrentDictionary 的弱一致性快照语义；字段可能略旧，可接受。
         return [.. _roomConfigs
@@ -150,25 +162,32 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void UpdateRoomStatus(RoomId roomId, RoomStatus status) {
-        lock (GetRoomLock(roomId)) {
+    public void UpdateRoomStatus(RoomId roomId, RoomStatus status)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (_roomConfigs.TryGetValue(roomId, out var config))
                 config.Status = status;
         }
     }
 
     /// <inheritdoc />
-    public void UpdatePlayerCount(RoomId roomId, int count) {
-        lock (GetRoomLock(roomId)) {
+    public void UpdatePlayerCount(RoomId roomId, int count)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (_roomConfigs.TryGetValue(roomId, out var config))
                 config.CurrentPlayers = count;
         }
     }
 
     /// <inheritdoc />
-    public int IncrementPlayerCount(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
-            if (_roomConfigs.TryGetValue(roomId, out var config)) {
+    public int IncrementPlayerCount(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
+            if (_roomConfigs.TryGetValue(roomId, out var config))
+            {
                 config.CurrentPlayers++;
                 return config.CurrentPlayers;
             }
@@ -177,8 +196,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool ValidateRoomPassword(RoomId roomId, string? password) {
-        lock (GetRoomLock(roomId)) {
+    public bool ValidateRoomPassword(RoomId roomId, string? password)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomPasswords.TryGetValue(roomId, out var storedPassword))
                 return false;
             return storedPassword == null || storedPassword == password;
@@ -186,8 +207,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void RemoveRoomState(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public void RemoveRoomState(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             _roomPasswords.TryRemove(roomId, out _);
             _roomConfigs.TryRemove(roomId, out _);
             _prepareUnits.TryRemove(roomId, out _);
@@ -195,7 +218,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
             _roomReadyStates.TryRemove(roomId, out _);
             _roomPlayerIds.TryRemove(roomId, out _);
             // 清理 peerPlayers 中属于该房间的条目，与 RegisterRoomPlayer 互斥
-            foreach (var kv in _peerPlayers) {
+            foreach (var kv in _peerPlayers)
+            {
                 if (kv.Value.RoomId == roomId)
                     _peerPlayers.TryRemove(kv.Key, out _);
             }
@@ -203,7 +227,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void ClearAllState() {
+    public void ClearAllState()
+    {
         // 仅在服务端停止流程调用，此时后台线程均已 Join，不存在并发写入。
         _roomPasswords.Clear();
         _roomConfigs.Clear();
@@ -230,8 +255,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     // ─── IPlayerStateStore ───
 
     /// <inheritdoc />
-    public void SetRoomHost(RoomId roomId, string hostName) {
-        lock (GetRoomLock(roomId)) {
+    public void SetRoomHost(RoomId roomId, string hostName)
+    {
+        lock (GetRoomLock(roomId))
+        {
             _roomHosts[roomId] = hostName;
             // 将房主登记为房间成员，准备状态默认未准备，房主的准备状态不参与全员判定
             var states = _roomReadyStates.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, bool>());
@@ -240,8 +267,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void RegisterRoomPlayer(RoomId roomId, string playerName, string playerId, string connectionId) {
-        lock (GetRoomLock(roomId)) {
+    public void RegisterRoomPlayer(RoomId roomId, string playerName, string playerId, string connectionId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             var states = _roomReadyStates.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, bool>());
             states.TryAdd(playerName, false);
             _peerPlayers[connectionId] = (roomId, playerName);
@@ -250,19 +279,23 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public void RegisterRoomPlayerId(RoomId roomId, string playerName, string playerId) {
+    public void RegisterRoomPlayerId(RoomId roomId, string playerName, string playerId)
+    {
         if (string.IsNullOrEmpty(playerId))
             return;
 
-        lock (GetRoomLock(roomId)) {
+        lock (GetRoomLock(roomId))
+        {
             var ids = _roomPlayerIds.GetOrAdd(roomId, _ => new ConcurrentDictionary<string, string>());
             ids[playerName] = playerId;
         }
     }
 
     /// <inheritdoc />
-    public Dictionary<string, string> GetRoomPlayerIds(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public Dictionary<string, string> GetRoomPlayerIds(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (_roomPlayerIds.TryGetValue(roomId, out var ids))
                 return new Dictionary<string, string>(ids);
             return [];
@@ -270,8 +303,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool TrySetPlayerReady(RoomId roomId, string playerName, bool ready) {
-        lock (GetRoomLock(roomId)) {
+    public bool TrySetPlayerReady(RoomId roomId, string playerName, bool ready)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomReadyStates.TryGetValue(roomId, out var states) || !states.ContainsKey(playerName))
                 return false;
 
@@ -289,16 +324,20 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool IsPlayerReady(RoomId roomId, string playerName) {
-        lock (GetRoomLock(roomId)) {
+    public bool IsPlayerReady(RoomId roomId, string playerName)
+    {
+        lock (GetRoomLock(roomId))
+        {
             return _roomReadyStates.TryGetValue(roomId, out var states)
                 && states.TryGetValue(playerName, out var ready) && ready;
         }
     }
 
     /// <inheritdoc />
-    public bool AreAllPlayersUnitSelected(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public bool AreAllPlayersUnitSelected(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomReadyStates.TryGetValue(roomId, out var states) || states.IsEmpty)
                 return false;
             if (!_prepareUnits.TryGetValue(roomId, out _))
@@ -309,20 +348,25 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <summary>判断房间锁内玩家是否已选择至少一个准备单位。</summary>
-    private bool PlayerHasUnitLocked(RoomId roomId, string playerName) {
+    private bool PlayerHasUnitLocked(RoomId roomId, string playerName)
+    {
         if (!_prepareUnits.TryGetValue(roomId, out var units))
             return false;
         return units.Any(u => u.PlayerName == playerName);
     }
 
     /// <inheritdoc />
-    public bool IsAllOthersReady(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public bool IsAllOthersReady(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_roomReadyStates.TryGetValue(roomId, out var states))
                 return false;
 
-            if (_roomHosts.TryGetValue(roomId, out var hostName)) {
-                foreach (var kv in states) {
+            if (_roomHosts.TryGetValue(roomId, out var hostName))
+            {
+                foreach (var kv in states)
+                {
                     if (kv.Key == hostName)
                         continue;
                     if (!kv.Value)
@@ -337,13 +381,16 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public RoomStateSnapshot GetRoomState(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public RoomStateSnapshot GetRoomState(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             string hostName = _roomHosts.TryGetValue(roomId, out var host) ? host : "";
             // 副本键原样取出：Store 不认识内容默认值，未选定即空串，解析归大厅侧经内容视图完成
             string dungeonKey = _roomConfigs.TryGetValue(roomId, out var config) ? config.DungeonKey : string.Empty;
             var players = new List<PlayerReadyState>();
-            if (_roomReadyStates.TryGetValue(roomId, out var states)) {
+            if (_roomReadyStates.TryGetValue(roomId, out var states))
+            {
                 foreach (var kv in states)
                     players.Add(new PlayerReadyState(kv.Key, kv.Value));
             }
@@ -352,8 +399,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool IsConnectionRoomHost(string connectionId, RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public bool IsConnectionRoomHost(string connectionId, RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_peerPlayers.TryGetValue(connectionId, out var entry))
                 return false;
             if (entry.RoomId != roomId)
@@ -363,14 +412,16 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool IsConnectionInRoom(string connectionId, RoomId roomId) {
+    public bool IsConnectionInRoom(string connectionId, RoomId roomId)
+    {
         if (_peerPlayers.TryGetValue(connectionId, out var entry))
             return entry.RoomId == roomId;
         return false;
     }
 
     /// <inheritdoc />
-    public RoomId GetRoomIdForConnection(string connectionId) {
+    public RoomId GetRoomIdForConnection(string connectionId)
+    {
         // 单条目 TryGetValue 由 ConcurrentDictionary 保证原子性，
         // 无需房间锁；读到的归属可能略旧，但连接归属仅作身份校验用。
         if (_peerPlayers.TryGetValue(connectionId, out var entry))
@@ -379,7 +430,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public string? GetPlayerNameForConnection(string connectionId) {
+    public string? GetPlayerNameForConnection(string connectionId)
+    {
         // 单条目 TryGetValue 由 ConcurrentDictionary 保证原子性，
         // 无需房间锁；读到的归属可能略旧，但连接归属仅作身份校验用。
         if (_peerPlayers.TryGetValue(connectionId, out var entry))
@@ -388,13 +440,15 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public string ResolvePlayerRecordId(string playerName) {
+    public string ResolvePlayerRecordId(string playerName)
+    {
         // 单条目 GetOrAdd 原子；名字首次出现自动登记，记录主键与连接无关，进程生命周期内稳定
         return _playerRecords.GetOrAdd(playerName, _ => Guid.NewGuid().ToString("N"));
     }
 
     /// <inheritdoc />
-    public bool TryRegisterLoginSession(string connectionId, string playerName) {
+    public bool TryRegisterLoginSession(string connectionId, string playerName)
+    {
         // 登录名是服务端权威身份，非法名字直接拒绝，不做降级，避免身份名与显示名漂移
         if (string.IsNullOrWhiteSpace(playerName) || playerName.Length > PlayerName.MaxLength)
             return false;
@@ -403,13 +457,15 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public string? GetLoginPlayerName(string connectionId) {
+    public string? GetLoginPlayerName(string connectionId)
+    {
         _loginSessions.TryGetValue(connectionId, out var playerName);
         return playerName;
     }
 
     /// <inheritdoc />
-    public void RemoveLoginSession(string connectionId) {
+    public void RemoveLoginSession(string connectionId)
+    {
         _loginSessions.TryRemove(connectionId, out _);
         // 凭证随会话作废：连接都没了，HTTP 侧不该还留着身份
         if (_connectionSessions.TryRemove(connectionId, out var token))
@@ -417,7 +473,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public string? IssueSessionToken(string connectionId) {
+    public string? IssueSessionToken(string connectionId)
+    {
         if (!_loginSessions.TryGetValue(connectionId, out var playerName))
             return null;
 
@@ -432,7 +489,8 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public string? GetSessionPlayerName(string sessionToken) {
+    public string? GetSessionPlayerName(string sessionToken)
+    {
         if (string.IsNullOrEmpty(sessionToken))
             return null;
         _sessionPlayerNames.TryGetValue(sessionToken, out var playerName);
@@ -440,12 +498,14 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public RoomId RemovePlayerByConnection(string connectionId) {
+    public RoomId RemovePlayerByConnection(string connectionId)
+    {
         // 锁外先取房间用于定位锁对象，弱一致性，允许
         if (!_peerPlayers.TryGetValue(connectionId, out var entry))
             return RoomId.None;
 
-        lock (GetRoomLock(entry.RoomId)) {
+        lock (GetRoomLock(entry.RoomId))
+        {
             // 锁内重新确认，避免 connectionId 已被并发重新归属到其他房间
             if (!_peerPlayers.TryRemove(connectionId, out var current))
                 return RoomId.None;
@@ -463,26 +523,31 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
 
             // 仅准备阶段房间维护人数、房主转让与空房删除；
             // 战斗中房间的生命周期由 BattleRoomManager 全权负责，本方法不触碰。
-            if (_roomConfigs.TryGetValue(roomId, out var config) && config.Status == RoomStatus.Waiting) {
+            if (_roomConfigs.TryGetValue(roomId, out var config) && config.Status == RoomStatus.Waiting)
+            {
                 config.CurrentPlayers = Math.Max(0, config.CurrentPlayers - 1);
 
                 // 房主退出：转让给剩余玩家，房主表与招募板配置同步更新，保持一致
-                if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == leavingName) {
+                if (_roomHosts.TryGetValue(roomId, out var hostName) && hostName == leavingName)
+                {
                     string? newHost = states?.Keys.FirstOrDefault(name => name != leavingName);
-                    if (newHost != null) {
+                    if (newHost != null)
+                    {
                         _roomHosts[roomId] = newHost;
                         config.HostName = newHost;
                         if (_logger.IsEnabled(LogLevel.Information))
                             _logger.LogInformation("Host of room '{RoomId}' transferred to '{NewHost}' (old host '{OldHost}' left).",
                                 roomId, newHost, leavingName);
                     }
-                    else {
+                    else
+                    {
                         _roomHosts.TryRemove(roomId, out _);
                     }
                 }
 
                 // 最后一人退出：删除房间全部状态
-                if (config.CurrentPlayers <= 0) {
+                if (config.CurrentPlayers <= 0)
+                {
                     RemoveRoomState(roomId);
                     if (_logger.IsEnabled(LogLevel.Information))
                         _logger.LogInformation("Room '{RoomId}' removed (last player '{Player}' left).",
@@ -499,8 +564,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool AddPrepareUnit(RoomId roomId, string unitConfigKey, string campOptionKey, string playerName, string playerId) {
-        lock (GetRoomLock(roomId)) {
+    public bool AddPrepareUnit(RoomId roomId, string unitConfigKey, string campOptionKey, string playerName, string playerId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
 
@@ -515,8 +582,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public bool RemovePrepareUnit(RoomId roomId, string unitConfigKey, string ownerName) {
-        lock (GetRoomLock(roomId)) {
+    public bool RemovePrepareUnit(RoomId roomId, string unitConfigKey, string ownerName)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return false;
 
@@ -532,8 +601,10 @@ public sealed class InMemoryGameStateStore(ILoggerFactory loggerFactory) : IGame
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<UnitSelection> GetPrepareUnits(RoomId roomId) {
-        lock (GetRoomLock(roomId)) {
+    public IReadOnlyList<UnitSelection> GetPrepareUnits(RoomId roomId)
+    {
+        lock (GetRoomLock(roomId))
+        {
             if (!_prepareUnits.TryGetValue(roomId, out var units))
                 return [];
             return [.. units.Select(u => new UnitSelection(u.UnitConfigKey, u.CampOptionKey, u.PlayerName, u.PlayerId))];

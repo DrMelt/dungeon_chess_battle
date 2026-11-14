@@ -13,7 +13,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 本面板仅负责 UI 交互。
 /// 连接成功后切换到 GameLobby 界面。
 /// </summary>
-public partial class MainMenu : BaseGamePanel {
+public partial class MainMenu : BaseGamePanel
+{
     /// <summary>日志记录器。</summary>
     private readonly ILogger<MainMenu> _logger = ServiceLocator.GetLogger<MainMenu>();
 
@@ -32,7 +33,8 @@ public partial class MainMenu : BaseGamePanel {
     private ModManagementPanel? _modPanel;
 
     /// <summary>导出引用集合节点。</summary>
-    public MainMenuInterRefs? InterRefs {
+    public MainMenuInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -41,9 +43,11 @@ public partial class MainMenu : BaseGamePanel {
     /// <summary>
     /// 节点就绪：获取引用集合、绑定按钮事件、订阅客户端服务事件。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<MainMenuInterRefs>("MainMenuInterRefs");
-        if (InterRefs is null) {
+        if (InterRefs is null)
+        {
             _logger.LogError("MainMenuInterRefs node not found.");
             return;
         }
@@ -72,9 +76,11 @@ public partial class MainMenu : BaseGamePanel {
     /// 面板重新显示时恢复连接按钮状态。
     /// 解决从 GameLobby / ServerManagementPanel 返回时按钮变灰无法点击的问题。
     /// </summary>
-    protected override void OnPanelOpened() {
+    protected override void OnPanelOpened()
+    {
         // 返回主界面时断开现有连接，允许用户重新连接
-        if (ServiceLocator.ClientService.IsConnected) {
+        if (ServiceLocator.ClientService.IsConnected)
+        {
             ServiceLocator.ClientService.Disconnect();
         }
         InterRefs?.ConnectButton?.Disabled = false;
@@ -85,26 +91,31 @@ public partial class MainMenu : BaseGamePanel {
     /// <summary>
     /// 点击连接按钮：校验输入并调用客户端服务连接服务器。
     /// </summary>
-    private void OnConnectPressed() {
+    private void OnConnectPressed()
+    {
         string host = InterRefs?.HostInput?.Text?.Trim() ?? "";
         string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
         string playerName = InterRefs?.UserNameInput?.Text?.Trim() ?? "";
         string password = InterRefs?.PasswordInput?.Text?.Trim() ?? "";
 
-        if (string.IsNullOrWhiteSpace(host)) {
+        if (string.IsNullOrWhiteSpace(host))
+        {
             UpdateStatus("请输入服务器地址");
             return;
         }
-        if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535) {
+        if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535)
+        {
             UpdateStatus("端口号无效");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(playerName)) {
+        if (string.IsNullOrWhiteSpace(playerName))
+        {
             UpdateStatus("请输入用户名");
             return;
         }
-        if (playerName.Length > PlayerName.MaxLength) {
+        if (playerName.Length > PlayerName.MaxLength)
+        {
             UpdateStatus($"用户名不能超过 {PlayerName.MaxLength} 个字符");
             return;
         }
@@ -123,14 +134,16 @@ public partial class MainMenu : BaseGamePanel {
     /// <summary>
     /// 点击服务器管理按钮，切换到服务器管理面板。
     /// </summary>
-    private void OnServerManagePressed() {
+    private void OnServerManagePressed()
+    {
         NavigateTo(_serverMgmtPanel);
     }
 
     /// <summary>
     /// 点击 mod 管理按钮，切换到 mod 管理面板。
     /// </summary>
-    private void OnModManagePressed() {
+    private void OnModManagePressed()
+    {
         NavigateTo(_modPanel);
     }
 
@@ -142,7 +155,8 @@ public partial class MainMenu : BaseGamePanel {
     /// 连接状态变更回调，延迟到帧末统一处理 UI。
     /// CallDeferred 只传基本类型，端点读数在此拆开。
     /// </summary>
-    private void OnConnectionChanged(ConnectionStatus status) {
+    private void OnConnectionChanged(ConnectionStatus status)
+    {
         // 使用 CallDeferred 确保 UI 操作在 Godot 主线程安全阶段执行
         CallDeferred(nameof(DeferredConnectionChanged), status.Host, status.Port, status.Connected);
     }
@@ -153,15 +167,18 @@ public partial class MainMenu : BaseGamePanel {
     /// <param name="host">服务器地址。</param>
     /// <param name="port">服务器端口。</param>
     /// <param name="connected">是否已连接。</param>
-    private void DeferredConnectionChanged(string host, int port, bool connected) {
-        if (connected) {
+    private void DeferredConnectionChanged(string host, int port, bool connected)
+    {
+        if (connected)
+        {
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("连接成功: {Host}:{Port}", host, port);
             UpdateStatus($"已连接到 {host}:{port}");
             // 切换界面：隐藏主菜单，显示大厅
             NavigateTo(_gameLobby);
         }
-        else {
+        else
+        {
             _logger.LogWarning("连接断开: {Host}:{Port}", host, port);
             UpdateStatus("连接已断开");
             if (InterRefs?.ConnectButton != null)
@@ -177,14 +194,18 @@ public partial class MainMenu : BaseGamePanel {
     /// 验证所有 [Export] 导出字段是否已在 Godot 编辑器中正确赋值。
     /// 如果未赋值，打印错误日志以辅助排查"点击无反应"类问题。
     /// </summary>
-    private void ValidateExports() {
-        if (_gameLobby == null) {
+    private void ValidateExports()
+    {
+        if (_gameLobby == null)
+        {
             _logger.LogError("_gameLobby is not assigned!");
         }
-        if (_serverMgmtPanel == null) {
+        if (_serverMgmtPanel == null)
+        {
             _logger.LogError("_serverMgmtPanel is not assigned!");
         }
-        if (_modPanel == null) {
+        if (_modPanel == null)
+        {
             _logger.LogError("_modPanel is not assigned!");
         }
     }
@@ -193,7 +214,8 @@ public partial class MainMenu : BaseGamePanel {
     /// 更新状态栏文字。
     /// </summary>
     /// <param name="message">要显示的状态信息。</param>
-    private void UpdateStatus(string message) {
+    private void UpdateStatus(string message)
+    {
         InterRefs?.StatusLabel?.Text = message;
     }
 
@@ -202,7 +224,8 @@ public partial class MainMenu : BaseGamePanel {
     /// <summary>
     /// 节点退出场景树时取消订阅连接状态事件。
     /// </summary>
-    public override void _ExitTree() {
+    public override void _ExitTree()
+    {
         ServiceLocator.ClientService.ConnectionChanged -= OnConnectionChanged;
     }
 }

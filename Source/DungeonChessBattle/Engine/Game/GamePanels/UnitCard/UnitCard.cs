@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 卡片配色为 Camp A 蓝色主题。
 /// 使用 InterRefs 模式分离 [Export] 引用。
 /// </summary>
-public partial class UnitCard : Control {
+public partial class UnitCard : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitCard> _logger = ServiceLocator.GetLogger<UnitCard>();
 
@@ -43,9 +44,11 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 节点就绪：获取引用集合、缓存正常背景色、应用暂存文本并连接鼠标交互事件。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _refs = GetNode<UnitCardInterRefs>("UnitCardInterRefs");
-        if (_refs is null) {
+        if (_refs is null)
+        {
             _logger.LogError("UnitCardInterRefs node not found.");
             return;
         }
@@ -66,7 +69,8 @@ public partial class UnitCard : Control {
     /// </summary>
     /// <param name="configKey">单位配置键。</param>
     /// <param name="maxHealth">最大生命值。</param>
-    public void SetupUnit(string configKey, float maxHealth) {
+    public void SetupUnit(string configKey, float maxHealth)
+    {
         UnitConfigKey = configKey;
         _nameText = ServiceLocator.ModAssets?.Registry.GetUnit(configKey)?.DisplayLabel ?? configKey;
         _hpValueText = maxHealth.ToString("F0");
@@ -76,7 +80,8 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 设置用户名标签。可在节点进入场景树前调用。
     /// </summary>
-    public void SetUserName(string userName) {
+    public void SetUserName(string userName)
+    {
         _userName = userName;
         ApplyTexts();
     }
@@ -85,7 +90,8 @@ public partial class UnitCard : Control {
     /// 以未选择职业的占位状态显示卡片：仅展示所属玩家名。
     /// </summary>
     /// <param name="playerName">玩家名。</param>
-    public void SetPlaceholder(string playerName) {
+    public void SetPlaceholder(string playerName)
+    {
         UnitConfigKey = "";
         _nameText = "未选择";
         _hpValueText = "—";
@@ -96,7 +102,8 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 将暂存文本应用到实际标签（引用未就绪时静默，_Ready 后再次调用）。
     /// </summary>
-    private void ApplyTexts() {
+    private void ApplyTexts()
+    {
         if (_refs is null)
             return;
         _refs.NameLabel?.SetText(_nameText);
@@ -107,7 +114,8 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 设置选中高亮状态。
     /// </summary>
-    public void SetSelected(bool selected) {
+    public void SetSelected(bool selected)
+    {
         _isSelected = selected;
         UpdateVisualState();
     }
@@ -115,7 +123,8 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 根据选中状态刷新背景调制色：选中为蓝色调，否则恢复普通色。
     /// </summary>
-    private void UpdateVisualState() {
+    private void UpdateVisualState()
+    {
         if (_refs?.BgPanel is null)
             return;
 
@@ -126,10 +135,12 @@ public partial class UnitCard : Control {
     /// 处理鼠标左键点击，发出选中信号。
     /// </summary>
     /// <param name="event">输入事件。</param>
-    private void OnGuiInput(InputEvent @event) {
+    private void OnGuiInput(InputEvent @event)
+    {
         if (@event is InputEventMouseButton mouseBtn
             && mouseBtn.ButtonIndex == MouseButton.Left
-            && mouseBtn.Pressed) {
+            && mouseBtn.Pressed)
+        {
             EmitSignal(SignalName.UnitSelected, UnitConfigKey);
             AcceptEvent();
         }
@@ -138,7 +149,8 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 鼠标移入时经调制提亮背景色（未选中状态下）。
     /// </summary>
-    private void OnMouseEntered() {
+    private void OnMouseEntered()
+    {
         if (_isSelected)
             return;
 
@@ -149,8 +161,10 @@ public partial class UnitCard : Control {
     /// <summary>
     /// 鼠标移出时恢复原始背景色。
     /// </summary>
-    private void OnMouseExited() {
-        if (!_isSelected) {
+    private void OnMouseExited()
+    {
+        if (!_isSelected)
+        {
             UpdateVisualState();
         }
     }

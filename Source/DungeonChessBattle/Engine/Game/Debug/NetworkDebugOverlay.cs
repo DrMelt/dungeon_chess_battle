@@ -10,24 +10,28 @@ namespace DungeonChessBattle.Game.Debug;
 /// 每帧从房间客户端读取并格式化显示，不含任何指标计算。按 <see cref="ToggleKey"/> 切换显隐。
 /// 未连接房间时显示 Disconnected；进入战斗后追加 LES 实体同步段。
 /// </summary>
-public partial class NetworkDebugOverlay : Label {
+public partial class NetworkDebugOverlay : Label
+{
     /// <summary>显隐切换键（集中在常量，便于调整）。</summary>
     private const Key ToggleKey = Key.F3;
 
     /// <summary>每帧刷新网络状态文本。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         Text = FormatStatus(ServiceLocator.ClientService.RoomNetworkStatus);
     }
 
     /// <summary>处理显隐切换快捷键。</summary>
-    public override void _UnhandledInput(InputEvent @event) {
+    public override void _UnhandledInput(InputEvent @event)
+    {
         if (@event is InputEventKey { Pressed: true, PhysicalKeycode: ToggleKey, Echo: false })
             Visible = !Visible;
     }
 
     /// <summary>把网络状态快照格式化为多行文本。</summary>
     /// <param name="s">网络状态快照。</param>
-    private static string FormatStatus(NetworkStatusSnapshot s) {
+    private static string FormatStatus(NetworkStatusSnapshot s)
+    {
         if (!s.IsConnected)
             return "Disconnected";
 
@@ -41,7 +45,8 @@ public partial class NetworkDebugOverlay : Label {
             $"Loss: {t.PacketLossPercent}% since connect | OutRelQ: {t.OutgoingReliableQueue}",
         };
 
-        if (s.Entity is { } e) {
+        if (s.Entity is { } e)
+        {
             lines.Add("-- LES --");
             lines.Add(e.TickLagTrusted
                 ? $"TickLag: {e.AckLagTicks} t ({e.AckLagMs:0} ms) = up {e.UplinkTicks} + queue {e.ServerQueueTicks}"

@@ -21,15 +21,18 @@ namespace DungeonChessBattle.Battle.Server;
 /// 本 partial 的所有方法仅在房间线程执行。
 /// 领域权威在 BattleUnit，UnitPawn 为同步载体；移动由 BattleScene 结算，状态经 UnitPawn.SyncFrom 投影。
 /// </summary>
-public partial class BattleRoomServer {
+public partial class BattleRoomServer
+{
     /// <summary>
     /// 房间线程首帧初始化：创建根实体、装配状态同步器、
     /// 从 Store 迁移准备期单位、按副本生成敌人。此后 EntityManager 不被其他线程触碰。
     /// 内容与配置裁决、实体数量上限与回放轨道容量不通过都以错误返回，调用方据此清理房间；
     /// LES 与 CLR 交界的异常不在此收口。
     /// </summary>
-    private ErrorOr<Success> InitializeFromStore() {
-        if (EntityManager.AddEntity<BattleRoomEntity>(e => {
+    private ErrorOr<Success> InitializeFromStore()
+    {
+        if (EntityManager.AddEntity<BattleRoomEntity>(e =>
+        {
             e.RoomId.Value = RoomId;
             // 注入服务端权威副本键，客户端据此加载对应的环境场景
             e.DungeonKey.Value = _dungeonKey;
@@ -44,7 +47,8 @@ public partial class BattleRoomServer {
         var units = _stateStore.GetPrepareUnits(RoomId);
         var playerInfos = new List<ReplayPlayerInfo>(units.Count);
         var spawnIndexByOption = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var selection in units) {
+        foreach (var selection in units)
+        {
             // 玩家阵营与出生列由副本配置按选项键权威解析，本层不做阵营名判定
             var resolved = ResolvePlayerCampOption(selection);
             if (resolved.IsError)
@@ -82,7 +86,8 @@ public partial class BattleRoomServer {
         // 输入预备排在实体更新之后：本 tick 到达的玩家输入当帧即生效，与回放端「注入 → 预备 → Tick」同序。
         // 帧末收口留在闭包里：_stateSynchronizer 在上方刚赋值，闭包带得走这份可空状态。
         EntityManager.AddLocalSingleton(new BattleLoop(_battleScene, _intentHub,
-            scene => {
+            scene =>
+            {
                 _stateSynchronizer.Sync(scene);
                 RecordBattleEnd(scene);
             }, HandleBattleFrameEvents));
@@ -98,7 +103,8 @@ public partial class BattleRoomServer {
     /// 按副本配置的玩家阵营选项解析选择记录对应的选项，阵营与出生列一并取自该选项；
     /// 选项缺失属准备记录与副本配置不一致，以错误交回房间初始化。仅房间线程调用。
     /// </summary>
-    private ErrorOr<PlayerCampOption> ResolvePlayerCampOption(UnitSelection selection) {
+    private ErrorOr<PlayerCampOption> ResolvePlayerCampOption(UnitSelection selection)
+    {
         // 副本配置由启动方解析并随房间传入，选项缺失即准备记录与副本配置不一致
         var option = _dungeon.PlayerCampOptions.FirstOrDefault(o => o.Key == selection.CampOptionKey);
         if (option is null)
@@ -110,14 +116,17 @@ public partial class BattleRoomServer {
     /// 按房间副本配置生成敌人：UnitPawn 与 BattleUnit 对称创建，敌方在场地对侧按纵队排布。
     /// 副本引用的单位配置未注册以错误交回房间初始化。仅房间线程调用。
     /// </summary>
-    private ErrorOr<Success> SpawnDungeonEnemies() {
-        foreach (var spawn in _dungeon.Enemies) {
+    private ErrorOr<Success> SpawnDungeonEnemies()
+    {
+        foreach (var spawn in _dungeon.Enemies)
+        {
             // 敌人生成以注册表权威配置键为准，杜绝错配
             var config = _content.GetUnit(spawn.Unit.ConfigKey);
             if (config is null)
                 return BattleRoomErrors.UnknownUnitConfig(_dungeonKey.Value, spawn.Unit.ConfigKey.Value);
 
-            for (int i = 0; i < spawn.Count; i++) {
+            for (int i = 0; i < spawn.Count; i++)
+            {
                 var spawnPos = new Vector2(spawn.SpawnBaseX + i * spawn.SpawnXSpacing, 0);
                 var pawn = CreatePawnEntity(config.ConfigKey, _dungeon.EnemyCamps, spawnPos);
                 if (pawn.IsError)
@@ -139,7 +148,8 @@ public partial class BattleRoomServer {
     /// 阵营列表与单位配置都取自内容，在进实体初始化委托之前裁决：该委托签名无返回值，进去只能抛。
     /// 仅房间线程调用。
     /// </summary>
-    public ErrorOr<UnitPawn> CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<CampId> camps, Vector2 spawnPos) {
+    public ErrorOr<UnitPawn> CreatePawnEntity(UnitConfigKey unitName, IReadOnlyList<CampId> camps, Vector2 spawnPos)
+    {
         if (camps.Count is 0 or > SyncCampsData.MaxCamps || camps.Any(camp => camp.IsDefault))
             return BattleRoomErrors.InvalidCamps(unitName.Value, camps.Count);
 
@@ -147,7 +157,8 @@ public partial class BattleRoomServer {
         if (config is null)
             return BattleRoomErrors.UnknownUnitConfig(_dungeonKey.Value, unitName.Value);
 
-        if (EntityManager.AddEntity<UnitPawn>(e => {
+        if (EntityManager.AddEntity<UnitPawn>(e =>
+        {
             e.UnitKeyName.Value = unitName;
             var campsData = new SyncCampsData();
             campsData.Set(camps);
@@ -169,7 +180,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>在本房间启动战斗：把战斗世界阶段置为 Running，阶段经状态同步器投影到房间载体，起始 tick 写入回放记录。</summary>
-    public void StartBattle() {
+    public void StartBattle()
+    {
         _battleScene.CurrentPhase = BattlePhase.Running;
         _replayRecorder?.SetStartTick(EntityManager.Tick);
         if (_logger.IsEnabled(LogLevel.Information))
@@ -177,7 +189,8 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>处理经 UnitPawn 实例事件到达的玩家移动输入：转成玩家命令交输入门面，位移由领域 <c>BattleScene.Tick</c> 结算。</summary>
-    private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime) {
+    private void OnPawnInput(UnitPawn pawn, UnitInputPacket input, float deltaTime)
+    {
         SubmitAndRecord(PlayerCommand.Move(pawn.Id, input.MoveX, input.MoveY));
 
         if (_logger.IsEnabled(LogLevel.Trace))
@@ -190,14 +203,17 @@ public partial class BattleRoomServer {
     /// 单位与房间级状态已由 BattleStateSynchronizer 在 Tick 后写 SyncVar；死亡不走事件，
     /// 由生命值下行派生，断线重连后随状态自愈。仅房间线程调用。
     /// </summary>
-    private void HandleBattleFrameEvents(IReadOnlyList<IBattleEvent> events) {
+    private void HandleBattleFrameEvents(IReadOnlyList<IBattleEvent> events)
+    {
         if (events.Count == 0)
             return;
         var data = new SyncBattleEvent[events.Count];
         int count = 0;
-        foreach (var e in events) {
+        foreach (var e in events)
+        {
             var encoded = BattleEventCoder.Encode(e);
-            if (encoded.IsError) {
+            if (encoded.IsError)
+            {
                 if (_logger.IsEnabled(LogLevel.Error))
                     _logger.LogError("[RoomId: {RoomId}] 事件编码失败：{Reason}", RoomId, encoded.FirstError.Description);
                 continue;
@@ -216,7 +232,8 @@ public partial class BattleRoomServer {
     /// ReliableOrdered 保证连接内可靠有序，断线重连期间的事件不补发；
     /// 断线会话 NetPlayer 为空，直接跳过。仅房间线程调用。
     /// </summary>
-    private void SendReliableBattleEvents(SyncBattleEvent[] events) {
+    private void SendReliableBattleEvents(SyncBattleEvent[] events)
+    {
         var writer = new NetDataWriter();
         ReliableMessageFrame.WriteHeader(writer);
         new ReliableBattleEventLog { Events = events }.Serialize(writer);
@@ -231,9 +248,11 @@ public partial class BattleRoomServer {
     /// 房间阶段写回 BattleRoomEntity。字段清单与 tick 换算不在本类出现，收敛于同步通道。
     /// 仅房间线程调用，由 BattleLoop 每帧在 Tick 之后显式驱动。
     /// </summary>
-    private sealed class BattleStateSynchronizer(BattleRoomServer room) {
+    private sealed class BattleStateSynchronizer(BattleRoomServer room)
+    {
         /// <summary>同步战斗世界：单位投影 → 房间阶段。由 BattleLoop.LateUpdate 驱动。</summary>
-        public void Sync(BattleScene battleScene) {
+        public void Sync(BattleScene battleScene)
+        {
             foreach (var unit in battleScene.AuthorityUnits)
                 if (room._pawnByNetId.TryGetValue(unit.UnitId, out var pawn))
                     pawn.SyncFrom(unit);

@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 
 namespace DungeonChessBattle.Lobby.Server;
 
@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 大厅应用服务接口，协调层抽象：SignalR Hub 端点面向本接口，
 /// 隐藏具体协调实现，便于测试与替换。
 /// </summary>
-public interface ILobbyApplication {
+public interface ILobbyApplication
+{
     /// <summary>创建房间。</summary>
     Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req);
 

@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 伤害与治疗公式、自治决策算法本身属内容侧，走 <c>IContentRegistryView.DataRevision</c>。
 /// 录制端写入回放归档，重放端不一致即拒绝重放；纯命名、日志与展示层改动不必递增。
 /// </summary>
-public static class BattleLogicRevision {
+public static class BattleLogicRevision
+{
     /// <summary>当前结算逻辑修订号。</summary>
     public const string Value = "3";
 }

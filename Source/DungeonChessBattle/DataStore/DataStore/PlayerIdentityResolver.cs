@@ -7,9 +7,11 @@ namespace DungeonChessBattle.Server.DataStore;
 /// 解析即两步查表。不为匿名凭证登记记录，避免无效凭证凭空产生玩家记录。
 /// </summary>
 /// <param name="stateStore">状态存储门面。</param>
-public sealed class PlayerIdentityResolver(IGameStateStore stateStore) : IPlayerIdentityResolver {
+public sealed class PlayerIdentityResolver(IGameStateStore stateStore) : IPlayerIdentityResolver
+{
     /// <inheritdoc />
-    public string? ResolveRecordId(string sessionToken) {
+    public string? ResolveRecordId(string sessionToken)
+    {
         string? playerName = stateStore.GetSessionPlayerName(sessionToken);
         return string.IsNullOrEmpty(playerName) ? null : stateStore.ResolvePlayerRecordId(playerName);
     }

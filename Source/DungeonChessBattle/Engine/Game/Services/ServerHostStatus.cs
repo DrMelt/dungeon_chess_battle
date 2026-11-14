@@ -5,7 +5,8 @@ namespace DungeonChessBattle.Game.Services;
 /// 采用三态以区分"进程已拉起但尚未就绪"（<see cref="Starting"/>）与
 /// "就绪可连接"（<see cref="Running"/>），避免仅用布尔值丢失中间态信息。
 /// </summary>
-public enum ServerHostStatus {
+public enum ServerHostStatus
+{
     /// <summary>未运行。</summary>
     Stopped = 0,
 

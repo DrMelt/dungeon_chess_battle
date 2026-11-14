@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 玩家 UI 颜色设置资源，配置状态信息与阵营相关颜色。
 /// </summary>
 [GlobalClass]
-public partial class PlayerUISettings : Resource {
+public partial class PlayerUISettings : Resource
+{
     /// <summary>生命值信息颜色。</summary>
     [ExportGroup("State Info")]
     [Export]
@@ -44,7 +45,8 @@ public partial class PlayerUISettings : Resource {
     /// </summary>
     /// <param name="relation">目标相对本地玩家的阵营关系。</param>
     /// <returns>对应的阵营颜色。</returns>
-    public Color GetRelationColor(CampRelation relation) => relation switch {
+    public Color GetRelationColor(CampRelation relation) => relation switch
+    {
         CampRelation.Friendly => AllyCampColor,
         CampRelation.Enemy => EnemyCampColor,
         CampRelation.Unknown => UndeterminedColor,

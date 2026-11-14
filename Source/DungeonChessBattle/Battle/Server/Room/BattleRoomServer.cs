@@ -30,7 +30,8 @@ namespace DungeonChessBattle.Battle.Server;
 /// 线程所有权：EntityManager 的所有操作，初始化、CreatePawnEntity、RPC、Update，
 /// 全部发生在房间线程；大厅线程只负责生命周期管理，启动、等待初始化、停止。
 /// </summary>
-public partial class BattleRoomServer : INetEventListener {
+public partial class BattleRoomServer : INetEventListener
+{
     private readonly NetManager _netManager;
     private readonly ILogger<BattleRoomServer> _logger;
     private readonly string _connectionKey;
@@ -102,17 +103,20 @@ public partial class BattleRoomServer : INetEventListener {
     private readonly DungeonConfig _dungeon;
 
     /// <summary>实体管理器。</summary>
-    public ServerEntityManager EntityManager {
+    public ServerEntityManager EntityManager
+    {
         get;
     }
 
     /// <summary>监听端口。</summary>
-    public int Port {
+    public int Port
+    {
         get;
     }
 
     /// <summary>房间标识。</summary>
-    public RoomId RoomId {
+    public RoomId RoomId
+    {
         get;
     }
 
@@ -140,7 +144,8 @@ public partial class BattleRoomServer : INetEventListener {
     /// <param name="dungeon">房间选中的副本配置，由调用方在启动前解析并传入，房间据此装配且不回查内容。</param>
     public BattleRoomServer(int port, RoomId roomId, ILoggerFactory loggerFactory,
         BattleServerConfig config, IGameStateStore stateStore,
-        IContentRegistryView content, DungeonConfig dungeon) {
+        IContentRegistryView content, DungeonConfig dungeon)
+    {
         Port = port;
         RoomId = roomId;
         _logger = loggerFactory.CreateLogger<BattleRoomServer>();
@@ -170,11 +175,13 @@ public partial class BattleRoomServer : INetEventListener {
     /// 根实体创建、战斗引擎创建与准备期单位迁移均在房间线程首帧执行，
     /// 保证 EntityManager 的所有操作收敛到单一线程。
     /// </summary>
-    public void Start() {
+    public void Start()
+    {
         _netManager.Start(Port);
 
         _running = true;
-        _loopThread = new Thread(RunLoop) {
+        _loopThread = new Thread(RunLoop)
+        {
             Name = $"Room-{RoomId}",
             IsBackground = true
         };
@@ -201,12 +208,14 @@ public partial class BattleRoomServer : INetEventListener {
     /// 由本方法提前清理会与其并发访问，提前释放信号还会让线程置位时抛异常。调用方据此决定是否回收端口。
     /// 应由大厅线程调用，本方法会 Join 房间线程。
     /// </summary>
-    public bool Stop() {
+    public bool Stop()
+    {
         _running = false;
         // 先等待房间线程退出，再清理共享状态，避免大厅线程与房间线程并发访问
         bool stopped = _loopThread is null || _loopThread.Join(StopTimeout);
         _netManager.Stop();
-        if (!stopped) {
+        if (!stopped)
+        {
             if (_logger.IsEnabled(LogLevel.Warning))
                 _logger.LogWarning(
                     "Room '{RoomId}' thread not stopped in {Timeout}s, shared state left to it",
@@ -215,7 +224,8 @@ public partial class BattleRoomServer : INetEventListener {
         }
 
         // 房间线程已退出，此时取消 Pawn 输入回调并移除战斗世界注册才是线程安全的
-        foreach (var pawn in _roomPawns) {
+        foreach (var pawn in _roomPawns)
+        {
             pawn.InputHandler = null;
             if (_battleScene.FindBattleUnit(pawn.Id) is { } unit)
                 _battleScene.RemoveUnit(unit);
@@ -237,13 +247,16 @@ public partial class BattleRoomServer : INetEventListener {
     /// EntityManager.Update()。意图刷新与战斗推进经 BattleLoop LocalSingleton
     /// 收编进逻辑 tick 生命周期，时间由 LES accumulator 按真实时间统一管理。
     /// </summary>
-    private void RunLoop() {
+    private void RunLoop()
+    {
         // 首帧初始化：根实体、战斗世界与准备期单位迁移全部在房间线程完成
         ErrorOr<Success> initialized;
-        try {
+        try
+        {
             initialized = InitializeFromStore();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             // LES 与 CLR 交界抛出的异常：本边界收成一条错误，原因随日志连栈
             _logger.LogError(ex, "[RoomId: {RoomId}] Initialization interrupted.", RoomId);
             initialized = BattleRoomErrors.InitializeInterrupted(ex.Message);
@@ -253,7 +266,8 @@ public partial class BattleRoomServer : INetEventListener {
         // 初始化失败也放行，避免大厅线程 WaitUntilInitialized 无限等待
         _initialized.Set();
 
-        if (initialized.IsError) {
+        if (initialized.IsError)
+        {
             _logger.LogError("[RoomId: {RoomId}] Initialization failed: {Reason}",
                 RoomId, initialized.FirstError.Description);
             // 初始化失败不投递 RoomEmpty，由 StartRoomBattle 检查结果后同步清理
@@ -264,16 +278,20 @@ public partial class BattleRoomServer : INetEventListener {
         // 战斗只允许在房间线程启动，与 Tick / EntityManager.Update 保持线程所有权一致；
         // 大厅 StartRoomBattle 等待 _initialized 后才广播重定向，
         // 客户端连入时 BattlePhase 已为 Running，技能请求不会被阶段校验拒绝。
-        try {
+        try
+        {
             StartBattle();
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "[RoomId: {RoomId}] StartBattle failed.", RoomId);
         }
 
         int consecutiveFailures = 0;
-        while (_running) {
-            try {
+        while (_running)
+        {
+            try
+            {
                 // 网络事件收包入队；输入应用、实体更新、战斗推进与状态发送
                 // 全部由 EntityManager.Update() 在逻辑 tick 内驱动。
                 // Sleep 仅控制轮询节奏，不参与逻辑计时；tick 频率由 LES accumulator 保证。
@@ -282,10 +300,12 @@ public partial class BattleRoomServer : INetEventListener {
                 EntityManager.Update();
                 consecutiveFailures = 0;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 consecutiveFailures++;
                 _logger.LogError(ex, "[RoomId: {RoomId}] Unhandled exception in room tick.", RoomId);
-                if (consecutiveFailures >= MaxConsecutiveTickFailures) {
+                if (consecutiveFailures >= MaxConsecutiveTickFailures)
+                {
                     if (_logger.IsEnabled(LogLevel.Critical))
                         _logger.LogCritical("[RoomId: {RoomId}] Too many consecutive tick failures, stopping room.", RoomId);
                     break;
@@ -296,7 +316,8 @@ public partial class BattleRoomServer : INetEventListener {
 
         // 连续失败退出：投递空房事件由大厅清理循环销毁，避免带病房间残留。
         // 正常退出由 Stop() 置位 _running 触发，清理已由大厅线程完成。
-        if (_running) {
+        if (_running)
+        {
             _running = false;
             RoomEmpty?.Invoke(RoomId);
         }

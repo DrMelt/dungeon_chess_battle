@@ -22,7 +22,8 @@ var scan = ModLoader.LoadDirectory(config.ModDir ?? "", loggerFactory);
 var boot = ContentBootstrapper.Load(scan, loggerFactory);
 
 // 配置了父进程但已不存在：客户端已死，服务器不应继续启动
-if (ParentProcessWatcher.IsParentGone(config)) {
+if (ParentProcessWatcher.IsParentGone(config))
+{
     logger.LogWarning("父进程 {Pid} 已不存在，服务器退出。", config.ParentPid);
     return 0;
 }

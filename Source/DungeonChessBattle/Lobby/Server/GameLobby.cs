@@ -27,7 +27,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="content">内容注册表只读视图，阵营选项、单位配置、副本键与内容修订号来源。</param>
 public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     SignalRBroadcaster broadcaster, LobbyServerConfig config,
-    IContentRegistryView content) {
+    IContentRegistryView content)
+{
     private readonly ILogger<GameLobby> _logger = loggerFactory.CreateLogger<GameLobby>();
     private readonly IGameStateStore _stateStore = stateStore;
     private readonly SignalRBroadcaster _broadcaster = broadcaster;
@@ -37,8 +38,10 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>
     /// 校验服务器密码；不匹配时返回 false，调用方负责构造失败结果。
     /// </summary>
-    private bool ValidateServerPassword(string? serverPassword, string responseDesc, RoomId roomId) {
-        if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword) {
+    private bool ValidateServerPassword(string? serverPassword, string responseDesc, RoomId roomId)
+    {
+        if (!string.IsNullOrEmpty(_config.ServerPassword) && serverPassword != _config.ServerPassword)
+        {
             _logger.LogWarning("{Desc}: invalid server password (room '{RoomId}').", responseDesc, roomId);
             return false;
         }
@@ -48,7 +51,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>解析建房选定的副本键：键缺失、非法或未注册返回 null，由调用方拒绝建房。</summary>
     /// <param name="dungeonKey">客户端选定的副本键，必填。</param>
     /// <returns>权威副本键；无合法键时为 null。</returns>
-    private string? ResolveSelectedDungeonKey(string? dungeonKey) {
+    private string? ResolveSelectedDungeonKey(string? dungeonKey)
+    {
         if (RestrictedString.TryCreate(dungeonKey, DungeonKeyId.MaxLength) is not { } key)
             return null;
         return _content.GetDungeon(key.Value)?.DungeonKey.Value;
@@ -57,7 +61,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>解析房间已持久化的副本键：空或解析不到即房间指向已消失的副本，以错误返回。</summary>
     /// <param name="roomId">房间 ID，仅用于错误描述。</param>
     /// <param name="dungeonKey">房间快照里的副本键。</param>
-    private ErrorOr<string> ResolveStoredDungeonKey(RoomId roomId, string? dungeonKey) {
+    private ErrorOr<string> ResolveStoredDungeonKey(RoomId roomId, string? dungeonKey)
+    {
         if (string.IsNullOrEmpty(dungeonKey))
             return LobbyErrors.RoomDungeonKeyMissing(roomId);
         if (_content.GetDungeon(dungeonKey) is not { } dungeon)
@@ -69,7 +74,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 login：登记连接为登录会话，玩家名成为服务端权威身份，并为其签发会话凭证。
     /// 名字非法时拒绝；会话内业务从登录会话反查身份，会话凭证让身份延伸到服务端 HTTP 端点。
     /// </summary>
-    public Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req) {
+    public Task<LoginResult> HandleLoginAsync(string connectionId, LoginRequest req)
+    {
         if (!_stateStore.TryRegisterLoginSession(connectionId, req.PlayerName))
             return Task.FromResult(new LoginResult(false, Error: "Invalid player name."));
         return Task.FromResult(new LoginResult(true, req.PlayerName,
@@ -79,7 +85,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>
     /// 处理 create_room：注册房间，准备阶段不重定向。
     /// </summary>
-    public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req) {
+    public async Task<LobbyResult> HandleCreateRoomAsync(string connectionId, CreateRoomRequest req)
+    {
         if (!ValidateServerPassword(req.ServerPassword, "CreateRoom", RoomId.None))
             return new LobbyResult(string.Empty, false, "invalid server password.");
 
@@ -102,7 +109,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
         if (dungeonKey is null)
             return new LobbyResult(string.Empty, false, "invalid dungeon key.");
 
-        GameRoom roomConfig = new(roomId) {
+        GameRoom roomConfig = new(roomId)
+        {
             DungeonKey = dungeonKey,
             Description = req.Config.Description,
             HostName = hostDisplayName,
@@ -132,7 +140,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// <summary>
     /// 处理 join_room：验证房间与密码，准备阶段不重定向。
     /// </summary>
-    public async Task<LobbyResult> HandleJoinRoomAsync(string connectionId, JoinRoomRequest req) {
+    public async Task<LobbyResult> HandleJoinRoomAsync(string connectionId, JoinRoomRequest req)
+    {
         if (!ValidateServerPassword(req.ServerPassword, "JoinRoom", RoomId.None))
             return new LobbyResult(req.RoomId, false, "invalid server password.");
 
@@ -176,10 +185,12 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 list_rooms：返回招募板房间列表。
     /// 招募板仅展示等待中的房间；进行中和已结束的房间对大厅隐藏。
     /// </summary>
-    public Task<RoomListResult> HandleListRoomsAsync() {
+    public Task<RoomListResult> HandleListRoomsAsync()
+    {
         var rooms = _stateStore.ListActiveRooms()
             .Where(r => r.Status == RoomStatus.Waiting)
-            .Select(r => new RoomListing {
+            .Select(r => new RoomListing
+            {
                 RoomId = r.RoomId,
                 DungeonKey = r.DungeonKey,
                 Description = r.Description,
@@ -201,7 +212,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 prepare_add_unit：为房间添加准备单位，并广播最新列表。
     /// 房间与单位归属从连接归属反查；阵营由房间所选副本配置按选项键权威解析，不信任客户端提交的阵营。
     /// </summary>
-    public async Task<LobbyResult> HandleAddPrepareUnitAsync(string connectionId, PrepareAddUnitRequest req) {
+    public async Task<LobbyResult> HandleAddPrepareUnitAsync(string connectionId, PrepareAddUnitRequest req)
+    {
         if (string.IsNullOrEmpty(req.UnitConfigKey))
             return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
@@ -242,7 +254,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 prepare_remove_unit：从房间移除准备单位，成功时广播最新列表。
     /// 房间与单位归属均从连接归属反查，仅归属者可移除，防止他人恶意移除。
     /// </summary>
-    public async Task<LobbyResult> HandleRemovePrepareUnitAsync(string connectionId, PrepareRemoveUnitRequest req) {
+    public async Task<LobbyResult> HandleRemovePrepareUnitAsync(string connectionId, PrepareRemoveUnitRequest req)
+    {
         if (string.IsNullOrEmpty(req.UnitConfigKey))
             return new LobbyResult(string.Empty, false, "unitConfigKey required.");
 
@@ -252,7 +265,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(string.Empty, false, "Player not in room.");
 
         bool removed = _stateStore.RemovePrepareUnit(roomId, req.UnitConfigKey, ownerName);
-        if (removed) {
+        if (removed)
+        {
             await BroadcastRoomSnapshotAsync(roomId);
             return new LobbyResult(roomId, true);
         }
@@ -268,7 +282,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 处理 prepare_ready / prepare_unready：非房主请求设置准备状态，更新并广播房间准备状态。
     /// 房间与权威玩家名均从连接归属反查，避免伪造他人准备状态或使用不一致的玩家名造成孤立键。
     /// </summary>
-    public async Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req) {
+    public async Task<LobbyResult> HandleSetReadyAsync(string connectionId, PrepareReadyStateRequest req)
+    {
         RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         string? playerName = _stateStore.GetPlayerNameForConnection(connectionId);
         if (roomId.IsDefault || string.IsNullOrEmpty(playerName))
@@ -282,7 +297,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
             return new LobbyResult(roomId, false, "Host cannot set ready state.");
 
         // 未选择角色不能准备
-        if (!_stateStore.TrySetPlayerReady(roomId, playerName, req.Ready)) {
+        if (!_stateStore.TrySetPlayerReady(roomId, playerName, req.Ready))
+        {
             _logger.LogWarning("Player '{Player}' set_ready rejected in room '{RoomId}' (ready={Ready}).",
                 playerName, roomId, req.Ready);
             return new LobbyResult(roomId, false, "Select a unit before ready.");
@@ -301,7 +317,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 广播房间完整状态快照给该房间所有连接，客户端以该快照为唯一权威视图。
     /// 快照送不达只记一条错误：动作已落权威状态，客户端停在旧视图，等下一次广播刷新。
     /// </summary>
-    public async Task BroadcastRoomSnapshotAsync(RoomId roomId) {
+    public async Task BroadcastRoomSnapshotAsync(RoomId roomId)
+    {
         var broadcast = await BuildAndSendRoomSnapshotAsync(roomId);
         if (broadcast.IsError && _logger.IsEnabled(LogLevel.Error))
             _logger.LogError("房间快照广播失败，房间 {RoomId}：{Reason}", roomId, broadcast.FirstError.Description);
@@ -311,7 +328,8 @@ public class GameLobby(ILoggerFactory loggerFactory, IGameStateStore stateStore,
     /// 组装房间完整状态快照，静态配置、准备状态与单位，组装后单次广播给该房间所有连接。
     /// 客户端以该快照为唯一权威视图，无需自行组装；副本键解析不出即不广播，以错误交调用方。
     /// </summary>
-    private async Task<ErrorOr<Success>> BuildAndSendRoomSnapshotAsync(RoomId roomId) {
+    private async Task<ErrorOr<Success>> BuildAndSendRoomSnapshotAsync(RoomId roomId)
+    {
         var roomConfig = _stateStore.GetRoomConfig(roomId);
         var state = _stateStore.GetRoomState(roomId);
         var units = _stateStore.GetPrepareUnits(roomId);

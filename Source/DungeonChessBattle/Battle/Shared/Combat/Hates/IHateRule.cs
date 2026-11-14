@@ -20,7 +20,8 @@ public readonly record struct HateContext(
 /// 不变量：效果持有者恒为本单位，规则只允许写入自己的仇恨表。
 /// Evaluate 必须为纯函数，只读仇恨数与上下文，不修改外部状态。
 /// </summary>
-public interface IHateRule {
+public interface IHateRule
+{
     /// <summary>以自身为中心求值一个领域事件，返回落账效果；事件与自身无关时返回空。</summary>
     IReadOnlyList<HateEffect> Evaluate(IBattleUnitView self, IBattleEvent e, HateContext ctx);
 }

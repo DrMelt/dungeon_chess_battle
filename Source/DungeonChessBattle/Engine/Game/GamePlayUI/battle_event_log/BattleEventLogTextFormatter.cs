@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Game.GamePlayUI.battle_event_log;
 /// 战斗事件日志文字化：把领域事件格式化为可读文本。
 /// 名称解析经委托注入，不依赖具体数据源，纯文本逻辑独立可维护。
 /// </summary>
-public static class BattleEventLogTextFormatter {
+public static class BattleEventLogTextFormatter
+{
     /// <summary>按单位网络 ID 解析显示名。</summary>
     public delegate string UnitNameResolver(ushort netId);
 
@@ -21,8 +22,10 @@ public static class BattleEventLogTextFormatter {
 
     /// <summary>把日志条目格式化为事件文本，不含时间前缀。</summary>
     public static string Format(BattleEventLogEntry entry,
-        UnitNameResolver unitName, SkillNameResolver skillName, BuffNameResolver buffName) {
-        return entry.Event switch {
+        UnitNameResolver unitName, SkillNameResolver skillName, BuffNameResolver buffName)
+    {
+        return entry.Event switch
+        {
             DamageOccurred d =>
                 $"{unitName(d.SourceUnitId)} 对 {unitName(d.TargetUnitId)} 造成 {d.AppliedDamage:0} 点{DamageTypeText(d.DamageType)}伤害",
             HealOccurred h =>
@@ -47,13 +50,15 @@ public static class BattleEventLogTextFormatter {
         };
     }
 
-    private static string DamageTypeText(DamageType damageType) => damageType switch {
+    private static string DamageTypeText(DamageType damageType) => damageType switch
+    {
         DamageType.Physical => "物理",
         DamageType.Magic => "魔法",
         _ => "",
     };
 
-    private static string HateOpText(HateEffectOp op) => op switch {
+    private static string HateOpText(HateEffectOp op) => op switch
+    {
         HateEffectOp.Add => "增加",
         HateEffectOp.Multiply => "倍率化",
         HateEffectOp.SetTop => "置顶",

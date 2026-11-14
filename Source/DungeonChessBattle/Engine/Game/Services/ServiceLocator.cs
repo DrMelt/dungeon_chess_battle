@@ -15,10 +15,12 @@ namespace DungeonChessBattle.Game.Services;
 /// ReplayService 内部组合 ReplayClient（获取）与 ReplayCache（缓存）。
 /// 创建 ILoggerFactory（Console + Godot Provider），注入 Logger 到各 Service。
 /// </summary>
-public static class ServiceLocator {
+public static class ServiceLocator
+{
     /// <summary>日志工厂实例（Godot 控制台 Provider）。此处限定框架类型名：本类的 LoggerFactory 属性与它同名。</summary>
     private static readonly ILoggerFactory LoggerFactoryInstance =
-        Microsoft.Extensions.Logging.LoggerFactory.Create(builder => {
+        Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+        {
             builder.AddProvider(new GodotLoggerProvider());
             builder.SetMinimumLevel(LogLevel.Debug);
         });
@@ -28,7 +30,8 @@ public static class ServiceLocator {
     /// 在此安装 LES 网络框架日志（Godot 控制台）。
     /// 独立 .NET 服务端进程则在 Program.cs 中单独安装（Console）。
     /// </summary>
-    static ServiceLocator() {
+    static ServiceLocator()
+    {
         LiteEntitySystem.Logger.LoggerImpl = new LesNetworkLogger(
             LoggerFactoryInstance.CreateLogger(nameof(LiteEntitySystem)));
     }
@@ -51,7 +54,8 @@ public static class ServiceLocator {
     /// <summary>游戏服务器宿主单例（独立子进程实现），注入 mods 根目录使子进程加载同一启用内容。</summary>
     public static readonly IServerHost ServerService = new ServerProcessHost(
         LoggerFactoryInstance.CreateLogger<ServerProcessHost>(),
-        new ServerProcessConfig {
+        new ServerProcessConfig
+        {
             ModDirectory = ModManager.ModsRootPath,
         });
 
@@ -70,7 +74,8 @@ public static class ServiceLocator {
     /// 值由 <c>ModManager.EnsureInitialized</c> 写入：它产自一次有先后次序的装配，
     /// 不能在静态初始化期内就地构造，故不像其余服务那样用 readonly 内联字段。
     /// </summary>
-    public static ModAssets? ModAssets {
+    public static ModAssets? ModAssets
+    {
         get; internal set;
     }
 

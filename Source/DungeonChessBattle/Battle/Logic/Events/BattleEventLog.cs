@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Logic.Events;
 /// 实现 IReadOnlyList 使 Tick 返回值、仇恨分发与网络外送沿用既有接口。
 /// 日志仅当帧有效，调用方不得跨帧持有。
 /// </summary>
-public sealed class BattleEventLog : IReadOnlyList<IBattleEvent> {
+public sealed class BattleEventLog : IReadOnlyList<IBattleEvent>
+{
     private readonly List<IBattleEvent> _events = [];
 
     /// <inheritdoc />

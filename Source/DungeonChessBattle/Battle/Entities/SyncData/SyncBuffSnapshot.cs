@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Battle.Entities.SyncData;
 /// 条目数动态，Buff 键以字符串序列化；服务端仅在条目内容变化时整包重建，客户端按当前服务器 tick 本地推算剩余秒数。
 /// 键必须是字符串，故本载荷是 class 而非 unmanaged struct——SyncList 装不下引用字段。
 /// </summary>
-public sealed class SyncBuffSnapshot : INetSerializable {
+public sealed class SyncBuffSnapshot : INetSerializable
+{
     /// <summary>单条 Buff：键、截止服务器逻辑 tick、层数、来源与伤害类型。</summary>
     public readonly record struct Entry(
         string BuffKey,
@@ -22,15 +23,18 @@ public sealed class SyncBuffSnapshot : INetSerializable {
     public IReadOnlyList<Entry> Entries => _entries;
 
     /// <summary>整包覆盖 Buff 条目。</summary>
-    public void Set(IEnumerable<Entry> entries) {
+    public void Set(IEnumerable<Entry> entries)
+    {
         _entries.Clear();
         _entries.AddRange(entries);
     }
 
     /// <inheritdoc />
-    public void Serialize(NetDataWriter writer) {
+    public void Serialize(NetDataWriter writer)
+    {
         writer.Put(_entries.Count);
-        foreach (var entry in _entries) {
+        foreach (var entry in _entries)
+        {
             writer.Put(entry.BuffKey);
             writer.Put(entry.EndServerTick);
             writer.Put(entry.StackCount);
@@ -40,7 +44,8 @@ public sealed class SyncBuffSnapshot : INetSerializable {
     }
 
     /// <inheritdoc />
-    public void Deserialize(NetDataReader reader) {
+    public void Deserialize(NetDataReader reader)
+    {
         int count = reader.GetInt();
         _entries.Clear();
         for (int i = 0; i < count; i++)

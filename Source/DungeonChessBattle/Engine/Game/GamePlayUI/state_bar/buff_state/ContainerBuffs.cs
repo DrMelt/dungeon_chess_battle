@@ -13,9 +13,11 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 键为 Buff 键，仅在列表增删时建/删图标，内容变化由 update 回调刷新对应图标，
 /// 剩余时间由图标每帧按本地 Buff 剩余时间刷新。
 /// </summary>
-public partial class ContainerBuffs : Control {
+public partial class ContainerBuffs : Control
+{
     /// <summary>导出引用集合节点。</summary>
-    public ContainerBuffsInterRefs? InterRefs {
+    public ContainerBuffsInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -26,14 +28,16 @@ public partial class ContainerBuffs : Control {
     private IBattleUnitView? _focusUnit;
 
     /// <summary>构造函数：注入键提取、创建、移除与更新回调。</summary>
-    public ContainerBuffs() {
+    public ContainerBuffs()
+    {
         _icons = new(GetKey, CreateIcon, RemoveIcon, UpdateIcon);
     }
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<ContainerBuffsInterRefs>("ContainerBuffsInterRefs");
     }
 
@@ -41,7 +45,8 @@ public partial class ContainerBuffs : Control {
     /// 按当前单位刷新 Buff 图标：同步源列表，仅增删时建/删图标，内容变化由图标内部短路刷新。
     /// </summary>
     /// <param name="unit">目标单位只读视图，null 表示清空。</param>
-    public void UpdateUI_WithUnit(IBattleUnitView? unit) {
+    public void UpdateUI_WithUnit(IBattleUnitView? unit)
+    {
         _focusUnit = unit;
         if (InterRefs == null)
             return;
@@ -53,7 +58,8 @@ public partial class ContainerBuffs : Control {
     private static string GetKey(IBuffView buff) => buff.BuffTypeId.Value;
 
     /// <summary>创建 Buff 图标并挂载到容器。</summary>
-    private TextureRectBuffIcon CreateIcon() {
+    private TextureRectBuffIcon CreateIcon()
+    {
         if (InterRefs?.BuffIconPackedScene is not { } scene
             || InterRefs.BuffContainer is not { } container)
             throw new InvalidOperationException("[ContainerBuffs] BuffIconPackedScene or BuffContainer not assigned.");
@@ -66,7 +72,8 @@ public partial class ContainerBuffs : Control {
     private static void RemoveIcon(TextureRectBuffIcon icon) => icon.QueueFree();
 
     /// <summary>刷新图标内容；同单位且数据未变化时由图标内部短路。</summary>
-    private void UpdateIcon(TextureRectBuffIcon icon, IBuffView buff) {
+    private void UpdateIcon(TextureRectBuffIcon icon, IBuffView buff)
+    {
         if (_focusUnit is { } unit)
             icon.SetBuffIcon(buff, unit);
     }

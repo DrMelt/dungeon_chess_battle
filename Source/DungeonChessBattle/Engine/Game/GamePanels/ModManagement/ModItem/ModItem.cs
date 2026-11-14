@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 列宽、配色与换行全由 mod_item.tscn 配置，本类只把一条 <see cref="ModEntryView"/> 填进各列控件。
 /// 启停语义由 <see cref="ModManagementPanel"/> 裁决，卡片不接触目录与启用集。
 /// </summary>
-public partial class ModItem : Control {
+public partial class ModItem : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ModItem> _logger = ServiceLocator.GetLogger<ModItem>();
 
@@ -26,9 +27,11 @@ public partial class ModItem : Control {
     public string ModId { get; private set; } = "";
 
     /// <summary>节点就绪：获取引用集合并绑定整行按钮。</summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _refs = GetNode<ModItemInterRefs>("ModItemInterRefs");
-        if (_refs is null) {
+        if (_refs is null)
+        {
             _logger.LogError("ModItemInterRefs node not found.");
             return;
         }
@@ -41,12 +44,14 @@ public partial class ModItem : Control {
     /// 无内容的列留空文本，显隐由场景决定。
     /// </summary>
     /// <param name="mod">管理视图条目。</param>
-    public void Setup(ModEntryView mod) {
+    public void Setup(ModEntryView mod)
+    {
         ModId = mod.Id;
         if (_refs is not { } refs)
             return;
 
-        if (refs.EnableToggle is { } toggle) {
+        if (refs.EnableToggle is { } toggle)
+        {
             // CheckBox 只读展示启停状态：走 no-signal 接口，不接收输入也不会上报
             toggle.SetPressedNoSignal(mod.IsEnabled);
             // 被拒载的目录启停无意义，勾选框置灰
@@ -54,7 +59,8 @@ public partial class ModItem : Control {
         }
 
         // 身份只有 ID 一个事实，目录与版本随 ID 列以 tooltip 露出
-        if (refs.IdLabel is { } idLabel) {
+        if (refs.IdLabel is { } idLabel)
+        {
             idLabel.Text = mod.Id;
             idLabel.TooltipText = $"目录：{mod.DirectoryPath}\n版本：{mod.Version}";
         }
@@ -68,7 +74,8 @@ public partial class ModItem : Control {
     }
 
     /// <summary>整行按钮被点击：请求切换本行启停状态，目标为当前展示状态的取反。</summary>
-    private void OnRowPressed() {
+    private void OnRowPressed()
+    {
         if (_refs?.EnableToggle is not { } toggle || toggle.Disabled)
             return;
 

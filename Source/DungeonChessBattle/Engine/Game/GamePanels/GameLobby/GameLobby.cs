@@ -15,7 +15,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 服务从 ServiceLocator 获取。
 /// 房间列表（招募板）UI 处理见 GameLobby.RoomList。
 /// </summary>
-public partial class GameLobby : BaseGamePanel {
+public partial class GameLobby : BaseGamePanel
+{
     /// <summary>日志记录器。</summary>
     private readonly ILogger<GameLobby> _logger = ServiceLocator.GetLogger<GameLobby>();
 
@@ -32,7 +33,8 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 公开服务实例，供外部组件获取。
     /// </summary>
-    public GameLobbyInterRefs? InterRefs {
+    public GameLobbyInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -58,9 +60,11 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 节点就绪：获取引用集合、连接按钮与准备界面信号，并订阅大厅客户端事件。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<GameLobbyInterRefs>("GameLobbyInterRefs");
-        if (InterRefs is null) {
+        if (InterRefs is null)
+        {
             _logger.LogError("GameLobbyInterRefs node not found.");
             return;
         }
@@ -76,7 +80,8 @@ public partial class GameLobby : BaseGamePanel {
         InterRefs?.BackButton?.Pressed += GoBack;
         InterRefs?.PlaybackListButton?.Pressed += OnOpenReplayList;
         var joinBtn = InterRefs?.JoinButton;
-        if (joinBtn is not null) {
+        if (joinBtn is not null)
+        {
             joinBtn.Pressed += OnJoinRoom;
             joinBtn.Disabled = true;
         }
@@ -97,19 +102,22 @@ public partial class GameLobby : BaseGamePanel {
     /// 从共享内容注册表的副本集合填充创建房间的副本下拉，并缓存选中键。
     /// 服务端据此生成对应敌人阵容，客户端据此呈现对应环境。
     /// </summary>
-    private void PopulateDungeonSelect() {
+    private void PopulateDungeonSelect()
+    {
         var select = InterRefs?.DungeonSelect;
         if (select == null)
             return;
 
         select.Clear();
         var dungeons = ServiceLocator.ContentRegistry.Dungeons.ToList();
-        for (int i = 0; i < dungeons.Count; i++) {
+        for (int i = 0; i < dungeons.Count; i++)
+        {
             var key = dungeons[i].DungeonKey;
             select.AddItem(ServiceLocator.ModAssets?.Registry.GetDungeon(key)?.DisplayLabel ?? key.Value, i);
             select.SetItemMetadata(i, key.Value);
         }
-        if (dungeons.Count > 0) {
+        if (dungeons.Count > 0)
+        {
             select.Selected = 0;
             OnDungeonSelected(0);
             select.ItemSelected += OnDungeonSelected;
@@ -117,7 +125,8 @@ public partial class GameLobby : BaseGamePanel {
     }
 
     /// <summary>副本下拉选中回调：缓存选中副本键，用于创建房间配置。</summary>
-    private void OnDungeonSelected(long index) {
+    private void OnDungeonSelected(long index)
+    {
         var metadata = InterRefs?.DungeonSelect?.GetItemMetadata((int)index);
         if (metadata is Variant variant && variant.VariantType == Variant.Type.String)
             _selectedDungeonKey = variant.AsString();
@@ -129,7 +138,8 @@ public partial class GameLobby : BaseGamePanel {
     /// 面板每次被 NavigateTo 打开时触发一次延迟刷新，
     /// 给 Entity 同步留出时间（网络模式下 OnPeerConnected → Entity 构造需要数个 Tick）。
     /// </summary>
-    protected override void OnPanelOpened() {
+    protected override void OnPanelOpened()
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("GameLobby opened, connected={IsConnected}", ServiceLocator.ClientService.IsConnected);
         CallDeferred(nameof(OnRefreshRooms));
@@ -141,9 +151,11 @@ public partial class GameLobby : BaseGamePanel {
     /// 点击创建房间按钮：以当前选中副本为配置发送创建请求，房间 ID 由服务端生成。
     /// 未选中有效副本时不出请求：副本键必填，无值可回落。
     /// </summary>
-    private void OnCreateRoom() {
+    private void OnCreateRoom()
+    {
         var dungeon = ServiceLocator.ContentRegistry.GetDungeon(_selectedDungeonKey);
-        if (dungeon is null) {
+        if (dungeon is null)
+        {
             _logger.LogWarning("创建房间失败: 未选中有效副本 {DungeonKey}", _selectedDungeonKey);
             if (InterRefs?.DetailLabel != null)
                 InterRefs.DetailLabel.Text = "没有可选的副本，无法创建房间";
@@ -162,9 +174,11 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 点击加入按钮：校验已选中房间后发送加入请求。
     /// </summary>
-    private void OnJoinRoom() {
+    private void OnJoinRoom()
+    {
         // 列表房间标识来自服务端，先过值对象判定再进请求
-        if (RoomId.TryCreate(_selectedRoomId) is not { } roomId) {
+        if (RoomId.TryCreate(_selectedRoomId) is not { } roomId)
+        {
             _logger.LogWarning("加入房间失败: 未选中房间");
             return;
         }
@@ -177,7 +191,8 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 点击回放列表按钮：切到回放入口面板，列表由面板打开时自行刷新。
     /// </summary>
-    private void OnOpenReplayList() {
+    private void OnOpenReplayList()
+    {
         if (_replayPanel != null)
             NavigateTo(_replayPanel);
     }
@@ -185,7 +200,8 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 持久的事件处理器：大厅客户端收到 OnRoomCreated 时触发（网络模式创建房间成功）。
     /// </summary>
-    private void OnRoomCreatedHandler(RoomId createdRoomId) {
+    private void OnRoomCreatedHandler(RoomId createdRoomId)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("房间创建成功: {RoomId}", createdRoomId);
         OnCreatedDeferred(createdRoomId);
@@ -195,8 +211,10 @@ public partial class GameLobby : BaseGamePanel {
     /// 主线程处理房间创建成功回调，进入准备界面。房间信息不在此猜测，以服务端快照为准。
     /// </summary>
     /// <param name="roomId">创建成功的房间 ID。</param>
-    private void OnCreatedDeferred(RoomId roomId) {
-        if (_roomPreparation != null) {
+    private void OnCreatedDeferred(RoomId roomId)
+    {
+        if (_roomPreparation != null)
+        {
             _roomPreparation.EnterRoom(roomId, isHost: true);
             NavigateTo(_roomPreparation);
         }
@@ -206,7 +224,8 @@ public partial class GameLobby : BaseGamePanel {
     /// 持久的事件处理器：大厅客户端收到 OnRoomJoined 时触发（网络模式加入房间成功）。
     /// 准备阶段不重定向，直接进入 RoomPreparation 面板。
     /// </summary>
-    private void OnRoomJoinedHandler(RoomId joinedRoomId) {
+    private void OnRoomJoinedHandler(RoomId joinedRoomId)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("成功加入房间: {RoomId}", joinedRoomId);
         OnJoinedDeferred(joinedRoomId);
@@ -216,8 +235,10 @@ public partial class GameLobby : BaseGamePanel {
     /// 主线程处理加入房间成功回调，进入准备界面：列表缓存带内容指纹，未命中时交给服务端快照渲染。
     /// </summary>
     /// <param name="joinedRoomId">加入成功的房间 ID。</param>
-    private void OnJoinedDeferred(RoomId joinedRoomId) {
-        if (_roomPreparation != null) {
+    private void OnJoinedDeferred(RoomId joinedRoomId)
+    {
+        if (_roomPreparation != null)
+        {
             _roomPreparation.EnterRoom(joinedRoomId, _selectedRoomConfig, isHost: false);
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("进入房间准备: {RoomId}", joinedRoomId);
@@ -229,7 +250,8 @@ public partial class GameLobby : BaseGamePanel {
     /// 战斗期本地内容与服务端不一致：检测层已放弃本地战斗世界、编排层已退出战斗，玩家退回本面板。
     /// 事实与原因由检测层记录，本条把结论写给玩家，日志只留退回上下文。
     /// </summary>
-    private void OnBattleContentMismatch(BattleContentMismatch mismatch) {
+    private void OnBattleContentMismatch(BattleContentMismatch mismatch)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("内容不一致，战斗已中止并退回大厅：{RoomId}（{Reason}）", mismatch.RoomId, mismatch.Reason);
         if (InterRefs?.DetailLabel != null)
@@ -241,7 +263,8 @@ public partial class GameLobby : BaseGamePanel {
     /// </summary>
     // Godot CallDeferred 按方法名调用，须保持实例方法（非 static）
 #pragma warning disable S2325
-    private void OnRefreshRooms() {
+    private void OnRefreshRooms()
+    {
         // 通过招募板协议请求服务端房间列表
         ServiceLocator.ClientService.RequestListRooms();
     }
@@ -250,9 +273,11 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 订阅大厅客户端的房间列表推送事件。
     /// </summary>
-    private void SubscribeRoomListEvent() {
+    private void SubscribeRoomListEvent()
+    {
         // GameClientService 已派发到主线程，直接更新缓存并刷新 UI
-        ServiceLocator.ClientService.OnRoomListReceived += (listings) => {
+        ServiceLocator.ClientService.OnRoomListReceived += (listings) =>
+        {
             _lastRoomListings = [.. listings];
             OnRoomListingsReceived(listings);
         };
@@ -261,7 +286,8 @@ public partial class GameLobby : BaseGamePanel {
     /// <summary>
     /// 在主线程处理房间列表推送，直接以 RoomListing DTO 刷新 UI。
     /// </summary>
-    private void OnRoomListingsReceived(IReadOnlyList<RoomListing> listings) {
+    private void OnRoomListingsReceived(IReadOnlyList<RoomListing> listings)
+    {
         // 直接以传输 DTO RoomListing 作为 UI 数据源
         RefreshRoomList([.. listings]);
         if (_logger.IsEnabled(LogLevel.Debug))

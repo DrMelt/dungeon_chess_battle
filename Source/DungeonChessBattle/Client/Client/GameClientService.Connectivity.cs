@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Lobby.Protocol;
+using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Session.Shared;
 using Microsoft.Extensions.Logging;
@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Client;
 /// 客户端连接状态机，单一事实源。取代散落的布尔与字段判断，
 /// 使连接生命周期，大厅连接、房间连接与自动重连，可显式追踪并统一超时兜底。
 /// </summary>
-internal enum ClientConnectionState {
+internal enum ClientConnectionState
+{
     /// <summary>未连接。</summary>
     Idle,
 
@@ -33,7 +34,8 @@ internal enum ClientConnectionState {
 /// GameClientService 的连接连续性管理：连接状态机、重定向重连、断线自动重连、
 /// 连接事件回调、超时处理与每帧驱动。
 /// </summary>
-public sealed partial class GameClientService {
+public sealed partial class GameClientService
+{
     /// <summary>战斗启动重定向时暂存的房间 ID，区别于加入房间重定向 _pendingJoinRoomId。</summary>
     private RoomId _pendingBattleRoomId;
 
@@ -43,8 +45,10 @@ public sealed partial class GameClientService {
     /// <summary>
     /// 状态机唯一转换入口：集中维护状态与超时时间戳。
     /// </summary>
-    private void SetState(ClientConnectionState next) {
-        if (_state != next) {
+    private void SetState(ClientConnectionState next)
+    {
+        if (_state != next)
+        {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("连接状态 {From} -> {To}", _state, next);
             _state = next;
@@ -58,8 +62,10 @@ public sealed partial class GameClientService {
     /// 应用战斗重定向：房间标识来自服务端回包，先过值对象判定，非法即忽略本次重定向。
     /// 准备阶段开战与战斗重连两条路径共用同一处理。
     /// </summary>
-    private void ApplyBattleRedirect(RoomRedirect redirect) {
-        if (RoomId.TryCreate(redirect.RoomId) is not { } roomId) {
+    private void ApplyBattleRedirect(RoomRedirect redirect)
+    {
+        if (RoomId.TryCreate(redirect.RoomId) is not { } roomId)
+        {
             _logger.LogWarning("忽略房间标识非法的重定向：{RoomId}", redirect.RoomId);
             return;
         }
@@ -78,30 +84,35 @@ public sealed partial class GameClientService {
     /// <param name="roomPort">房间端口。</param>
     /// <param name="roomId">房间 ID。</param>
     /// <param name="isBattleStart">是否为战斗启动重定向，区别于加入房间重定向。</param>
-    private void ReconnectToRoom(string host, int roomPort, RoomId roomId, bool isBattleStart = false) {
+    private void ReconnectToRoom(string host, int roomPort, RoomId roomId, bool isBattleStart = false)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("重连至房间端口: {Host}:{Port}, RoomId={RoomId}", host, roomPort, roomId);
 
         Host = host;
         Port = roomPort;
         _cachedRoomId = roomId;
-        if (isBattleStart) {
+        if (isBattleStart)
+        {
             // 战斗启动重定向：连接成功后触发 OnBattleStarted，而非 OnRoomJoined
             _pendingBattleRoomId = roomId;
             _pendingJoinRoomId = RoomId.None;
         }
-        else {
+        else
+        {
             // 加入房间重定向：连接成功后触发 OnRoomJoined
             _pendingJoinRoomId = roomId;
             _pendingBattleRoomId = RoomId.None;
         }
 
         SetState(ClientConnectionState.ConnectingRoom);
-        try {
+        try
+        {
             // 使用客户端持久 _playerId 作为连接密钥，服务端白名单验证
             _roomClient.Reconnect(host, roomPort, PlayerId);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             SetState(ClientConnectionState.Idle);
             _logger.LogError(ex, "重连至房间端口失败");
             ConnectionChanged?.Invoke(new ConnectionStatus(host, roomPort, false));
@@ -116,8 +127,10 @@ public sealed partial class GameClientService {
     /// 全程处于 <see cref="ClientConnectionState.Reconnecting"/>，失败/超时由
     /// <see cref="HandleConnectTimeout"/> 兜底复位，不会卡死。
     /// </summary>
-    private void AttemptReconnectToRoom() {
-        if (_cachedRoomId.IsDefault) {
+    private void AttemptReconnectToRoom()
+    {
+        if (_cachedRoomId.IsDefault)
+        {
             _logger.LogWarning("无法自动重连：缺少缓存的房间 ID");
             ResetToNonRoomState();
             return;
@@ -128,12 +141,14 @@ public sealed partial class GameClientService {
 
         SetState(ClientConnectionState.Reconnecting);
 
-        if (!_lobbyClient.IsConnected) {
+        if (!_lobbyClient.IsConnected)
+        {
             // 事件驱动：大厅连接建立后自动登录，登录结果回调再发送重连请求，避免竞态
             _reconnectPendingLogin = true;
             _lobbyClient.Connect(Host, LobbyTransport.DefaultPort);
         }
-        else {
+        else
+        {
             SendReconnectRequest(); // 大厅已连接且登录会话有效，直接发送
         }
     }
@@ -149,7 +164,8 @@ public sealed partial class GameClientService {
     /// <summary>
     /// 连接成功回调：通知状态变更。
     /// </summary>
-    private void OnConnectionEstablished() {
+    private void OnConnectionEstablished()
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("已连接到 {Host}:{Port}", Host, Port);
         ConnectionChanged?.Invoke(new ConnectionStatus(Host, Port, true));
@@ -160,7 +176,8 @@ public sealed partial class GameClientService {
     /// 原先处于房间会话（含重连中）时通知战斗编排层退出战斗。
     /// 重连失败、房间无缓存断开、连接超时与完全断开统一收敛至此，OnBattleSessionLost 仅由此触发。
     /// </summary>
-    private void ResetToNonRoomState() {
+    private void ResetToNonRoomState()
+    {
         bool wasInRoom = _state is ClientConnectionState.ConnectingRoom
             or ClientConnectionState.InRoom
             or ClientConnectionState.Reconnecting;
@@ -177,7 +194,8 @@ public sealed partial class GameClientService {
     /// 完全断开回调：仅在大厅与房间都断开时视为完全断开并通知 UI。
     /// 更新循环由 Godot 主线程 GameClientDriver 驱动，断开时无需停止后台线程。
     /// </summary>
-    private void OnConnectionLost() {
+    private void OnConnectionLost()
+    {
         if (_lobbyClient.IsConnected || _roomClient.IsConnected)
             return;
 
@@ -192,7 +210,8 @@ public sealed partial class GameClientService {
     /// 连接超时兜底：依当前连接期断开对应客户端并终结房间会话，清缓存、复位状态、按需通知退出战斗。
     /// 覆盖 连接大厅/连接房间/自动重连 三个进行中状态，杜绝卡死。
     /// </summary>
-    private void HandleConnectTimeout() {
+    private void HandleConnectTimeout()
+    {
         if (_state is not (ClientConnectionState.ConnectingLobby
             or ClientConnectionState.ConnectingRoom
             or ClientConnectionState.Reconnecting))
@@ -203,16 +222,20 @@ public sealed partial class GameClientService {
             return;
 
         _logger.LogWarning("连接超时 ({State}，{Elapsed}s)", _state, (int)elapsed);
-        try {
-            if (_state == ClientConnectionState.ConnectingRoom) {
+        try
+        {
+            if (_state == ClientConnectionState.ConnectingRoom)
+            {
                 _roomClient.Disconnect();
             }
-            else {
+            else
+            {
                 // ConnectingLobby 与 Reconnecting 均处于大厅连接期，超时断开大厅
                 _lobbyClient.Disconnect();
             }
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogDebug(ex, "断开连接异常");
         }
         ResetToNonRoomState();
@@ -225,22 +248,28 @@ public sealed partial class GameClientService {
     /// 顺序位于 MainScene 输入采集之前，ProcessPriority 保证。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public void Update(float delta) {
+    public void Update(float delta)
+    {
         // 先消费 SignalR 后台线程投递的动作，再驱动房间客户端网络轮询。
         // 保证所有对房间客户端的操作都在主线程执行。
-        while (_mainThreadActions.TryDequeue(out var action)) {
-            try {
+        while (_mainThreadActions.TryDequeue(out var action))
+        {
+            try
+            {
                 action();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogWarning(ex, "主线程动作执行异常");
             }
         }
 
-        try {
+        try
+        {
             _roomClient.Update(delta);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogWarning(ex, "房间客户端更新异常");
         }
 

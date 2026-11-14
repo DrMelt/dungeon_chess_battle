@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Game.Services;
 /// <summary>
 /// Godot ILoggerProvider，将日志输出到 GD.Print / GD.PrintErr。
 /// </summary>
-public sealed class GodotLoggerProvider : ILoggerProvider {
+public sealed class GodotLoggerProvider : ILoggerProvider
+{
     /// <summary>按类别名缓存的日志器字典。</summary>
     private readonly ConcurrentDictionary<string, GodotLogger> _loggers = new();
 
@@ -23,7 +24,8 @@ public sealed class GodotLoggerProvider : ILoggerProvider {
     /// <summary>
     /// 释放提供者，清空所有缓存的日志器。
     /// </summary>
-    public void Dispose() {
+    public void Dispose()
+    {
         _loggers.Clear();
     }
 }
@@ -31,7 +33,8 @@ public sealed class GodotLoggerProvider : ILoggerProvider {
 /// <summary>
 /// Godot ILogger 实现。
 /// </summary>
-internal sealed class GodotLogger(string categoryName) : ILogger {
+internal sealed class GodotLogger(string categoryName) : ILogger
+{
     /// <summary>日志类别名。</summary>
     private readonly string _categoryName = categoryName;
 
@@ -61,7 +64,8 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
     /// <param name="state">日志状态。</param>
     /// <param name="exception">异常信息。</param>
     /// <param name="formatter">消息格式化委托。</param>
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
         if (!IsEnabled(logLevel))
             return;
 
@@ -71,7 +75,8 @@ internal sealed class GodotLogger(string categoryName) : ILogger {
         if (exception != null)
             full += $"\n{exception}";
 
-        switch (logLevel) {
+        switch (logLevel)
+        {
             case LogLevel.Critical:
                 GD.PrintErr("[Critical] " + full);
                 break;

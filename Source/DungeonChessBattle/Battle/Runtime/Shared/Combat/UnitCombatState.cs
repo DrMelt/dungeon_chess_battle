@@ -10,14 +10,17 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat;
 /// 读条目标、Buff、冷却、仇恨权威在此；Buff 与冷却经 <c>UnitPawn</c> 同步通道搬运，
 /// 仇恨只下行不回填。按帧施法意图不属本状态，见 <c>BattleUnit.CastInput</c>。
 /// </summary>
-public sealed class UnitCombatState {
+public sealed class UnitCombatState
+{
     /// <summary>读条目标单位，服务端私有，不参与网络同步；null 表示无。</summary>
-    public BattleUnit? CastTarget {
+    public BattleUnit? CastTarget
+    {
         get; set;
     }
 
     /// <summary>读条位置锚点，服务端私有，范围技能使用；null 表示无。</summary>
-    public Vector2? CastTargetPos {
+    public Vector2? CastTargetPos
+    {
         get; set;
     }
 
@@ -34,7 +37,8 @@ public sealed class UnitCombatState {
     public HateTable Hates { get; } = new();
 
     /// <summary>清空读条目标。</summary>
-    public void ClearCast() {
+    public void ClearCast()
+    {
         CastTarget = null;
         CastTargetPos = null;
     }
@@ -51,7 +55,8 @@ public sealed class UnitCombatState {
     /// 按状态副本重写全部权威状态：读条目标、Buff、冷却与仇恨整体替换，不合并。
     /// 副本项再复制后写入，副本本身不与活动对象共享可变状态；读条目标由调用方按标识解析后传入。
     /// </summary>
-    public void RestoreState(UnitCombatStateCopy state, BattleUnit? castTarget) {
+    public void RestoreState(UnitCombatStateCopy state, BattleUnit? castTarget)
+    {
         CastTarget = castTarget;
         CastTargetPos = state.CastTargetPos;
 

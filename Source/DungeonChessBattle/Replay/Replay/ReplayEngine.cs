@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Numerics;
 using DungeonChessBattle.Battle.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Events;
@@ -22,7 +21,8 @@ namespace DungeonChessBattle.Replay;
 /// 本类只承担重放驱动与世界读数，不实现表现层数据源接口——展示取数由 Game 层统一数据源
 /// <c>BattleSessionContext</c> 经此处只读成员装配。
 /// </summary>
-public sealed class ReplayEngine {
+public sealed class ReplayEngine
+{
     private readonly BattleScene _battleScene;
     private readonly UnitIntentDriver _intentDriver;
     private readonly BattleIntentHub _intentHub;
@@ -91,7 +91,8 @@ public sealed class ReplayEngine {
     /// 构建回放：注入内容注册表只读视图，归档门控、副本引用、移动轨道与单位引用先全部裁决，
     /// 通过后按单位初始态装配战斗世界并立即开战。被拒的归档不做三表混排与单位构建。
     /// </summary>
-    public static ErrorOr<ReplayEngine> Create(ReplayRecording recording, IContentRegistryView content) {
+    public static ErrorOr<ReplayEngine> Create(ReplayRecording recording, IContentRegistryView content)
+    {
         ReplayMeta meta = recording.Meta;
         if (meta.TickRate <= 0)
             return ReplayErrors.InvalidTickRate(meta.TickRate);
@@ -124,7 +125,8 @@ public sealed class ReplayEngine {
 
     /// <summary>装配回放：门控与内容引用已由 <see cref="Create"/> 裁决，本构造只建只读投影与战斗世界。</summary>
     private ReplayEngine(ReplayRecording recording, IContentRegistryView content, DungeonConfig dungeon,
-        ReplayMoveRun[][] moveRunsByPlayer, int[] moveCursor) {
+        ReplayMoveRun[][] moveRunsByPlayer, int[] moveCursor)
+    {
         _meta = recording.Meta;
         _content = content;
         _startTick = _meta.StartTick;
@@ -153,8 +155,10 @@ public sealed class ReplayEngine {
     /// 单位配置在场由 <see cref="Create"/> 一次裁决，重建路径不查空。
     /// 装配经单位工厂，与服务端生成路径同一份实现。
     /// </summary>
-    private void BuildUnits() {
-        foreach (var unit in _units) {
+    private void BuildUnits()
+    {
+        foreach (var unit in _units)
+        {
             var config = _content.GetUnit(unit.UnitConfigKey)!;
             var battleUnit = BattleUnitFactory.Create(config, unit.NetId,
                 [.. unit.Camps.Select(camp => new CampId(camp))], new Vector2(unit.SpawnX, unit.SpawnY));
@@ -172,7 +176,8 @@ public sealed class ReplayEngine {
     /// 缺后一条，重复轨道静默吃掉先到的整条轨道。
     /// </summary>
     private static ErrorOr<(ReplayMoveRun[][] Runs, int[] Cursors)> BuildMoveTracks(
-        IReadOnlyList<ReplayMoveTrack> tracks, int playerCount) {
+        IReadOnlyList<ReplayMoveTrack> tracks, int playerCount)
+    {
         if (playerCount > ReplayMoveTrack.MaxPlayers)
             return ReplayErrors.PlayerTableOverCapacity(playerCount, ReplayMoveTrack.MaxPlayers);
 
@@ -181,7 +186,8 @@ public sealed class ReplayEngine {
             runsByPlayer[i] = [];
 
         var claimed = new bool[playerCount];
-        foreach (var track in tracks) {
+        foreach (var track in tracks)
+        {
             if (track.PlayerIndex >= playerCount)
                 return ReplayErrors.MoveTrackIndexOutOfRange(track.PlayerIndex);
             if (claimed[track.PlayerIndex])
@@ -200,7 +206,8 @@ public sealed class ReplayEngine {
     /// 定位到指定逻辑帧：早于当前帧时回退到不晚于目标的最近锚点再续算，晚于当前帧时直接推进。
     /// 目标帧夹在录制总帧数与零之间；拖动与回看共用入口。
     /// </summary>
-    public void SeekTo(int targetFrame) {
+    public void SeekTo(int targetFrame)
+    {
         int target = Math.Clamp(targetFrame, 0, TotalFrames);
         if (target < _frame)
             Restore(NearestAnchor(target));
@@ -209,7 +216,8 @@ public sealed class ReplayEngine {
     }
 
     /// <summary>推进一逻辑帧，返回本帧领域事件。战斗结束后返回空。</summary>
-    public IReadOnlyList<IBattleEvent> Step() {
+    public IReadOnlyList<IBattleEvent> Step()
+    {
         if (_battleScene.IsFinished)
             return [];
 
@@ -231,10 +239,12 @@ public sealed class ReplayEngine {
     /// 施法与移动都只登记意图，同序要求见 <see cref="BattleIntentHub.PrepareTick"/>；<c>Accepted=false</c> 的条目跳过。
     /// 移动按方向意图段展开：段覆盖本帧即重投该段方向，逐 tick 提交语义与在线一致。
     /// </summary>
-    private void InjectInputs() {
+    private void InjectInputs()
+    {
         int absoluteFrame = _startTick + _frame;
 
-        while (_castCursor < _casts.Count) {
+        while (_castCursor < _casts.Count)
+        {
             var c = _casts[_castCursor];
             if (c.Frame > absoluteFrame)
                 break;
@@ -244,7 +254,8 @@ public sealed class ReplayEngine {
         }
 
         // 循环变量必须是 int：轨道数可达容量上限 256，byte 自增会在末位回绕，令本循环永不收敛
-        for (int player = 0; player < _moveRunsByPlayer.Length; player++) {
+        for (int player = 0; player < _moveRunsByPlayer.Length; player++)
+        {
             var runs = _moveRunsByPlayer[player];
             int cursor = _moveCursor[player];
             while (cursor < runs.Length && runs[cursor].EndFrame < absoluteFrame)
@@ -254,7 +265,8 @@ public sealed class ReplayEngine {
                 _intentHub.Submit(ReplayCommands.ToCommand(in runs[cursor], UnitIdOf(player)));
         }
 
-        while (_focusCursor < _focuses.Count) {
+        while (_focusCursor < _focuses.Count)
+        {
             var f = _focuses[_focusCursor];
             if (f.Frame > absoluteFrame)
                 break;
@@ -269,15 +281,18 @@ public sealed class ReplayEngine {
         playerIndex < _playerUnitIdByIndex.Length ? _playerUnitIdByIndex[playerIndex] : UnitId.None;
 
     /// <summary>按间隔落锚点，同帧已有锚点时不改写。</summary>
-    private void RecordAnchor() {
+    private void RecordAnchor()
+    {
         if (!_anchors.ContainsKey(_frame))
             _anchors[_frame] = CaptureAnchor();
     }
 
     /// <summary>取不晚于指定帧的最近锚点；第 0 帧锚点恒在，必有结果。</summary>
-    private Anchor NearestAnchor(int frame) {
+    private Anchor NearestAnchor(int frame)
+    {
         Anchor nearest = _anchors[0];
-        foreach (var (key, anchor) in _anchors) {
+        foreach (var (key, anchor) in _anchors)
+        {
             if (key > frame)
                 break;
             nearest = anchor;
@@ -290,7 +305,8 @@ public sealed class ReplayEngine {
         [.. _moveCursor], _castCursor, _focusCursor);
 
     /// <summary>按锚点重写世界、意图源状态与输入游标，单位对象不重建。</summary>
-    private void Restore(Anchor anchor) {
+    private void Restore(Anchor anchor)
+    {
         _battleScene.RestoreState(anchor.World);
         _intentDriver.RestoreState(anchor.Intents);
         _frame = anchor.Frame;

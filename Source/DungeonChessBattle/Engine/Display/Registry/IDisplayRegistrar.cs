@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Game.Display.Registry;
 /// 场景模板与图标纹理随条目数据以对象携带，不经本接口登记。
 /// 四类键同一口径：无内容键的数据不参与注册。
 /// </summary>
-public interface IDisplayRegistrar {
+public interface IDisplayRegistrar
+{
     /// <summary>注册技能展示数据，同 SkillId 覆盖。</summary>
     void RegisterSkill(SkillDisplay display);
 

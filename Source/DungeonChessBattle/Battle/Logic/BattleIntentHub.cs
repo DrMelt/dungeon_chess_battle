@@ -16,7 +16,8 @@ namespace DungeonChessBattle.Battle.Logic;
 /// <param name="scene">战斗世界，聚焦态的落地方。</param>
 /// <param name="driver">意图驱动：本门面把玩家命令写入它登记的意图源，并按帧推进它。</param>
 /// <param name="loggerFactory">命令拒绝日志工厂，可选注入；不注入则静默。</param>
-public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver driver, ILoggerFactory? loggerFactory = null) {
+public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver driver, ILoggerFactory? loggerFactory = null)
+{
     /// <summary>命令拒绝日志，未注入时用 NullLogger 静默。</summary>
     private readonly ILogger<BattleIntentHub> _logger =
         loggerFactory?.CreateLogger<BattleIntentHub>() ?? NullLogger<BattleIntentHub>.Instance;
@@ -35,7 +36,8 @@ public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver 
     /// <returns>已接管返回 true，施法不含可施放性结论——裁定在 <see cref="BattleScene.Tick"/> 的读条推进段；
     /// false 只源于施法阶段非 Running、技能键非法、单位或目标解析不到、单位不由玩家控制、<c>Kind</c> 非法。
     /// 死亡不经此处拒：待决施法在刷新点按施法者存活与状态丢弃。</returns>
-    public bool Submit(in PlayerCommand cmd) => cmd.Kind switch {
+    public bool Submit(in PlayerCommand cmd) => cmd.Kind switch
+    {
         PlayerCommandKind.Move => SubmitMove(cmd),
         PlayerCommandKind.Cast => SubmitCast(cmd),
         PlayerCommandKind.Focus => SubmitFocus(cmd),
@@ -43,7 +45,8 @@ public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver 
     };
 
     /// <summary>聚焦命令落地：存活校验交战斗世界，与 <c>Tick</c> 内的清活同源。</summary>
-    private bool SubmitFocus(in PlayerCommand cmd) {
+    private bool SubmitFocus(in PlayerCommand cmd)
+    {
         if (scene.SubmitFocus(cmd.SourceUnitId, cmd.TargetUnitId))
             return true;
         LogRejected(cmd, "focus unit missing or target dead");
@@ -51,7 +54,8 @@ public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver 
     }
 
     /// <summary>移动命令落地：转写进该单位玩家意图源的输入槽，产出点在 <see cref="PrepareTick"/>。</summary>
-    private bool SubmitMove(in PlayerCommand cmd) {
+    private bool SubmitMove(in PlayerCommand cmd)
+    {
         if (driver.SubmitMove(cmd.SourceUnitId, cmd.MoveDir))
             return true;
         LogRejected(cmd, "unit is not player controlled");
@@ -62,28 +66,34 @@ public sealed partial class BattleIntentHub(BattleScene scene, UnitIntentDriver 
     /// 施法命令落地：技能键空值与超长校验、施法者与目标 ID 解析在此收口，位置锚点按目标类型取舍，
     /// 转写进该单位玩家意图源的待决槽，就绪与作废在刷新点按当时状态裁定。
     /// </summary>
-    private bool SubmitCast(in PlayerCommand cmd) {
-        if (scene.CurrentPhase != BattlePhase.Running) {
+    private bool SubmitCast(in PlayerCommand cmd)
+    {
+        if (scene.CurrentPhase != BattlePhase.Running)
+        {
             LogRejected(cmd, "battle not running");
             return false;
         }
 
-        if (cmd.SkillKey is not { Length: > 0 } skillKey || skillKey.Length > SkillKeyId.MaxKeyLength) {
+        if (cmd.SkillKey is not { Length: > 0 } skillKey || skillKey.Length > SkillKeyId.MaxKeyLength)
+        {
             LogRejected(cmd, "skill key invalid or too long");
             return false;
         }
 
-        if (scene.FindBattleUnit(cmd.SourceUnitId) is null) {
+        if (scene.FindBattleUnit(cmd.SourceUnitId) is null)
+        {
             LogRejected(cmd, "caster not found");
             return false;
         }
 
-        if (!cmd.TargetUnitId.IsDefault && scene.FindBattleUnit(cmd.TargetUnitId) is null) {
+        if (!cmd.TargetUnitId.IsDefault && scene.FindBattleUnit(cmd.TargetUnitId) is null)
+        {
             LogRejected(cmd, "target not found");
             return false;
         }
 
-        if (!driver.SubmitCast(cmd.SourceUnitId, new UnitCastIntent(new SkillKeyId(skillKey), cmd.TargetUnitId, cmd.CastTargetPos))) {
+        if (!driver.SubmitCast(cmd.SourceUnitId, new UnitCastIntent(new SkillKeyId(skillKey), cmd.TargetUnitId, cmd.CastTargetPos)))
+        {
             LogRejected(cmd, "caster is not player controlled");
             return false;
         }

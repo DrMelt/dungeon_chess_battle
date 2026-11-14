@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 将广播映射到 SignalR Group，供业务层使用。
 /// </summary>
 /// <param name="hub">SignalR Hub 上下文。</param>
-public sealed class SignalRBroadcaster(IHubContext<LobbyHub> hub) {
+public sealed class SignalRBroadcaster(IHubContext<LobbyHub> hub)
+{
     private readonly IHubContext<LobbyHub> _hub = hub;
 
     /// <summary>将连接加入房间广播分组。</summary>

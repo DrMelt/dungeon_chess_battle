@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Battle.Client;
 /// 追加/读取/清空均发生在 Godot 主线程网络更新阶段，无需加锁。
 /// 会话重置（断线/重连/离开）时由 RoomBattleClient 调用 Clear。
 /// </summary>
-public sealed class BattleEventLogStore {
+public sealed class BattleEventLogStore
+{
     private readonly List<BattleEventLogEntry> _entries = [];
     private long _version;
 
@@ -18,7 +19,8 @@ public sealed class BattleEventLogStore {
     public long Version => _version;
 
     /// <summary>追加一批事件，批次共享同一接收时刻。</summary>
-    public void Append(IEnumerable<IBattleEvent> events, long receiveUnixMs) {
+    public void Append(IEnumerable<IBattleEvent> events, long receiveUnixMs)
+    {
         foreach (var e in events)
             _entries.Add(new BattleEventLogEntry(receiveUnixMs, e));
     }
@@ -27,7 +29,8 @@ public sealed class BattleEventLogStore {
     public IReadOnlyList<BattleEventLogEntry> Entries => _entries;
 
     /// <summary>清空全部日志并递增会话版本号，房间会话重置时调用。</summary>
-    public void Clear() {
+    public void Clear()
+    {
         _entries.Clear();
         _version++;
     }

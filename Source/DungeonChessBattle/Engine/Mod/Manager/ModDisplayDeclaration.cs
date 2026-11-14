@@ -10,19 +10,23 @@ namespace DungeonChessBattle.Game.Mod.Manager;
 /// 段名见 <see cref="ModLayout.ManifestDisplaySection"/>。
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-internal sealed class ModDisplayJson {
+internal sealed class ModDisplayJson
+{
     /// <summary>展示入口 DLL，相对 mod 目录，数组顺序即装载顺序；必填，无展示代码时写 <c>[]</c>。</summary>
-    public List<string>? Code {
+    public List<string>? Code
+    {
         get; set;
     }
 
     /// <summary>展示面额外的依赖探测目录；入口 DLL 所在目录自动附加，依赖与入口同目录时无需声明。</summary>
-    public List<string>? CodeLibraries {
+    public List<string>? CodeLibraries
+    {
         get; set;
     }
 
     /// <summary>待挂载的展示资源包，相对 mod 目录；必填，无展示资源时写 <c>[]</c>。</summary>
-    public List<string>? Packs {
+    public List<string>? Packs
+    {
         get; set;
     }
 }
@@ -31,29 +35,35 @@ internal sealed class ModDisplayJson {
 /// 一个 mod 的展示面声明：展示入口、依赖探测目录与待挂载资源包，路径已定位为 mod 目录内绝对路径。
 /// 声明段缺席即空声明，表示该 mod 不贡献展示面。
 /// </summary>
-public sealed class ModDisplayDeclaration {
+public sealed class ModDisplayDeclaration
+{
     /// <summary>mod ID，与清单 id 及目录名一致。</summary>
-    public required string ModId {
+    public required string ModId
+    {
         get; init;
     }
 
     /// <summary>mod 所在绝对目录。</summary>
-    public required string DirectoryPath {
+    public required string DirectoryPath
+    {
         get; init;
     }
 
     /// <summary>展示入口 DLL 绝对路径，顺序即装载顺序；空表示无展示代码。</summary>
-    public required IReadOnlyList<string> EntryDlls {
+    public required IReadOnlyList<string> EntryDlls
+    {
         get; init;
     }
 
     /// <summary>展示面依赖探测目录绝对路径，含各入口自身所在目录。</summary>
-    public required IReadOnlyList<string> ProbeDirectories {
+    public required IReadOnlyList<string> ProbeDirectories
+    {
         get; init;
     }
 
     /// <summary>待挂载的展示资源包绝对路径；空表示无展示资源。</summary>
-    public required IReadOnlyList<string> ResourcePacks {
+    public required IReadOnlyList<string> ResourcePacks
+    {
         get; init;
     }
 }
@@ -63,14 +73,16 @@ public sealed class ModDisplayDeclaration {
 /// 与数据面各读一次同一份清单，互不传递；定位规则复用 <see cref="ModRelativePath"/>。
 /// 声明不可用以错误返回，不拒载，展示面缺席不影响两端的装载集合与内容指纹。
 /// </summary>
-public static class ModDisplayDeclarationReader {
+public static class ModDisplayDeclarationReader
+{
     /// <summary>
     /// 读一个 mod 的展示声明。清单读不出来、段写错或缺字段以错误返回，调用方据此跳过该 mod 的展示面。
     /// 段内单个条目非法不使声明整体失败，逐条记 <paramref name="errors"/>。
     /// </summary>
     /// <param name="mod">已通过数据面校验的 mod，提供 ID、目录与清单路径。</param>
     /// <param name="errors">非致命问题的落点，条目带归属 mod ID。</param>
-    public static ErrorOr<ModDisplayDeclaration> Read(LoadedMod mod, List<ModError> errors) {
+    public static ErrorOr<ModDisplayDeclaration> Read(LoadedMod mod, List<ModError> errors)
+    {
         string modId = mod.Manifest.Id;
         string directory = mod.DirectoryPath;
 
@@ -87,7 +99,8 @@ public static class ModDisplayDeclarationReader {
         var entries = ResolveFiles(directory, modId, json.Code!, "code", errors);
         var packs = ResolveFiles(directory, modId, json.Packs!, "packs", errors);
         var directories = ResolveProbeDirectories(directory, modId, json.CodeLibraries, entries, errors);
-        return new ModDisplayDeclaration {
+        return new ModDisplayDeclaration
+        {
             ModId = modId,
             DirectoryPath = directory,
             EntryDlls = entries,
@@ -99,16 +112,20 @@ public static class ModDisplayDeclarationReader {
     /// <summary>
     /// 读展示段并反序列化。清单读不出来、段存在却解释不了都以错误返回；段缺席返回空值，表示该 mod 无展示面。
     /// </summary>
-    private static ErrorOr<ModDisplayJson?> ReadSection(string directory) {
+    private static ErrorOr<ModDisplayJson?> ReadSection(string directory)
+    {
         string text;
-        try {
+        try
+        {
             text = File.ReadAllText(ModLayout.ManifestOf(directory));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
             return ModDisplayErrors.ManifestUnreadable(ex.Message);
         }
 
-        try {
+        try
+        {
             using var document = JsonDocument.Parse(text);
             if (document.RootElement.ValueKind != JsonValueKind.Object
                 || !document.RootElement.TryGetProperty(ModLayout.ManifestDisplaySection, out JsonElement section))
@@ -118,12 +135,14 @@ public static class ModDisplayDeclarationReader {
                 return ModDisplayErrors.SectionUnreadable("段不是对象");
             return parsed;
         }
-        catch (JsonException ex) {
+        catch (JsonException ex)
+        {
             return ModDisplayErrors.SectionUnreadable(ex.Message);
         }
     }
 
-    private static List<string>? MissingRequired(ModDisplayJson json) {
+    private static List<string>? MissingRequired(ModDisplayJson json)
+    {
         List<string> missing = [];
         if (json.Code is null)
             missing.Add("code");
@@ -134,10 +153,13 @@ public static class ModDisplayDeclarationReader {
 
     /// <summary>定位一段声明的产物文件；非法或越界的条目跳过并记错误，其余条目照常可用。</summary>
     private static List<string> ResolveFiles(
-        string directory, string modId, List<string> declared, string fieldName, List<ModError> errors) {
+        string directory, string modId, List<string> declared, string fieldName, List<ModError> errors)
+    {
         var resolved = new List<string>(declared.Count);
-        foreach (string relative in declared) {
-            if (ModRelativePath.TryResolve(directory, relative, out string? path) && path is not null) {
+        foreach (string relative in declared)
+        {
+            if (ModRelativePath.TryResolve(directory, relative, out string? path) && path is not null)
+            {
                 resolved.Add(path);
                 continue;
             }
@@ -155,16 +177,20 @@ public static class ModDisplayDeclarationReader {
     /// </summary>
     private static List<string> ResolveProbeDirectories(
         string directory, string modId, IReadOnlyList<string>? declared, IReadOnlyList<string> entries,
-        List<ModError> errors) {
+        List<ModError> errors)
+    {
         var directories = new List<string>();
-        foreach (string relative in declared ?? []) {
-            if (!ModRelativePath.TryResolve(directory, relative, out string? path) || path is null) {
+        foreach (string relative in declared ?? [])
+        {
+            if (!ModRelativePath.TryResolve(directory, relative, out string? path) || path is null)
+            {
                 errors.Add(new ModError(modId,
                     $"manifest.{ModLayout.ManifestDisplaySection}.codeLibraries 的 '{relative}' 不是 mod 目录内的合法相对路径"));
                 continue;
             }
 
-            if (!Directory.Exists(path)) {
+            if (!Directory.Exists(path))
+            {
                 errors.Add(new ModError(modId,
                     $"manifest.{ModLayout.ManifestDisplaySection}.codeLibraries 声明的 '{relative}' 不存在"));
                 continue;
@@ -179,13 +205,15 @@ public static class ModDisplayDeclarationReader {
         return directories;
     }
 
-    private static void AddDistinct(List<string> directories, string path) {
+    private static void AddDistinct(List<string> directories, string path)
+    {
         if (!directories.Contains(path, StringComparer.Ordinal))
             directories.Add(path);
     }
 
     /// <summary>段缺席的空声明：该 mod 不贡献展示面。</summary>
-    private static ModDisplayDeclaration Empty(string modId, string directory) => new() {
+    private static ModDisplayDeclaration Empty(string modId, string directory) => new()
+    {
         ModId = modId,
         DirectoryPath = directory,
         EntryDlls = [],

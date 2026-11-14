@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Battle.Shared.Events;
 /// 战斗事件的统一标记接口。事件为纯数据，由编排层经可靠通道外送 / SyncVar 写回。
 /// 单位死亡不是事件：它是生命值派生的状态，一律经 IsDead 判定，避免状态与一次性事件两份真相。
 /// </summary>
-public interface IBattleEvent {
+public interface IBattleEvent
+{
 }
 
 /// <summary>单位受到伤害。SourceUnitId 为伤害来源，UnitId.None 表示无来源不记仇。</summary>

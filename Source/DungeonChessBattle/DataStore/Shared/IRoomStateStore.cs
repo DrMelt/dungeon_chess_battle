@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Server.DataStore.Shared;
 /// 房间状态存储接口：大厅级房间配置、密码与招募板状态的查询与写入。
 /// 并发语义：任何线程都可安全调用；同一房间内的读改写由实现保证原子性。
 /// </summary>
-public interface IRoomStateStore {
+public interface IRoomStateStore
+{
     /// <summary>注册房间，准备阶段。房间已存在时返回 false。</summary>
     bool TryRegisterRoom(RoomId roomId, string? password, GameRoom config);
 

@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// mod 行列表组件：内部承载行卡片与空态占位，按行数自动切换二者显隐，
 /// 外部只需调用 <see cref="Rebuild"/> 填入目录条目。
 /// </summary>
-public partial class ModRowList : Control {
+public partial class ModRowList : Control
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ModRowList> _logger = ServiceLocator.GetLogger<ModRowList>();
 
@@ -23,9 +24,11 @@ public partial class ModRowList : Control {
     public event Action<ModToggleRequest>? ToggleRequested;
 
     /// <summary>节点就绪：获取引用集合并同步一次初态。</summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _refs = GetNode<ModRowListInterRefs>("ModRowListInterRefs");
-        if (_refs is null) {
+        if (_refs is null)
+        {
             _logger.LogError("ModRowListInterRefs node not found.");
             return;
         }
@@ -34,7 +37,8 @@ public partial class ModRowList : Control {
     }
 
     /// <summary>按目录条目重建全部行：空目录即清空后停在空态，非空逐条实例化卡片，末尾按行数同步空态。</summary>
-    public void Rebuild(IReadOnlyList<ModEntryView>? mods) {
+    public void Rebuild(IReadOnlyList<ModEntryView>? mods)
+    {
         Clear();
         if (mods is not null)
             foreach (ModEntryView mod in mods)
@@ -43,8 +47,10 @@ public partial class ModRowList : Control {
         SyncEmptyState();
     }
 
-    private void AddRow(ModEntryView mod) {
-        if (_refs is not { ItemScene: { } scene, ModRows: { } rows }) {
+    private void AddRow(ModEntryView mod)
+    {
+        if (_refs is not { ItemScene: { } scene, ModRows: { } rows })
+        {
             _logger.LogError("ItemScene or ModRows is not ready, skip {ModId}.", mod.Id);
             return;
         }
@@ -57,11 +63,13 @@ public partial class ModRowList : Control {
     }
 
     /// <summary>摘除旧行再排队回收；QueueFree 在本帧末才移除，先摘除使旧行立即退出容器。</summary>
-    private void Clear() {
+    private void Clear()
+    {
         if (_refs?.ModRows is not { } rows)
             return;
 
-        foreach (Node stale in rows.GetChildren()) {
+        foreach (Node stale in rows.GetChildren())
+        {
             rows.RemoveChild(stale);
             stale.QueueFree();
         }
@@ -71,7 +79,8 @@ public partial class ModRowList : Control {
         ToggleRequested?.Invoke(new ModToggleRequest(modId, enabled));
 
     /// <summary>空态即行数为零：空时显示 EmptyHint 并隐藏行容器，有行时相反。</summary>
-    private void SyncEmptyState() {
+    private void SyncEmptyState()
+    {
         if (_refs?.ModRows is not { } rows)
             return;
 

@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// mod 装载的可预期失败目录：清单、启用集、路径裁决与入口装载。
 /// 描述面向日志与管理面板，归属由 <see cref="ModError"/> 侧按 mod 补上；自带定位所需的路径与原因，不携带异常对象。
 /// </summary>
-public static class ModLoaderErrors {
+public static class ModLoaderErrors
+{
     /// <summary>mod 目录根部无清单。</summary>
     public static Error ManifestMissing => Error.Validation(
         code: "ModLoader.Manifest.Missing", description: $"缺少 {ModLayout.ManifestFileName}");

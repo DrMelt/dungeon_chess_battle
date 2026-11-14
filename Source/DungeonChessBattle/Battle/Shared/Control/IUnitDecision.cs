@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Shared.Control;
 /// 实现必须无状态，无状态实例可被任意多个单位共享。
 /// 决策只依赖 <see cref="IBattleUnitView"/> 只读接口与调用方按副本注入的阵营关系，不接触网络载体，可脱离服务端独立测试。
 /// </summary>
-public interface IUnitDecision {
+public interface IUnitDecision
+{
     /// <summary>
     /// 生成当帧意图。
     /// </summary>

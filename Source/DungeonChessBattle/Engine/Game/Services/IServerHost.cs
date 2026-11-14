@@ -7,19 +7,23 @@ namespace DungeonChessBattle.Game.Services;
 /// 当前实现为独立子进程（<see cref="ServerProcessHost"/>），
 /// 未来可替换为进程内托管或远程服务器实现而不影响上层调用。
 /// </summary>
-public interface IServerHost {
+public interface IServerHost
+{
     /// <summary>当前运行状态。</summary>
-    ServerHostStatus Status {
+    ServerHostStatus Status
+    {
         get;
     }
 
     /// <summary>是否正在运行（<c>Status != <see cref="ServerHostStatus.Stopped"/></c>）。</summary>
-    bool IsRunning {
+    bool IsRunning
+    {
         get;
     }
 
     /// <summary>当前监听端口；未就绪/未运行时为 0。</summary>
-    int Port {
+    int Port
+    {
         get;
     }
 
@@ -27,7 +31,8 @@ public interface IServerHost {
     /// 最近一次启动失败或异常退出的原因描述；成功启动后清空。
     /// 用于 UI 展示失败原因（如可执行文件缺失、就绪超时）。
     /// </summary>
-    string? LastError {
+    string? LastError
+    {
         get;
     }
 

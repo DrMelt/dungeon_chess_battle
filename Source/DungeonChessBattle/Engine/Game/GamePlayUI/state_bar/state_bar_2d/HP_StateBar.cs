@@ -9,16 +9,19 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// <summary>
 /// 2D 血条组件，直读单位只读视图展示生命值、百分比与阵营关系颜色。
 /// </summary>
-public partial class HP_StateBar : Control {
+public partial class HP_StateBar : Control
+{
     /// <summary>导出引用集合节点。</summary>
-    public HP_StateBarInterRefs? InterRefs {
+    public HP_StateBarInterRefs? InterRefs
+    {
         get; private set;
     }
 
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<HP_StateBarInterRefs>("HP_StateBarInterRefs");
     }
 
@@ -27,8 +30,10 @@ public partial class HP_StateBar : Control {
     /// </summary>
     /// <param name="unit">目标单位只读视图。</param>
     /// <param name="session">战斗会话上下文，用于解析目标相对本地玩家的阵营关系；未就绪时置灰为未知色。</param>
-    public void UpdateUI_WithUnit(IBattleUnitView unit, BattleSessionContext? session) {
-        if (InterRefs == null) {
+    public void UpdateUI_WithUnit(IBattleUnitView unit, BattleSessionContext? session)
+    {
+        if (InterRefs == null)
+        {
             return;
         }
 
@@ -36,10 +41,12 @@ public partial class HP_StateBar : Control {
         var healthPercent = Mathf.Clamp(unit.Health / maxHealth, 0f, 1f);
 
         var progressBar = InterRefs.ProgressBarRef;
-        if (progressBar != null) {
+        if (progressBar != null)
+        {
             progressBar.Value = healthPercent;
             var uiSettings = InterRefs.PlayerUISettingsRef;
-            if (uiSettings != null) {
+            if (uiSettings != null)
+            {
                 // 未就绪/未知显式置灰，绝不投影错误的敌我色
                 var relation = session?.ResolveLocalCampRelation(unit.Camps) ?? CampRelation.Unknown;
                 progressBar.SelfModulate = uiSettings.GetRelationColor(relation);

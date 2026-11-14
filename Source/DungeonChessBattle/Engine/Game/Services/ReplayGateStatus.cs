@@ -4,7 +4,8 @@ namespace DungeonChessBattle.Game.Services;
 /// 回放"能否播放"的门控结论。与传输态 <c>Replay.Client.ReplayTransportStatus</c> 解耦：
 /// 传输只答"拿没拿到字节"，本态裁决"这份字节能不能重放"。
 /// </summary>
-public enum ReplayGateStatus {
+public enum ReplayGateStatus
+{
     /// <summary>取得可重放的记录。</summary>
     Ready,
 

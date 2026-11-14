@@ -4,7 +4,8 @@ namespace DungeonChessBattle.Replay.Client;
 /// 回放传输结果状态。Replay.Client 只承担从服务端取事实，状态仅覆盖传输成败，
 /// 解码与内容版本门控是消费侧决策，归 Game 层回放浏览服务。
 /// </summary>
-public enum ReplayTransportStatus {
+public enum ReplayTransportStatus
+{
     /// <summary>传输成功，取得服务端返回内容。</summary>
     Success,
 

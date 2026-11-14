@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// <summary>
 /// Entity 类型注册表。必须使用枚举类型来注册 Entity。
 /// </summary>
-public enum EntityClassId : ushort {
+public enum EntityClassId : ushort
+{
     /// <summary>战斗房间实体。</summary>
     BattleRoom = 1,
 
@@ -21,7 +22,8 @@ public enum EntityClassId : ushort {
 /// <summary>
 /// 构建 EntityTypesMap，服务端和客户端需使用完全相同的注册顺序。
 /// </summary>
-public static class EntityTypesRegistry {
+public static class EntityTypesRegistry
+{
     /// <summary>自定义字段类型是否已注册，幂等标志。</summary>
     private static bool _fieldTypesRegistered;
 
@@ -40,7 +42,8 @@ public static class EntityTypesRegistry {
     /// 静态构造：进程级注册 SyncVar 自定义字段类型，首次访问本类即触发。
     /// 创建 EntityManager 的必经路径 EntityTypesMap 会访问本类，因此字段注册必然先于任何 EntityManager 构造。
     /// </summary>
-    static EntityTypesRegistry() {
+    static EntityTypesRegistry()
+    {
         RegisterFieldTypes();
     }
 
@@ -48,7 +51,8 @@ public static class EntityTypesRegistry {
     /// 注册 SyncVar 自定义字段类型。进程级全局，幂等，由静态构造在首次访问本类时自动调用。
     /// ⚠ LES 对未注册字段类型会静默剔除，仅内部 LogError，导致字段不参与同步，必须显式注册。
     /// </summary>
-    public static void RegisterFieldTypes() {
+    public static void RegisterFieldTypes()
+    {
         if (_fieldTypesRegistered)
             return;
 

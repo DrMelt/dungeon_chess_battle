@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace DungeonChessBattle.Battle.Entities;
@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Battle.Entities;
 /// 平台无关，仅做接口桥接，不重复实现任何平台输出。
 /// 使用常量模板与 IsEnabled 预检，规避 CA2254 模板不一致与 CA1873 禁用时求值参数。
 /// </summary>
-public sealed class LesNetworkLogger(ILogger logger) : LiteEntitySystem.ILogger {
+public sealed class LesNetworkLogger(ILogger logger) : LiteEntitySystem.ILogger
+{
     private readonly ILogger _logger = logger;
 
     /// <summary>
@@ -21,19 +22,22 @@ public sealed class LesNetworkLogger(ILogger logger) : LiteEntitySystem.ILogger 
         LiteEntitySystem.Logger.LoggerImpl = new LesNetworkLogger(logger);
 
     /// <summary>LES 框架普通日志，转发为 Information 等级。</summary>
-    public void Log(string log) {
+    public void Log(string log)
+    {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("{Message}", log);
     }
 
     /// <summary>LES 框架警告日志，转发为 Warning 等级。</summary>
-    public void LogWarning(string log) {
+    public void LogWarning(string log)
+    {
         if (_logger.IsEnabled(LogLevel.Warning))
             _logger.LogWarning("{Message}", log);
     }
 
     /// <summary>LES 框架错误日志，转发为 Error 等级。</summary>
-    public void LogError(string log) {
+    public void LogError(string log)
+    {
         if (_logger.IsEnabled(LogLevel.Error))
             _logger.LogError("{Message}", log);
     }

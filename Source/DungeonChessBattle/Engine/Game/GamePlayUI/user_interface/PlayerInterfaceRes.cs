@@ -9,27 +9,32 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 服务端聚焦目标由 BattleSessionContext.LocalFocus 派生，不在此容器。
 /// </summary>
 [GlobalClass]
-public partial class PlayerInterfaceRes : Resource {
+public partial class PlayerInterfaceRes : Resource
+{
 
     /// <summary>当前鼠标悬停的 UI 控件。</summary>
-    public Control? MouseOnUIControl {
+    public Control? MouseOnUIControl
+    {
         get; set;
     }
 
     /// <summary>当前鼠标悬停的单位。</summary>
-    public UnitGameShow? MouseOnUnit {
+    public UnitGameShow? MouseOnUnit
+    {
         get;
         set;
     }
 
     /// <summary>鼠标在地面的世界坐标位置。</summary>
-    public Vector3? MouseGroundPosition {
+    public Vector3? MouseGroundPosition
+    {
         get;
         set;
     } = null;
 
     /// <summary>当前是否在等待技能目标选择（由 SkillsList 写入，战斗输入应阻塞）。</summary>
-    public bool IsWaitingSkillTarget {
+    public bool IsWaitingSkillTarget
+    {
         get; set;
     }
 

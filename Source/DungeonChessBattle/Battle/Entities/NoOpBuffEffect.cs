@@ -6,7 +6,8 @@ using ErrorOr;
 namespace DungeonChessBattle.Battle.Entities;
 
 /// <summary>空 Buff 效果：在线端下行还原 Buff 时绑定，客户端不推进 Buff，效果永不触发。</summary>
-internal sealed class NoOpBuffEffect : IBuffEffect {
+internal sealed class NoOpBuffEffect : IBuffEffect
+{
     /// <summary>共享单例。</summary>
     public static readonly NoOpBuffEffect Instance = new();
 

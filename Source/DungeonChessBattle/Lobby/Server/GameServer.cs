@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Lobby.Protocol.Dtos;
+using DungeonChessBattle.Lobby.Protocol.Dtos;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Server.DataStore.Shared;
 using DungeonChessBattle.Session.Shared;
@@ -27,7 +27,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// <param name="content">内容注册表只读视图，单位配置、阵营选项、副本键与内容修订号来源。</param>
 public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster broadcaster,
     LobbyServerConfig lobbyConfig, IBattleRoomManager battleRoomManager, IGameStateStore stateStore,
-    IContentRegistryView content) : ILobbyApplication {
+    IContentRegistryView content) : ILobbyApplication
+{
     private readonly GameLobby _lobby = new(loggerFactory, stateStore, broadcaster, lobbyConfig,
         content);
     private readonly IBattleRoomManager _battleRoomManager = battleRoomManager;
@@ -38,7 +39,8 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
     /// <summary>
     /// 向房间内所有成员连接广播消息。
     /// </summary>
-    private async Task BroadcastToRoomAsync<TDto>(RoomId roomId, string hubMethod, TDto dto) {
+    private async Task BroadcastToRoomAsync<TDto>(RoomId roomId, string hubMethod, TDto dto)
+    {
         await _broadcaster.SendToRoomAsync(roomId, hubMethod, dto);
     }
 
@@ -46,7 +48,8 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
     /// 连接断开清理：移除登录会话与房间归属，并向剩余玩家广播最新房间快照。
     /// 准备阶段房间的最后一人退出时房间被删除，本方法不广播。
     /// </summary>
-    public async Task ConnectionLostAsync(string connectionId) {
+    public async Task ConnectionLostAsync(string connectionId)
+    {
         // 登录会话先清理，避免断线残留身份
         _stateStore.RemoveLoginSession(connectionId);
 
@@ -63,7 +66,8 @@ public partial class GameServer(ILoggerFactory loggerFactory, SignalRBroadcaster
     /// <see cref="IPlayerStateStore.RemovePlayerByConnection"/>
     /// 成员、单位、人数、房主转让与空房删除，并向剩余玩家广播最新房间快照。
     /// </summary>
-    public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId) {
+    public async Task<LobbyResult> HandleLeaveRoomAsync(string connectionId)
+    {
         RoomId roomId = _stateStore.GetRoomIdForConnection(connectionId);
         if (roomId.IsDefault)
             return new LobbyResult(string.Empty, false, "Player not in room.");

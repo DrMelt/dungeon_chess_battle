@@ -9,7 +9,8 @@ namespace DungeonChessBattle.Client;
 /// 房间权威快照由 LobbyClient 缓存并经 OnRoomSnapshotUpdated 更新。
 /// 与门面的 RoomSession 属性无关：后者是房间 LES 战斗链路接口。
 /// </summary>
-public sealed partial class GameClientService {
+public sealed partial class GameClientService
+{
     /// <summary>当前所在房间 ID；未进房间时为空标识。</summary>
     public RoomId CurrentRoomId => _cachedRoomId;
 
@@ -21,8 +22,10 @@ public sealed partial class GameClientService {
     public bool IsCurrentUserHost => CurrentRoomSnapshot is { } s && s.HostName == PlayerName;
 
     /// <summary>当前玩家是否已准备（快照未到或未在玩家列表时为 false）。</summary>
-    public bool IsCurrentUserReady {
-        get {
+    public bool IsCurrentUserReady
+    {
+        get
+        {
             var snapshot = CurrentRoomSnapshot;
             if (snapshot == null)
                 return false;
@@ -38,12 +41,15 @@ public sealed partial class GameClientService {
         && s.Units.Any(u => u.PlayerName == PlayerName);
 
     /// <summary>除房主外其他玩家是否全部已准备；无其他玩家视为满足。</summary>
-    public bool OthersReady {
-        get {
+    public bool OthersReady
+    {
+        get
+        {
             var snapshot = CurrentRoomSnapshot;
             if (snapshot == null)
                 return true;
-            foreach (var p in snapshot.Players) {
+            foreach (var p in snapshot.Players)
+            {
                 if (p.PlayerName == snapshot.HostName)
                     continue;
                 if (!p.Ready)

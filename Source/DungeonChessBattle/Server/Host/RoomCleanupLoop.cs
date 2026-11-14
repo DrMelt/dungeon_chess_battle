@@ -10,15 +10,18 @@ namespace DungeonChessBattle.Server.Host;
 /// <param name="logger">日志记录器。</param>
 /// <param name="interval">清理周期。</param>
 public sealed class RoomCleanupLoop(IBattleRoomManager roomManager, ILogger<RoomCleanupLoop> logger,
-    TimeSpan? interval = null) {
+    TimeSpan? interval = null)
+{
     private readonly TimeSpan _interval = interval ?? TimeSpan.FromMilliseconds(50);
     private readonly Lock _lock = new();
     private CancellationTokenSource? _cts;
     private Task? _loopTask;
 
     /// <summary>启动清理循环，幂等。</summary>
-    public void Start() {
-        lock (_lock) {
+    public void Start()
+    {
+        lock (_lock)
+        {
             if (_cts != null)
                 return;
             _cts = new CancellationTokenSource();
@@ -27,10 +30,12 @@ public sealed class RoomCleanupLoop(IBattleRoomManager roomManager, ILogger<Room
     }
 
     /// <summary>取消循环并等待其退出，幂等。</summary>
-    public void Stop(TimeSpan timeout) {
+    public void Stop(TimeSpan timeout)
+    {
         CancellationTokenSource? cts;
         Task? loop;
-        lock (_lock) {
+        lock (_lock)
+        {
             cts = _cts;
             loop = _loopTask;
             _cts = null;
@@ -40,32 +45,40 @@ public sealed class RoomCleanupLoop(IBattleRoomManager roomManager, ILogger<Room
             return;
 
         cts.Cancel();
-        try {
+        try
+        {
             // _cts.Token 此刻已取消，等待无需取消
             if (loop != null && !loop.Wait(timeout, CancellationToken.None)
                 && logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning("空房间清理循环未在超时内停止");
         }
-        catch (AggregateException) {
+        catch (AggregateException)
+        {
             // 循环已因清理失败终止，此处观测异常避免 UnobservedTaskException
         }
         cts.Dispose();
     }
 
-    private async Task LoopAsync(CancellationToken ct) {
+    private async Task LoopAsync(CancellationToken ct)
+    {
         using var timer = new PeriodicTimer(_interval);
-        try {
-            while (await timer.WaitForNextTickAsync(ct)) {
-                try {
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                try
+                {
                     roomManager.ProcessPendingRoomCleanups();
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     if (logger.IsEnabled(LogLevel.Error))
                         logger.LogError(ex, "空房间清理失败，循环继续");
                 }
             }
         }
-        catch (OperationCanceledException) {
+        catch (OperationCanceledException)
+        {
             // 正常停止
         }
     }

@@ -16,7 +16,8 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// 前厅页面之一，打开与返回走 BaseGamePanel 导航链；前厅图层显隐交 ReplayCoordinator 信号仲裁。
 /// 回放组装场景互斥加载，播放请求经导出的 <see cref="MainSceneNode"/> 装配启动，本面板不接触回放引擎与编排器。
 /// </summary>
-public partial class ReplayPanel : BaseGamePanel {
+public partial class ReplayPanel : BaseGamePanel
+{
     private static readonly ILogger<ReplayPanel> _logger = ServiceLocator.GetLogger<ReplayPanel>();
 
     /// <summary>主场景装配根：回放组装场景互斥加载，启动请求交其实例化并驱动。</summary>
@@ -24,7 +25,8 @@ public partial class ReplayPanel : BaseGamePanel {
     private MainSceneNode? _assembler;
 
     /// <summary>导出引用集合节点。</summary>
-    public ReplayPanelInterRefs? InterRefs {
+    public ReplayPanelInterRefs? InterRefs
+    {
         get; private set;
     }
 
@@ -32,9 +34,11 @@ public partial class ReplayPanel : BaseGamePanel {
     private readonly Dictionary<string, ReplayItem> _rows = [];
 
     /// <summary>节点就绪：获取引用集合，校验导出引用，绑定按钮。</summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<ReplayPanelInterRefs>("ReplayPanelInterRefs");
-        if (InterRefs is null) {
+        if (InterRefs is null)
+        {
             _logger.LogError("ReplayPanelInterRefs node not found.");
             return;
         }
@@ -45,13 +49,15 @@ public partial class ReplayPanel : BaseGamePanel {
     }
 
     /// <summary>面板打开：清掉上次启动结论并取一次合并列表。会话失效的在途清理由客户端状态机经 ReplayService.OnSessionInvalid 处理。</summary>
-    protected override void OnPanelOpened() {
+    protected override void OnPanelOpened()
+    {
         SetStatusLabelText("");
         Refresh();
     }
 
     /// <summary>每帧取最新行视图并增量刷新；面板隐藏时不消费。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         if (!Visible || !IsInstanceValid(this))
             return;
         RenderRows(ServiceLocator.ReplayService.GetRowViews());
@@ -70,9 +76,11 @@ public partial class ReplayPanel : BaseGamePanel {
     /// 播放按钮回调：服务层取可重放记录，成功即交主场景装配回放场景启动并返回大厅，
     /// 失败把原因写给玩家；事实记录各归其裁决点，本面板不重复记日志。
     /// </summary>
-    private void OnPlayPressed(string roomId) {
+    private void OnPlayPressed(string roomId)
+    {
         var result = ServiceLocator.ReplayService.TryGetPlayable(roomId);
-        if (!result.IsReady || result.Recording is null) {
+        if (!result.IsReady || result.Recording is null)
+        {
             if (IsInstanceValid(this))
                 _logger.LogWarning("回放本地副本无法读取或版本不兼容，无法启动: {RoomId}（{Status}）", roomId, result.Status);
             SetStatusLabelText($"回放无法启动：{result.Reason ?? "本地副本不可用，请重新下载"}");
@@ -82,7 +90,8 @@ public partial class ReplayPanel : BaseGamePanel {
             return;
 
         var started = _assembler.StartReplay(result.Recording);
-        if (started.IsError) {
+        if (started.IsError)
+        {
             SetStatusLabelText($"回放启动失败：{started.FirstError.Description}");
             return;
         }
@@ -91,13 +100,15 @@ public partial class ReplayPanel : BaseGamePanel {
     }
 
     /// <summary>把最近一次启动结论写给玩家，空串即清空。</summary>
-    private void SetStatusLabelText(string text) {
+    private void SetStatusLabelText(string text)
+    {
         if (InterRefs?.StatusLabel != null)
             InterRefs.StatusLabel.Text = text;
     }
 
     /// <summary>按行视图增量刷新逐行卡片：摘要随回放元数据固定仅新建构建，动作态每帧更新。</summary>
-    private void RenderRows(IReadOnlyList<ReplayRowView> views) {
+    private void RenderRows(IReadOnlyList<ReplayRowView> views)
+    {
         var container = InterRefs?.ReplayListContainer;
         if (container == null)
             return;
@@ -109,15 +120,18 @@ public partial class ReplayPanel : BaseGamePanel {
         var stale = new List<string>();
         foreach (var roomId in _rows.Keys.Where(roomId => !currentRoomIds.Contains(roomId)))
             stale.Add(roomId);
-        foreach (var roomId in stale) {
+        foreach (var roomId in stale)
+        {
             if (!_rows.Remove(roomId, out var row))
                 continue;
             container.RemoveChild(row);
             row.QueueFree();
         }
 
-        foreach (var view in views) {
-            if (!_rows.TryGetValue(view.RoomId, out var row)) {
+        foreach (var view in views)
+        {
+            if (!_rows.TryGetValue(view.RoomId, out var row))
+            {
                 row = CreateRow();
                 container.AddChild(row);
                 _rows[view.RoomId] = row;
@@ -128,7 +142,8 @@ public partial class ReplayPanel : BaseGamePanel {
     }
 
     /// <summary>实例化单条回放卡片并订阅其行按钮信号。</summary>
-    private ReplayItem CreateRow() {
+    private ReplayItem CreateRow()
+    {
         if (InterRefs?.ReplayItemScene is null)
             throw new InvalidOperationException("ReplayItemScene is not assigned.");
         var row = InterRefs.ReplayItemScene.Instantiate<ReplayItem>();

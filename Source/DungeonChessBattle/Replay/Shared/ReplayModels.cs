@@ -19,7 +19,8 @@ public sealed record ReplayMeta(
     [property: Key(5)] int EndTick,
     [property: Key(6)] string DataVersion,
     [property: Key(7)] string LogicVersion,
-    [property: Key(8)] IReadOnlyList<ReplayPlayerInfo> Players) {
+    [property: Key(8)] IReadOnlyList<ReplayPlayerInfo> Players)
+{
     /// <summary>回放覆盖的逻辑帧数，时间轴长度以此为准，不由最后一条输入倒推。</summary>
     [IgnoreMember]
     public int DurationTicks => Math.Max(0, EndTick - StartTick + 1);
@@ -57,7 +58,8 @@ public sealed record ReplayUnitInit(
 [MessagePackObject]
 public sealed record ReplayMoveTrack(
     [property: Key(0)] byte PlayerIndex,
-    [property: Key(1)] IReadOnlyList<ReplayMoveRun> Runs) {
+    [property: Key(1)] IReadOnlyList<ReplayMoveRun> Runs)
+{
     /// <summary>可寻址玩家数上限：轨道键是 byte，下标 0..255 容 256 名。录制、成型与重建三处共用这一处口径。</summary>
     public const int MaxPlayers = byte.MaxValue + 1;
 }
@@ -71,7 +73,8 @@ public readonly record struct ReplayMoveRun(
     [property: Key(0)] int Frame,
     [property: Key(1)] int Length,
     [property: Key(2)] float DirX,
-    [property: Key(3)] float DirY) {
+    [property: Key(3)] float DirY)
+{
     /// <summary>本段覆盖的最后一帧，inclusive。</summary>
     [IgnoreMember]
     public int EndFrame => Frame + Length - 1;

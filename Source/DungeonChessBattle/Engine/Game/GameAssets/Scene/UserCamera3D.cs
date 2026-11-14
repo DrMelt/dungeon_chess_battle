@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// 进入战斗且本地单位出现后默认锁定跟随，以本地玩家角色为屏幕中心；
 /// 可按 Camera_FollowPlayer 键切换自由视角，退出战斗后下次进入恢复默认锁定。
 /// </summary>
-public partial class UserCamera3D : Camera3D {
+public partial class UserCamera3D : Camera3D
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UserCamera3D> _logger = ServiceLocator.GetLogger<UserCamera3D>();
 
@@ -68,7 +69,8 @@ public partial class UserCamera3D : Camera3D {
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (_sessionRef == null)
             _logger.LogError("_sessionRef is not assigned!");
     }
@@ -77,20 +79,23 @@ public partial class UserCamera3D : Camera3D {
     /// 每帧处理相机旋转、平移、聚焦、俯视与锁定跟随指令。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         Vector2 currentMouse = GetViewport().GetMousePosition() * GetViewport().GetVisibleRect().Size;
 
         var localUnit = _sessionRef?.LocalUnit;
         Vector3? localPos = UnitWorldPos(localUnit);
 
         // 本地单位从无到有视为进入战斗，默认进入锁定并立即居中
-        if (localPos != null && !_hadLocalUnit) {
+        if (localPos != null && !_hadLocalUnit)
+        {
             _followPlayerEnabled = true;
             AlignToLocalUnit(localPos.Value);
         }
         _hadLocalUnit = localPos != null;
 
-        if (_rotationEnabled && Input.IsActionPressed("Camera_Rotate")) {
+        if (_rotationEnabled && Input.IsActionPressed("Camera_Rotate"))
+        {
             Vector2 deltaMouse = (currentMouse - mousePos) * 0.0001f * RotateSpeed;
 
             Vector3 cameraPreDir = -GlobalTransform.Basis.Z;
@@ -101,7 +106,8 @@ public partial class UserCamera3D : Camera3D {
             // 锁定跟随模式下以本地玩家为旋转中心，保证角色始终位于屏幕中心
             var focusUnit = _followPlayerEnabled ? localUnit : _sessionRef?.LocalFocus;
             Vector3? focusPos = UnitWorldPos(focusUnit);
-            if (focusPos != null) {
+            if (focusPos != null)
+            {
                 centerPos = focusPos.Value;
             }
 
@@ -132,7 +138,8 @@ public partial class UserCamera3D : Camera3D {
         }
 
         // 锁定跟随模式下禁用自由平移，避免破坏居中
-        if (!_followPlayerEnabled && Input.IsActionPressed("Camera_Move")) {
+        if (!_followPlayerEnabled && Input.IsActionPressed("Camera_Move"))
+        {
             Vector3 global_X = GlobalTransform.Basis.X;
             Vector3 global_Y = GlobalTransform.Basis.Y;
             float sizeScaledSpeed = MoveSpeed * Size * 0.1f;
@@ -146,15 +153,18 @@ public partial class UserCamera3D : Camera3D {
         Vector3 cameraDir = -GlobalTransform.Basis.Z;
 
         // 锁定跟随模式下已居中，跳过聚焦移动
-        if (!_followPlayerEnabled && Input.IsActionJustPressed("Camera_MoveToFocus")) {
+        if (!_followPlayerEnabled && Input.IsActionJustPressed("Camera_MoveToFocus"))
+        {
             Vector3? focusPos = UnitWorldPos(_sessionRef?.LocalFocus);
-            if (focusPos != null) {
+            if (focusPos != null)
+            {
                 Vector3 vecToFocus = focusPos.Value - GlobalPosition;
                 float projectValue = Mathf.Abs(vecToFocus.Dot(cameraDir));
                 GlobalPosition = focusPos.Value - cameraDir * projectValue;
             }
         }
-        if (Input.IsActionJustPressed("Camera_TopView")) {
+        if (Input.IsActionJustPressed("Camera_TopView"))
+        {
             LookAt(GlobalPosition + new Vector3(0, -1, 0));
         }
 
@@ -163,7 +173,8 @@ public partial class UserCamera3D : Camera3D {
             GlobalPosition = localPos.Value + _followOffset;
 
         // 切换锁定跟随，切回时立即归中
-        if (Input.IsActionJustPressed("Camera_FollowPlayer")) {
+        if (Input.IsActionJustPressed("Camera_FollowPlayer"))
+        {
             _followPlayerEnabled = !_followPlayerEnabled;
             if (_followPlayerEnabled && localPos != null)
                 AlignToLocalUnit(localPos.Value);
@@ -179,7 +190,8 @@ public partial class UserCamera3D : Camera3D {
     /// <summary>
     /// 锁定归中：相机 XZ 对齐本地单位并保留高度，使角色处于视野中心。
     /// </summary>
-    private void AlignToLocalUnit(Vector3 unitPos) {
+    private void AlignToLocalUnit(Vector3 unitPos)
+    {
         _followOffset = new Vector3(0, GlobalPosition.Y - unitPos.Y, 0);
         GlobalPosition = unitPos + _followOffset;
     }
@@ -188,13 +200,17 @@ public partial class UserCamera3D : Camera3D {
     /// 处理滚轮缩放输入，并限制缩放范围。
     /// </summary>
     /// <param name="event">输入事件。</param>
-    public override void _UnhandledInput(InputEvent @event) {
-        if (@event is InputEventMouseButton mouseButton) {
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouseButton)
+        {
             float scaleFactor = 1.0f + ZoomSpeed * 0.01f;
-            if (mouseButton.ButtonIndex == MouseButton.WheelDown) {
+            if (mouseButton.ButtonIndex == MouseButton.WheelDown)
+            {
                 Size *= scaleFactor;
             }
-            if (mouseButton.ButtonIndex == MouseButton.WheelUp) {
+            if (mouseButton.ButtonIndex == MouseButton.WheelUp)
+            {
                 Size /= scaleFactor;
             }
             Size = Mathf.Clamp(Size, _zoomMin, _zoomMax);

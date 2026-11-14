@@ -16,7 +16,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 列宽、配色与换行都在场景里配置。
 /// 启停改的是磁盘上的启用集，内容装配是一次性的，变更需重启进程。
 /// </summary>
-public partial class ModManagementPanel : BaseGamePanel {
+public partial class ModManagementPanel : BaseGamePanel
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ModManagementPanel> _logger = ServiceLocator.GetLogger<ModManagementPanel>();
 
@@ -30,9 +31,11 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 节点就绪：绑定按钮；列表不在此构建，取数只发生在面板打开时。
     /// 单个按钮引用缺失只是那一个动作没有入口，不中断其余绑定。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _refs = GetNode<ModManagementPanelInterRefs>("ModManagementPanelInterRefs");
-        if (_refs is null) {
+        if (_refs is null)
+        {
             _logger.LogError("ModManagementPanelInterRefs node not found.");
             return;
         }
@@ -44,7 +47,8 @@ public partial class ModManagementPanel : BaseGamePanel {
     }
 
     /// <summary>面板打开：重扫 mods 目录并刷新列表，反映用户在两次打开之间的改动。</summary>
-    protected override void OnPanelOpened() {
+    protected override void OnPanelOpened()
+    {
         _notice = null;
         Refresh();
     }
@@ -55,7 +59,8 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 按当前目录重建行列表与面板摘要。
     /// 行列表与摘要标签任缺其一即整体不渲染。
     /// </summary>
-    private void Refresh() {
+    private void Refresh()
+    {
         if (_refs is not { ModRowList: { } rows, StatusLabel: { } status })
             return;
 
@@ -76,7 +81,8 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 状态主体是启用集概况、mods 目录位置与运行中的数据修订号，磁盘启用集与装配那一刻的指纹不等时点出来。
     /// 目录未装配时只留目录位置。
     /// </summary>
-    private string SummaryFor(ModAssets? assets) {
+    private string SummaryFor(ModAssets? assets)
+    {
         string body = assets is null
             ? $"mod 内容未装配\nmods 目录：{ModManager.ModsRootPath}"
             : BuildStatusBody(assets);
@@ -87,7 +93,8 @@ public partial class ModManagementPanel : BaseGamePanel {
         return WithNotice(body);
     }
 
-    private static string BuildStatusBody(ModAssets assets) {
+    private static string BuildStatusBody(ModAssets assets)
+    {
         ModCatalog catalog = assets.Catalog;
         string stale = catalog.Fingerprint == assets.AssemblyFingerprint
             ? ""
@@ -122,12 +129,14 @@ public partial class ModManagementPanel : BaseGamePanel {
     /// 启停一个 mod：只落盘启用集并刷新列表，已装配的内容不回滚。
     /// 新状态重启进程后生效，服务器子进程按同一启用集装配。
     /// </summary>
-    private void OnToggleRequested(ModToggleRequest request) {
+    private void OnToggleRequested(ModToggleRequest request)
+    {
         string action = request.Enabled ? "启用" : "停用";
         ModAssets? assets = ServiceLocator.ModAssets;
         if (assets is null)
             _notice = "mod 内容未装配，启停未落盘";
-        else {
+        else
+        {
             var toggled = assets.Catalog.SetEnabled(request.ModId, request.Enabled);
             _notice = toggled.IsError
                 ? $"启停未生效：{toggled.FirstError.Description}"
@@ -137,23 +146,28 @@ public partial class ModManagementPanel : BaseGamePanel {
     }
 
     /// <summary>重新扫描 mods 目录：发现新增或删除的 mod 目录。已装配的内容不变。</summary>
-    private void OnRescanPressed() {
+    private void OnRescanPressed()
+    {
         ServiceLocator.ModAssets?.Catalog.Rescan();
         _notice = "已重新扫描目录；新增的 mod 需重启进程才会参与装配";
         Refresh();
     }
 
     /// <summary>打开 mods 目录：目录不存在则先建出来。成功即不留提示。</summary>
-    private void OnOpenFolderPressed() {
-        try {
+    private void OnOpenFolderPressed()
+    {
+        try
+        {
             Directory.CreateDirectory(ModManager.ModsRootPath);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             // 建目录失败不阻断打开：目录已存在即无碍，其余结果由 ShellOpen 提示用户
             _logger.LogWarning(ex, "创建 mods 目录失败：{Path}", ModManager.ModsRootPath);
         }
 
-        if (OS.ShellOpen($"file://{ModManager.ModsRootPath}") != Error.Ok) {
+        if (OS.ShellOpen($"file://{ModManager.ModsRootPath}") != Error.Ok)
+        {
             _logger.LogWarning("打开 mods 目录被系统拒绝");
             _notice = "系统未受理打开请求，请手动进入上方 mods 目录路径";
         }

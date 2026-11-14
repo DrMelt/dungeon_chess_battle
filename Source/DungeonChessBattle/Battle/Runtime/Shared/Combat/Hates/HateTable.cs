@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Runtime.Shared.Combat.Hates;
 /// 以目标单位为键，不持有单位引用，纯数据结构可独立单测。
 /// 增删改查，变更经状态同步器内容比较节流同步。
 /// </summary>
-public sealed class HateTable {
+public sealed class HateTable
+{
     /// <summary>目标单位 → 仇恨值。</summary>
     private readonly Dictionary<UnitId, float> _hates = [];
 
@@ -16,8 +17,10 @@ public sealed class HateTable {
     private const float Epsilon = 0.01f;
 
     /// <summary>应用单个仇恨修改效果，负增量将按阈值裁剪条目；操作类型未登记以错误返回。</summary>
-    public ErrorOr<Success> ApplyEffect(HateEffect effect) {
-        switch (effect.Op) {
+    public ErrorOr<Success> ApplyEffect(HateEffect effect)
+    {
+        switch (effect.Op)
+        {
             case HateEffectOp.Add:
                 Add(effect.SourceUnitId, effect.Value);
                 break;
@@ -34,43 +37,50 @@ public sealed class HateTable {
     }
 
     /// <summary>对目标增量加指定值，内部处理裁剪；零增量直接返回不落账。</summary>
-    public void Add(UnitId targetUnitId, float value) {
+    public void Add(UnitId targetUnitId, float value)
+    {
         if (value == 0f)
             return;
         SetInternal(targetUnitId, _hates.GetValueOrDefault(targetUnitId) + value);
     }
 
     /// <summary>对目标乘倍率，目标不存在时忽略。</summary>
-    public void Multiply(UnitId targetUnitId, float multiplier) {
+    public void Multiply(UnitId targetUnitId, float multiplier)
+    {
         if (!_hates.TryGetValue(targetUnitId, out float current))
             return;
         SetInternal(targetUnitId, current * multiplier);
     }
 
     /// <summary>把对目标的仇恨抬到当前最高之上指定余量，实现嘲讽。</summary>
-    public void SetTop(UnitId targetUnitId, float overage) {
+    public void SetTop(UnitId targetUnitId, float overage)
+    {
         float top = _hates.Count == 0 ? 0f : _hates.Values.Max();
         SetInternal(targetUnitId, top + overage);
     }
 
     /// <summary>移除对目标的仇恨条目，目标不存在时忽略；供单位死亡清理调用。</summary>
-    public void RemoveTarget(UnitId targetUnitId) {
+    public void RemoveTarget(UnitId targetUnitId)
+    {
         _hates.Remove(targetUnitId);
     }
 
     /// <summary>清空整张仇恨表，供单位死亡清理调用。</summary>
-    public void Clear() {
+    public void Clear()
+    {
         _hates.Clear();
     }
 
     /// <summary>按仇恨快照重写整张账本：清空后按原值写入，不做退场阈值裁剪。</summary>
-    public void Restore(IReadOnlyList<HateSnapshot> snapshot) {
+    public void Restore(IReadOnlyList<HateSnapshot> snapshot)
+    {
         _hates.Clear();
         foreach (var entry in snapshot)
             _hates[entry.TargetUnitId] = entry.Value;
     }
 
-    private void SetInternal(UnitId targetUnitId, float value) {
+    private void SetInternal(UnitId targetUnitId, float value)
+    {
         if (value <= Epsilon)
             _hates.Remove(targetUnitId);
         else

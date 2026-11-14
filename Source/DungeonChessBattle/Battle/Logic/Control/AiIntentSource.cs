@@ -15,15 +15,19 @@ namespace DungeonChessBattle.Battle.Logic.Control;
 /// <param name="scene">战场只读视图，决策只读消费。</param>
 /// <param name="relations">副本阵营关系函数，敌我判定唯一来源。</param>
 internal sealed class AiIntentSource(
-    UnitId unitId, IUnitDecision decision, IBattleSceneView scene, CampRelationResolver relations) : IUnitIntentSource {
+    UnitId unitId, IUnitDecision decision, IBattleSceneView scene, CampRelationResolver relations) : IUnitIntentSource
+{
     /// <inheritdoc />
-    public UnitIntent Intent {
+    public UnitIntent Intent
+    {
         get; private set;
     }
 
     /// <inheritdoc />
-    public void Refresh(float deltaTime) {
-        if (scene.FindUnit(unitId) is not { IsDead: false } self || self.SkillCasting != default) {
+    public void Refresh(float deltaTime)
+    {
+        if (scene.FindUnit(unitId) is not { IsDead: false } self || self.SkillCasting != default)
+        {
             Intent = UnitIntent.Idle;
             return;
         }

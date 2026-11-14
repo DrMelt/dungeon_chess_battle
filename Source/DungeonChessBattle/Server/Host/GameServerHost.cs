@@ -1,4 +1,4 @@
-﻿using DungeonChessBattle.Battle.Config.Registry;
+using DungeonChessBattle.Battle.Config.Registry;
 using DungeonChessBattle.Battle.Server.Shared;
 using DungeonChessBattle.Lobby.Protocol;
 using DungeonChessBattle.Lobby.Server;
@@ -15,7 +15,8 @@ namespace DungeonChessBattle.Server.Host;
 /// <param name="loggerFactory">日志工厂。</param>
 /// <param name="config">服务器配置。</param>
 /// <param name="content">入口装配产出的内容注册表，经 DI 分发给大厅与房间。</param>
-public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config, ContentSetRegistry content) {
+public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig config, ContentSetRegistry content)
+{
     private readonly ILogger<GameServerHost> _logger = loggerFactory.CreateLogger<GameServerHost>();
     private readonly Lock _lock = new();
     private readonly ServerConfig _config = config;
@@ -28,14 +29,18 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
 
     /// <summary>启动服务器：构建 Kestrel/SignalR 宿主并进入运行态。配置由构造注入。</summary>
     /// <returns>是否启动成功；失败时已清理已构建宿主。</returns>
-    public bool Start() {
-        lock (_lock) {
-            if (_running) {
+    public bool Start()
+    {
+        lock (_lock)
+        {
+            if (_running)
+            {
                 _logger.LogWarning("服务器已在运行中");
                 return true;
             }
 
-            try {
+            try
+            {
                 var builder = WebApplication.CreateBuilder();
                 // 局域网游戏服务器，开发环境不启用 TLS
 #pragma warning disable S5332
@@ -71,7 +76,8 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
                     _logger.LogInformation("服务器已启动，监听端口 {Port}", _config.LobbyPort);
                 return true;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _cleanupLoop?.Stop(TimeSpan.FromSeconds(3));
                 _cleanupLoop = null;
                 _battleRoomManager?.StopAll();
@@ -90,9 +96,11 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
     /// 停止服务器：发出停止信号，触发宿主生命周期 ApplicationStopping 清理流程，
     /// 宿主收尾与进程退出由 <see cref="RunAsync"/> 完成。幂等。
     /// </summary>
-    public void Stop() {
+    public void Stop()
+    {
         IHostApplicationLifetime? lifetime;
-        lock (_lock) {
+        lock (_lock)
+        {
             if (!_running)
                 return;
             lifetime = _lifetime;
@@ -104,21 +112,26 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
     /// 宿主停止阶段的业务清理：先停清理循环再停全部房间，保证房间线程退出后无并发协调。
     /// 由 ApplicationStopping 触发，与宿主停止流程同序；不触碰 _app，宿主收尾归 <see cref="RunAsync"/>。
     /// </summary>
-    private void OnApplicationStopping() {
-        lock (_lock) {
+    private void OnApplicationStopping()
+    {
+        lock (_lock)
+        {
             if (!_running)
                 return;
 
-            try {
+            try
+            {
                 _cleanupLoop?.Stop(TimeSpan.FromSeconds(3));
                 _battleRoomManager?.StopAll();
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation("服务器已停止");
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "服务器停止失败");
             }
-            finally {
+            finally
+            {
                 _cleanupLoop = null;
                 _battleRoomManager = null;
                 _running = false;
@@ -130,9 +143,11 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
     /// 阻塞直至停止请求后完成宿主收尾；入口在 Start 后调用，替代手动 Thread.Sleep 保活。
     /// 停止信号来源：Ctrl+C/SIGTERM（宿主 ConsoleLifetime）或 <see cref="Stop"/>（父进程看护）。
     /// </summary>
-    public async Task RunAsync(CancellationToken cancellationToken = default) {
+    public async Task RunAsync(CancellationToken cancellationToken = default)
+    {
         WebApplication? app;
-        lock (_lock) {
+        lock (_lock)
+        {
             if (!_running)
                 return;
             app = _app;
@@ -141,14 +156,17 @@ public sealed class GameServerHost(ILoggerFactory loggerFactory, ServerConfig co
         if (app == null)
             return;
 
-        try {
+        try
+        {
             // 等待停止信号（ApplicationStopping 触发后返回），再同步完成宿主停止
             await app.WaitForShutdownAsync(cancellationToken);
             await app.StopAsync(CancellationToken.None);
         }
-        finally {
+        finally
+        {
             await app.DisposeAsync();
-            lock (_lock) {
+            lock (_lock)
+            {
                 _app = null;
                 _lifetime = null;
             }

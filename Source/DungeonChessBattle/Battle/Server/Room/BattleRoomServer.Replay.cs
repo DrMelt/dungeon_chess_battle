@@ -1,4 +1,3 @@
-using System.Linq;
 using DungeonChessBattle.Battle.Logic;
 using DungeonChessBattle.Battle.Runtime.Shared.Combat;
 using DungeonChessBattle.Battle.Shared.Inputs;
@@ -13,7 +12,8 @@ namespace DungeonChessBattle.Battle.Server;
 /// BattleRoomServer 的战斗输入回放录制：命令在提交输入门面的同一处落盘，
 /// 仅房间线程调用，导出交房间销毁后的归档线程。数据模型与时间轴见 <see cref="BattleReplayRecorder"/>。
 /// </summary>
-public partial class BattleRoomServer {
+public partial class BattleRoomServer
+{
     /// <summary>战斗输入录制器，房间线程首帧初始化时创建，随房间释放。</summary>
     private BattleReplayRecorder? _replayRecorder;
 
@@ -26,7 +26,8 @@ public partial class BattleRoomServer {
         _content.DataRevision, BattleLogicRevision.Value);
 
     /// <summary>创建回放记录器：玩家数超出移动轨道容量以错误交回房间初始化。</summary>
-    private ErrorOr<Success> CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players) {
+    private ErrorOr<Success> CreateReplayRecorder(IReadOnlyList<ReplayPlayerInfo> players)
+    {
         var created = BattleReplayRecorder.Create(RoomId, _dungeonKey,
             DateTimeOffset.UtcNow.ToUnixTimeSeconds(), FramesPerSecond, players);
         if (created.IsError)
@@ -40,12 +41,14 @@ public partial class BattleRoomServer {
     /// 重放端据此重建世界，不从副本配置的生成顺序推演实体 ID；谁是玩家不在此落盘，
     /// 由元数据玩家表的 NetId 判定。仅房间线程调用。
     /// </summary>
-    private void RecordUnitInits() {
+    private void RecordUnitInits()
+    {
         if (_replayRecorder is null)
             return;
 
         var units = new List<ReplayUnitInit>(_roomPawns.Count);
-        foreach (var pawn in _roomPawns) {
+        foreach (var pawn in _roomPawns)
+        {
             var position = pawn.Position.Value;
             units.Add(new ReplayUnitInit(pawn.Id, pawn.UnitKeyName.Value,
                 [.. pawn.CampTags.Select(camp => camp.Value)], position.X, position.Y));
@@ -55,20 +58,23 @@ public partial class BattleRoomServer {
     }
 
     /// <summary>战斗世界进入结束态时把结束帧写进回放：结束之后的帧不在时间轴内。仅房间线程调用。</summary>
-    private void RecordBattleEnd(BattleScene scene) {
+    private void RecordBattleEnd(BattleScene scene)
+    {
         if (scene.IsFinished)
             _replayRecorder?.MarkEnd(EntityManager.Tick);
     }
 
     /// <summary>提交一条玩家命令并旁路记录，返回权威接管结论作为客户端回执。仅房间线程调用。</summary>
-    private bool SubmitAndRecord(in PlayerCommand cmd) {
+    private bool SubmitAndRecord(in PlayerCommand cmd)
+    {
         bool accepted = _intentHub.Submit(cmd);
         _replayRecorder?.Record(EntityManager.Tick, cmd, accepted);
 
         // 移动命令逐 tick 到来，不记日志；请求类命令一条一行，与客户端回执对照
         if (cmd.Kind == PlayerCommandKind.Move)
             return accepted;
-        if (accepted) {
+        if (accepted)
+        {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("[RoomId: {RoomId}] Player command taken: {Command}.", RoomId, cmd);
         }

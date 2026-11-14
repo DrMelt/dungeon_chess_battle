@@ -10,20 +10,24 @@ namespace DungeonChessBattle.Battle.Mod.Manager;
 /// 依赖缺失或成环者拒载并按依赖顺序排列其余 mod。只处理数据面，展示面声明段的解释归 Game.Mod.Manager。
 /// 根级问题不装载任何 mod，仅由 <see cref="ModLoadResult.RootProblem"/> 承载。
 /// </summary>
-public static class ModLoader {
+public static class ModLoader
+{
     /// <summary>
     /// 加载 mods 根目录下全部 mod 目录并按启用集分流；根目录不可用返回空结果，原因在 <see cref="ModLoadResult.RootProblem"/>。
     /// 逐 mod 明细记 Debug，拒载与解析失败记 Error，连带拒载在 <see cref="OrderByDependency"/> 记 Warning。
     /// </summary>
-    public static ModLoadResult LoadDirectory(string rootPath, ILoggerFactory? loggerFactory = null) {
+    public static ModLoadResult LoadDirectory(string rootPath, ILoggerFactory? loggerFactory = null)
+    {
         var logger = loggerFactory?.CreateLogger(typeof(ModLoader).FullName!) ?? NullLogger.Instance;
-        if (string.IsNullOrEmpty(rootPath)) {
+        if (string.IsNullOrEmpty(rootPath))
+        {
             if (logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning("未提供 mod 目录，本次不装载任何 mod");
             return EmptyRoot("未提供 mod 目录");
         }
 
-        if (!Directory.Exists(rootPath)) {
+        if (!Directory.Exists(rootPath))
+        {
             if (logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning("mods 目录不存在，本次不装载任何 mod：{Root}", rootPath);
             return EmptyRoot($"mods 目录不存在：{rootPath}");
@@ -33,10 +37,12 @@ public static class ModLoader {
             logger.LogInformation("扫描 mod 目录：{Root}", rootPath);
 
         string[] directories;
-        try {
+        try
+        {
             directories = Directory.GetDirectories(rootPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
             // 目录枚举失败属根级问题：记根级原因并不装载任何 mod，不中止装配；
             // 原因另以异常连栈落一条日志，根级问题文案本身不含异常对象
             if (logger.IsEnabled(LogLevel.Warning))
@@ -45,12 +51,14 @@ public static class ModLoader {
         }
 
         var enablement = ModEnablement.Load(rootPath, logger);
-        if (enablement.IsError) {
+        if (enablement.IsError)
+        {
             // 启用集读取失败即不装载任何 mod：不静默、也不阻断进程启动，两端按同一裁决得到同一内容
             string problem = enablement.FirstError.Description;
             if (logger.IsEnabled(LogLevel.Error))
                 logger.LogError("启用集不可读，本次不装载任何 mod：{Reason}", problem);
-            return new ModLoadResult {
+            return new ModLoadResult
+            {
                 Mods = [],
                 Disabled = [],
                 Errors = [],
@@ -66,11 +74,13 @@ public static class ModLoader {
         var disabled = new List<LoadedMod>();
         var unloaded = new List<UnloadedMod>();
         var errors = new List<ModError>();
-        foreach (string dir in directories) {
+        foreach (string dir in directories)
+        {
             string id = Path.GetFileName(dir);
             // 清单与产物的可预期失败都已在 LoadModDirectory 内收成错误，此处不捕获异常
             ErrorOr<LoadedMod> parsed = LoadModDirectory(dir, errors);
-            if (parsed.IsError) {
+            if (parsed.IsError)
+            {
                 string reason = parsed.FirstError.Description;
                 errors.Add(new ModError(id, reason));
                 unloaded.Add(new UnloadedMod { DirectoryPath = dir, Reason = reason });
@@ -78,12 +88,14 @@ public static class ModLoader {
             }
 
             LoadedMod mod = parsed.Value;
-            if (disabledIds.Contains(mod.Manifest.Id)) {
+            if (disabledIds.Contains(mod.Manifest.Id))
+            {
                 disabled.Add(mod);
                 if (logger.IsEnabled(LogLevel.Debug))
                     logger.LogDebug("跳过已停用的 mod {ModId}", mod.Manifest.Id);
             }
-            else {
+            else
+            {
                 mods.Add(mod);
                 LogLoaded(logger, mod);
             }
@@ -96,29 +108,42 @@ public static class ModLoader {
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("mod 扫描完成：启用 {Enabled} 个，停用 {Disabled} 个，拒载 {Rejected} 个",
                 ordered.Count, disabled.Count, unloaded.Count);
-        return new ModLoadResult {
-            Mods = ordered, Disabled = disabled, Unloaded = unloaded, Errors = errors, RootProblem = null,
+        return new ModLoadResult
+        {
+            Mods = ordered,
+            Disabled = disabled,
+            Unloaded = unloaded,
+            Errors = errors,
+            RootProblem = null,
         };
     }
 
     /// <summary>根级问题下的空结果：所有目录均未装载，原因只在 RootProblem，逐目录错误不重复报。</summary>
     private static ModLoadResult EmptyRoot(string problem) =>
-        new() {
-            Mods = [], Disabled = [], Unloaded = [], Errors = [], RootProblem = problem
+        new()
+        {
+            Mods = [],
+            Disabled = [],
+            Unloaded = [],
+            Errors = [],
+            RootProblem = problem
         };
 
-    private static ErrorOr<LoadedMod> LoadModDirectory(string dir, List<ModError> errors) {
+    private static ErrorOr<LoadedMod> LoadModDirectory(string dir, List<ModError> errors)
+    {
         string manifestPath = ModLayout.ManifestOf(dir);
         if (!File.Exists(manifestPath))
             return ModLoaderErrors.ManifestMissing;
 
         ModManifestJson? manifest;
-        try {
+        try
+        {
             manifest = JsonSerializer.Deserialize(
                 File.ReadAllText(manifestPath),
                 ModJsonContext.Default.ModManifestJson);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) {
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
             // 坏 JSON 与读取失败的文件由序列化器与文件系统抛出，在本库的裁决点收成错误
             return ModLoaderErrors.ManifestUnreadable(ex.Message);
         }
@@ -147,7 +172,8 @@ public static class ModLoader {
         if (codeHash.IsError)
             return codeHash.FirstError;
 
-        return new LoadedMod {
+        return new LoadedMod
+        {
             Manifest = new ModManifest(
                 Id: id,
                 Version: manifest.Version!,
@@ -165,7 +191,8 @@ public static class ModLoader {
     /// 数据面必填字段校验。身份与版本字段进指纹，产物字段决定装载什么：缺席即拒载，不接受默认值。
     /// 展示面字段不在此列：它们归 Game.Mod.Manager 校验，写错也不该影响两端的装载集合。
     /// </summary>
-    private static ErrorOr<Success> ValidateRequired(ModManifestJson manifest) {
+    private static ErrorOr<Success> ValidateRequired(ModManifestJson manifest)
+    {
         List<string> missing = [];
         if (string.IsNullOrEmpty(manifest.Id))
             missing.Add("id");
@@ -185,9 +212,11 @@ public static class ModLoader {
     /// 声明即承诺存在：数据面产物缺失整包拒载，两端内容必须同源。
     /// </summary>
     private static ErrorOr<List<string>> ResolveArtifacts(string modDirectory, List<string> declared,
-        string fieldName) {
+        string fieldName)
+    {
         var resolved = new List<string>(declared.Count);
-        foreach (string relative in declared) {
+        foreach (string relative in declared)
+        {
             ErrorOr<string> path = ResolveWithinModDirectory(modDirectory, relative, fieldName);
             if (path.IsError)
                 return path.FirstError;
@@ -205,14 +234,17 @@ public static class ModLoader {
     /// </summary>
     private static ErrorOr<List<string>> ResolveProbeDirectories(
         string modDirectory, List<string>? declared, IReadOnlyList<string> entries, string fieldName,
-        List<ModError> errors) {
+        List<ModError> errors)
+    {
         var directories = new List<string>();
-        foreach (string relative in declared ?? []) {
+        foreach (string relative in declared ?? [])
+        {
             ErrorOr<string> resolved = ResolveWithinModDirectory(modDirectory, relative, fieldName);
             if (resolved.IsError)
                 return resolved.FirstError;
             string path = resolved.Value;
-            if (!Directory.Exists(path)) {
+            if (!Directory.Exists(path))
+            {
                 errors.Add(new ModError(Path.GetFileName(modDirectory),
                     $"manifest.{fieldName} 声明的 '{relative}' 不存在"));
                 continue;
@@ -238,7 +270,8 @@ public static class ModLoader {
         [.. absolutePaths.Select(path =>
             Path.GetRelativePath(modDirectory, path).Replace(Path.DirectorySeparatorChar, '/'))];
 
-    private static void AddDistinct(List<string> directories, string path) {
+    private static void AddDistinct(List<string> directories, string path)
+    {
         if (!directories.Contains(path, StringComparer.Ordinal))
             directories.Add(path);
     }
@@ -249,7 +282,8 @@ public static class ModLoader {
     /// </summary>
     private static List<LoadedMod> OrderByDependency(
         IReadOnlyList<LoadedMod> mods, List<ModError> errors, IReadOnlyList<LoadedMod> disabled,
-        List<UnloadedMod> unloaded, ILogger logger) {
+        List<UnloadedMod> unloaded, ILogger logger)
+    {
         var byId = mods.ToDictionary(m => m.Manifest.Id, StringComparer.Ordinal);
         var disabledIds = disabled.Select(m => m.Manifest.Id).ToHashSet(StringComparer.Ordinal);
 
@@ -261,26 +295,31 @@ public static class ModLoader {
             Visit(mod, new Stack<string>());
         return result;
 
-        bool Visit(LoadedMod mod, Stack<string> stack) {
+        bool Visit(LoadedMod mod, Stack<string> stack)
+        {
             string id = mod.Manifest.Id;
             if (visited.Contains(id))
                 return true;
             if (rejected.Contains(id))
                 return false;
-            if (stack.Contains(id)) {
+            if (stack.Contains(id))
+            {
                 Reject(mod, $"依赖成环 {string.Join(" -> ", stack.Reverse())} -> {id}");
                 return false;
             }
 
             stack.Push(id);
-            foreach (var dep in mod.Manifest.Dependencies) {
-                if (!byId.TryGetValue(dep, out var depMod)) {
+            foreach (var dep in mod.Manifest.Dependencies)
+            {
+                if (!byId.TryGetValue(dep, out var depMod))
+                {
                     // 被停用的依赖与被删掉的依赖是两件事，管理面据此提示用户启用上游
                     Reject(mod, disabledIds.Contains(dep) ? $"依赖已停用 {dep}" : $"依赖缺失 {dep}");
                     stack.Pop();
                     return false;
                 }
-                if (!Visit(depMod, stack)) {
+                if (!Visit(depMod, stack))
+                {
                     // 原因已由被依赖者报出，这里只登记连带拒载
                     Reject(mod, $"依赖未装载 {dep}", report: false);
                     stack.Pop();
@@ -293,14 +332,18 @@ public static class ModLoader {
             result.Add(mod);
             return true;
 
-            void Reject(LoadedMod rejectedMod, string reason, bool report = true) {
+            void Reject(LoadedMod rejectedMod, string reason, bool report = true)
+            {
                 if (report)
                     errors.Add(new ModError(id, reason));
                 else if (logger.IsEnabled(LogLevel.Warning))
                     // 连带原因已在上游报出，日志仍留目录行便于追溯
                     logger.LogWarning("mod 未装载：{ModId}：{Reason}", id, reason);
-                unloaded.Add(new UnloadedMod {
-                    DirectoryPath = rejectedMod.DirectoryPath, Manifest = rejectedMod.Manifest, Reason = reason,
+                unloaded.Add(new UnloadedMod
+                {
+                    DirectoryPath = rejectedMod.DirectoryPath,
+                    Manifest = rejectedMod.Manifest,
+                    Reason = reason,
                 });
                 rejected.Add(id);
             }
@@ -310,7 +353,8 @@ public static class ModLoader {
     #region 日志
 
     /// <summary>逐 mod 目录解析明细：身份、依赖、数据入口数量与数据代码摘要前缀。</summary>
-    private static void LogLoaded(ILogger logger, LoadedMod mod) {
+    private static void LogLoaded(ILogger logger, LoadedMod mod)
+    {
         if (!logger.IsEnabled(LogLevel.Debug))
             return;
         logger.LogDebug(
@@ -319,13 +363,15 @@ public static class ModLoader {
             string.Join(", ", mod.Manifest.Dependencies), mod.CodeEntries.Count, HashPrefix(mod.CodeHash));
     }
 
-    private static void LogLoadFailed(ILogger logger, ModError error) {
+    private static void LogLoadFailed(ILogger logger, ModError error)
+    {
         if (logger.IsEnabled(LogLevel.Error))
             logger.LogError("mod 装载失败：{ModId}：{Reason}", error.ModId, error.Message);
     }
 
     /// <summary>摘要前 8 位；无代码即无摘要，以「-」占位以免误读为截断。</summary>
-    private static string HashPrefix(string hash) => hash.Length switch {
+    private static string HashPrefix(string hash) => hash.Length switch
+    {
         0 => "-",
         <= 8 => hash,
         _ => hash[..8],

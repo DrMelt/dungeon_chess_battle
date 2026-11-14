@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Battle.Shared.Combat;
 /// 字段在全链路统一为字符串。
 /// 仅声明长度上限与语义名，存储与校验复用 <see cref="RestrictedString"/>。
 /// </summary>
-public readonly record struct SkillKeyId {
+public readonly record struct SkillKeyId
+{
     /// <summary>技能键最大字符数，与配置表键长对齐。</summary>
     public const ushort MaxKeyLength = 32;
 

@@ -6,7 +6,8 @@ namespace DungeonChessBattle.Battle.Config.Registry;
 /// 注册表写入的可预期失败：空身份键的写入一律拒绝。
 /// 描述面向日志与管理面板，归属由调用侧按 mod 补上。
 /// </summary>
-public static class ContentRegistryErrors {
+public static class ContentRegistryErrors
+{
     /// <summary>技能定义未声明技能键。</summary>
     public static Error EmptySkillKey => Error.Validation(
         code: "ContentRegistry.SkillKeyEmpty", description: "技能必须声明技能键");

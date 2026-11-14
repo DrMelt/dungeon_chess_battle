@@ -12,12 +12,14 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// <see cref="IRectRangeHint"/> 判定，本节点只负责实例生命周期。
 /// 实例初始化延迟到挂载后一帧，作用场景的 _Ready 此时已完成。
 /// </summary>
-public partial class EffectHints : Node {
+public partial class EffectHints : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<EffectHints> _logger = ServiceLocator.GetLogger<EffectHints>();
 
     /// <summary>当前显示的范围提示实例。</summary>
-    public Node3D? ActiveHint {
+    public Node3D? ActiveHint
+    {
         get; private set;
     }
 
@@ -31,11 +33,13 @@ public partial class EffectHints : Node {
     /// <param name="rangeHintScene">范围提示场景模板，未配置为 null。</param>
     /// <param name="init">实例挂载且 _Ready 完成后执行的初始化回调。</param>
     /// <returns>创建的范围提示实例；未创建返回 null。</returns>
-    public IRectRangeHint? ShowRangeHint(PackedScene? rangeHintScene, Action<IRectRangeHint> init) {
+    public IRectRangeHint? ShowRangeHint(PackedScene? rangeHintScene, Action<IRectRangeHint> init)
+    {
         HideRangeHint();
         if (rangeHintScene?.Instantiate() is not Node3D hint)
             return null;
-        if (hint is not IRectRangeHint rangeHint) {
+        if (hint is not IRectRangeHint rangeHint)
+        {
             _logger.LogError("范围提示场景根未实现 IRectRangeHint，已回收：{ScenePath}", hint.SceneFilePath);
             hint.QueueFree();
             return null;
@@ -48,7 +52,8 @@ public partial class EffectHints : Node {
     }
 
     /// <summary>销毁当前范围提示并取消待执行的初始化。</summary>
-    public void HideRangeHint() {
+    public void HideRangeHint()
+    {
         _pendingInit = null;
         if (ActiveHint == null)
             return;
@@ -57,7 +62,8 @@ public partial class EffectHints : Node {
     }
 
     /// <summary>每帧执行待处理的初始化回调。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         if (_pendingInit == null)
             return;
         var init = _pendingInit;

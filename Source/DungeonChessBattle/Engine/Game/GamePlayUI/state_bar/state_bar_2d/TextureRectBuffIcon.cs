@@ -10,7 +10,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// Buff 图标控件，展示单个 Buff 的图标、持续时间与层数，并区分来源颜色。
 /// 数据源为 Buff 视图（<see cref="IBuffView"/>），图标按 Buff 键取自展示取数入口。
 /// </summary>
-public partial class TextureRectBuffIcon : TextureRect {
+public partial class TextureRectBuffIcon : TextureRect
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<TextureRectBuffIcon> _logger = ServiceLocator.GetLogger<TextureRectBuffIcon>();
 
@@ -30,14 +31,16 @@ public partial class TextureRectBuffIcon : TextureRect {
     private Label? durationLabelRef;
 
     /// <summary>当前绑定的 Buff 数据。</summary>
-    public IBuffView? BindingBuffData {
+    public IBuffView? BindingBuffData
+    {
         get; private set;
     }
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (superpositionsLabelRef == null)
             _logger.LogError("superpositionsLabelRef is not assigned!");
         if (durationLabelRef == null)
@@ -53,7 +56,8 @@ public partial class TextureRectBuffIcon : TextureRect {
     /// </summary>
     /// <param name="buff">要展示的 Buff 视图。</param>
     /// <param name="focusUnit">当前焦点单位身份视图，用于判断 Buff 来源颜色。</param>
-    public void SetBuffIcon(IBuffView buff, IUnitIdentityView focusUnit) {
+    public void SetBuffIcon(IBuffView buff, IUnitIdentityView focusUnit)
+    {
         bool contentChanged = !(_focusUnit == focusUnit && SameContent(buff));
         BindingBuffData = buff;
         _focusUnit = focusUnit;
@@ -84,12 +88,14 @@ public partial class TextureRectBuffIcon : TextureRect {
         && BindingBuffData.DamageType == other.DamageType;
 
     /// <summary>每帧按本地剩余时间刷新剩余秒数标签，平滑倒数。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         UpdateDurationLabel();
     }
 
     /// <summary>按本地 Buff 剩余时间刷新剩余秒数标签。</summary>
-    private void UpdateDurationLabel() {
+    private void UpdateDurationLabel()
+    {
         if (durationLabelRef == null || _focusUnit == null || BindingBuffData == null)
             return;
         durationLabelRef.Text = BindingBuffData.Remaining.ToString("F0");

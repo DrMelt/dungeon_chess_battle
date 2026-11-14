@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Server.DataStore.Shared;
 /// 参与者主键是回放归属的唯一口径，与归档字节同批写入。
 /// 只暴露原语类型与房间标识，不依赖回放记录模型。
 /// </summary>
-public interface IReplayStore {
+public interface IReplayStore
+{
     /// <summary>归档一场战斗的回放；重复归档同房间幂等忽略。</summary>
     void Add(RoomId roomId, byte[] archive, IReadOnlyList<string> participantRecordIds);
 

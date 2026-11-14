@@ -13,9 +13,11 @@ public sealed class ModDisplayRegistrar(
     DisplayRegistry registry,
     IContentRegistryView content,
     List<ModError> errors,
-    string modId) : IDisplayRegistrar {
+    string modId) : IDisplayRegistrar
+{
     /// <inheritdoc/>
-    public void RegisterSkill(SkillDisplay display) {
+    public void RegisterSkill(SkillDisplay display)
+    {
         if (display.SkillId.IsDefault)
             return;
         if (content.GetSkill(display.SkillId) is null)
@@ -24,7 +26,8 @@ public sealed class ModDisplayRegistrar(
     }
 
     /// <inheritdoc/>
-    public void RegisterBuff(BuffDisplay display) {
+    public void RegisterBuff(BuffDisplay display)
+    {
         if (display.BuffTypeId.IsDefault)
             return;
         if (content.GetBuff(display.BuffTypeId) is null)
@@ -33,7 +36,8 @@ public sealed class ModDisplayRegistrar(
     }
 
     /// <inheritdoc/>
-    public void RegisterUnit(UnitDisplay display) {
+    public void RegisterUnit(UnitDisplay display)
+    {
         if (display.ConfigKey.IsDefault)
             return;
         if (content.GetUnit(display.ConfigKey) is null)
@@ -42,7 +46,8 @@ public sealed class ModDisplayRegistrar(
     }
 
     /// <inheritdoc/>
-    public void RegisterDungeon(DungeonDisplay display) {
+    public void RegisterDungeon(DungeonDisplay display)
+    {
         if (display.DungeonKey.IsDefault)
             return;
         if (content.GetDungeon(display.DungeonKey) is null)

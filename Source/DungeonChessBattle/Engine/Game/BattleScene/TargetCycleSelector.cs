@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Game.BattleScene;
 /// 游标失效时回退服务端权威焦点，仍不可用时从第一个敌方单位开始；没有存活敌方单位返回 0。
 /// 纯交互启发式，不依赖会话引用，由输入控制器驱动，会话结束后重置。
 /// </summary>
-public sealed class TargetCycleSelector {
+public sealed class TargetCycleSelector
+{
     /// <summary>循环目标游标，乐观推进容忍聚焦回包延迟，手动选择时对齐。</summary>
     private ushort _cursor;
 
@@ -29,7 +30,8 @@ public sealed class TargetCycleSelector {
         IReadOnlyList<IBattleUnitView> units,
         ushort localNetId,
         ushort focusId,
-        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
+        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation)
+    {
         var enemies = CollectLivingEnemies(units, localNetId, resolveRelation);
         if (enemies.Count == 0)
             return 0;
@@ -46,9 +48,11 @@ public sealed class TargetCycleSelector {
     private static List<IBattleUnitView> CollectLivingEnemies(
         IReadOnlyList<IBattleUnitView> units,
         ushort localNetId,
-        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation) {
+        Func<IReadOnlyList<CampId>, CampRelation> resolveRelation)
+    {
         List<IBattleUnitView> enemies = [];
-        foreach (var candidate in units) {
+        foreach (var candidate in units)
+        {
             if (candidate.UnitId == localNetId || candidate.IsDead)
                 continue;
             if (resolveRelation(candidate.Camps) != CampRelation.Enemy)

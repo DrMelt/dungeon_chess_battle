@@ -8,7 +8,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 战斗与回放表现为两套互斥加载的组装场景，其显隐随场景加载/释放天然成立，不经本类。
 /// </summary>
 /// <param name="frontUI">前厅 UI 容器引用（Interface/FrontUI）。</param>
-public sealed class FrontLayer(Control? frontUI) {
+public sealed class FrontLayer(Control? frontUI)
+{
     /// <summary>前厅 UI 容器（FrontUI），进入战斗/回放时整体隐藏。</summary>
     private readonly Control _frontUI = frontUI ?? throw new System.ArgumentNullException(nameof(frontUI));
 

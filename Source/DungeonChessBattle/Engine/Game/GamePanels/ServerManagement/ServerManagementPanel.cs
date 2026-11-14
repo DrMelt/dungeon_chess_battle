@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Game.GamePanels;
 /// 通过主线程每帧轮询 <see cref="IServerHost.Status"/> 刷新界面（无事件订阅），
 /// 从根上避免后台线程直接驱动 Godot 节点。
 /// </summary>
-public partial class ServerManagementPanel : BaseGamePanel {
+public partial class ServerManagementPanel : BaseGamePanel
+{
     /// <summary>日志记录器。</summary>
     private readonly ILogger<ServerManagementPanel> _logger = ServiceLocator.GetLogger<ServerManagementPanel>();
 
@@ -19,16 +20,19 @@ public partial class ServerManagementPanel : BaseGamePanel {
     private ServerHostStatus _lastStatus = ServerHostStatus.Stopped;
 
     /// <summary>导出引用集合节点。</summary>
-    public ServerManagementPanelInterRefs? InterRefs {
+    public ServerManagementPanelInterRefs? InterRefs
+    {
         get; private set;
     }
 
     /// <summary>
     /// 节点就绪：绑定按钮事件、设置默认端口并显示初始状态。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         InterRefs = GetNode<ServerManagementPanelInterRefs>("ServerManagementPanelInterRefs");
-        if (InterRefs is null) {
+        if (InterRefs is null)
+        {
             _logger.LogError("ServerManagementPanelInterRefs node not found.");
             return;
         }
@@ -36,7 +40,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
         InterRefs?.PortInput?.Text = LobbyTransport.DefaultPort.ToString();
         InterRefs?.StartButton?.Pressed += OnStartPressed;
         var stopBtn = InterRefs?.StopButton;
-        if (stopBtn is not null) {
+        if (stopBtn is not null)
+        {
             stopBtn.Pressed += OnStopPressed;
             stopBtn.Disabled = true;
         }
@@ -51,7 +56,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// 轮询方式避免后台线程直接驱动 UI，天然线程安全。
     /// </summary>
     /// <param name="delta">距上一帧的秒数（本处未使用）。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var status = ServiceLocator.ServerService.Status;
         if (status == _lastStatus)
             return;
@@ -64,13 +70,16 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>
     /// 点击启动按钮：校验端口后启动服务器。
     /// </summary>
-    private void OnStartPressed() {
-        if (ServiceLocator.ServerService.IsRunning) {
+    private void OnStartPressed()
+    {
+        if (ServiceLocator.ServerService.IsRunning)
+        {
             return;
         }
 
         string portText = InterRefs?.PortInput?.Text?.Trim() ?? "";
-        if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535) {
+        if (!int.TryParse(portText, out int port) || port <= 0 || port > 65535)
+        {
             return;
         }
 
@@ -84,8 +93,10 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>
     /// 点击停止按钮：停止服务器。
     /// </summary>
-    private void OnStopPressed() {
-        if (!ServiceLocator.ServerService.IsRunning) {
+    private void OnStopPressed()
+    {
+        if (!ServiceLocator.ServerService.IsRunning)
+        {
             return;
         }
 
@@ -96,7 +107,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>
     /// 点击关闭按钮，返回上一面板。
     /// </summary>
-    private void OnClosePressed() {
+    private void OnClosePressed()
+    {
         GoBack();
     }
 
@@ -107,9 +119,11 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>
     /// 根据当前服务器状态刷新按钮可用性与状态文字。
     /// </summary>
-    private void RefreshFromStatus() {
+    private void RefreshFromStatus()
+    {
         UpdateButtonStates();
-        switch (_lastStatus) {
+        switch (_lastStatus)
+        {
             case ServerHostStatus.Running:
                 UpdateStatus($"运行中 (端口 {ServiceLocator.ServerService.Port})", Colors.Green);
                 break;
@@ -126,7 +140,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// <summary>
     /// 根据服务器运行状态刷新按钮可用性与输入框可编辑性。
     /// </summary>
-    private void UpdateButtonStates() {
+    private void UpdateButtonStates()
+    {
         bool running = ServiceLocator.ServerService.IsRunning;
         InterRefs?.StartButton?.Disabled = running;
         InterRefs?.StopButton?.Disabled = !running;
@@ -140,7 +155,8 @@ public partial class ServerManagementPanel : BaseGamePanel {
     /// </summary>
     /// <param name="text">状态描述。</param>
     /// <param name="color">状态颜色，默认灰色。</param>
-    private void UpdateStatus(string text, Color? color = null) {
+    private void UpdateStatus(string text, Color? color = null)
+    {
         var label = InterRefs?.StatusLabel;
         if (label is null)
             return;

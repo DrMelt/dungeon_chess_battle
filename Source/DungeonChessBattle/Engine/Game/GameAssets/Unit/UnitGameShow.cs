@@ -9,9 +9,11 @@ namespace DungeonChessBattle.Game.GameAssets;
 /// 单位 3D 展示组件。
 /// 绑定单位只读视图（<see cref="IBattleUnitView"/>），每帧直读位置/朝向驱动网格。
 /// </summary>
-public partial class UnitGameShow : Node3D {
+public partial class UnitGameShow : Node3D
+{
     /// <summary>绑定的单位只读视图。</summary>
-    public IBattleUnitView Unit {
+    public IBattleUnitView Unit
+    {
         get => field ?? throw new InvalidOperationException("Unit has not been assigned.");
         set;
     }
@@ -31,19 +33,22 @@ public partial class UnitGameShow : Node3D {
     /// 纯客户端展示数据，不参与内容指纹与结算；须在挂入场景树后调用（AddChild 已触发 _Ready）。
     /// </summary>
     /// <param name="view">单位展示数据，未注册时为 null。</param>
-    public void ApplyUnitDisplay(UnitDisplay? view) {
+    public void ApplyUnitDisplay(UnitDisplay? view)
+    {
         if (view == null)
             return;
 
         Node3D? modelRoot = null;
-        if (view.ModelScene is { } modelScene) {
+        if (view.ModelScene is { } modelScene)
+        {
             if (_interRefs?.UnitMeshInstanceRef is { } defaultMesh)
                 defaultMesh.Visible = false;
             modelRoot = modelScene.Instantiate<Node3D>();
             AddChild(modelRoot);
         }
 
-        if (view.BodyColor is { } bodyColor) {
+        if (view.BodyColor is { } bodyColor)
+        {
             Node? target = modelRoot ?? _interRefs?.UnitMeshInstanceRef;
             if (target is not null)
                 ApplyBodyColor(target, bodyColor);
@@ -51,11 +56,13 @@ public partial class UnitGameShow : Node3D {
     }
 
     /// <summary>对节点子树内全部网格统一覆写配色材质，仅影响外观。</summary>
-    private static void ApplyBodyColor(Node root, Color color) {
+    private static void ApplyBodyColor(Node root, Color color)
+    {
         var material = new StandardMaterial3D { AlbedoColor = color };
         ApplyMaterial(root);
 
-        void ApplyMaterial(Node node) {
+        void ApplyMaterial(Node node)
+        {
             if (node is MeshInstance3D mesh)
                 mesh.MaterialOverride = material;
             foreach (var child in node.GetChildren())
@@ -66,7 +73,8 @@ public partial class UnitGameShow : Node3D {
     /// <summary>
     /// 节点就绪：获取引用集合节点。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         _interRefs = GetNode<UnitGameShowInterRefs>("UnitGameShowInterRefs");
     }
 
@@ -74,12 +82,14 @@ public partial class UnitGameShow : Node3D {
     /// 每帧从绑定的世界姿态视图直读位置与朝向（XZ 平面）。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var pos = Unit.Position;
         GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
         var dir = Unit.Direction;
-        if (dir.LengthSquared() > 0.0001f) {
+        if (dir.LengthSquared() > 0.0001f)
+        {
             LookAt(GlobalPosition + new Vector3(dir.X, 0f, dir.Y));
         }
     }

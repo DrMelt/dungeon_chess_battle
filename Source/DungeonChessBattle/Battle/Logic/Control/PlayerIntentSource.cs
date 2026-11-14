@@ -18,7 +18,8 @@ namespace DungeonChessBattle.Battle.Logic.Control;
 /// <param name="scene">战斗世界，读施法者状态与冷却。</param>
 /// <param name="logger">待决与作废日志，可选注入。</param>
 internal sealed partial class PlayerIntentSource(
-    UnitId unitId, BattleScene scene, ILogger<PlayerIntentSource>? logger = null) : IUnitIntentSource {
+    UnitId unitId, BattleScene scene, ILogger<PlayerIntentSource>? logger = null) : IUnitIntentSource
+{
     /// <summary>预输入有效窗口秒数。服务端与回放必须同值，故不开放注入；改值属结算逻辑变更，须递增修订号。</summary>
     private const float PendingWindowSeconds = 0.5f;
 
@@ -41,7 +42,8 @@ internal sealed partial class PlayerIntentSource(
     private bool _pendingFresh;
 
     /// <inheritdoc />
-    public UnitIntent Intent {
+    public UnitIntent Intent
+    {
         get; private set;
     }
 
@@ -51,7 +53,8 @@ internal sealed partial class PlayerIntentSource(
 
     /// <summary>提交施法意图：占待决槽并满窗计时；未就绪才记待决日志，转投在刷新点。</summary>
     /// <param name="cast">施法意图，目标与锚点按原样承载。</param>
-    public void SubmitCast(in UnitCastIntent cast) {
+    public void SubmitCast(in UnitCastIntent cast)
+    {
         _pendingCast = cast;
         _pendingRemaining = PendingWindowSeconds;
         _pendingFresh = true;
@@ -67,7 +70,8 @@ internal sealed partial class PlayerIntentSource(
     internal PlayerIntentState CaptureState() => new(_move, _pendingCast, _pendingRemaining, _pendingFresh);
 
     /// <summary>按状态副本重写跨帧状态，当帧产出同时归零，等刷新点重新产出。</summary>
-    internal void RestoreState(PlayerIntentState state) {
+    internal void RestoreState(PlayerIntentState state)
+    {
         _move = state.Move;
         _pendingCast = state.PendingCast;
         _pendingRemaining = state.PendingRemaining;
@@ -76,18 +80,21 @@ internal sealed partial class PlayerIntentSource(
     }
 
     /// <summary>推进待决施法：施法者消失或已死亡即弃，非首次刷新递减窗口，就绪即转投为本帧施法意图。</summary>
-    private UnitCastIntent? RefreshPendingCast(float deltaTime) {
+    private UnitCastIntent? RefreshPendingCast(float deltaTime)
+    {
         if (_pendingCast is not { } pending)
             return null;
 
-        if (_scene.FindBattleUnit(_unitId) is not { IsDead: false } caster) {
+        if (_scene.FindBattleUnit(_unitId) is not { IsDead: false } caster)
+        {
             _pendingCast = null;
             return null;
         }
 
         if (_pendingFresh)
             _pendingFresh = false;
-        else if ((_pendingRemaining -= deltaTime) <= 0f) {
+        else if ((_pendingRemaining -= deltaTime) <= 0f)
+        {
             LogCastExpired(caster.UnitName, pending.Skill.Id);
             _pendingCast = null;
             return null;

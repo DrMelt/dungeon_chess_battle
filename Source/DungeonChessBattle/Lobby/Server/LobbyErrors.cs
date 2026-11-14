@@ -7,7 +7,8 @@ namespace DungeonChessBattle.Lobby.Server;
 /// 大厅业务的可预期失败：房间持久化的副本键缺失或指向已消失的副本。
 /// 描述面向日志，自带房间 ID 与副本键。
 /// </summary>
-public static class LobbyErrors {
+public static class LobbyErrors
+{
     /// <summary>房间快照没有副本键。</summary>
     public static Error RoomDungeonKeyMissing(RoomId roomId) => Error.Validation(
         code: "Lobby.Room.DungeonKeyMissing", description: $"房间 '{roomId}' 未记录副本键");

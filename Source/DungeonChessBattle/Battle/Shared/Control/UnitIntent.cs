@@ -18,7 +18,8 @@ public readonly record struct UnitCastIntent(SkillKeyId Skill, UnitId TargetUnit
 /// </summary>
 /// <param name="Move">移动方向。</param>
 /// <param name="Cast">当帧施法意图。</param>
-public readonly record struct UnitIntent(Vector2 Move, UnitCastIntent? Cast) {
+public readonly record struct UnitIntent(Vector2 Move, UnitCastIntent? Cast)
+{
     /// <summary>静止且无施法：缺省意图。</summary>
     public static UnitIntent Idle => default;
 

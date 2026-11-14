@@ -21,7 +21,8 @@ public readonly record struct SkillResolveContext(
 /// <summary>技能结算结果：领域事件 + 待挂载的新 Buff 描述。</summary>
 public sealed record SkillResolution(
     IReadOnlyList<IBattleEvent> Events,
-    IReadOnlyList<BuffToApply> Buffs) {
+    IReadOnlyList<BuffToApply> Buffs)
+{
     /// <summary>无产出结果。</summary>
     public static SkillResolution Empty { get; } = new([], []);
 }

@@ -10,9 +10,11 @@ namespace DungeonChessBattle.Battle.Config.Shared;
 /// 内容注册表只读视图：按身份键查领域定义，并暴露内容修订号，不含任何注册能力。
 /// 展示面与只读消费方以此为判据源，实现对内容装配根零依赖。
 /// </summary>
-public interface IContentRegistryView {
+public interface IContentRegistryView
+{
     /// <summary>内容修订号：引擎内容修订号与装配方内容指纹合成，内容与布局任何变化都会改变值。</summary>
-    string DataRevision {
+    string DataRevision
+    {
         get;
     }
 

@@ -14,7 +14,8 @@ namespace DungeonChessBattle.Game.Effects;
 /// 复用已创建的目标标记，仅在单位增删时创建或销毁。
 /// 仅本地焦点单位显示标记，未选中隐藏。死亡单位仍可被选中，不影响标记显示。
 /// </summary>
-public partial class UnitTargetMarks : Node {
+public partial class UnitTargetMarks : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<UnitTargetMarks> _logger = ServiceLocator.GetLogger<UnitTargetMarks>();
 
@@ -32,14 +33,16 @@ public partial class UnitTargetMarks : Node {
     /// <summary>
     /// 构造函数：注入键提取、创建、移除与更新回调。
     /// </summary>
-    public UnitTargetMarks() {
+    public UnitTargetMarks()
+    {
         _marks = new(GetKey, CreateMark, RemoveMark, UpdateMark);
     }
 
     /// <summary>
     /// 节点就绪：校验导出引用是否已赋值。
     /// </summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         if (_sessionRef == null)
             _logger.LogError("_sessionRef is not assigned!");
         if (_targetMarkPackedScene == null)
@@ -50,7 +53,8 @@ public partial class UnitTargetMarks : Node {
     /// 每帧同步目标标记位置与朝向，并为新增单位创建标记、为移除单位清理标记。
     /// </summary>
     /// <param name="delta">距上一帧的秒数。</param>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var session = _sessionRef
             ?? throw new InvalidOperationException("[UnitTargetMarks] _sessionRef is not assigned!");
 
@@ -61,7 +65,8 @@ public partial class UnitTargetMarks : Node {
     private static ushort GetKey(IBattleUnitView unit) => unit.UnitId;
 
     /// <summary>创建目标标记并挂载到本节点。</summary>
-    private Node3dTargetMark CreateMark() {
+    private Node3dTargetMark CreateMark()
+    {
         var mark = _targetMarkPackedScene?.Instantiate<Node3dTargetMark>()
             ?? throw new InvalidOperationException("[UnitTargetMarks] _targetMarkPackedScene is not assigned!");
         AddChild(mark);
@@ -78,7 +83,8 @@ public partial class UnitTargetMarks : Node {
     /// 更新目标标记：仅本地焦点单位显示并同步半径、阵营颜色、位置与朝向，其余单位隐藏。
     /// 选中判据仅与本地焦点单位关联，不因单位死亡而变化。
     /// </summary>
-    private void UpdateMark(Node3dTargetMark mark, IBattleUnitView unit) {
+    private void UpdateMark(Node3dTargetMark mark, IBattleUnitView unit)
+    {
         var session = _sessionRef;
         var focusUnit = session?.LocalFocus;
         bool isFocus = unit == focusUnit;
@@ -90,7 +96,8 @@ public partial class UnitTargetMarks : Node {
         mark.SetRadius(unit.HitRadius);
         var relation = session?.ResolveLocalCampRelation(unit.Camps) ?? CampRelation.Unknown;
         mark.SetColor(relation);
-        if (relation == CampRelation.Unknown && !_unknownRelationLogged) {
+        if (relation == CampRelation.Unknown && !_unknownRelationLogged)
+        {
             _unknownRelationLogged = true;
             _logger.LogWarning("[UnitTargetMarks] 阵营关系未知，目标标记着色置灰。");
         }
@@ -98,7 +105,8 @@ public partial class UnitTargetMarks : Node {
         mark.GlobalPosition = new Vector3(pos.X, 0f, pos.Y);
 
         var dir = unit.Direction;
-        if (dir.LengthSquared() > 0.0001f) {
+        if (dir.LengthSquared() > 0.0001f)
+        {
             mark.LookAt(mark.GlobalPosition + new Vector3(dir.X, 0f, dir.Y));
         }
     }

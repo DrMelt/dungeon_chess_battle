@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Replay.Shared;
 /// 移动段的折叠判据在此，账本骨架与轨道成型归 <see cref="ReplayMoveTracks"/>，录制端只持时间轴与账本。
 /// 逐 tick 提交语义不变，收拢只发生在存储侧。
 /// </summary>
-public static class ReplayCommands {
+public static class ReplayCommands
+{
     /// <summary>移动命令 → 新方向意图段，长度 1，续段交 <see cref="ExtendRun"/>。</summary>
     public static ReplayMoveRun NewMoveRun(this in PlayerCommand cmd, int frame) =>
         new(frame, 1, cmd.MoveDir.X, cmd.MoveDir.Y);
@@ -29,10 +30,13 @@ public static class ReplayCommands {
     /// 输入断供处帧不连续，自然断段。移动每 tick 至多一条是录制端前提（见 BattleReplayRecorder），
     /// 同 tick 第二条移动命令不在本判据覆盖内。
     /// </summary>
-    public static void AppendMoveRun(List<ReplayMoveRun> runs, in PlayerCommand cmd, int frame) {
-        if (runs.Count > 0) {
+    public static void AppendMoveRun(List<ReplayMoveRun> runs, in PlayerCommand cmd, int frame)
+    {
+        if (runs.Count > 0)
+        {
             ReplayMoveRun last = runs[^1];
-            if (last.EndFrame + 1 == frame && cmd.SameMoveDir(in last)) {
+            if (last.EndFrame + 1 == frame && cmd.SameMoveDir(in last))
+            {
                 runs[^1] = ExtendRun(in last);
                 return;
             }
@@ -68,13 +72,15 @@ public static class ReplayCommands {
 /// 逐玩家移动账本表：每个玩家序号一条待填轨道，玩家数容量在构造时裁决。
 /// 表长守轨道键容量，索引与成型都在容量内进行，降型不会截断。
 /// </summary>
-public sealed class ReplayMoveTracks {
+public sealed class ReplayMoveTracks
+{
     private readonly List<ReplayMoveRun>[] _runs;
 
     private ReplayMoveTracks(List<ReplayMoveRun>[] runs) => _runs = runs;
 
     /// <summary>按玩家数建表；超出轨道键容量以错误返回。</summary>
-    public static ErrorOr<ReplayMoveTracks> Create(int playerCount) {
+    public static ErrorOr<ReplayMoveTracks> Create(int playerCount)
+    {
         if (playerCount > ReplayMoveTrack.MaxPlayers)
             return ReplaySharedErrors.MoveTrackOverCapacity(playerCount, ReplayMoveTrack.MaxPlayers);
 
@@ -88,9 +94,11 @@ public sealed class ReplayMoveTracks {
     public List<ReplayMoveRun> this[byte playerIndex] => _runs[playerIndex];
 
     /// <summary>逐玩家账本折叠为轨道表：空轨不产出，数组下标即玩家序号。</summary>
-    public ReplayMoveTrack[] Build() {
+    public ReplayMoveTrack[] Build()
+    {
         var tracks = new List<ReplayMoveTrack>(_runs.Length);
-        for (int i = 0; i < _runs.Length; i++) {
+        for (int i = 0; i < _runs.Length; i++)
+        {
             if (_runs[i].Count > 0)
                 tracks.Add(new ReplayMoveTrack((byte)i, [.. _runs[i]]));
         }

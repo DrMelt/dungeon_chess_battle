@@ -12,7 +12,8 @@ namespace DungeonChessBattle.Game.GamePlayUI;
 /// 技能按钮：绑定一个技能定义与其展示数据、施法单位，点击时委托给技能列表面板发起施法 RPC。
 /// 冷却期间显示灰色遮罩与剩余秒数。
 /// </summary>
-public partial class ButtonSkillBase : Button {
+public partial class ButtonSkillBase : Button
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ButtonSkillBase> _logger = ServiceLocator.GetLogger<ButtonSkillBase>();
 
@@ -44,7 +45,8 @@ public partial class ButtonSkillBase : Button {
     public SkillDisplay? BindDisplay => _bindingDisplay;
 
     /// <summary>绑定技能所属的单位只读视图。</summary>
-    public IBattleUnitView BindUnit {
+    public IBattleUnitView BindUnit
+    {
         get => field ?? throw new InvalidOperationException("BindUnit has not been initialized.");
         private set;
     }
@@ -61,7 +63,8 @@ public partial class ButtonSkillBase : Button {
     /// <param name="skillsListRef">技能列表面板引用。</param>
     public void Init(
         SkillDefinition bindSkill, SkillDisplay? bindDisplay,
-        IBattleUnitView bindUnit, SkillsList skillsListRef) {
+        IBattleUnitView bindUnit, SkillsList skillsListRef)
+    {
         _bindingSkill = bindSkill;
         _bindingDisplay = bindDisplay;
         BindUnit = bindUnit;
@@ -73,28 +76,33 @@ public partial class ButtonSkillBase : Button {
     }
 
     /// <summary>节点就绪：校验导出引用并注册鼠标悬浮 UI 判定。</summary>
-    public override void _Ready() {
+    public override void _Ready()
+    {
         ValidateExports();
 
         // 未调用 Init 的按钮隐藏自身，避免悬停时访问未初始化技能
-        if (!IsInitialized) {
+        if (!IsInitialized)
+        {
             Visible = false;
             MouseDefaultCursorShape = CursorShape.Arrow;
             return;
         }
 
         var uiRes = _playerInterfaceRes;
-        MouseEntered += () => {
+        MouseEntered += () =>
+        {
             uiRes?.MouseOnUIControl = this;
         };
 
-        MouseExited += () => {
+        MouseExited += () =>
+        {
             if (uiRes != null && uiRes.MouseOnUIControl == this)
                 uiRes.MouseOnUIControl = null;
         };
     }
 
-    private void ValidateExports() {
+    private void ValidateExports()
+    {
         if (_playerInterfaceRes == null)
             _logger.LogError("_playerInterfaceRes is not assigned!");
         if (_labelCooldownTimeRef == null)
@@ -102,12 +110,14 @@ public partial class ButtonSkillBase : Button {
     }
 
     /// <summary>点击按钮时委托给技能列表面板的全局状态机处理释放逻辑。</summary>
-    public override void _Pressed() {
+    public override void _Pressed()
+    {
         _skillsListRef?.OnSkillButtonPressed(this);
     }
 
     /// <summary>每帧更新冷却 UI：灰色遮罩与剩余秒数，数据源为服务端权威冷却。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         if (_bindingSkill == null)
             return;
 
@@ -116,14 +126,17 @@ public partial class ButtonSkillBase : Button {
             return;
 
         float remaining = unit.GetTotalCooldownRemaining(_bindingSkill.SkillId);
-        if (remaining > 0f) {
+        if (remaining > 0f)
+        {
             SelfModulate = _coolingColor;
-            if (_labelCooldownTimeRef != null) {
+            if (_labelCooldownTimeRef != null)
+            {
                 _labelCooldownTimeRef.Visible = true;
                 _labelCooldownTimeRef.Text = remaining.ToString("F1");
             }
         }
-        else {
+        else
+        {
             SelfModulate = new Color(1, 1, 1, 1);
             _labelCooldownTimeRef?.Visible = false;
         }

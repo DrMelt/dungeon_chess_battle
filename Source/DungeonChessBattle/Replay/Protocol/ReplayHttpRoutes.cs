@@ -5,7 +5,8 @@ namespace DungeonChessBattle.Replay.Protocol;
 /// 回放不借用大厅 SignalR 连接：身份由大厅登录时签发的会话凭证随请求头带出，
 /// 因此回放两端与大厅的连接实现互不相识。
 /// </summary>
-public static class ReplayHttpRoutes {
+public static class ReplayHttpRoutes
+{
     /// <summary>会话凭证请求头。凭证由服务端登录流程签发，与登录会话同生命周期。</summary>
     public const string SessionHeader = "X-Dcb-Session";
 

@@ -15,7 +15,8 @@ namespace DungeonChessBattle.Game.ReplayUI;
 /// 组装场景由 MainScene 在 StartReplay 时实例化、回放结束时释放；本节点管引擎生命周期与回放表现（ReplayUI）显隐。
 /// 回放启动/结束经 <see cref="ReplayStartedEventHandler"/>、<see cref="ReplayFinishedEventHandler"/> 通知主场景切换前厅图层显隐。
 /// </summary>
-public partial class ReplayCoordinator : Node {
+public partial class ReplayCoordinator : Node
+{
     /// <summary>日志记录器。</summary>
     private static readonly ILogger<ReplayCoordinator> _logger =
         ServiceLocator.GetLogger<ReplayCoordinator>();
@@ -50,7 +51,8 @@ public partial class ReplayCoordinator : Node {
     public bool IsPaused => _isPaused;
 
     /// <summary>播放倍速。</summary>
-    public float PlaySpeed {
+    public float PlaySpeed
+    {
         get; set;
     } = 1f;
 
@@ -58,9 +60,11 @@ public partial class ReplayCoordinator : Node {
     /// 启动回放：以回放获取端解码并门控后的记录构建引擎，生成单位展示。
     /// 引擎门控不通过以错误返回，由调用方决定提示与导航，本节点不留半启动态。
     /// </summary>
-    public ErrorOr<Success> LoadReplay(ReplayRecording recording) {
+    public ErrorOr<Success> LoadReplay(ReplayRecording recording)
+    {
         var created = ReplayEngine.Create(recording, ServiceLocator.ContentRegistry);
-        if (created.IsError) {
+        if (created.IsError)
+        {
             _logger.LogError("回放引擎构建失败：{Reason}", created.FirstError.Description);
             return created.FirstError;
         }
@@ -78,13 +82,15 @@ public partial class ReplayCoordinator : Node {
     }
 
     /// <summary>每帧推进回放引擎：按倍速累积固定步长，未加载/暂停/结束时为空操作。</summary>
-    public override void _Process(double delta) {
+    public override void _Process(double delta)
+    {
         var engine = _engine;
         if (engine == null || _isPaused || engine.IsFinished)
             return;
 
         _accumulator += delta * PlaySpeed;
-        while (_accumulator >= engine.FixedDelta) {
+        while (_accumulator >= engine.FixedDelta)
+        {
             var events = engine.Step();
             _sessionContext?.AppendEvents(events);
             _accumulator -= engine.FixedDelta;
@@ -98,7 +104,8 @@ public partial class ReplayCoordinator : Node {
     public void SeekToFraction(float fraction) => SeekToFrame((int)(fraction * (_engine?.TotalFrames ?? 0)));
 
     /// <summary>跳转到指定相对帧，早于当前帧时引擎回退到锚点续算；播放/暂停态不变。</summary>
-    public void SeekToFrame(int frame) {
+    public void SeekToFrame(int frame)
+    {
         if (_engine == null)
             return;
         _accumulator = 0;
@@ -106,7 +113,8 @@ public partial class ReplayCoordinator : Node {
     }
 
     /// <summary>退出回放：解绑统一数据源，释放引擎并恢复前厅。</summary>
-    public void ExitReplay() {
+    public void ExitReplay()
+    {
         if (!IsActive)
             return;
         _sessionContext?.Unbind();

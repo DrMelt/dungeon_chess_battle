@@ -11,7 +11,8 @@ namespace DungeonChessBattle.Battle.Logic.Combat;
 /// 基于施法单位状态、技能定义与已解析的目标/位置判断，不接触技能仓库。
 /// 在线端不做任何本地施法判定：按键即上行，可否施放由本判定在权威侧裁定。
 /// </summary>
-public static class SkillCastValidator {
+public static class SkillCastValidator
+{
     /// <summary>
     /// 判定单位能否发起指定技能的施法：归属、施法者状态与目标/位置因素聚合。
     /// 不判目标存活：<see cref="SkillTargetValidator.CanAffect"/> 只比阵营关系，死亡单位仍是合法目标，
@@ -25,7 +26,8 @@ public static class SkillCastValidator {
     /// <param name="relations">副本配置的阵营关系函数。</param>
     public static bool CanCast(
         ISkillCasterView caster, SkillDefinition skill, ISkillCasterView? target, Vector2? targetPos,
-        CampRelationResolver relations) {
+        CampRelationResolver relations)
+    {
         if (!caster.HasSkill(skill.SkillId))
             return false;
         if (!IsStateReady(caster, skill.SkillId))
@@ -40,7 +42,8 @@ public static class SkillCastValidator {
     }
 
     /// <summary>单位目标距离因素：声明了射程时要求中心距含双方判定半径不超过射程，未声明射程即不设限。</summary>
-    private static bool IsUnitTargetInRange(ISkillCasterView caster, ISkillCasterView target, SkillDefinition skill) {
+    private static bool IsUnitTargetInRange(ISkillCasterView caster, ISkillCasterView target, SkillDefinition skill)
+    {
         if (skill.CastRange is not { } castRange)
             return true;
         float reach = castRange + caster.HitRadius + target.HitRadius;
@@ -52,14 +55,16 @@ public static class SkillCastValidator {
     /// 除 <see cref="CanCast"/> 内部聚合外，亦是玩家意图源待决施法的唯一就绪判据：
     /// 只有会自然转就绪的状态阻塞值得等待，目标条件一律交落地时裁定。
     /// </summary>
-    public static bool IsStateReady(ISkillCasterView caster, SkillKeyId skillKey) {
+    public static bool IsStateReady(ISkillCasterView caster, SkillKeyId skillKey)
+    {
         if (caster.IsDead || caster.SkillCasting != default)
             return false;
         return caster.GetTotalCooldownRemaining(skillKey) <= 0f;
     }
 
     /// <summary>位置因素：目标点非空且落在技能有效范围内，读取定义形状判定。</summary>
-    private static bool IsTargetPosInRange(ISkillCasterView caster, SkillDefinition skill, Vector2? targetPos) {
+    private static bool IsTargetPosInRange(ISkillCasterView caster, SkillDefinition skill, Vector2? targetPos)
+    {
         return targetPos is { } pos && skill.CastArea is { } area
             && area.Contains(pos, caster.Position, pos - caster.Position, 0f);
     }
