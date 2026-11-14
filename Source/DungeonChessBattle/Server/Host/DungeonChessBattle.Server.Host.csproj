@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Battle\Entities\DungeonChessBattle.Battle.Entities.csproj" />
+        <ProjectReference Include="..\..\Battle\Config\Registry\DungeonChessBattle.Battle.Config.Registry.csproj" />
+        <ProjectReference Include="..\..\Battle\Mod\Manager\DungeonChessBattle.Battle.Mod.Manager.csproj" />
+        <ProjectReference Include="..\..\Battle\Server\Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
+        <ProjectReference Include="..\..\Lobby\Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
+        <ProjectReference Include="..\..\Lobby\Server\DungeonChessBattle.Lobby.Server.csproj" />
+        <ProjectReference Include="..\..\Battle\Server\Room\DungeonChessBattle.Battle.Server.csproj" />
+        <ProjectReference Include="..\..\Replay\Server\DungeonChessBattle.Replay.Server.csproj" />
+        <ProjectReference Include="..\..\DataStore\DataStore\DungeonChessBattle.Server.DataStore.csproj" />
+        <ProjectReference Include="..\..\DataStore\Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

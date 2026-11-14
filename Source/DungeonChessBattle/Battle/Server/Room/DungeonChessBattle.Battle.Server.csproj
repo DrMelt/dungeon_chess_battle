@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Shared\DungeonChessBattle.Battle.Shared.csproj" />
+        <ProjectReference Include="..\..\Config\Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
+        <ProjectReference Include="..\..\Runtime\Shared\DungeonChessBattle.Battle.Runtime.Shared.csproj" />
+        <ProjectReference Include="..\..\Logic\DungeonChessBattle.Battle.Logic.csproj" />
+        <ProjectReference Include="..\..\Entities\DungeonChessBattle.Battle.Entities.csproj" />
+        <ProjectReference Include="..\Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
+        <ProjectReference Include="..\..\..\Replay\Shared\DungeonChessBattle.Replay.Shared.csproj" />
+        <ProjectReference Include="..\..\..\DataStore\Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
+        <ProjectReference Include="..\..\..\Session\Shared\DungeonChessBattle.Session.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="LiteNetLib" />
+        <PackageReference Include="LiteEntitySystem" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ErrorOr" />
+    </ItemGroup>
+</Project>

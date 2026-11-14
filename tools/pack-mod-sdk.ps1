@@ -3,20 +3,21 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$sourceRoot = Join-Path $repoRoot 'Source/DungeonChessBattle'
 $outDir = Join-Path $repoRoot 'artifacts/nuget'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 # 两个引用锚点 + 传递引用闭包。全部 IsPackable=true 的项目都产包，
 # 锚点包把闭包声明为版本一致的依赖，缺一包则消费方还原失败。
 $projects = @(
-    'DungeonChessBattle.Battle.Mod.Interface',
-    'DungeonChessBattle.Battle.Mod.Shared',
-    'DungeonChessBattle.Battle.Config.Shared',
-    'DungeonChessBattle.Battle.Shared',
-    'DungeonChessBattle.Game.Mod.Interface',
-    'DungeonChessBattle.Game.Mod.Shared',
-    'DungeonChessBattle.Game.Display.Registry',
-    'DungeonChessBattle.Game.Shared'
+    'Battle/Mod/Interface/DungeonChessBattle.Battle.Mod.Interface.csproj',
+    'Battle/Mod/Shared/DungeonChessBattle.Battle.Mod.Shared.csproj',
+    'Battle/Config/Shared/DungeonChessBattle.Battle.Config.Shared.csproj',
+    'Battle/Shared/DungeonChessBattle.Battle.Shared.csproj',
+    'Engine/Mod/Interface/DungeonChessBattle.Game.Mod.Interface.csproj',
+    'Engine/Mod/Shared/DungeonChessBattle.Game.Mod.Shared.csproj',
+    'Engine/Display/Registry/DungeonChessBattle.Game.Display.Registry.csproj',
+    'Engine/Shared/DungeonChessBattle.Game.Shared.csproj'
 )
 
 # mod 引用闭包不得含运行时层：Battle.Runtime.Shared 不产包，一旦被拉进闭包即分层被破坏。
@@ -32,7 +33,7 @@ function Resolve-Closure([string]$csproj, [System.Collections.Generic.HashSet[st
 
 $seen = [System.Collections.Generic.HashSet[string]]::new()
 foreach ($project in $projects) {
-    Resolve-Closure (Join-Path $repoRoot "$project/$project.csproj") $seen
+    Resolve-Closure (Join-Path $sourceRoot $project) $seen
 }
 $leaked = $seen | Where-Object { $_ -match 'Battle\.Runtime\.Shared' }
 if ($leaked) {
@@ -41,7 +42,7 @@ if ($leaked) {
 }
 
 foreach ($project in $projects) {
-    $csproj = Join-Path $repoRoot "$project/$project.csproj"
+    $csproj = Join-Path $sourceRoot $project
     dotnet pack $csproj -c Release -o $outDir
     if ($LASTEXITCODE -ne 0) {
         Write-Error "dotnet pack 失败：$project"

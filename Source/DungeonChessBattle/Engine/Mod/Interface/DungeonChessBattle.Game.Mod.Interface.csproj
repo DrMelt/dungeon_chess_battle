@@ -1,0 +1,18 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <Description>mod 展示代码的引用锚点：入口接口 IModDisplayEntry，展示 mod 只引本程序集。</Description>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\DungeonChessBattle.Game.Mod.Shared.csproj" />
+    <ProjectReference Include="..\..\Display\Registry\DungeonChessBattle.Game.Display.Registry.csproj" />
+  </ItemGroup>
+
+</Project>

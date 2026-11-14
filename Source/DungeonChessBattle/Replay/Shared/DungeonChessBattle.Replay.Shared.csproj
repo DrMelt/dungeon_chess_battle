@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ErrorOr" />
+        <PackageReference Include="MessagePack" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Battle\Shared\DungeonChessBattle.Battle.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

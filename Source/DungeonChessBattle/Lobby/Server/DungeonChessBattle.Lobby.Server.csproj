@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Shared\DungeonChessBattle.Lobby.Shared.csproj" />
+        <ProjectReference Include="..\Protocol\DungeonChessBattle.Lobby.Protocol.csproj" />
+        <ProjectReference Include="..\..\Battle\Shared\DungeonChessBattle.Battle.Shared.csproj" />
+        <ProjectReference Include="..\..\Battle\Config\Shared\DungeonChessBattle.Battle.Config.Shared.csproj" />
+        <ProjectReference Include="..\..\DataStore\Shared\DungeonChessBattle.Server.DataStore.Shared.csproj" />
+        <ProjectReference Include="..\..\Battle\Server\Shared\DungeonChessBattle.Battle.Server.Shared.csproj" />
+        <ProjectReference Include="..\..\Session\Shared\DungeonChessBattle.Session.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ErrorOr" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+</Project>
